@@ -1,0 +1,912 @@
+id	iconFile	iconPath	slotType	itemClass	reqLv	nameZh	nameEn
+poe_Amulet_AmuletAtlas1	BluePearlAmulet.png	Art/2DItems/Amulets/BluePearlAmulet.png	amulet	Amulet	268	碧珠護身符	Blue Pearl Amulet
+poe_Amulet_AmuletAtlas2	MarbleAmulet.png	Art/2DItems/Amulets/MarbleAmulet.png	amulet	Amulet	258	理石護身符	Marble Amulet
+poe_Amulet_AmuletAtlas3	CrescentAmulet.png	Art/2DItems/Amulets/CrescentAmulet.png	amulet	Amulet	258	海鏡項鍊	Seaglass Amulet
+poe_Amulet_AmuletVictor1	TalismanoftheVictor.png	Art/2DItems/Amulets/TalismanoftheVictor.png	amulet	Amulet	1	傑特護身符	Jet Amulet
+poe_Amulets_Amulet1	Amulet1.png	Art/2DItems/Amulets/Amulet1.png	amulet	Amulet	8	海靈護身符	Paua Amulet
+poe_Amulets_Amulet10	CitrineAmulet.png	Art/2DItems/Amulets/CitrineAmulet.png	amulet	Amulet	68	黃晶護身符	Citrine Amulet
+poe_Amulets_Amulet11	RubyAmulet.png	Art/2DItems/Amulets/RubyAmulet.png	amulet	Amulet	173	血色護身符	Ruby Amulet
+poe_Amulets_Amulet12	UnsetAmulet.png	Art/2DItems/Amulets/UnsetAmulet.png	amulet	Amulet	156	夕暮護身符	Unset Amulet
+poe_Amulets_Amulet2	Amulet2.png	Art/2DItems/Amulets/Amulet2.png	amulet	Amulet	8	珊瑚護身符	Coral Amulet
+poe_Amulets_Amulet3	Amulet3.png	Art/2DItems/Amulets/Amulet3.png	amulet	Amulet	22	琥珀護身符	Amber Amulet
+poe_Amulets_Amulet4	Amulet4.png	Art/2DItems/Amulets/Amulet4.png	amulet	Amulet	22	翠玉護身符	Jade Amulet
+poe_Amulets_Amulet5	Amulet5.png	Art/2DItems/Amulets/Amulet5.png	amulet	Amulet	22	海玉護身符	Lapis Amulet
+poe_Amulets_Amulet6	Amulet6.png	Art/2DItems/Amulets/Amulet6.png	amulet	Amulet	50	帝金護身符	Gold Amulet
+poe_Amulets_Amulet7	Amulet7.png	Art/2DItems/Amulets/Amulet7.png	amulet	Amulet	85	黑曜護身符	Onyx Amulet
+poe_Amulets_Amulet8	TurquoiseAmulet.png	Art/2DItems/Amulets/TurquoiseAmulet.png	amulet	Amulet	68	青玉護身符	Turquoise Amulet
+poe_Amulets_Amulet9	AgateAmulet.png	Art/2DItems/Amulets/AgateAmulet.png	amulet	Amulet	68	瑪瑙護身符	Agate Amulet
+poe_Amulets_AmuletE1	HeistAmulet1.png	Art/2DItems/Amulets/HeistAmulet1.png	amulet	Amulet	261	星盤護身符	Astrolabe Amulet
+poe_Amulets_AmuletE2	HeistAmulet2.png	Art/2DItems/Amulets/HeistAmulet2.png	amulet	Amulet	85	簡純護身符	Simplex Amulet
+poe_Amulets_AmuletRoyale1	Amulet7.png	Art/2DItems/Amulets/Amulet7.png	amulet	Amulet	8	黑曜護身符	Onyx Amulet
+poe_Amulets_Talismans_Talisman1_1	TalismanWhite3.png	Art/2DItems/Amulets/TalismanWhite3.png	amulet	Amulet	1	黑牙魔符	Black Maw Talisman
+poe_Amulets_Talismans_Talisman1_10	NewTalisman.png	Art/2DItems/Amulets/NewTalisman.png	amulet	Amulet	1	巨顎魔符	Mandible Talisman
+poe_Amulets_Talismans_Talisman1_11	NewTalisman2.png	Art/2DItems/Amulets/NewTalisman2.png	amulet	Amulet	121	蟲蛹魔符	Chrysalis Talisman
+poe_Amulets_Talismans_Talisman1_12	NewTalisman3.png	Art/2DItems/Amulets/NewTalisman3.png	amulet	Amulet	121	狂癲魔符	Writhing Talisman
+poe_Amulets_Talismans_Talisman1_2	TalismanWhite7.png	Art/2DItems/Amulets/TalismanWhite7.png	amulet	Amulet	1	脊骨魔符	Bonespire Talisman
+poe_Amulets_Talismans_Talisman1_3	TalismanWhite8.png	Art/2DItems/Amulets/TalismanWhite8.png	amulet	Amulet	1	灰燼魔符	Ashscale Talisman
+poe_Amulets_Talismans_Talisman1_4	TalismanWhite2.png	Art/2DItems/Amulets/TalismanWhite2.png	amulet	Amulet	1	孤角魔符	Lone Antler Talisman
+poe_Amulets_Talismans_Talisman1_5	TalismanWhite5.png	Art/2DItems/Amulets/TalismanWhite5.png	amulet	Amulet	1	深淵魔符	Deep One Talisman
+poe_Amulets_Talismans_Talisman1_6	TalismanWhite1.png	Art/2DItems/Amulets/TalismanWhite1.png	amulet	Amulet	1	碎骨魔符	Breakrib Talisman
+poe_Amulets_Talismans_Talisman1_7	TalismanWhite4.png	Art/2DItems/Amulets/TalismanWhite4.png	amulet	Amulet	1	亡手魔符	Deadhand Talisman
+poe_Amulets_Talismans_Talisman1_8	TalismanWhite6.png	Art/2DItems/Amulets/TalismanWhite6.png	amulet	Amulet	1	不朽魔符	Undying Flesh Talisman
+poe_Amulets_Talismans_Talisman1_9	FishTalisman.png	Art/2DItems/Amulets/FishTalisman.png	amulet	Amulet	1	腐首魔符	Rot Head Talisman
+poe_Amulets_Talismans_Talisman2_1	TalismanBlack6.png	Art/2DItems/Amulets/TalismanBlack6.png	amulet	Amulet	1	幻爪魔符	Hexclaw Talisman
+poe_Amulets_Talismans_Talisman2_2	TalismanBlack7.png	Art/2DItems/Amulets/TalismanBlack7.png	amulet	Amulet	1	皇骨魔符	Primal Skull Talisman
+poe_Amulets_Talismans_Talisman2_3	DireClawTalisman.png	Art/2DItems/Amulets/DireClawTalisman.png	amulet	Amulet	1	亡爪魔符	Wereclaw Talisman
+poe_Amulets_Talismans_Talisman2_4	TalismanBlack4.png	Art/2DItems/Amulets/TalismanBlack4.png	amulet	Amulet	1	斷螈魔符	Splitnewt Talisman
+poe_Amulets_Talismans_Talisman2_5	TalismanBlack3.png	Art/2DItems/Amulets/TalismanBlack3.png	amulet	Amulet	1	咒箍魔符	Clutching Talisman
+poe_Amulets_Talismans_Talisman2_6_1	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_6_2	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_6_3	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_6_4	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_6_5	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_6_6	TalismanBlack2.png	Art/2DItems/Amulets/TalismanBlack2.png	amulet	Amulet	1	雙子魔符	Avian Twins Talisman
+poe_Amulets_Talismans_Talisman2_7	TalismanBlack5.png	Art/2DItems/Amulets/TalismanBlack5.png	amulet	Amulet	1	齒鯊魔符	Fangjaw Talisman
+poe_Amulets_Talismans_Talisman2_8	NewTalisman7.png	Art/2DItems/Amulets/NewTalisman7.png	amulet	Amulet	1	尖角魔符	Horned Talisman
+poe_Amulets_Talismans_Talisman3_1	TalismanRed3.png	Art/2DItems/Amulets/TalismanRed3.png	amulet	Amulet	1	潛能魔符	Spinefuse Talisman
+poe_Amulets_Talismans_Talisman3_2	TalismanRed7.png	Art/2DItems/Amulets/TalismanRed7.png	amulet	Amulet	1	三鼠魔符	Three Rat Talisman
+poe_Amulets_Talismans_Talisman3_3	TalismanRed6.png	Art/2DItems/Amulets/TalismanRed6.png	amulet	Amulet	1	雙猴魔符	Monkey Twins Talisman
+poe_Amulets_Talismans_Talisman3_4	TalismanRed4.png	Art/2DItems/Amulets/TalismanRed4.png	amulet	Amulet	1	長牙魔符	Longtooth Talisman
+poe_Amulets_Talismans_Talisman3_5	TalismanRed1.png	Art/2DItems/Amulets/TalismanRed1.png	amulet	Amulet	1	死羽魔符	Rotfeather Talisman
+poe_Amulets_Talismans_Talisman3_6_1	MonkeyPawTalisman.png	Art/2DItems/Amulets/MonkeyPawTalisman.png	amulet	Amulet	1	猴掌魔符	Monkey Paw Talisman
+poe_Amulets_Talismans_Talisman3_6_2	MonkeyPawTalisman.png	Art/2DItems/Amulets/MonkeyPawTalisman.png	amulet	Amulet	1	猴掌魔符	Monkey Paw Talisman
+poe_Amulets_Talismans_Talisman3_6_3	MonkeyPawTalisman.png	Art/2DItems/Amulets/MonkeyPawTalisman.png	amulet	Amulet	1	猴掌魔符	Monkey Paw Talisman
+poe_Amulets_Talismans_Talisman3_7	TalismanRed8.png	Art/2DItems/Amulets/TalismanRed8.png	amulet	Amulet	1	三手魔符	Three Hands Talisman
+poe_Amulets_Talismans_Talisman4	T4Talisman.png	Art/2DItems/Amulets/T4Talisman.png	amulet	Amulet	1	狼王魔符	Greatwolf Talisman
+poe_Armours_BodyArmours_BodyDemigods1	DemigodsArmour.png	Art/2DItems/Armours/BodyArmours/DemigodsArmour.png	body	Body Armour	68	黃金戰甲	Golden Mantle
+poe_Armours_BodyArmours_BodyDex1	BodyDex1A.png	Art/2DItems/Armours/BodyArmours/BodyDex1A.png	body	Body Armour	5	破舊外套	Shabby Jerkin
+poe_Armours_BodyArmours_BodyDex10	BodyDex1C.png	Art/2DItems/Armours/BodyArmours/BodyDex1C.png	body	Body Armour	156	榮耀皮甲	Glorious Leather
+poe_Armours_BodyArmours_BodyDex11	BodyDex3C.png	Art/2DItems/Armours/BodyArmours/BodyDex3C.png	body	Body Armour	170	光耀皮甲	Coronal Leather
+poe_Armours_BodyArmours_BodyDex12	BodyDex2C.png	Art/2DItems/Armours/BodyArmours/BodyDex2C.png	body	Body Armour	184	殘殺者之裝	Cutthroat's Garb
+poe_Armours_BodyArmours_BodyDex13	BodyDex1B.png	Art/2DItems/Armours/BodyArmours/BodyDex1B.png	body	Body Armour	194	鯊皮之衣	Sharkskin Tunic
+poe_Armours_BodyArmours_BodyDex14	BodyDex3B.png	Art/2DItems/Armours/BodyArmours/BodyDex3B.png	body	Body Armour	205	命運皮甲	Destiny Leather
+poe_Armours_BodyArmours_BodyDex15	BodyDex1C.png	Art/2DItems/Armours/BodyArmours/BodyDex1C.png	body	Body Armour	216	精製皮甲	Exquisite Leather
+poe_Armours_BodyArmours_BodyDex16	BodyDex3C.png	Art/2DItems/Armours/BodyArmours/BodyDex3C.png	body	Body Armour	226	星辰皮甲	Zodiac Leather
+poe_Armours_BodyArmours_BodyDex17	BodyDex2C.png	Art/2DItems/Armours/BodyArmours/BodyDex2C.png	body	Body Armour	237	刺殺者之裝	Assassin's Garb
+poe_Armours_BodyArmours_BodyDex2	BodyDex3A.png	Art/2DItems/Armours/BodyArmours/BodyDex3A.png	body	Body Armour	29	扣環皮甲	Strapped Leather
+poe_Armours_BodyArmours_BodyDex3	BodyDex1B.png	Art/2DItems/Armours/BodyArmours/BodyDex1B.png	body	Body Armour	57	鹿皮外套	Buckskin Tunic
+poe_Armours_BodyArmours_BodyDex4	BodyDex3B.png	Art/2DItems/Armours/BodyArmours/BodyDex3B.png	body	Body Armour	85	野性皮甲	Wild Leather
+poe_Armours_BodyArmours_BodyDex5	BodyDex1C.png	Art/2DItems/Armours/BodyArmours/BodyDex1C.png	body	Body Armour	96	連身皮甲	Full Leather
+poe_Armours_BodyArmours_BodyDex6	BodyDex3C.png	Art/2DItems/Armours/BodyArmours/BodyDex3C.png	body	Body Armour	110	日光皮甲	Sun Leather
+poe_Armours_BodyArmours_BodyDex7	BodyDex2C.png	Art/2DItems/Armours/BodyArmours/BodyDex2C.png	body	Body Armour	121	竊賊之裝	Thief's Garb
+poe_Armours_BodyArmours_BodyDex8	BodyDex1B.png	Art/2DItems/Armours/BodyArmours/BodyDex1B.png	body	Body Armour	128	鰻皮之衣	Eelskin Tunic
+poe_Armours_BodyArmours_BodyDex9	BodyDex3B.png	Art/2DItems/Armours/BodyArmours/BodyDex3B.png	body	Body Armour	142	邊戍皮甲	Frontier Leather
+poe_Armours_BodyArmours_BodyDexInt1	BodyDexInt1A.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1A.png	body	Body Armour	12	薄襯衣	Padded Vest
+poe_Armours_BodyArmours_BodyDexInt10	BodyDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1C.png	body	Body Armour	166	緋紅之衣	Crimson Raiment
+poe_Armours_BodyArmours_BodyDexInt11	BodyDexInt2C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2C.png	body	Body Armour	180	漆彩束衣	Lacquered Garb
+poe_Armours_BodyArmours_BodyDexInt12	BodyDexInt4C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt4C.png	body	Body Armour	194	地穴戰甲	Crypt Armour
+poe_Armours_BodyArmours_BodyDexInt13	BodyDexInt1B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1B.png	body	Body Armour	205	哨兵之衣	Sentinel Jacket
+poe_Armours_BodyArmours_BodyDexInt14	BodyDexInt2B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2B.png	body	Body Armour	216	映彩外套	Varnished Coat
+poe_Armours_BodyArmours_BodyDexInt15	BodyDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1C.png	body	Body Armour	226	血色之衣	Blood Raiment
+poe_Armours_BodyArmours_BodyDexInt16	BodyDexInt2C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2C.png	body	Body Armour	237	狂虐者束衣	Sadist Garb
+poe_Armours_BodyArmours_BodyDexInt17	BodyDexInt4C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt4C.png	body	Body Armour	247	禁禮之甲	Carnal Armour
+poe_Armours_BodyArmours_BodyDexInt2	BodyDexInt2A.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2A.png	body	Body Armour	29	防水背心	Oiled Vest
+poe_Armours_BodyArmours_BodyDexInt3	BodyDexInt1B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1B.png	body	Body Armour	61	長袖棉襖	Padded Jacket
+poe_Armours_BodyArmours_BodyDexInt4	BodyDexInt2B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2B.png	body	Body Armour	75	防水外衣	Oiled Coat
+poe_Armours_BodyArmours_BodyDexInt5	BodyDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1C.png	body	Body Armour	96	熾紅之衣	Scarlet Raiment
+poe_Armours_BodyArmours_BodyDexInt6	BodyDexInt2C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2C.png	body	Body Armour	110	蠟封束衣	Waxed Garb
+poe_Armours_BodyArmours_BodyDexInt7	BodyDexInt4C.png	Art/2DItems/Armours/BodyArmours/BodyDexInt4C.png	body	Body Armour	121	骨製戰甲	Bone Armour
+poe_Armours_BodyArmours_BodyDexInt8	BodyDexInt1B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt1B.png	body	Body Armour	138	菱紋外衣	Quilted Jacket
+poe_Armours_BodyArmours_BodyDexInt9	BodyDexInt2B.png	Art/2DItems/Armours/BodyArmours/BodyDexInt2B.png	body	Body Armour	152	滑布外套	Sleek Coat
+poe_Armours_BodyArmours_BodyInt1	BodyInt1A.png	Art/2DItems/Armours/BodyArmours/BodyInt1A.png	body	Body Armour	8	簡易之袍	Simple Robe
+poe_Armours_BodyArmours_BodyInt10	BodyInt1C.png	Art/2DItems/Armours/BodyArmours/BodyInt1C.png	body	Body Armour	156	咒者長衣	Conjurer's Vestment
+poe_Armours_BodyArmours_BodyInt11	BodyInt2C.png	Art/2DItems/Armours/BodyArmours/BodyInt2C.png	body	Body Armour	170	蛛絲之袍	Spidersilk Robe
+poe_Armours_BodyArmours_BodyInt12	BodyStrDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDexInt1C.png	body	Body Armour	184	滅世法衣	Destroyer Regalia
+poe_Armours_BodyArmours_BodyInt13	BodyInt1B.png	Art/2DItems/Armours/BodyArmours/BodyInt1B.png	body	Body Armour	194	智者之袍	Savant's Robe
+poe_Armours_BodyArmours_BodyInt14	BodyInt2B.png	Art/2DItems/Armours/BodyArmours/BodyInt2B.png	body	Body Armour	205	操靈者背心	Necromancer Silks
+poe_Armours_BodyArmours_BodyInt15	BodyInt1C.png	Art/2DItems/Armours/BodyArmours/BodyInt1C.png	body	Body Armour	216	秘術長衣	Occultist's Vestment
+poe_Armours_BodyArmours_BodyInt16	BodyInt2C.png	Art/2DItems/Armours/BodyArmours/BodyInt2C.png	body	Body Armour	226	毒蛛絲之袍	Widowsilk Robe
+poe_Armours_BodyArmours_BodyInt17	BodyStrDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDexInt1C.png	body	Body Armour	237	瓦爾法衣	Vaal Regalia
+poe_Armours_BodyArmours_BodyInt2	BodyInt2A.png	Art/2DItems/Armours/BodyArmours/BodyInt2A.png	body	Body Armour	36	綢緞背心	Silken Vest
+poe_Armours_BodyArmours_BodyInt3	BodyInt1B.png	Art/2DItems/Armours/BodyArmours/BodyInt1B.png	body	Body Armour	61	學者之袍	Scholar's Robe
+poe_Armours_BodyArmours_BodyInt4	BodyInt2B.png	Art/2DItems/Armours/BodyArmours/BodyInt2B.png	body	Body Armour	85	絲綢之衣	Silken Garb
+poe_Armours_BodyArmours_BodyInt5	BodyInt1C.png	Art/2DItems/Armours/BodyArmours/BodyInt1C.png	body	Body Armour	96	博學長衣	Mage's Vestment
+poe_Armours_BodyArmours_BodyInt6	BodyInt2C.png	Art/2DItems/Armours/BodyArmours/BodyInt2C.png	body	Body Armour	110	絲質之袍	Silk Robe
+poe_Armours_BodyArmours_BodyInt7	BodyStrDexInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDexInt1C.png	body	Body Armour	121	秘術法衣	Cabalist Regalia
+poe_Armours_BodyArmours_BodyInt8	BodyInt1B.png	Art/2DItems/Armours/BodyArmours/BodyInt1B.png	body	Body Armour	128	賢者之袍	Sage's Robe
+poe_Armours_BodyArmours_BodyInt9	BodyInt2B.png	Art/2DItems/Armours/BodyArmours/BodyInt2B.png	body	Body Armour	142	絲絨背心	Silken Wrap
+poe_Armours_BodyArmours_BodyStr1	BodyStr1A.png	Art/2DItems/Armours/BodyArmours/BodyStr1A.png	body	Body Armour	1	鐵製背心	Plate Vest
+poe_Armours_BodyArmours_BodyStr10	BodyStr1C.png	Art/2DItems/Armours/BodyArmours/BodyStr1C.png	body	Body Armour	156	日光之鎧	Sun Plate
+poe_Armours_BodyArmours_BodyStr11	BodyStr2C.png	Art/2DItems/Armours/BodyArmours/BodyStr2C.png	body	Body Armour	170	決鬥之鎧	Colosseum Plate
+poe_Armours_BodyArmours_BodyStr12	BodyStr3C.png	Art/2DItems/Armours/BodyArmours/BodyStr3C.png	body	Body Armour	184	莊嚴之鎧	Majestic Plate
+poe_Armours_BodyArmours_BodyStr13	BodyStr1B.png	Art/2DItems/Armours/BodyArmours/BodyStr1B.png	body	Body Armour	194	金耀之鎧	Golden Plate
+poe_Armours_BodyArmours_BodyStr14	BodyStr2B.png	Art/2DItems/Armours/BodyArmours/BodyStr2B.png	body	Body Armour	205	征戰重鎧	Crusader Plate
+poe_Armours_BodyArmours_BodyStr15	BodyStr1C.png	Art/2DItems/Armours/BodyArmours/BodyStr1C.png	body	Body Armour	216	星芒戰鎧	Astral Plate
+poe_Armours_BodyArmours_BodyStr16	BodyStr2C.png	Art/2DItems/Armours/BodyArmours/BodyStr2C.png	body	Body Armour	226	角鬥重鎧	Gladiator Plate
+poe_Armours_BodyArmours_BodyStr17	BodyStr3C.png	Art/2DItems/Armours/BodyArmours/BodyStr3C.png	body	Body Armour	237	榮耀戰鎧	Glorious Plate
+poe_Armours_BodyArmours_BodyStr2	BodyStr2A.png	Art/2DItems/Armours/BodyArmours/BodyStr2A.png	body	Body Armour	19	胸甲	Chestplate
+poe_Armours_BodyArmours_BodyStr3	BodyStr1B.png	Art/2DItems/Armours/BodyArmours/BodyStr1B.png	body	Body Armour	57	銅鍛板甲	Copper Plate
+poe_Armours_BodyArmours_BodyStr4	BodyStr2B.png	Art/2DItems/Armours/BodyArmours/BodyStr2B.png	body	Body Armour	71	戰爭之鎧	War Plate
+poe_Armours_BodyArmours_BodyStr5	BodyStr1C.png	Art/2DItems/Armours/BodyArmours/BodyStr1C.png	body	Body Armour	96	連身鎧甲	Full Plate
+poe_Armours_BodyArmours_BodyStr6	BodyStr2C.png	Art/2DItems/Armours/BodyArmours/BodyStr2C.png	body	Body Armour	110	鬥者之鎧	Arena Plate
+poe_Armours_BodyArmours_BodyStr7	BodyStr3C.png	Art/2DItems/Armours/BodyArmours/BodyStr3C.png	body	Body Armour	121	領主護鎧	Lordly Plate
+poe_Armours_BodyArmours_BodyStr8	BodyStr1B.png	Art/2DItems/Armours/BodyArmours/BodyStr1B.png	body	Body Armour	128	青銅鎧甲	Bronze Plate
+poe_Armours_BodyArmours_BodyStr9	BodyStr2B.png	Art/2DItems/Armours/BodyArmours/BodyStr2B.png	body	Body Armour	142	戰鎧	Battle Plate
+poe_Armours_BodyArmours_BodyStrDex1	BodyStrDex1A.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1A.png	body	Body Armour	12	細鱗背心	Scale Vest
+poe_Armours_BodyArmours_BodyStrDex10	BodyStrDex1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1C.png	body	Body Armour	159	連身龍鱗戰甲	Full Wyrmscale
+poe_Armours_BodyArmours_BodyStrDex11	BodyStrDex2C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2C.png	body	Body Armour	173	指揮者鎖甲	Commander's Brigandine
+poe_Armours_BodyArmours_BodyStrDex12	BodyStr4A.png	Art/2DItems/Armours/BodyArmours/BodyStr4A.png	body	Body Armour	187	爭戰鱗甲	Battle Lamellar
+poe_Armours_BodyArmours_BodyStrDex13	BodyStrDex1B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1B.png	body	Body Armour	198	龍鱗護甲	Dragonscale Doublet
+poe_Armours_BodyArmours_BodyStrDex14	BodyStrDex2B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2B.png	body	Body Armour	209	荒野鎖鎧	Desert Brigandine
+poe_Armours_BodyArmours_BodyStrDex15	BodyStrDex1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1C.png	body	Body Armour	219	連身龍鱗鎧	Full Dragonscale
+poe_Armours_BodyArmours_BodyStrDex16	BodyStrDex2C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2C.png	body	Body Armour	230	將軍鎧甲	General's Brigandine
+poe_Armours_BodyArmours_BodyStrDex17	BodyStr4A.png	Art/2DItems/Armours/BodyArmours/BodyStr4A.png	body	Body Armour	240	勝利盔甲	Triumphant Lamellar
+poe_Armours_BodyArmours_BodyStrDex2	BodyStrDex2A.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2A.png	body	Body Armour	26	輕鎖甲	Light Brigandine
+poe_Armours_BodyArmours_BodyStrDex3	BodyStrDex1B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1B.png	body	Body Armour	57	合身鱗甲	Scale Doublet
+poe_Armours_BodyArmours_BodyStrDex4	BodyStrDex2B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2B.png	body	Body Armour	71	步兵鎖甲	Infantry Brigandine
+poe_Armours_BodyArmours_BodyStrDex5	BodyStrDex1C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1C.png	body	Body Armour	96	連身鱗甲	Full Scale Armour
+poe_Armours_BodyArmours_BodyStrDex6	BodyStrDex2C.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2C.png	body	Body Armour	110	戰士鎖甲	Soldier's Brigandine
+poe_Armours_BodyArmours_BodyStrDex7	BodyStr4A.png	Art/2DItems/Armours/BodyArmours/BodyStr4A.png	body	Body Armour	121	野戰薄甲	Field Lamellar
+poe_Armours_BodyArmours_BodyStrDex8	BodyStrDex1B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex1B.png	body	Body Armour	131	龍鱗戰甲	Wyrmscale Doublet
+poe_Armours_BodyArmours_BodyStrDex9	BodyStrDex2B.png	Art/2DItems/Armours/BodyArmours/BodyStrDex2B.png	body	Body Armour	145	輕騎鎖甲	Hussar Brigandine
+poe_Armours_BodyArmours_BodyStrDexInt1	SacrificialGarb.png	Art/2DItems/Armours/BodyArmours/SacrificialGarb.png	body	Body Armour	251	祭禮束衣	Sacrificial Garb
+poe_Armours_BodyArmours_BodyStrDexInt2	GraspingMail.png	Art/2DItems/Armours/BodyArmours/GraspingMail.png	body	Body Armour	244	貪婪鎧甲	Grasping Mail
+poe_Armours_BodyArmours_BodyStrInt1	BodyStrInt1A.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1A.png	body	Body Armour	12	鎖鏈背心	Chainmail Vest
+poe_Armours_BodyArmours_BodyStrInt10	BodyStrInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1C.png	body	Body Armour	163	華麗環甲	Ornate Ringmail
+poe_Armours_BodyArmours_BodyStrInt11	BodyStrInt2C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2C.png	body	Body Armour	177	鎖子長甲	Chain Hauberk
+poe_Armours_BodyArmours_BodyStrInt12	BodyStrInt3C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt3C.png	body	Body Armour	191	虔誠鏈甲	Devout Chainmail
+poe_Armours_BodyArmours_BodyStrInt13	BodyStrInt1B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1B.png	body	Body Armour	202	覆體環甲	Loricated Ringmail
+poe_Armours_BodyArmours_BodyStrInt14	BodyStrInt2B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2B.png	body	Body Armour	212	征戰鎖甲	Conquest Chainmail
+poe_Armours_BodyArmours_BodyStrInt15	BodyStrInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1C.png	body	Body Armour	223	權貴環甲	Elegant Ringmail
+poe_Armours_BodyArmours_BodyStrInt16	BodyStrInt2C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2C.png	body	Body Armour	233	聖者鏈甲	Saint's Hauberk
+poe_Armours_BodyArmours_BodyStrInt17	BodyStrInt3C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt3C.png	body	Body Armour	244	聖潔鎖甲	Saintly Chainmail
+poe_Armours_BodyArmours_BodyStrInt2	BodyStrInt2A.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2A.png	body	Body Armour	26	鏈甲外衣	Chainmail Tunic
+poe_Armours_BodyArmours_BodyStrInt3	BodyStrInt1B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1B.png	body	Body Armour	57	環甲外套	Ringmail Coat
+poe_Armours_BodyArmours_BodyStrInt4	BodyStrInt2B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2B.png	body	Body Armour	71	護體鎖甲	Chainmail Doublet
+poe_Armours_BodyArmours_BodyStrInt5	BodyStrInt1C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1C.png	body	Body Armour	96	連身環甲	Full Ringmail
+poe_Armours_BodyArmours_BodyStrInt6	BodyStrInt2C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2C.png	body	Body Armour	110	連身鎖甲	Full Chainmail
+poe_Armours_BodyArmours_BodyStrInt7	BodyStrInt3C.png	Art/2DItems/Armours/BodyArmours/BodyStrInt3C.png	body	Body Armour	121	聖語鎖甲	Holy Chainmail
+poe_Armours_BodyArmours_BodyStrInt8	BodyStrInt1B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt1B.png	body	Body Armour	135	精製環甲	Latticed Ringmail
+poe_Armours_BodyArmours_BodyStrInt9	BodyStrInt2B.png	Art/2DItems/Armours/BodyArmours/BodyStrInt2B.png	body	Body Armour	149	聖戰鎖甲	Crusader Chainmail
+poe_Armours_Boots_BootsAtlas1	TwoTonedBoots.png	Art/2DItems/Armours/Boots/TwoTonedBoots.png	boots	Boots	244	異色鞋	Two-Toned Boots
+poe_Armours_Boots_BootsAtlas2	TwoTonedBoots2B.png	Art/2DItems/Armours/Boots/TwoTonedBoots2B.png	boots	Boots	244	異色鞋	Two-Toned Boots
+poe_Armours_Boots_BootsAtlas3	TwoTonedBoots3B.png	Art/2DItems/Armours/Boots/TwoTonedBoots3B.png	boots	Boots	244	異色鞋	Two-Toned Boots
+poe_Armours_Boots_BootsAtlas4	HalfTonedBoots.png	Art/2DItems/Armours/Boots/HalfTonedBoots.png	boots	Boots	244	逃難短靴	Fugitive Boots
+poe_Armours_Boots_BootsDemigods1	DemigodsStride.png	Art/2DItems/Armours/Boots/DemigodsStride.png	boots	Boots	40	黃金纏鞋	Golden Caligae
+poe_Armours_Boots_BootsDescent1	BootsInt1.png	Art/2DItems/Armours/Boots/BootsInt1.png	boots	Boots	1	飛羽便鞋	Avian Slippers
+poe_Armours_Boots_BootsDex1	BootsDex1.png	Art/2DItems/Armours/Boots/BootsDex1.png	boots	Boots	8	生皮短靴	Rawhide Boots
+poe_Armours_Boots_BootsDex2	BootsDex2.png	Art/2DItems/Armours/Boots/BootsDex2.png	boots	Boots	40	羊皮短靴	Goathide Boots
+poe_Armours_Boots_BootsDex3	BootsDex3.png	Art/2DItems/Armours/Boots/BootsDex3.png	boots	Boots	75	鹿皮短靴	Deerskin Boots
+poe_Armours_Boots_BootsDex4	BootsDex4.png	Art/2DItems/Armours/Boots/BootsDex4.png	boots	Boots	117	砂影短靴	Nubuck Boots
+poe_Armours_Boots_BootsDex5	BootsDex2.png	Art/2DItems/Armours/Boots/BootsDex2.png	boots	Boots	135	鰻皮短靴	Eelskin Boots
+poe_Armours_Boots_BootsDex6	BootsDex3.png	Art/2DItems/Armours/Boots/BootsDex3.png	boots	Boots	152	鯊皮短靴	Sharkskin Boots
+poe_Armours_Boots_BootsDex7	BootsDex4.png	Art/2DItems/Armours/Boots/BootsDex4.png	boots	Boots	191	粗革短靴	Shagreen Boots
+poe_Armours_Boots_BootsDex8	BootsDex3.png	Art/2DItems/Armours/Boots/BootsDex3.png	boots	Boots	216	匿蹤短靴	Stealth Boots
+poe_Armours_Boots_BootsDex9	BootsDex4.png	Art/2DItems/Armours/Boots/BootsDex4.png	boots	Boots	240	迷蹤短靴	Slink Boots
+poe_Armours_Boots_BootsDexInt1	BootsDexInt1.png	Art/2DItems/Armours/Boots/BootsDexInt1.png	boots	Boots	19	裹趾涼鞋	Wrapped Boots
+poe_Armours_Boots_BootsDexInt2	BootsDexInt2.png	Art/2DItems/Armours/Boots/BootsDexInt2.png	boots	Boots	54	扣環短靴	Strapped Boots
+poe_Armours_Boots_BootsDexInt3	BootsDexInt3.png	Art/2DItems/Armours/Boots/BootsDexInt3.png	boots	Boots	92	環帶長靴	Clasped Boots
+poe_Armours_Boots_BootsDexInt4	BootsDexInt4.png	Art/2DItems/Armours/Boots/BootsDexInt4.png	boots	Boots	117	縛足長靴	Shackled Boots
+poe_Armours_Boots_BootsDexInt5	BootsDexInt2.png	Art/2DItems/Armours/Boots/BootsDexInt2.png	boots	Boots	142	獵人之靴	Trapper Boots
+poe_Armours_Boots_BootsDexInt6	BootsDexInt3.png	Art/2DItems/Armours/Boots/BootsDexInt3.png	boots	Boots	163	伏擊之靴	Ambush Boots
+poe_Armours_Boots_BootsDexInt7	BootsDexInt4.png	Art/2DItems/Armours/Boots/BootsDexInt4.png	boots	Boots	191	禁禮之靴	Carnal Boots
+poe_Armours_Boots_BootsDexInt8	BootsDexInt3.png	Art/2DItems/Armours/Boots/BootsDexInt3.png	boots	Boots	219	刺殺者之靴	Assassin's Boots
+poe_Armours_Boots_BootsDexInt9	BootsDexInt4.png	Art/2DItems/Armours/Boots/BootsDexInt4.png	boots	Boots	240	暗殺者長靴	Murder Boots
+poe_Armours_Boots_BootsDexRitual1	RitualDexBoots.png	Art/2DItems/Armours/Boots/RitualDexBoots.png	boots	Boots	68	雲語短靴	Cloudwhisper Boots
+poe_Armours_Boots_BootsDexRitual2	RitualDexBoots.png	Art/2DItems/Armours/Boots/RitualDexBoots.png	boots	Boots	173	風帳短靴	Windbreak Boots
+poe_Armours_Boots_BootsDexRitual3	RitualDexBoots.png	Art/2DItems/Armours/Boots/RitualDexBoots.png	boots	Boots	279	風暴者短靴	Stormrider Boots
+poe_Armours_Boots_BootsExpedition1	SpiritBootsBaseType.png	Art/2DItems/Armours/Boots/SpiritBootsBaseType.png	boots	Boots	82	魔符脛甲	Runic Greaves
+poe_Armours_Boots_BootsExpedition2	SpiritBootsBaseType.png	Art/2DItems/Armours/Boots/SpiritBootsBaseType.png	boots	Boots	166	魔符長靴	Runic Sollerets
+poe_Armours_Boots_BootsExpedition3	SpiritBootsBaseType.png	Art/2DItems/Armours/Boots/SpiritBootsBaseType.png	boots	Boots	240	魔符短靴	Runic Sabatons
+poe_Armours_Boots_BootsInt1	BootsInt1.png	Art/2DItems/Armours/Boots/BootsInt1.png	boots	Boots	8	羊毛之鞋	Wool Shoes
+poe_Armours_Boots_BootsInt2	BootsInt2.png	Art/2DItems/Armours/Boots/BootsInt2.png	boots	Boots	29	絲絨便鞋	Velvet Slippers
+poe_Armours_Boots_BootsInt3	BootsInt3.png	Art/2DItems/Armours/Boots/BootsInt3.png	boots	Boots	75	絲綢便鞋	Silk Slippers
+poe_Armours_Boots_BootsInt4	BootsInt4.png	Art/2DItems/Armours/Boots/BootsInt4.png	boots	Boots	110	學者長靴	Scholar Boots
+poe_Armours_Boots_BootsInt5	BootsInt2.png	Art/2DItems/Armours/Boots/BootsInt2.png	boots	Boots	131	緞布便鞋	Satin Slippers
+poe_Armours_Boots_BootsInt6	BootsInt3.png	Art/2DItems/Armours/Boots/BootsInt3.png	boots	Boots	152	繡布便鞋	Samite Slippers
+poe_Armours_Boots_BootsInt7	BootsInt4.png	Art/2DItems/Armours/Boots/BootsInt4.png	boots	Boots	184	咒者長靴	Conjurer Boots
+poe_Armours_Boots_BootsInt8	BootsInt3.png	Art/2DItems/Armours/Boots/BootsInt3.png	boots	Boots	212	秘術便鞋	Arcanist Slippers
+poe_Armours_Boots_BootsInt9	BootsInt4.png	Art/2DItems/Armours/Boots/BootsInt4.png	boots	Boots	233	術士長靴	Sorcerer Boots
+poe_Armours_Boots_BootsIntRitual1	RitualIntBoots.png	Art/2DItems/Armours/Boots/RitualIntBoots.png	boots	Boots	68	暮色之行便鞋	Duskwalk Slippers
+poe_Armours_Boots_BootsIntRitual2	RitualIntBoots.png	Art/2DItems/Armours/Boots/RitualIntBoots.png	boots	Boots	173	黑夜之風便鞋	Nightwind Slippers
+poe_Armours_Boots_BootsIntRitual3	RitualIntBoots.png	Art/2DItems/Armours/Boots/RitualIntBoots.png	boots	Boots	279	幻夢之尋便鞋	Dreamquest Slippers
+poe_Armours_Boots_BootsStr1	BootsStr1.png	Art/2DItems/Armours/Boots/BootsStr1.png	boots	Boots	1	鐵鍛脛甲	Iron Greaves
+poe_Armours_Boots_BootsStr2	BootsStr2.png	Art/2DItems/Armours/Boots/BootsStr2.png	boots	Boots	29	冷鋼脛甲	Steel Greaves
+poe_Armours_Boots_BootsStr3	BootsStr3.png	Art/2DItems/Armours/Boots/BootsStr3.png	boots	Boots	78	堅鐵脛甲	Plated Greaves
+poe_Armours_Boots_BootsStr4	BootsStr4.png	Art/2DItems/Armours/Boots/BootsStr4.png	boots	Boots	114	強化脛甲	Reinforced Greaves
+poe_Armours_Boots_BootsStr5	BootsStr2.png	Art/2DItems/Armours/Boots/BootsStr2.png	boots	Boots	128	古鋼脛甲	Antique Greaves
+poe_Armours_Boots_BootsStr6	BootsStr3.png	Art/2DItems/Armours/Boots/BootsStr3.png	boots	Boots	159	遠古脛甲	Ancient Greaves
+poe_Armours_Boots_BootsStr7	BootsStr4.png	Art/2DItems/Armours/Boots/BootsStr4.png	boots	Boots	187	巨靈脛甲	Goliath Greaves
+poe_Armours_Boots_BootsStr8	BootsStr3.png	Art/2DItems/Armours/Boots/BootsStr3.png	boots	Boots	216	瓦爾脛甲	Vaal Greaves
+poe_Armours_Boots_BootsStr9	BootsStr4.png	Art/2DItems/Armours/Boots/BootsStr4.png	boots	Boots	237	巨人脛甲	Titan Greaves
+poe_Armours_Boots_BootsStrDex1	BootsStrDex1.png	Art/2DItems/Armours/Boots/BootsStrDex1.png	boots	Boots	19	粗鱗皮靴	Leatherscale Boots
+poe_Armours_Boots_BootsStrDex2	BootsStrDex2.png	Art/2DItems/Armours/Boots/BootsStrDex2.png	boots	Boots	61	鐵影長靴	Ironscale Boots
+poe_Armours_Boots_BootsStrDex3	BootsStrDex3.png	Art/2DItems/Armours/Boots/BootsStrDex3.png	boots	Boots	103	銅影長靴	Bronzescale Boots
+poe_Armours_Boots_BootsStrDex4	BootsStrDex1.png	Art/2DItems/Armours/Boots/BootsStrDex1.png	boots	Boots	124	鋼影長靴	Steelscale Boots
+poe_Armours_Boots_BootsStrDex5	BootsStrDex2.png	Art/2DItems/Armours/Boots/BootsStrDex2.png	boots	Boots	145	蛇鱗長靴	Serpentscale Boots
+poe_Armours_Boots_BootsStrDex6	BootsStrDex3.png	Art/2DItems/Armours/Boots/BootsStrDex3.png	boots	Boots	177	地蝮鱗長靴	Wyrmscale Boots
+poe_Armours_Boots_BootsStrDex7	BootsStrDex2.png	Art/2DItems/Armours/Boots/BootsStrDex2.png	boots	Boots	205	火蝮鱗長靴	Hydrascale Boots
+poe_Armours_Boots_BootsStrDex8	BootsStrDex3.png	Art/2DItems/Armours/Boots/BootsStrDex3.png	boots	Boots	226	龍鱗長靴	Dragonscale Boots
+poe_Armours_Boots_BootsStrInt1	BootsStrInt1.png	Art/2DItems/Armours/Boots/BootsStrInt1.png	boots	Boots	15	鏈甲長靴	Chain Boots
+poe_Armours_Boots_BootsStrInt2	BootsStrInt2.png	Art/2DItems/Armours/Boots/BootsStrInt2.png	boots	Boots	43	環甲筒靴	Ringmail Boots
+poe_Armours_Boots_BootsStrInt3	BootsStrInt3.png	Art/2DItems/Armours/Boots/BootsStrInt3.png	boots	Boots	96	網眼長靴	Mesh Boots
+poe_Armours_Boots_BootsStrInt4	BootsStrInt1.png	Art/2DItems/Armours/Boots/BootsStrInt1.png	boots	Boots	124	儀式短靴	Riveted Boots
+poe_Armours_Boots_BootsStrInt5	BootsStrInt2.png	Art/2DItems/Armours/Boots/BootsStrInt2.png	boots	Boots	138	狂熱者長靴	Zealot Boots
+poe_Armours_Boots_BootsStrInt6	BootsStrInt3.png	Art/2DItems/Armours/Boots/BootsStrInt3.png	boots	Boots	170	戰士之靴	Soldier Boots
+poe_Armours_Boots_BootsStrInt7	BootsStrInt2.png	Art/2DItems/Armours/Boots/BootsStrInt2.png	boots	Boots	202	軍團長靴	Legion Boots
+poe_Armours_Boots_BootsStrInt8	BootsStrInt3.png	Art/2DItems/Armours/Boots/BootsStrInt3.png	boots	Boots	223	聖戰長靴	Crusader Boots
+poe_Armours_Boots_BootsStrRitual1	RitualStrBoots.png	Art/2DItems/Armours/Boots/RitualStrBoots.png	boots	Boots	68	金屬鐵靴	Basemetal Treads
+poe_Armours_Boots_BootsStrRitual2	RitualStrBoots.png	Art/2DItems/Armours/Boots/RitualStrBoots.png	boots	Boots	173	暗鋼鐵靴	Darksteel Treads
+poe_Armours_Boots_BootsStrRitual3	RitualStrBoots.png	Art/2DItems/Armours/Boots/RitualStrBoots.png	boots	Boots	279	硫磺鐵靴	Brimstone Treads
+poe_Armours_Gloves_GlovesAtlasDex	GripGlovesBaseType.png	Art/2DItems/Armours/Gloves/GripGlovesBaseType.png	gloves	Gloves	244	擒拿手套	Gripped Gloves
+poe_Armours_Gloves_GlovesAtlasInt	FingerlessSilkGloves.png	Art/2DItems/Armours/Gloves/FingerlessSilkGloves.png	gloves	Gloves	244	魔指手套	Fingerless Silk Gloves
+poe_Armours_Gloves_GlovesAtlasStr	SpikedGloves.png	Art/2DItems/Armours/Gloves/SpikedGloves.png	gloves	Gloves	244	釦釘手套	Spiked Gloves
+poe_Armours_Gloves_GlovesAtlasStrInt	ChemistGloves.png	Art/2DItems/Armours/Gloves/ChemistGloves.png	gloves	Gloves	244	靈藥手套	Apothecary's Gloves
+poe_Armours_Gloves_GlovesDemigods1	DemigodsTouch.png	Art/2DItems/Armours/Gloves/DemigodsTouch.png	gloves	Gloves	40	黃金臂甲	Golden Bracers
+poe_Armours_Gloves_GlovesDex1	GlovesDex1.png	Art/2DItems/Armours/Gloves/GlovesDex1.png	gloves	Gloves	8	生皮手套	Rawhide Gloves
+poe_Armours_Gloves_GlovesDex2	GlovesDex2.png	Art/2DItems/Armours/Gloves/GlovesDex2.png	gloves	Gloves	29	羊皮手套	Goathide Gloves
+poe_Armours_Gloves_GlovesDex3	GlovesDex3.png	Art/2DItems/Armours/Gloves/GlovesDex3.png	gloves	Gloves	71	鹿皮手套	Deerskin Gloves
+poe_Armours_Gloves_GlovesDex4	GlovesDex4.png	Art/2DItems/Armours/Gloves/GlovesDex4.png	gloves	Gloves	114	砂影手套	Nubuck Gloves
+poe_Armours_Gloves_GlovesDex5	GlovesDex2.png	Art/2DItems/Armours/Gloves/GlovesDex2.png	gloves	Gloves	131	鰻皮手套	Eelskin Gloves
+poe_Armours_Gloves_GlovesDex6	GlovesDex3.png	Art/2DItems/Armours/Gloves/GlovesDex3.png	gloves	Gloves	156	鯊皮手套	Sharkskin Gloves
+poe_Armours_Gloves_GlovesDex7	GlovesDex4.png	Art/2DItems/Armours/Gloves/GlovesDex4.png	gloves	Gloves	187	粗革手套	Shagreen Gloves
+poe_Armours_Gloves_GlovesDex8	GlovesDex3.png	Art/2DItems/Armours/Gloves/GlovesDex3.png	gloves	Gloves	216	匿蹤手套	Stealth Gloves
+poe_Armours_Gloves_GlovesDex9	GlovesDex4.png	Art/2DItems/Armours/Gloves/GlovesDex4.png	gloves	Gloves	244	迷蹤手套	Slink Gloves
+poe_Armours_Gloves_GlovesDexInt1	GlovesDexInt1.png	Art/2DItems/Armours/Gloves/GlovesDexInt1.png	gloves	Gloves	15	裹趾護手	Wrapped Mitts
+poe_Armours_Gloves_GlovesDexInt2	GlovesDexInt2.png	Art/2DItems/Armours/Gloves/GlovesDexInt2.png	gloves	Gloves	54	扣環護手	Strapped Mitts
+poe_Armours_Gloves_GlovesDexInt3	GlovesDexInt3.png	Art/2DItems/Armours/Gloves/GlovesDexInt3.png	gloves	Gloves	107	環帶護手	Clasped Mitts
+poe_Armours_Gloves_GlovesDexInt4	GlovesDexInt1.png	Art/2DItems/Armours/Gloves/GlovesDexInt1.png	gloves	Gloves	124	獵人護手	Trapper Mitts
+poe_Armours_Gloves_GlovesDexInt5	GlovesDexInt2.png	Art/2DItems/Armours/Gloves/GlovesDexInt2.png	gloves	Gloves	156	伏擊護手	Ambush Mitts
+poe_Armours_Gloves_GlovesDexInt6	GlovesDexInt3.png	Art/2DItems/Armours/Gloves/GlovesDexInt3.png	gloves	Gloves	173	禁禮護手	Carnal Mitts
+poe_Armours_Gloves_GlovesDexInt7	GlovesDexInt2.png	Art/2DItems/Armours/Gloves/GlovesDexInt2.png	gloves	Gloves	202	刺殺者護手	Assassin's Mitts
+poe_Armours_Gloves_GlovesDexInt8	GlovesDexInt3.png	Art/2DItems/Armours/Gloves/GlovesDexInt3.png	gloves	Gloves	233	暗殺者護手	Murder Mitts
+poe_Armours_Gloves_GlovesDexRitual1	RitualDexGloves.png	Art/2DItems/Armours/Gloves/RitualDexGloves.png	gloves	Gloves	33	修補匠手套	Gauche Gloves
+poe_Armours_Gloves_GlovesDexRitual2	RitualDexGloves.png	Art/2DItems/Armours/Gloves/RitualDexGloves.png	gloves	Gloves	138	學徒手套	Southswing Gloves
+poe_Armours_Gloves_GlovesDexRitual3	RitualDexGloves.png	Art/2DItems/Armours/Gloves/RitualDexGloves.png	gloves	Gloves	244	設陷者手套	Sinistral Gloves
+poe_Armours_Gloves_GlovesExpedition1	SpiritGlovesBaseType.png	Art/2DItems/Armours/Gloves/SpiritGlovesBaseType.png	gloves	Gloves	82	魔符手套	Runic Gloves
+poe_Armours_Gloves_GlovesExpedition2	SpiritGlovesBaseType.png	Art/2DItems/Armours/Gloves/SpiritGlovesBaseType.png	gloves	Gloves	166	魔符手環	Runic Gages
+poe_Armours_Gloves_GlovesExpedition3	SpiritGlovesBaseType.png	Art/2DItems/Armours/Gloves/SpiritGlovesBaseType.png	gloves	Gloves	240	魔符護手	Runic Gauntlets
+poe_Armours_Gloves_GlovesInt1	GlovesInt1.png	Art/2DItems/Armours/Gloves/GlovesInt1.png	gloves	Gloves	8	羊毛手套	Wool Gloves
+poe_Armours_Gloves_GlovesInt2	GlovesInt2.png	Art/2DItems/Armours/Gloves/GlovesInt2.png	gloves	Gloves	40	絲絨手套	Velvet Gloves
+poe_Armours_Gloves_GlovesInt3	GlovesInt3.png	Art/2DItems/Armours/Gloves/GlovesInt3.png	gloves	Gloves	85	絲綢手套	Silk Gloves
+poe_Armours_Gloves_GlovesInt4	GlovesInt4.png	Art/2DItems/Armours/Gloves/GlovesInt4.png	gloves	Gloves	124	刺繡手套	Embroidered Gloves
+poe_Armours_Gloves_GlovesInt5	GlovesInt2.png	Art/2DItems/Armours/Gloves/GlovesInt2.png	gloves	Gloves	142	緞布手套	Satin Gloves
+poe_Armours_Gloves_GlovesInt6	GlovesInt3.png	Art/2DItems/Armours/Gloves/GlovesInt3.png	gloves	Gloves	163	繡布手套	Samite Gloves
+poe_Armours_Gloves_GlovesInt7	GlovesInt4.png	Art/2DItems/Armours/Gloves/GlovesInt4.png	gloves	Gloves	191	咒者手套	Conjurer Gloves
+poe_Armours_Gloves_GlovesInt8	GlovesInt3.png	Art/2DItems/Armours/Gloves/GlovesInt3.png	gloves	Gloves	209	秘術手套	Arcanist Gloves
+poe_Armours_Gloves_GlovesInt9	GlovesInt4.png	Art/2DItems/Armours/Gloves/GlovesInt4.png	gloves	Gloves	240	術者手套	Sorcerer Gloves
+poe_Armours_Gloves_GlovesIntRitual1	RitualIntGloves.png	Art/2DItems/Armours/Gloves/RitualIntGloves.png	gloves	Gloves	33	荒野手套	Leyline Gloves
+poe_Armours_Gloves_GlovesIntRitual2	RitualIntGloves.png	Art/2DItems/Armours/Gloves/RitualIntGloves.png	gloves	Gloves	138	乙太之風手套	Aetherwind Gloves
+poe_Armours_Gloves_GlovesIntRitual3	RitualIntGloves.png	Art/2DItems/Armours/Gloves/RitualIntGloves.png	gloves	Gloves	244	核心手套	Nexus Gloves
+poe_Armours_Gloves_GlovesStr1	GlovesStr1.png	Art/2DItems/Armours/Gloves/GlovesStr1.png	gloves	Gloves	1	鐵鍛護手	Iron Gauntlets
+poe_Armours_Gloves_GlovesStr2	GlovesStr2.png	Art/2DItems/Armours/Gloves/GlovesStr2.png	gloves	Gloves	36	堅鐵護手	Plated Gauntlets
+poe_Armours_Gloves_GlovesStr3	GlovesStr3.png	Art/2DItems/Armours/Gloves/GlovesStr3.png	gloves	Gloves	78	青銅護手	Bronze Gauntlets
+poe_Armours_Gloves_GlovesStr4	GlovesStr4.png	Art/2DItems/Armours/Gloves/GlovesStr4.png	gloves	Gloves	121	冷鋼護手	Steel Gauntlets
+poe_Armours_Gloves_GlovesStr5	GlovesStr2.png	Art/2DItems/Armours/Gloves/GlovesStr2.png	gloves	Gloves	135	古鋼護手	Antique Gauntlets
+poe_Armours_Gloves_GlovesStr6	GlovesStr3.png	Art/2DItems/Armours/Gloves/GlovesStr3.png	gloves	Gloves	163	遠古護手	Ancient Gauntlets
+poe_Armours_Gloves_GlovesStr7	GlovesStr4.png	Art/2DItems/Armours/Gloves/GlovesStr4.png	gloves	Gloves	184	巨靈護手	Goliath Gauntlets
+poe_Armours_Gloves_GlovesStr8	GlovesStr3.png	Art/2DItems/Armours/Gloves/GlovesStr3.png	gloves	Gloves	219	瓦爾護手	Vaal Gauntlets
+poe_Armours_Gloves_GlovesStr9	GlovesStr4.png	Art/2DItems/Armours/Gloves/GlovesStr4.png	gloves	Gloves	240	巨人護手	Titan Gauntlets
+poe_Armours_Gloves_GlovesStrDex1	GlovesStrDex1.png	Art/2DItems/Armours/Gloves/GlovesStrDex1.png	gloves	Gloves	12	魚鱗手套	Fishscale Gauntlets
+poe_Armours_Gloves_GlovesStrDex2	GlovesStrDex2.png	Art/2DItems/Armours/Gloves/GlovesStrDex2.png	gloves	Gloves	50	鐵影手套	Ironscale Gauntlets
+poe_Armours_Gloves_GlovesStrDex3	GlovesStrDex3.png	Art/2DItems/Armours/Gloves/GlovesStrDex3.png	gloves	Gloves	92	銅影手套	Bronzescale Gauntlets
+poe_Armours_Gloves_GlovesStrDex4	GlovesStrDex1.png	Art/2DItems/Armours/Gloves/GlovesStrDex1.png	gloves	Gloves	124	鋼影護手	Steelscale Gauntlets
+poe_Armours_Gloves_GlovesStrDex5	GlovesStrDex2.png	Art/2DItems/Armours/Gloves/GlovesStrDex2.png	gloves	Gloves	149	蛇鱗手套	Serpentscale Gauntlets
+poe_Armours_Gloves_GlovesStrDex6	GlovesStrDex3.png	Art/2DItems/Armours/Gloves/GlovesStrDex3.png	gloves	Gloves	170	蝮鱗手套	Wyrmscale Gauntlets
+poe_Armours_Gloves_GlovesStrDex7	GlovesStrDex2.png	Art/2DItems/Armours/Gloves/GlovesStrDex2.png	gloves	Gloves	205	火蝮鱗手套	Hydrascale Gauntlets
+poe_Armours_Gloves_GlovesStrDex8	GlovesStrDex3.png	Art/2DItems/Armours/Gloves/GlovesStrDex3.png	gloves	Gloves	233	龍鱗手套	Dragonscale Gauntlets
+poe_Armours_Gloves_GlovesStrInt1	GlovesStrInt1.png	Art/2DItems/Armours/Gloves/GlovesStrInt1.png	gloves	Gloves	22	鏈甲手套	Chain Gloves
+poe_Armours_Gloves_GlovesStrInt2	GlovesStrInt2.png	Art/2DItems/Armours/Gloves/GlovesStrInt2.png	gloves	Gloves	64	環甲手套	Ringmail Gloves
+poe_Armours_Gloves_GlovesStrInt3	GlovesStrInt3.png	Art/2DItems/Armours/Gloves/GlovesStrInt3.png	gloves	Gloves	110	網眼手套	Mesh Gloves
+poe_Armours_Gloves_GlovesStrInt4	GlovesStrInt1.png	Art/2DItems/Armours/Gloves/GlovesStrInt1.png	gloves	Gloves	128	儀式手套	Riveted Gloves
+poe_Armours_Gloves_GlovesStrInt5	GlovesStrInt2.png	Art/2DItems/Armours/Gloves/GlovesStrInt2.png	gloves	Gloves	149	狂熱者手套	Zealot Gloves
+poe_Armours_Gloves_GlovesStrInt6	GlovesStrInt3.png	Art/2DItems/Armours/Gloves/GlovesStrInt3.png	gloves	Gloves	177	戰士手套	Soldier Gloves
+poe_Armours_Gloves_GlovesStrInt7	GlovesStrInt2.png	Art/2DItems/Armours/Gloves/GlovesStrInt2.png	gloves	Gloves	198	軍團手套	Legion Gloves
+poe_Armours_Gloves_GlovesStrInt8	GlovesStrInt3.png	Art/2DItems/Armours/Gloves/GlovesStrInt3.png	gloves	Gloves	230	聖戰手套	Crusader Gloves
+poe_Armours_Gloves_GlovesStrRitual1	RitualStrGloves.png	Art/2DItems/Armours/Gloves/RitualStrGloves.png	gloves	Gloves	33	庇護手套	Taxing Gauntlets
+poe_Armours_Gloves_GlovesStrRitual2	RitualStrGloves.png	Art/2DItems/Armours/Gloves/RitualStrGloves.png	gloves	Gloves	138	保衛手套	Gruelling Gauntlets
+poe_Armours_Gloves_GlovesStrRitual3	RitualStrGloves.png	Art/2DItems/Armours/Gloves/RitualStrGloves.png	gloves	Gloves	244	阻擾手套	Debilitation Gauntlets
+poe_Armours_Helmets_HelmetAtlas1	BoneHelm.png	Art/2DItems/Armours/Helmets/BoneHelm.png	helmet	Helmet	254	喚骨頭盔	Bone Helmet
+poe_Armours_Helmets_HelmetDemigods1	DemigodsImmortality.png	Art/2DItems/Armours/Helmets/DemigodsImmortality.png	helmet	Helmet	40	黃金頭飾	Golden Visage
+poe_Armours_Helmets_HelmetDex1	HelmetDex1.png	Art/2DItems/Armours/Helmets/HelmetDex1.png	helmet	Helmet	8	皮帽	Leather Cap
+poe_Armours_Helmets_HelmetDex10	HelmetDex10.png	Art/2DItems/Armours/Helmets/HelmetDex10.png	helmet	Helmet	244	獅首皮盔	Lion Pelt
+poe_Armours_Helmets_HelmetDex2	HelmetDex2.png	Art/2DItems/Armours/Helmets/HelmetDex2.png	helmet	Helmet	33	三角帽	Tricorne
+poe_Armours_Helmets_HelmetDex3	HelmetDex3.png	Art/2DItems/Armours/Helmets/HelmetDex3.png	helmet	Helmet	68	革兜	Leather Hood
+poe_Armours_Helmets_HelmetDex4	HelmetDex4.png	Art/2DItems/Armours/Helmets/HelmetDex4.png	helmet	Helmet	103	狼首皮盔	Wolf Pelt
+poe_Armours_Helmets_HelmetDex5	HelmetDex5.png	Art/2DItems/Armours/Helmets/HelmetDex5.png	helmet	Helmet	142	獵者之兜	Hunter Hood
+poe_Armours_Helmets_HelmetDex6	HelmetDex6.png	Art/2DItems/Armours/Helmets/HelmetDex6.png	helmet	Helmet	163	貴族三角帽	Noble Tricorne
+poe_Armours_Helmets_HelmetDex7	HelmetDex7.png	Art/2DItems/Armours/Helmets/HelmetDex7.png	helmet	Helmet	191	熊首皮盔	Ursine Pelt
+poe_Armours_Helmets_HelmetDex8	HelmetDex8.png	Art/2DItems/Armours/Helmets/HelmetDex8.png	helmet	Helmet	209	綢緞之兜	Silken Hood
+poe_Armours_Helmets_HelmetDex9	HelmetDex9.png	Art/2DItems/Armours/Helmets/HelmetDex9.png	helmet	Helmet	223	罪者之帽	Sinner Tricorne
+poe_Armours_Helmets_HelmetDexInt1	HelmetDexInt1.png	Art/2DItems/Armours/Helmets/HelmetDexInt1.png	helmet	Helmet	12	幽懼之面	Scare Mask
+poe_Armours_Helmets_HelmetDexInt10	HelmetDexInt10.png	Art/2DItems/Armours/Helmets/HelmetDexInt10.png	helmet	Helmet	216	瓦爾之面	Vaal Mask
+poe_Armours_Helmets_HelmetDexInt11	HelmetDexInt11.png	Art/2DItems/Armours/Helmets/HelmetDexInt11.png	helmet	Helmet	233	弒神之面	Deicide Mask
+poe_Armours_Helmets_HelmetDexInt2	HelmetDexInt2.png	Art/2DItems/Armours/Helmets/HelmetDexInt2.png	helmet	Helmet	33	疫災之面	Plague Mask
+poe_Armours_Helmets_HelmetDexInt3	HelmetDexInt3.png	Art/2DItems/Armours/Helmets/HelmetDexInt3.png	helmet	Helmet	57	鐵鍛之面	Iron Mask
+poe_Armours_Helmets_HelmetDexInt4	HelmetDexInt4.png	Art/2DItems/Armours/Helmets/HelmetDexInt4.png	helmet	Helmet	96	節慶之面	Festival Mask
+poe_Armours_Helmets_HelmetDexInt5	HelmetDexInt5.png	Art/2DItems/Armours/Helmets/HelmetDexInt5.png	helmet	Helmet	121	黃金之面	Golden Mask
+poe_Armours_Helmets_HelmetDexInt6	HelmetDexInt6.png	Art/2DItems/Armours/Helmets/HelmetDexInt6.png	helmet	Helmet	131	禍鴉之面	Raven Mask
+poe_Armours_Helmets_HelmetDexInt7	HelmetDexInt7.png	Art/2DItems/Armours/Helmets/HelmetDexInt7.png	helmet	Helmet	156	無情之面	Callous Mask
+poe_Armours_Helmets_HelmetDexInt8	HelmetDexInt8.png	Art/2DItems/Armours/Helmets/HelmetDexInt8.png	helmet	Helmet	180	弒君之面	Regicide Mask
+poe_Armours_Helmets_HelmetDexInt9	HelmetDexInt9.png	Art/2DItems/Armours/Helmets/HelmetDexInt9.png	helmet	Helmet	198	鷹喙之面	Harlequin Mask
+poe_Armours_Helmets_HelmetDexIntRitual1	HelmetDexIntR.png	Art/2DItems/Armours/Helmets/HelmetDexIntR.png	helmet	Helmet	50	颶風之冠	Gale Crown
+poe_Armours_Helmets_HelmetDexIntRitual2	HelmetDexIntR.png	Art/2DItems/Armours/Helmets/HelmetDexIntR.png	helmet	Helmet	156	凜冬之冠	Winter Crown
+poe_Armours_Helmets_HelmetDexIntRitual3	HelmetDexIntR.png	Art/2DItems/Armours/Helmets/HelmetDexIntR.png	helmet	Helmet	261	暴雪之冠	Blizzard Crown
+poe_Armours_Helmets_HelmetExpedition1	SpiritHelmetBaseType.png	Art/2DItems/Armours/Helmets/SpiritHelmetBaseType.png	helmet	Helmet	85	魔符頭飾	Runic Helm
+poe_Armours_Helmets_HelmetExpedition2	SpiritHelmetBaseType.png	Art/2DItems/Armours/Helmets/SpiritHelmetBaseType.png	helmet	Helmet	170	魔符之冠	Runic Crest
+poe_Armours_Helmets_HelmetExpedition3	SpiritHelmetBaseType.png	Art/2DItems/Armours/Helmets/SpiritHelmetBaseType.png	helmet	Helmet	237	魔符皇冠	Runic Crown
+poe_Armours_Helmets_HelmetInt1	HelmetInt1.png	Art/2DItems/Armours/Helmets/HelmetInt1.png	helmet	Helmet	8	藤蔓之冠	Vine Circlet
+poe_Armours_Helmets_HelmetInt10	HelmetInt10.png	Art/2DItems/Armours/Helmets/HelmetInt10.png	helmet	Helmet	226	靈能之籠	Mind Cage
+poe_Armours_Helmets_HelmetInt11	HelmetInt11.png	Art/2DItems/Armours/Helmets/HelmetInt11.png	helmet	Helmet	240	靈主之環	Hubris Circlet
+poe_Armours_Helmets_HelmetInt2	HelmetInt2.png	Art/2DItems/Armours/Helmets/HelmetInt2.png	helmet	Helmet	26	鐵鍛之冠	Iron Circlet
+poe_Armours_Helmets_HelmetInt3	HelmetInt3.png	Art/2DItems/Armours/Helmets/HelmetInt3.png	helmet	Helmet	57	刑罰頭籠	Torture Cage
+poe_Armours_Helmets_HelmetInt4	HelmetInt4.png	Art/2DItems/Armours/Helmets/HelmetInt4.png	helmet	Helmet	89	祭儀之冠	Tribal Circlet
+poe_Armours_Helmets_HelmetInt5	HelmetInt5.png	Art/2DItems/Armours/Helmets/HelmetInt5.png	helmet	Helmet	117	靈骨之冠	Bone Circlet
+poe_Armours_Helmets_HelmetInt6	HelmetInt6.png	Art/2DItems/Armours/Helmets/HelmetInt6.png	helmet	Helmet	135	月影之冠	Lunaris Circlet
+poe_Armours_Helmets_HelmetInt7	HelmetInt7.png	Art/2DItems/Armours/Helmets/HelmetInt7.png	helmet	Helmet	166	冷鋼之冠	Steel Circlet
+poe_Armours_Helmets_HelmetInt8	HelmetInt8.png	Art/2DItems/Armours/Helmets/HelmetInt8.png	helmet	Helmet	187	操靈者之冠	Necromancer Circlet
+poe_Armours_Helmets_HelmetInt9	HelmetInt9.png	Art/2DItems/Armours/Helmets/HelmetInt9.png	helmet	Helmet	205	日耀之冠	Solaris Circlet
+poe_Armours_Helmets_HelmetStr1	HelmetStr1.png	Art/2DItems/Armours/Helmets/HelmetStr1.png	helmet	Helmet	1	粗鐵盔	Iron Hat
+poe_Armours_Helmets_HelmetStr10	HelmetStr10.png	Art/2DItems/Armours/Helmets/HelmetStr10.png	helmet	Helmet	226	皇室堅盔	Royal Burgonet
+poe_Armours_Helmets_HelmetStr11	HelmetStr11.png	Art/2DItems/Armours/Helmets/HelmetStr11.png	helmet	Helmet	240	永恆堅盔	Eternal Burgonet
+poe_Armours_Helmets_HelmetStr2	HelmetStr2.png	Art/2DItems/Armours/Helmets/HelmetStr2.png	helmet	Helmet	22	錐頂盔	Cone Helmet
+poe_Armours_Helmets_HelmetStr3	HelmetStr3.png	Art/2DItems/Armours/Helmets/HelmetStr3.png	helmet	Helmet	61	輕騎盔	Barbute Helmet
+poe_Armours_Helmets_HelmetStr4	HelmetStr4.png	Art/2DItems/Armours/Helmets/HelmetStr4.png	helmet	Helmet	89	護面盔	Close Helmet
+poe_Armours_Helmets_HelmetStr5	HelmetStr5.png	Art/2DItems/Armours/Helmets/HelmetStr5.png	helmet	Helmet	121	角鬥者之盔	Gladiator Helmet
+poe_Armours_Helmets_HelmetStr6	HelmetStr6.png	Art/2DItems/Armours/Helmets/HelmetStr6.png	helmet	Helmet	138	掠奪者之盔	Reaver Helmet
+poe_Armours_Helmets_HelmetStr7	HelmetStr7.png	Art/2DItems/Armours/Helmets/HelmetStr7.png	helmet	Helmet	166	破城之盔	Siege Helmet
+poe_Armours_Helmets_HelmetStr8	HelmetStr8.png	Art/2DItems/Armours/Helmets/HelmetStr8.png	helmet	Helmet	191	薩模柰堅盔	Samnite Helmet
+poe_Armours_Helmets_HelmetStr9	HelmetStr9.png	Art/2DItems/Armours/Helmets/HelmetStr9.png	helmet	Helmet	209	艾茲麥堅盔	Ezomyte Burgonet
+poe_Armours_Helmets_HelmetStrDex1	HelmetStrDex1.png	Art/2DItems/Armours/Helmets/HelmetStrDex1.png	helmet	Helmet	12	殘破之盔	Battered Helm
+poe_Armours_Helmets_HelmetStrDex10	HelmetStrDex10.png	Art/2DItems/Armours/Helmets/HelmetStrDex10.png	helmet	Helmet	233	夢魘戰盔	Nightmare Bascinet
+poe_Armours_Helmets_HelmetStrDex2	HelmetStrDex2.png	Art/2DItems/Armours/Helmets/HelmetStrDex2.png	helmet	Helmet	43	輕鐵護盔	Sallet
+poe_Armours_Helmets_HelmetStrDex3	HelmetStrDex3.png	Art/2DItems/Armours/Helmets/HelmetStrDex3.png	helmet	Helmet	78	清視護盔	Visored Sallet
+poe_Armours_Helmets_HelmetStrDex4	HelmetStrDex4.png	Art/2DItems/Armours/Helmets/HelmetStrDex4.png	helmet	Helmet	114	金面護盔	Gilded Sallet
+poe_Armours_Helmets_HelmetStrDex5	HelmetStrDex5.png	Art/2DItems/Armours/Helmets/HelmetStrDex5.png	helmet	Helmet	124	精兵之盔	Secutor Helm
+poe_Armours_Helmets_HelmetStrDex6	HelmetStrDex6.png	Art/2DItems/Armours/Helmets/HelmetStrDex6.png	helmet	Helmet	149	擊劍士之盔	Fencer Helm
+poe_Armours_Helmets_HelmetStrDex7	HelmetStrDex7.png	Art/2DItems/Armours/Helmets/HelmetStrDex7.png	helmet	Helmet	177	漆彩之盔	Lacquered Helmet
+poe_Armours_Helmets_HelmetStrDex8	HelmetStrDex8.png	Art/2DItems/Armours/Helmets/HelmetStrDex8.png	helmet	Helmet	202	全罩戰盔	Fluted Bascinet
+poe_Armours_Helmets_HelmetStrDex9	HelmetStrDex9.png	Art/2DItems/Armours/Helmets/HelmetStrDex9.png	helmet	Helmet	219	豬面頭盔	Pig-Faced Bascinet
+poe_Armours_Helmets_HelmetStrDexRitual1	HelmetStrDexR.png	Art/2DItems/Armours/Helmets/HelmetStrDexR.png	helmet	Helmet	50	悲鳴面具	Sorrow Mask
+poe_Armours_Helmets_HelmetStrDexRitual2	HelmetStrDexR.png	Art/2DItems/Armours/Helmets/HelmetStrDexR.png	helmet	Helmet	156	贖罪面具	Atonement Mask
+poe_Armours_Helmets_HelmetStrDexRitual3	HelmetStrDexR.png	Art/2DItems/Armours/Helmets/HelmetStrDexR.png	helmet	Helmet	261	懺悔面具	Penitent Mask
+poe_Armours_Helmets_HelmetStrInt1	HelmetStrInt1.png	Art/2DItems/Armours/Helmets/HelmetStrInt1.png	helmet	Helmet	15	鏽鐵鏈盔	Rusted Coif
+poe_Armours_Helmets_HelmetStrInt10	HelmetStrInt10.png	Art/2DItems/Armours/Helmets/HelmetStrInt10.png	helmet	Helmet	237	領主戰冠	Praetor Crown
+poe_Armours_Helmets_HelmetStrInt2	HelmetStrInt2.png	Art/2DItems/Armours/Helmets/HelmetStrInt2.png	helmet	Helmet	40	士兵之盔	Soldier Helmet
+poe_Armours_Helmets_HelmetStrInt3	HelmetStrInt3.png	Art/2DItems/Armours/Helmets/HelmetStrInt3.png	helmet	Helmet	75	巨盔	Great Helmet
+poe_Armours_Helmets_HelmetStrInt4	HelmetStrInt4.png	Art/2DItems/Armours/Helmets/HelmetStrInt4.png	helmet	Helmet	107	聖戰之盔	Crusader Helmet
+poe_Armours_Helmets_HelmetStrInt5	HelmetStrInt5.png	Art/2DItems/Armours/Helmets/HelmetStrInt5.png	helmet	Helmet	128	戰意之盔	Aventail Helmet
+poe_Armours_Helmets_HelmetStrInt6	HelmetStrInt6.png	Art/2DItems/Armours/Helmets/HelmetStrInt6.png	helmet	Helmet	152	熱戰之盔	Zealot Helmet
+poe_Armours_Helmets_HelmetStrInt7	HelmetStrInt7.png	Art/2DItems/Armours/Helmets/HelmetStrInt7.png	helmet	Helmet	184	強化巨盔	Great Crown
+poe_Armours_Helmets_HelmetStrInt8	HelmetStrInt8.png	Art/2DItems/Armours/Helmets/HelmetStrInt8.png	helmet	Helmet	202	行政者戰冠	Magistrate Crown
+poe_Armours_Helmets_HelmetStrInt9	HelmetStrInt9.png	Art/2DItems/Armours/Helmets/HelmetStrInt9.png	helmet	Helmet	219	箴言戰冠	Prophet Crown
+poe_Armours_Helmets_HelmetStrIntRitual1	MaskCrown.png	Art/2DItems/Armours/Helmets/MaskCrown.png	helmet	Helmet	50	妖怪邪冠	Imp Crown
+poe_Armours_Helmets_HelmetStrIntRitual2	MaskCrown.png	Art/2DItems/Armours/Helmets/MaskCrown.png	helmet	Helmet	156	惡魔邪冠	Demon Crown
+poe_Armours_Helmets_HelmetStrIntRitual3	MaskCrown.png	Art/2DItems/Armours/Helmets/MaskCrown.png	helmet	Helmet	261	罪魔邪冠	Archdemon Crown
+poe_Armours_Helmets_HelmetWreath1	Demigodstriumph.png	Art/2DItems/Armours/Helmets/Demigodstriumph.png	helmet	Helmet	40	金黃花環	Golden Wreath
+poe_Armours_Shields_ShieldDemigods	DemigodsShield.png	Art/2DItems/Armours/Shields/DemigodsShield.png	offhand	Shield	50	黃金聖炎	Golden Flame
+poe_Armours_Shields_ShieldDex1	ShieldDex1.png	Art/2DItems/Armours/Shields/ShieldDex1.png	offhand	Shield	5	羊皮輕盾	Goathide Buckler
+poe_Armours_Shields_ShieldDex10	ShieldDex5.png	Art/2DItems/Armours/Shields/ShieldDex5.png	offhand	Shield	173	鬥者輕盾	Battle Buckler
+poe_Armours_Shields_ShieldDex11	ShieldDex6.png	Art/2DItems/Armours/Shields/ShieldDex6.png	offhand	Shield	187	金陽輕盾	Golden Buckler
+poe_Armours_Shields_ShieldDex12	ShieldDex2.png	Art/2DItems/Armours/Shields/ShieldDex2.png	offhand	Shield	198	鋼木輕盾	Ironwood Buckler
+poe_Armours_Shields_ShieldDex13	ShieldDex3.png	Art/2DItems/Armours/Shields/ShieldDex3.png	offhand	Shield	209	漆彩輕盾	Lacquered Buckler
+poe_Armours_Shields_ShieldDex14	ShieldDex4.png	Art/2DItems/Armours/Shields/ShieldDex4.png	offhand	Shield	219	瓦爾輕盾	Vaal Buckler
+poe_Armours_Shields_ShieldDex15	ShieldDex5.png	Art/2DItems/Armours/Shields/ShieldDex5.png	offhand	Shield	230	聖戰輕盾	Crusader Buckler
+poe_Armours_Shields_ShieldDex16	ShieldDex6.png	Art/2DItems/Armours/Shields/ShieldDex6.png	offhand	Shield	240	帝國輕盾	Imperial Buckler
+poe_Armours_Shields_ShieldDex2	ShieldDex2.png	Art/2DItems/Armours/Shields/ShieldDex2.png	offhand	Shield	26	松木輕盾	Pine Buckler
+poe_Armours_Shields_ShieldDex3	ShieldDex3.png	Art/2DItems/Armours/Shields/ShieldDex3.png	offhand	Shield	54	彩繪輕盾	Painted Buckler
+poe_Armours_Shields_ShieldDex4	ShieldDex4.png	Art/2DItems/Armours/Shields/ShieldDex4.png	offhand	Shield	78	鉚釘輕盾	Hammered Buckler
+poe_Armours_Shields_ShieldDex5	ShieldDex5.png	Art/2DItems/Armours/Shields/ShieldDex5.png	offhand	Shield	99	戰爭輕盾	War Buckler
+poe_Armours_Shields_ShieldDex6	ShieldDex6.png	Art/2DItems/Armours/Shields/ShieldDex6.png	offhand	Shield	117	金面輕盾	Gilded Buckler
+poe_Armours_Shields_ShieldDex7	ShieldDex2.png	Art/2DItems/Armours/Shields/ShieldDex2.png	offhand	Shield	131	橡木輕盾	Oak Buckler
+poe_Armours_Shields_ShieldDex8	ShieldDex3.png	Art/2DItems/Armours/Shields/ShieldDex3.png	offhand	Shield	145	釉彩輕盾	Enameled Buckler
+poe_Armours_Shields_ShieldDex9	ShieldDex4.png	Art/2DItems/Armours/Shields/ShieldDex4.png	offhand	Shield	159	波紋輕盾	Corrugated Buckler
+poe_Armours_Shields_ShieldDexE1	DexHeistShield.png	Art/2DItems/Armours/Shields/DexHeistShield.png	offhand	Shield	103	熱力輕盾	Endothermic Buckler
+poe_Armours_Shields_ShieldDexE2	DexHeistShield.png	Art/2DItems/Armours/Shields/DexHeistShield.png	offhand	Shield	173	極地輕盾	Polar Buckler
+poe_Armours_Shields_ShieldDexE3	DexHeistShield.png	Art/2DItems/Armours/Shields/DexHeistShield.png	offhand	Shield	244	冷調輕盾	Cold-attuned Buckler
+poe_Armours_Shields_ShieldDexInt1	ShieldDexInt1.png	Art/2DItems/Armours/Shields/ShieldDexInt1.png	offhand	Shield	15	尖木刺盾	Spiked Bundle
+poe_Armours_Shields_ShieldDexInt10	ShieldDexInt2.png	Art/2DItems/Armours/Shields/ShieldDexInt2.png	offhand	Shield	202	榿木刺盾	Alder Spiked Shield
+poe_Armours_Shields_ShieldDexInt11	ShieldDexInt3.png	Art/2DItems/Armours/Shields/ShieldDexInt3.png	offhand	Shield	216	艾茲麥刺盾	Ezomyte Spiked Shield
+poe_Armours_Shields_ShieldDexInt12	ShieldDexInt4.png	Art/2DItems/Armours/Shields/ShieldDexInt4.png	offhand	Shield	230	鋼鏡刺盾	Mirrored Spiked Shield
+poe_Armours_Shields_ShieldDexInt13	ShieldDexInt5.png	Art/2DItems/Armours/Shields/ShieldDexInt5.png	offhand	Shield	244	霸者刺盾	Supreme Spiked Shield
+poe_Armours_Shields_ShieldDexInt2	ShieldDexInt2.png	Art/2DItems/Armours/Shields/ShieldDexInt2.png	offhand	Shield	40	朽木刺盾	Driftwood Spiked Shield
+poe_Armours_Shields_ShieldDexInt3	ShieldDexInt3.png	Art/2DItems/Armours/Shields/ShieldDexInt3.png	offhand	Shield	68	合金刺盾	Alloyed Spiked Shield
+poe_Armours_Shields_ShieldDexInt4	ShieldDexInt4.png	Art/2DItems/Armours/Shields/ShieldDexInt4.png	offhand	Shield	92	冷芒刺盾	Burnished Spiked Shield
+poe_Armours_Shields_ShieldDexInt5	ShieldDexInt5.png	Art/2DItems/Armours/Shields/ShieldDexInt5.png	offhand	Shield	114	華麗刺盾	Ornate Spiked Shield
+poe_Armours_Shields_ShieldDexInt6	ShieldDexInt2.png	Art/2DItems/Armours/Shields/ShieldDexInt2.png	offhand	Shield	135	紅木刺盾	Redwood Spiked Shield
+poe_Armours_Shields_ShieldDexInt7	ShieldDexInt3.png	Art/2DItems/Armours/Shields/ShieldDexInt3.png	offhand	Shield	156	複合刺盾	Compound Spiked Shield
+poe_Armours_Shields_ShieldDexInt8	ShieldDexInt4.png	Art/2DItems/Armours/Shields/ShieldDexInt4.png	offhand	Shield	170	光輝刺盾	Polished Spiked Shield
+poe_Armours_Shields_ShieldDexInt9	ShieldDexInt5.png	Art/2DItems/Armours/Shields/ShieldDexInt5.png	offhand	Shield	187	王權刺盾	Sovereign Spiked Shield
+poe_Armours_Shields_ShieldInt1	ShieldInt1.png	Art/2DItems/Armours/Shields/ShieldInt1.png	offhand	Shield	8	殘枝魔盾	Twig Spirit Shield
+poe_Armours_Shields_ShieldInt10	ShieldInt5.png	Art/2DItems/Armours/Shields/ShieldInt5.png	offhand	Shield	170	魂相魔盾	Chiming Spirit Shield
+poe_Armours_Shields_ShieldInt11	ShieldInt6.png	Art/2DItems/Armours/Shields/ShieldInt6.png	offhand	Shield	184	暗金魔盾	Thorium Spirit Shield
+poe_Armours_Shields_ShieldInt12	ShieldInt2.png	Art/2DItems/Armours/Shields/ShieldInt2.png	offhand	Shield	194	軟橡魔盾	Lacewood Spirit Shield
+poe_Armours_Shields_ShieldInt13	ShieldInt3.png	Art/2DItems/Armours/Shields/ShieldInt3.png	offhand	Shield	205	石化魔盾	Fossilised Spirit Shield
+poe_Armours_Shields_ShieldInt14	ShieldInt4.png	Art/2DItems/Armours/Shields/ShieldInt4.png	offhand	Shield	216	瓦爾魔盾	Vaal Spirit Shield
+poe_Armours_Shields_ShieldInt15	ShieldInt5.png	Art/2DItems/Armours/Shields/ShieldInt5.png	offhand	Shield	226	和諧魔盾	Harmonic Spirit Shield
+poe_Armours_Shields_ShieldInt16	ShieldInt6.png	Art/2DItems/Armours/Shields/ShieldInt6.png	offhand	Shield	237	巨人魔盾	Titanium Spirit Shield
+poe_Armours_Shields_ShieldInt2	ShieldInt2.png	Art/2DItems/Armours/Shields/ShieldInt2.png	offhand	Shield	29	紫衫魔盾	Yew Spirit Shield
+poe_Armours_Shields_ShieldInt3	ShieldInt3.png	Art/2DItems/Armours/Shields/ShieldInt3.png	offhand	Shield	50	骨製魔盾	Bone Spirit Shield
+poe_Armours_Shields_ShieldInt4	ShieldInt4.png	Art/2DItems/Armours/Shields/ShieldInt4.png	offhand	Shield	78	環形魔盾	Tarnished Spirit Shield
+poe_Armours_Shields_ShieldInt5	ShieldInt5.png	Art/2DItems/Armours/Shields/ShieldInt5.png	offhand	Shield	96	靈相魔盾	Jingling Spirit Shield
+poe_Armours_Shields_ShieldInt6	ShieldInt6.png	Art/2DItems/Armours/Shields/ShieldInt6.png	offhand	Shield	114	銅鍛魔盾	Brass Spirit Shield
+poe_Armours_Shields_ShieldInt7	ShieldInt2.png	Art/2DItems/Armours/Shields/ShieldInt2.png	offhand	Shield	128	桃木魔盾	Walnut Spirit Shield
+poe_Armours_Shields_ShieldInt8	ShieldInt3.png	Art/2DItems/Armours/Shields/ShieldInt3.png	offhand	Shield	142	象牙魔盾	Ivory Spirit Shield
+poe_Armours_Shields_ShieldInt9	ShieldInt4.png	Art/2DItems/Armours/Shields/ShieldInt4.png	offhand	Shield	156	遠古魔盾	Ancient Spirit Shield
+poe_Armours_Shields_ShieldIntE1	IntHeistShield.png	Art/2DItems/Armours/Shields/IntHeistShield.png	offhand	Shield	103	力竭魔盾	Exhausting Spirit Shield
+poe_Armours_Shields_ShieldIntE2	IntHeistShield.png	Art/2DItems/Armours/Shields/IntHeistShield.png	offhand	Shield	173	靈吸魔盾	Subsuming Spirit Shield
+poe_Armours_Shields_ShieldIntE3	IntHeistShield.png	Art/2DItems/Armours/Shields/IntHeistShield.png	offhand	Shield	244	調和魔盾	Transfer-attuned Spirit Shield
+poe_Armours_Shields_ShieldStr1	ShieldStr1.png	Art/2DItems/Armours/Shields/ShieldStr1.png	offhand	Shield	1	朽木塔盾	Splintered Tower Shield
+poe_Armours_Shields_ShieldStr10	ShieldStr5.png	Art/2DItems/Armours/Shields/ShieldStr5.png	offhand	Shield	163	青銅塔盾	Bronze Tower Shield
+poe_Armours_Shields_ShieldStr11	ShieldStr6.png	Art/2DItems/Armours/Shields/ShieldStr6.png	offhand	Shield	177	征戰塔盾	Girded Tower Shield
+poe_Armours_Shields_ShieldStr12	ShieldStr7.png	Art/2DItems/Armours/Shields/ShieldStr7.png	offhand	Shield	191	榮冠塔盾	Crested Tower Shield
+poe_Armours_Shields_ShieldStr13	ShieldStr3.png	Art/2DItems/Armours/Shields/ShieldStr3.png	offhand	Shield	202	粗革塔盾	Shagreen Tower Shield
+poe_Armours_Shields_ShieldStr14	ShieldStr4.png	Art/2DItems/Armours/Shields/ShieldStr4.png	offhand	Shield	212	烏木塔盾	Ebony Tower Shield
+poe_Armours_Shields_ShieldStr15	ShieldStr5.png	Art/2DItems/Armours/Shields/ShieldStr5.png	offhand	Shield	223	艾茲麥塔盾	Ezomyte Tower Shield
+poe_Armours_Shields_ShieldStr16	ShieldStr6.png	Art/2DItems/Armours/Shields/ShieldStr6.png	offhand	Shield	233	巨型塔盾	Colossal Tower Shield
+poe_Armours_Shields_ShieldStr17	ShieldStr7.png	Art/2DItems/Armours/Shields/ShieldStr7.png	offhand	Shield	244	堅毅塔盾	Pinnacle Tower Shield
+poe_Armours_Shields_ShieldStr2	ShieldStr2.png	Art/2DItems/Armours/Shields/ShieldStr2.png	offhand	Shield	15	斑駁塔盾	Corroded Tower Shield
+poe_Armours_Shields_ShieldStr3	ShieldStr3.png	Art/2DItems/Armours/Shields/ShieldStr3.png	offhand	Shield	36	生皮塔盾	Rawhide Tower Shield
+poe_Armours_Shields_ShieldStr4	ShieldStr4.png	Art/2DItems/Armours/Shields/ShieldStr4.png	offhand	Shield	57	松木塔盾	Cedar Tower Shield
+poe_Armours_Shields_ShieldStr5	ShieldStr5.png	Art/2DItems/Armours/Shields/ShieldStr5.png	offhand	Shield	82	銅鍛塔盾	Copper Tower Shield
+poe_Armours_Shields_ShieldStr6	ShieldStr6.png	Art/2DItems/Armours/Shields/ShieldStr6.png	offhand	Shield	103	強化塔盾	Reinforced Tower Shield
+poe_Armours_Shields_ShieldStr7	ShieldStr7.png	Art/2DItems/Armours/Shields/ShieldStr7.png	offhand	Shield	121	彩繪塔盾	Painted Tower Shield
+poe_Armours_Shields_ShieldStr8	ShieldStr3.png	Art/2DItems/Armours/Shields/ShieldStr3.png	offhand	Shield	135	鹿皮塔盾	Buckskin Tower Shield
+poe_Armours_Shields_ShieldStr9	ShieldStr4.png	Art/2DItems/Armours/Shields/ShieldStr4.png	offhand	Shield	149	桃木塔盾	Mahogany Tower Shield
+poe_Armours_Shields_ShieldStrDex1	ShieldStrDex1.png	Art/2DItems/Armours/Shields/ShieldStrDex1.png	offhand	Shield	15	朽木圓盾	Rotted Round Shield
+poe_Armours_Shields_ShieldStrDex10	ShieldStrDex2.png	Art/2DItems/Armours/Shields/ShieldStrDex2.png	offhand	Shield	202	柚木圓盾	Teak Round Shield
+poe_Armours_Shields_ShieldStrDex11	ShieldStrDex3.png	Art/2DItems/Armours/Shields/ShieldStrDex3.png	offhand	Shield	216	棘刺圓盾	Spiny Round Shield
+poe_Armours_Shields_ShieldStrDex12	ShieldStrDex4.png	Art/2DItems/Armours/Shields/ShieldStrDex4.png	offhand	Shield	230	祭者圓盾	Cardinal Round Shield
+poe_Armours_Shields_ShieldStrDex13	ShieldStrDex5.png	Art/2DItems/Armours/Shields/ShieldStrDex5.png	offhand	Shield	244	權貴圓盾	Elegant Round Shield
+poe_Armours_Shields_ShieldStrDex2	ShieldStrDex2.png	Art/2DItems/Armours/Shields/ShieldStrDex2.png	offhand	Shield	40	杉木圓盾	Fir Round Shield
+poe_Armours_Shields_ShieldStrDex3	ShieldStrDex3.png	Art/2DItems/Armours/Shields/ShieldStrDex3.png	offhand	Shield	68	鉚釘圓盾	Studded Round Shield
+poe_Armours_Shields_ShieldStrDex4	ShieldStrDex4.png	Art/2DItems/Armours/Shields/ShieldStrDex4.png	offhand	Shield	92	熾紅圓盾	Scarlet Round Shield
+poe_Armours_Shields_ShieldStrDex5	ShieldStrDex5.png	Art/2DItems/Armours/Shields/ShieldStrDex5.png	offhand	Shield	114	光輝圓盾	Splendid Round Shield
+poe_Armours_Shields_ShieldStrDex6	ShieldStrDex2.png	Art/2DItems/Armours/Shields/ShieldStrDex2.png	offhand	Shield	135	楓木圓盾	Maple Round Shield
+poe_Armours_Shields_ShieldStrDex7	ShieldStrDex3.png	Art/2DItems/Armours/Shields/ShieldStrDex3.png	offhand	Shield	156	尖刺圓盾	Spiked Round Shield
+poe_Armours_Shields_ShieldStrDex8	ShieldStrDex4.png	Art/2DItems/Armours/Shields/ShieldStrDex4.png	offhand	Shield	170	緋紅圓盾	Crimson Round Shield
+poe_Armours_Shields_ShieldStrDex9	ShieldStrDex5.png	Art/2DItems/Armours/Shields/ShieldStrDex5.png	offhand	Shield	187	古代圓盾	Baroque Round Shield
+poe_Armours_Shields_ShieldStrE1	HeistShield.png	Art/2DItems/Armours/Shields/HeistShield.png	offhand	Shield	103	熱氣塔盾	Exothermic Tower Shield
+poe_Armours_Shields_ShieldStrE2	HeistShield.png	Art/2DItems/Armours/Shields/HeistShield.png	offhand	Shield	173	熔岩塔盾	Magmatic Tower Shield
+poe_Armours_Shields_ShieldStrE3	HeistShield.png	Art/2DItems/Armours/Shields/HeistShield.png	offhand	Shield	244	熱調塔盾	Heat-attuned Tower Shield
+poe_Armours_Shields_ShieldStrInt1	ShieldStrInt1.png	Art/2DItems/Armours/Shields/ShieldStrInt1.png	offhand	Shield	22	朽木鳶盾	Plank Kite Shield
+poe_Armours_Shields_ShieldStrInt10	ShieldStrInt2.png	Art/2DItems/Armours/Shields/ShieldStrInt2.png	offhand	Shield	205	聖記鳶盾	Branded Kite Shield
+poe_Armours_Shields_ShieldStrInt11	ShieldStrInt4.png	Art/2DItems/Armours/Shields/ShieldStrInt4.png	offhand	Shield	216	鬥士鳶盾	Champion Kite Shield
+poe_Armours_Shields_ShieldStrInt12	ShieldStrInt3.png	Art/2DItems/Armours/Shields/ShieldStrInt3.png	offhand	Shield	226	厚裝鳶盾	Mosaic Kite Shield
+poe_Armours_Shields_ShieldStrInt13	ShieldStrInt5.png	Art/2DItems/Armours/Shields/ShieldStrInt5.png	offhand	Shield	237	威能鳶盾	Archon Kite Shield
+poe_Armours_Shields_ShieldStrInt2	ShieldStrInt2.png	Art/2DItems/Armours/Shields/ShieldStrInt2.png	offhand	Shield	43	椴木鳶盾	Linden Kite Shield
+poe_Armours_Shields_ShieldStrInt3	ShieldStrInt4.png	Art/2DItems/Armours/Shields/ShieldStrInt4.png	offhand	Shield	68	強化鳶盾	Reinforced Kite Shield
+poe_Armours_Shields_ShieldStrInt4	ShieldStrInt3.png	Art/2DItems/Armours/Shields/ShieldStrInt3.png	offhand	Shield	92	層板鳶盾	Layered Kite Shield
+poe_Armours_Shields_ShieldStrInt5	ShieldStrInt5.png	Art/2DItems/Armours/Shields/ShieldStrInt5.png	offhand	Shield	117	祭儀鳶盾	Ceremonial Kite Shield
+poe_Armours_Shields_ShieldStrInt6	ShieldStrInt2.png	Art/2DItems/Armours/Shields/ShieldStrInt2.png	offhand	Shield	138	刻文鳶盾	Etched Kite Shield
+poe_Armours_Shields_ShieldStrInt7	ShieldStrInt4.png	Art/2DItems/Armours/Shields/ShieldStrInt4.png	offhand	Shield	159	冷鋼鳶盾	Steel Kite Shield
+poe_Armours_Shields_ShieldStrInt8	ShieldStrInt3.png	Art/2DItems/Armours/Shields/ShieldStrInt3.png	offhand	Shield	173	合板鳶盾	Laminated Kite Shield
+poe_Armours_Shields_ShieldStrInt9	ShieldStrInt5.png	Art/2DItems/Armours/Shields/ShieldStrInt5.png	offhand	Shield	191	天使鳶盾	Angelic Kite Shield
+poe_Belts_Belt1	Belt1.png	Art/2DItems/Belts/Belt1.png	belt	Belt	5	素布腰帶	Rustic Sash
+poe_Belts_Belt2	Belt2.png	Art/2DItems/Belts/Belt2.png	belt	Belt	5	扣鏈腰帶	Chain Belt
+poe_Belts_Belt3	Belt3.png	Art/2DItems/Belts/Belt3.png	belt	Belt	33	皮革腰帶	Leather Belt
+poe_Belts_Belt4	Belt5.png	Art/2DItems/Belts/Belt5.png	belt	Belt	33	重革腰帶	Heavy Belt
+poe_Belts_Belt5	Belt4.png	Art/2DItems/Belts/Belt4.png	belt	Belt	68	飾布腰帶	Cloth Belt
+poe_Belts_Belt6	Belt6.png	Art/2DItems/Belts/Belt6.png	belt	Belt	68	扣釘腰帶	Studded Belt
+poe_Belts_BeltAbyss	AbyssBelt.png	Art/2DItems/Belts/AbyssBelt.png	belt	Belt	1	冥河腰帶	Stygian Vise
+poe_Belts_BeltAtlas1	Belt7.png	Art/2DItems/Belts/Belt7.png	belt	Belt	254	先鋒腰帶	Vanguard Belt
+poe_Belts_BeltAtlas2	CrystalBelt.png	Art/2DItems/Belts/CrystalBelt.png	belt	Belt	254	水晶腰帶	Crystal Belt
+poe_Belts_BeltDemigods1	Demibelt1.png	Art/2DItems/Belts/Demibelt1.png	belt	Belt	40	金羽腰帶	Golden Obi
+poe_Belts_BeltE1	HeistBelt1.png	Art/2DItems/Belts/HeistBelt1.png	belt	Belt	68	微釀腰帶	Micro-Distillery Belt
+poe_Belts_BeltE2	HeistBelt2.png	Art/2DItems/Belts/HeistBelt2.png	belt	Belt	244	機械腰帶	Mechalarm Belt
+poe_Belts_BeltRoyale1	Belt3.png	Art/2DItems/Belts/Belt3.png	belt	Belt	5	皮革腰帶	Leather Belt
+poe_Belts_BeltRoyale2	Belt5.png	Art/2DItems/Belts/Belt5.png	belt	Belt	5	重革腰帶	Heavy Belt
+poe_Belts_BeltRoyale3	Belt4.png	Art/2DItems/Belts/Belt4.png	belt	Belt	5	飾布腰帶	Cloth Belt
+poe_Quivers_Quiver1	Quiver1.png	Art/2DItems/Quivers/Quiver1.png	offhand	Quiver	5	火焰箭袋	Cured Quiver
+poe_Quivers_Quiver10	QuiverFire.png	Art/2DItems/Quivers/QuiverFire.png	offhand	Quiver	75	火靈箭袋	Fire Arrow Quiver
+poe_Quivers_Quiver11	QuiverBroadhead.png	Art/2DItems/Quivers/QuiverBroadhead.png	offhand	Quiver	96	寬矢箭袋	Broadhead Arrow Quiver
+poe_Quivers_Quiver12	QuiverPenetrating.png	Art/2DItems/Quivers/QuiverPenetrating.png	offhand	Quiver	124	穿射箭袋	Penetrating Arrow Quiver
+poe_Quivers_Quiver13	QuiverSpike-Point.png	Art/2DItems/Quivers/QuiverSpike-Point.png	offhand	Quiver	156	刺鋒箭袋	Spike-Point Arrow Quiver
+poe_Quivers_Quiver14	TriggerQuiverUnique.png	Art/2DItems/Quivers/TriggerQuiverUnique.png	offhand	Quiver	156	華麗箭袋	Ornate Quiver
+poe_Quivers_Quiver2	Quiver2.png	Art/2DItems/Quivers/Quiver2.png	offhand	Quiver	5	冰晶箭袋	Rugged Quiver
+poe_Quivers_Quiver3	Quiver3.png	Art/2DItems/Quivers/Quiver3.png	offhand	Quiver	5	電光箭袋	Conductive Quiver
+poe_Quivers_Quiver4	Quiver4.png	Art/2DItems/Quivers/Quiver4.png	offhand	Quiver	22	重矢箭袋	Heavy Quiver
+poe_Quivers_Quiver5	Quiver5.png	Art/2DItems/Quivers/Quiver5.png	offhand	Quiver	50	輕巧箭袋	Light Quiver
+poe_Quivers_Quiver6	QuiverSerrated.png	Art/2DItems/Quivers/QuiverSerrated.png	offhand	Quiver	15	鋸齒箭袋	Serrated Arrow Quiver
+poe_Quivers_Quiver7	QuiverTwo-Point.png	Art/2DItems/Quivers/QuiverTwo-Point.png	offhand	Quiver	15	雙鋒箭袋	Two-Point Arrow Quiver
+poe_Quivers_Quiver8	QuiverSharktooth.png	Art/2DItems/Quivers/QuiverSharktooth.png	offhand	Quiver	33	鯊齒箭袋	Sharktooth Arrow Quiver
+poe_Quivers_Quiver9	QuiverBlunt.png	Art/2DItems/Quivers/QuiverBlunt.png	offhand	Quiver	54	鈍矢箭袋	Blunt Arrow Quiver
+poe_Quivers_QuiverAtlas1	ChiselQuiver.png	Art/2DItems/Quivers/ChiselQuiver.png	offhand	Quiver	258	火炮箭袋	Artillery Quiver
+poe_Quivers_QuiverDescent	QuiverSerrated.png	Art/2DItems/Quivers/QuiverSerrated.png	offhand	Quiver	1	鋸齒箭袋	Serrated Arrow Quiver
+poe_Quivers_QuiverNew1	QuiverSerrated.png	Art/2DItems/Quivers/QuiverSerrated.png	offhand	Quiver	12	鋸齒箭袋	Serrated Arrow Quiver
+poe_Quivers_QuiverNew10	QuiverBroadhead.png	Art/2DItems/Quivers/QuiverBroadhead.png	offhand	Quiver	170	寬矢箭袋	Broadhead Arrow Quiver
+poe_Quivers_QuiverNew11	VileArrowQuiver.png	Art/2DItems/Quivers/VileArrowQuiver.png	offhand	Quiver	191	邪惡箭袋	Vile Arrow Quiver
+poe_Quivers_QuiverNew12	QuiverBlunt.png	Art/2DItems/Quivers/QuiverBlunt.png	offhand	Quiver	212	沉頓箭袋	Heavy Arrow Quiver
+poe_Quivers_QuiverNew13	RikerRinQuiver.png	Art/2DItems/Quivers/RikerRinQuiver.png	offhand	Quiver	230	始祖箭袋	Primal Arrow Quiver
+poe_Quivers_QuiverNew2	QuiverFire.png	Art/2DItems/Quivers/QuiverFire.png	offhand	Quiver	29	火靈箭袋	Fire Arrow Quiver
+poe_Quivers_QuiverNew3	QuiverSharktooth.png	Art/2DItems/Quivers/QuiverSharktooth.png	offhand	Quiver	47	鯊齒箭袋	Sharktooth Arrow Quiver
+poe_Quivers_QuiverNew4	FeatheredArrowQuiver.png	Art/2DItems/Quivers/FeatheredArrowQuiver.png	offhand	Quiver	68	羽翼箭袋	Feathered Arrow Quiver
+poe_Quivers_QuiverNew5	QuiverPenetrating.png	Art/2DItems/Quivers/QuiverPenetrating.png	offhand	Quiver	85	穿射箭袋	Penetrating Arrow Quiver
+poe_Quivers_QuiverNew6	QuiverBlunt.png	Art/2DItems/Quivers/QuiverBlunt.png	offhand	Quiver	107	鈍矢箭袋	Blunt Arrow Quiver
+poe_Quivers_QuiverNew7	QuiverTwo-Point.png	Art/2DItems/Quivers/QuiverTwo-Point.png	offhand	Quiver	124	雙鋒箭袋	Two-Point Arrow Quiver
+poe_Quivers_QuiverNew8	QuiverSpike-Point.png	Art/2DItems/Quivers/QuiverSpike-Point.png	offhand	Quiver	138	刺鋒箭袋	Spike-Point Arrow Quiver
+poe_Quivers_QuiverNew9	QuiverFire.png	Art/2DItems/Quivers/QuiverFire.png	offhand	Quiver	156	熾熱箭袋	Blazing Arrow Quiver
+poe_Rings_BreachRing	BreachRing.png	Art/2DItems/Rings/BreachRing.png	ring	Ring	1	裂痕戒指	Breach Ring
+poe_Rings_MirrorRing	MirrorRing.png	Art/2DItems/Rings/MirrorRing.png	ring	Ring	1	戒指	Ring
+poe_Rings_Ring1	Ring1.png	Art/2DItems/Rings/Ring1.png	ring	Ring	5	鍛鐵戒指	Iron Ring
+poe_Rings_Ring10	AmethystRing.png	Art/2DItems/Rings/AmethystRing.png	ring	Ring	131	紫晶戒指	Amethyst Ring
+poe_Rings_Ring11	DiamondRing.png	Art/2DItems/Rings/DiamondRing.png	ring	Ring	85	寶鑽戒指	Diamond Ring
+poe_Rings_Ring12	TopazRuby.png	Art/2DItems/Rings/TopazRuby.png	ring	Ring	68	雙玉戒指	Two-Stone Ring
+poe_Rings_Ring13	TopazSapphire.png	Art/2DItems/Rings/TopazSapphire.png	ring	Ring	68	雙玉戒指	Two-Stone Ring
+poe_Rings_Ring14	SapphireRuby.png	Art/2DItems/Rings/SapphireRuby.png	ring	Ring	68	雙玉戒指	Two-Stone Ring
+poe_Rings_Ring15	Empty-Socket.png	Art/2DItems/Rings/Empty-Socket.png	ring	Ring	156	潛能之戒	Unset Ring
+poe_Rings_Ring16	BoneRing.png	Art/2DItems/Rings/BoneRing.png	ring	Ring	103	骸骨之戒	Bone Ring
+poe_Rings_Ring2	Ring2.png	Art/2DItems/Rings/Ring2.png	ring	Ring	12	珊瑚戒指	Coral Ring
+poe_Rings_Ring3	Ring3.png	Art/2DItems/Rings/Ring3.png	ring	Ring	15	海靈戒指	Paua Ring
+poe_Rings_Ring4	Ring4.png	Art/2DItems/Rings/Ring4.png	ring	Ring	68	金光戒指	Gold Ring
+poe_Rings_Ring5	Ring5.png	Art/2DItems/Rings/Ring5.png	ring	Ring	40	黃玉戒指	Topaz Ring
+poe_Rings_Ring6	Ring6.png	Art/2DItems/Rings/Ring6.png	ring	Ring	26	藍玉戒指	Sapphire Ring
+poe_Rings_Ring7	Ring7.png	Art/2DItems/Rings/Ring7.png	ring	Ring	54	紅玉戒指	Ruby Ring
+poe_Rings_Ring8	Ring12.png	Art/2DItems/Rings/Ring12.png	ring	Ring	103	三相戒指	Prismatic Ring
+poe_Rings_Ring9	MoonstoneRing.png	Art/2DItems/Rings/MoonstoneRing.png	ring	Ring	85	月光石戒指	Moonstone Ring
+poe_Rings_RingAtlas1	AdamantineRing.png	Art/2DItems/Rings/AdamantineRing.png	ring	Ring	272	鋼鑄戒指	Steel Ring
+poe_Rings_RingAtlas2	OpalRing.png	Art/2DItems/Rings/OpalRing.png	ring	Ring	272	蛋白石戒指	Opal Ring
+poe_Rings_RingAtlas3	VermillionRing.png	Art/2DItems/Rings/VermillionRing.png	ring	Ring	279	朱紅戒指	Vermillion Ring
+poe_Rings_RingAtlas4	CeruleanRing.png	Art/2DItems/Rings/CeruleanRing.png	ring	Ring	279	碧藍戒指	Cerulean Ring
+poe_Rings_RingAtlas5	ChaosDmgRing.png	Art/2DItems/Rings/ChaosDmgRing.png	ring	Ring	272	混青石戒指	Iolite Ring
+poe_Rings_RingDemigods1	DemigodsBand.png	Art/2DItems/Rings/DemigodsBand.png	ring	Ring	40	金環	Golden Hoop
+poe_Rings_RingE1	HeistRing1.png	Art/2DItems/Rings/HeistRing1.png	ring	Ring	85	齒輪戒指	Cogwork Ring
+poe_Rings_RingE2	HeistRing2.png	Art/2DItems/Rings/HeistRing2.png	ring	Ring	85	大地戒指	Geodesic Ring
+poe_Rings_RingK1	LakeRing1.png	Art/2DItems/Rings/LakeRing1.png	ring	Ring	85	幽暗戒指	Dusk Ring
+poe_Rings_RingK2	LakeRing2.png	Art/2DItems/Rings/LakeRing2.png	ring	Ring	85	半影戒指	Penumbra Ring
+poe_Rings_RingK3	LakeRing3.png	Art/2DItems/Rings/LakeRing3.png	ring	Ring	85	黃昏戒指	Gloam Ring
+poe_Rings_RingK4	LakeRing4.png	Art/2DItems/Rings/LakeRing4.png	ring	Ring	85	黑暗戒指	Tenebrous Ring
+poe_Rings_RingK5a	LakeRing5.png	Art/2DItems/Rings/LakeRing5.png	ring	Ring	85	暗影戒指	Shadowed Ring
+poe_Rings_RingK5b	LakeRing5.png	Art/2DItems/Rings/LakeRing5.png	ring	Ring	85	暗影戒指	Shadowed Ring
+poe_Rings_RingK5c	LakeRing5.png	Art/2DItems/Rings/LakeRing5.png	ring	Ring	85	暗影戒指	Shadowed Ring
+poe_Rings_RingRoyale1	OpalRing.png	Art/2DItems/Rings/OpalRing.png	ring	Ring	5	蛋白石戒指	Opal Ring
+poe_Rings_RingRoyale2	Ring12.png	Art/2DItems/Rings/Ring12.png	ring	Ring	5	三相戒指	Prismatic Ring
+poe_Rings_RingRoyale3	DiamondRing.png	Art/2DItems/Rings/DiamondRing.png	ring	Ring	5	寶鑽戒指	Diamond Ring
+poe_Rings_RingRoyale4	Ring3.png	Art/2DItems/Rings/Ring3.png	ring	Ring	5	海靈戒指	Paua Ring
+poe_Weapons_OneHandWeapons_Claws_Claw1	Claw1.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw1.png	mainhand	Claw	8	拳釘	Nailed Fist
+poe_Weapons_OneHandWeapons_Claws_Claw10	Claw3.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw3.png	mainhand	Claw	138	穿體鑿	Gouger
+poe_Weapons_OneHandWeapons_Claws_Claw11	Claw4.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw4.png	mainhand	Claw	149	虎爪刃	Tiger's Paw
+poe_Weapons_OneHandWeapons_Claws_Claw12	Claw5.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw5.png	mainhand	Claw	159	裂臟鉤	Gut Ripper
+poe_Weapons_OneHandWeapons_Claws_Claw13	Claw6.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw6.png	mainhand	Claw	170	史前戰爪	Prehistoric Claw
+poe_Weapons_OneHandWeapons_Claws_Claw14	Claw7.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw7.png	mainhand	Claw	180	貴族戰爪	Noble Claw
+poe_Weapons_OneHandWeapons_Claws_Claw15	Claw8.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw8.png	mainhand	Claw	191	鷹爪刃	Eagle Claw
+poe_Weapons_OneHandWeapons_Claws_Claw16	Claw2.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw2.png	mainhand	Claw	202	白靈之爪	Great White Claw
+poe_Weapons_OneHandWeapons_Claws_Claw17	Claw3.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw3.png	mainhand	Claw	209	刺喉刃	Throat Stabber
+poe_Weapons_OneHandWeapons_Claws_Claw18	Claw4.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw4.png	mainhand	Claw	216	魔爪刃	Hellion's Paw
+poe_Weapons_OneHandWeapons_Claws_Claw19	Claw5.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw5.png	mainhand	Claw	223	刺眼鉤	Eye Gouger
+poe_Weapons_OneHandWeapons_Claws_Claw2	Claw2.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw2.png	mainhand	Claw	22	鯊顎爪	Sharktooth Claw
+poe_Weapons_OneHandWeapons_Claws_Claw20	Claw6.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw6.png	mainhand	Claw	230	瓦爾戰爪	Vaal Claw
+poe_Weapons_OneHandWeapons_Claws_Claw21	Claw7.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw7.png	mainhand	Claw	237	帝國戰爪	Imperial Claw
+poe_Weapons_OneHandWeapons_Claws_Claw22	Claw8.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw8.png	mainhand	Claw	244	恐懼之牙	Terror Claw
+poe_Weapons_OneHandWeapons_Claws_Claw3	Claw3.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw3.png	mainhand	Claw	40	鑿釘	Awl
+poe_Weapons_OneHandWeapons_Claws_Claw4	Claw4.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw4.png	mainhand	Claw	57	貓爪刃	Cat's Paw
+poe_Weapons_OneHandWeapons_Claws_Claw5	Claw5.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw5.png	mainhand	Claw	75	襲眼鉤	Blinder
+poe_Weapons_OneHandWeapons_Claws_Claw6	Claw6.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw6.png	mainhand	Claw	89	遠古戰爪	Timeworn Claw
+poe_Weapons_OneHandWeapons_Claws_Claw7	Claw7.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw7.png	mainhand	Claw	103	眩目爪刃	Sparkling Claw
+poe_Weapons_OneHandWeapons_Claws_Claw8	Claw8.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw8.png	mainhand	Claw	117	恐懼之爪	Fright Claw
+poe_Weapons_OneHandWeapons_Claws_Claw9	Claw2.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw2.png	mainhand	Claw	128	撕裂尖爪	Thresher Claw
+poe_Weapons_OneHandWeapons_Claws_ClawE1	HeistClaw.png	Art/2DItems/Weapons/OneHandWeapons/Claws/HeistClaw.png	mainhand	Claw	103	暗影獠牙	Shadow Fangs
+poe_Weapons_OneHandWeapons_Claws_ClawE2	HeistClaw.png	Art/2DItems/Weapons/OneHandWeapons/Claws/HeistClaw.png	mainhand	Claw	173	邪惡獠牙	Malign Fangs
+poe_Weapons_OneHandWeapons_Claws_ClawE3	HeistClaw.png	Art/2DItems/Weapons/OneHandWeapons/Claws/HeistClaw.png	mainhand	Claw	244	虛空獠牙	Void Fangs
+poe_Weapons_OneHandWeapons_Claws_ClawM1	Claw9.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw9.png	mainhand	Claw	124	雙刃爪	Double Claw
+poe_Weapons_OneHandWeapons_Claws_ClawM2	Claw9.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw9.png	mainhand	Claw	198	重刃爪	Twin Claw
+poe_Weapons_OneHandWeapons_Claws_ClawM3	Claw9.png	Art/2DItems/Weapons/OneHandWeapons/Claws/Claw9.png	mainhand	Claw	251	雙子戰爪	Gemini Claw
+poe_Weapons_OneHandWeapons_Daggers_Dagger1	Dagger1.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger1.png	mainhand	Dagger	1	玻璃利片	Glass Shank
+poe_Weapons_OneHandWeapons_Daggers_Dagger10	Dagger3.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger3.png	mainhand	Rune Dagger	131	屠夫刀	Butcher Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger11	Dagger4.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger4.png	mainhand	Dagger	142	奪命刺	Poignard
+poe_Weapons_OneHandWeapons_Daggers_Dagger12	Dagger5.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger5.png	mainhand	Rune Dagger	152	戰亂劍	Boot Blade
+poe_Weapons_OneHandWeapons_Daggers_Dagger13	Dagger6.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger6.png	mainhand	Rune Dagger	163	金耀波刃	Golden Kris
+poe_Weapons_OneHandWeapons_Daggers_Dagger14	Dagger7.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger7.png	mainhand	Rune Dagger	173	皇家雙刃匕	Royal Skean
+poe_Weapons_OneHandWeapons_Daggers_Dagger15	Dagger8.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger8.png	mainhand	Rune Dagger	184	妖魔短匕	Fiend Dagger
+poe_Weapons_OneHandWeapons_Daggers_Dagger16	Dagger2.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger2.png	mainhand	Dagger	194	重傷短刀	Gutting Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger17	Dagger3.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger3.png	mainhand	Rune Dagger	202	殘暴短匕	Slaughter Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger18	Dagger4.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger4.png	mainhand	Dagger	209	伏擊刺刃	Ambusher
+poe_Weapons_OneHandWeapons_Daggers_Dagger19	Dagger5.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger5.png	mainhand	Rune Dagger	216	艾茲麥短匕	Ezomyte Dagger
+poe_Weapons_OneHandWeapons_Daggers_Dagger2	Dagger2.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger2.png	mainhand	Dagger	15	剝皮刀	Skinning Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger20	Dagger6.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger6.png	mainhand	Rune Dagger	223	白金波刃	Platinum Kris
+poe_Weapons_OneHandWeapons_Daggers_Dagger21	Dagger7.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger7.png	mainhand	Rune Dagger	230	帝國雙刃匕	Imperial Skean
+poe_Weapons_OneHandWeapons_Daggers_Dagger22	Dagger8.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger8.png	mainhand	Rune Dagger	237	惡魔短匕	Demon Dagger
+poe_Weapons_OneHandWeapons_Daggers_Dagger3	Dagger3.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger3.png	mainhand	Rune Dagger	33	雕刻刀	Carving Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger4	Dagger4.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger4.png	mainhand	Dagger	50	銳利刺匕	Stiletto
+poe_Weapons_OneHandWeapons_Daggers_Dagger5	Dagger5.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger5.png	mainhand	Rune Dagger	68	戰亂刀	Boot Knife
+poe_Weapons_OneHandWeapons_Daggers_Dagger6	Dagger6.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger6.png	mainhand	Rune Dagger	82	銅器波刃	Copper Kris
+poe_Weapons_OneHandWeapons_Daggers_Dagger7	Dagger7.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger7.png	mainhand	Rune Dagger	96	雙刃匕	Skean
+poe_Weapons_OneHandWeapons_Daggers_Dagger8	Dagger8.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger8.png	mainhand	Rune Dagger	110	妖邪短匕	Imp Dagger
+poe_Weapons_OneHandWeapons_Daggers_Dagger9	Dagger2.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger2.png	mainhand	Dagger	103	殘體利刃	Flaying Knife
+poe_Weapons_OneHandWeapons_Daggers_DaggerE1	HeistDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistDagger.png	mainhand	Dagger	103	簍空短匕	Hollowpoint Dagger
+poe_Weapons_OneHandWeapons_Daggers_DaggerE2	HeistDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistDagger.png	mainhand	Dagger	173	高壓短匕	Pressurised Dagger
+poe_Weapons_OneHandWeapons_Daggers_DaggerE3	HeistDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistDagger.png	mainhand	Dagger	244	魂靈短匕	Pneumatic Dagger
+poe_Weapons_OneHandWeapons_Daggers_DaggerM1	Dagger9.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger9.png	mainhand	Dagger	124	尖耙短匕	Prong Dagger
+poe_Weapons_OneHandWeapons_Daggers_DaggerM2	Dagger9.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger9.png	mainhand	Dagger	177	三叉短匕	Trisula
+poe_Weapons_OneHandWeapons_Daggers_DaggerM3	Dagger9.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger9.png	mainhand	Dagger	244	戰叉	Sai
+poe_Weapons_OneHandWeapons_Daggers_EtherealBlade1	Dagger1.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/Dagger1.png	mainhand	Dagger	1	虛空刀刃	Ethereal Blade
+poe_Weapons_OneHandWeapons_Daggers_RuneDaggerE1	HeistRuneDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistRuneDagger.png	mainhand	Rune Dagger	103	閃火之刃	Flickerflame Blade
+poe_Weapons_OneHandWeapons_Daggers_RuneDaggerE2	HeistRuneDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistRuneDagger.png	mainhand	Rune Dagger	173	瞬炎之刃	Flashfire Blade
+poe_Weapons_OneHandWeapons_Daggers_RuneDaggerE3	HeistRuneDagger.png	Art/2DItems/Weapons/OneHandWeapons/Daggers/HeistRuneDagger.png	mainhand	Rune Dagger	244	煉獄之刃	Infernal Blade
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe1	OneHandAxe1.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe1.png	mainhand	One Hand Axe	5	鏽斧	Rusted Hatchet
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe10	OneHandAxe3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe3.png	mainhand	One Hand Axe	135	征戰之斧	Tomahawk
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe11	OneHandAxe4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe4.png	mainhand	One Hand Axe	145	斷腕之刃	Wrist Chopper
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe12	OneHandAxe5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe5.png	mainhand	One Hand Axe	156	行軍斧	War Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe13	OneHandAxe6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe6.png	mainhand	One Hand Axe	166	開膛利刃	Chest Splitter
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe14	OneHandAxe7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe7.png	mainhand	One Hand Axe	177	血儀之斧	Ceremonial Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe15	OneHandAxe8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe8.png	mainhand	One Hand Axe	187	凶靈之斧	Wraith Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe16	OneHandAxe2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe2.png	mainhand	One Hand Axe	198	卡魯古斧	Karui Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe17	OneHandAxe3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe3.png	mainhand	One Hand Axe	205	破城斧	Siege Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe18	OneHandAxe4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe4.png	mainhand	One Hand Axe	212	殘暴之斧	Reaver Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe19	OneHandAxe5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe5.png	mainhand	One Hand Axe	219	屠戮之斧	Butcher Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe2	OneHandAxe2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe2.png	mainhand	One Hand Axe	19	碎玉斧	Jade Hatchet
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe20	OneHandAxe6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe6.png	mainhand	One Hand Axe	226	瓦爾戰斧	Vaal Hatchet
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe21	OneHandAxe7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe7.png	mainhand	One Hand Axe	233	皇家之斧	Royal Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe22	OneHandAxe8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe8.png	mainhand	One Hand Axe	240	獄火之刃	Infernal Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe3	OneHandAxe3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe3.png	mainhand	One Hand Axe	36	萬用手斧	Boarding Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe4	OneHandAxe4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe4.png	mainhand	One Hand Axe	54	切割者	Cleaver
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe5	OneHandAxe5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe5.png	mainhand	One Hand Axe	71	闊斧	Broad Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe6	OneHandAxe6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe6.png	mainhand	One Hand Axe	85	長柄斧	Arming Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe7	OneHandAxe7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe7.png	mainhand	One Hand Axe	99	富貴之斧	Decorative Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe8	OneHandAxe8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe8.png	mainhand	One Hand Axe	114	幽魂之斧	Spectral Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxe9	OneHandAxe2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe2.png	mainhand	One Hand Axe	124	靈玉斧	Jasper Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeE1	HeistOnehandAxe.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/HeistOnehandAxe.png	mainhand	One Hand Axe	103	肆虐之斧	Maltreatment Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeE2	HeistOnehandAxe.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/HeistOnehandAxe.png	mainhand	One Hand Axe	173	駁斥之斧	Disapprobation Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeE3	HeistOnehandAxe.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/HeistOnehandAxe.png	mainhand	One Hand Axe	244	神亂之斧	Psychotic Axe
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeM1	OneHandAxe9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe9.png	mainhand	One Hand Axe	121	蝕刻戰斧	Etched Hatchet
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeM2	OneHandAxe9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe9.png	mainhand	One Hand Axe	194	雕文戰斧	Engraved Hatchet
+poe_Weapons_OneHandWeapons_OneHandAxes_OneHandAxeM3	OneHandAxe9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandAxes/OneHandAxe9.png	mainhand	One Hand Axe	247	密文之斧	Runic Hatchet
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace1	OneHandMace1.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace1.png	mainhand	One Hand Mace	1	朽木之棒	Driftwood Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace10	OneHandMace3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace3.png	mainhand	One Hand Mace	131	銳刺木棒	Barbed Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace11	OneHandMace4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace4.png	mainhand	One Hand Mace	142	破岩錘	Rock Breaker
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace12	OneHandMace5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace5.png	mainhand	One Hand Mace	152	強化戰錘	Battle Hammer
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace13	OneHandMace6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace6.png	mainhand	One Hand Mace	163	護體之錘	Flanged Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace14	OneHandMace7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace7.png	mainhand	One Hand Mace	173	華麗之錘	Ornate Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace15	OneHandMace8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace8.png	mainhand	One Hand Mace	184	幻象之錘	Phantom Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace16	OneHandMace2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace2.png	mainhand	One Hand Mace	194	祖靈之杵	Ancestral Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace17	OneHandMace3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace3.png	mainhand	One Hand Mace	202	裂肉之錘	Tenderizer
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace18	OneHandMace4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace4.png	mainhand	One Hand Mace	209	堅錘	Gavel
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace19	OneHandMace5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace5.png	mainhand	One Hand Mace	216	軍團之錘	Legion Hammer
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace2	OneHandMace2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace2.png	mainhand	One Hand Mace	15	祭儀之杵	Tribal Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace20	OneHandMace6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace6.png	mainhand	One Hand Mace	223	鋒刃重錘	Pernach
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace21	OneHandMace7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace7.png	mainhand	One Hand Mace	230	聖約之錘	Auric Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace22	OneHandMace8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace8.png	mainhand	One Hand Mace	237	夢魘之錘	Nightmare Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace3	OneHandMace3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace3.png	mainhand	One Hand Mace	33	鈍釘木棒	Spiked Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace4	OneHandMace4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace4.png	mainhand	One Hand Mace	50	石錘	Stone Hammer
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace5	OneHandMace5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace5.png	mainhand	One Hand Mace	68	戰錘	War Hammer
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace6	OneHandMace6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace6.png	mainhand	One Hand Mace	82	多刃錘	Bladed Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace7	OneHandMace7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace7.png	mainhand	One Hand Mace	96	祭禮之錘	Ceremonial Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace8	OneHandMace8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace8.png	mainhand	One Hand Mace	110	夢境之錘	Dream Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMace9	OneHandMace2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace2.png	mainhand	One Hand Mace	121	堅石木棒	Petrified Club
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceE1	HeistOneHandMace.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/HeistOneHandMace.png	mainhand	One Hand Mace	103	閃耀之錘	Flare Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceE2	HeistOneHandMace.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/HeistOneHandMace.png	mainhand	One Hand Mace	173	碎裂之錘	Crack Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceE3	HeistOneHandMace.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/HeistOneHandMace.png	mainhand	One Hand Mace	244	爆裂之錘	Boom Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceM1	OneHandMace9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace9.png	mainhand	One Hand Mace	117	古龍之錘	Wyrm Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceM2	OneHandMace9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace9.png	mainhand	One Hand Mace	191	龍之錘	Dragon Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_OneHandMaceM3	OneHandMace9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandMaces/OneHandMace9.png	mainhand	One Hand Mace	244	巴哈姆特	Behemoth Mace
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre1	scepter1.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter1.png	mainhand	Sceptre	1	朽木權杖	Driftwood Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre10	scepter3.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter3.png	mainhand	Sceptre	131	威能權杖	Sekhem
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre11	scepter4.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter4.png	mainhand	Sceptre	142	水晶權杖	Crystal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre12	scepter5.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter5.png	mainhand	Sceptre	152	鉛鑄權杖	Lead Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre13	scepter6.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter6.png	mainhand	Sceptre	163	血色權杖	Blood Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre14	scepter7.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter7.png	mainhand	Sceptre	173	皇家權杖	Royal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre15	scepter8.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter8.png	mainhand	Sceptre	184	深淵權杖	Abyssal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre16	scepter2.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter2.png	mainhand	Sceptre	194	卡魯權杖	Karui Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre17	scepter3.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter3.png	mainhand	Sceptre	202	暴君之統	Tyrant's Sekhem
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre18	scepter4.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter4.png	mainhand	Sceptre	209	靈石權杖	Opal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre19	scepter5.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter5.png	mainhand	Sceptre	216	白金權杖	Platinum Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre2	scepter2.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter2.png	mainhand	Sceptre	15	烏木權杖	Darkwood Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre20	scepter6.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter6.png	mainhand	Sceptre	223	瓦爾權杖	Vaal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre21	scepter7.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter7.png	mainhand	Sceptre	230	禁禮權杖	Carnal Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre22	scepter8.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter8.png	mainhand	Sceptre	237	虛影權杖	Void Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre3	scepter3.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter3.png	mainhand	Sceptre	33	銅鍛權杖	Bronze Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre4	scepter4.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter4.png	mainhand	Sceptre	50	石英權杖	Quartz Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre5	scepter5.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter5.png	mainhand	Sceptre	68	冷鐵權杖	Iron Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre6	scepter6.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter6.png	mainhand	Sceptre	82	赤色權杖	Ochre Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre7	scepter7.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter7.png	mainhand	Sceptre	96	祭儀權杖	Ritual Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre8	scepter8.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter8.png	mainhand	Sceptre	110	影語權杖	Shadow Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_Sceptre9	scepter2.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter2.png	mainhand	Sceptre	121	遠古之祭	Grinning Fetish
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreE1	HeistSceptreElemental.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/HeistSceptreElemental.png	mainhand	Sceptre	103	猶疑權杖	Oscillating Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreE2	HeistSceptreElemental.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/HeistSceptreElemental.png	mainhand	Sceptre	173	安定權杖	Stabilising Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreE3	HeistSceptreElemental.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/HeistSceptreElemental.png	mainhand	Sceptre	244	輪迴權杖	Alternating Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreM1	scepter9.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter9.png	mainhand	Sceptre	124	犄角權杖	Horned Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreM2	scepter9.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter9.png	mainhand	Sceptre	191	靈鹿權杖	Stag Sceptre
+poe_Weapons_OneHandWeapons_OneHandMaces_SceptreM3	scepter9.png	Art/2DItems/Weapons/OneHandWeapons/Scepters/scepter9.png	mainhand	Sceptre	244	惡魔權杖	Sambar Sceptre
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword1	OneHandSword1.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword1.png	mainhand	One Hand Sword	1	鏽劍	Rusted Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword10	OneHandSword3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword3.png	mainhand	One Hand Sword	131	軍用長刃	Cutlass
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword11	OneHandSword4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword4.png	mainhand	One Hand Sword	142	冷光長劍	Baselard
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword12	OneHandSword5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword5.png	mainhand	One Hand Sword	152	士兵長劍	Battle Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword13	OneHandSword6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword6.png	mainhand	One Hand Sword	163	智者長劍	Elder Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword14	OneHandSword7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword7.png	mainhand	One Hand Sword	173	權貴之劍	Graceful Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword15	OneHandSword8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword8.png	mainhand	One Hand Sword	184	暮光長劍	Twilight Blade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword16	OneHandSword2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword2.png	mainhand	One Hand Sword	194	寶石之劍	Gemstone Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword17	OneHandSword3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword3.png	mainhand	One Hand Sword	202	海賊長刀	Corsair Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword18	OneHandSword4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword4.png	mainhand	One Hand Sword	209	鬥士長劍	Gladius
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword19	OneHandSword5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword5.png	mainhand	One Hand Sword	216	軍團長劍	Legion Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword2	OneHandSword2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword2.png	mainhand	One Hand Sword	15	青銅短劍	Copper Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword20	OneHandSword6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword6.png	mainhand	One Hand Sword	223	瓦爾軍刃	Vaal Blade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword21	OneHandSword7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword7.png	mainhand	One Hand Sword	230	永恆之劍	Eternal Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword22	OneHandSword8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword8.png	mainhand	One Hand Sword	237	夜語長劍	Midnight Blade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword3	OneHandSword3.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword3.png	mainhand	One Hand Sword	33	舊軍刀	Sabre
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword4	OneHandSword4.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword4.png	mainhand	One Hand Sword	50	闊劍	Broad Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword5	OneHandSword5.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword5.png	mainhand	One Hand Sword	68	征戰之劍	War Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword6	OneHandSword6.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword6.png	mainhand	One Hand Sword	82	遠古之劍	Ancient Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword7	OneHandSword7.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword7.png	mainhand	One Hand Sword	96	貴族之劍	Elegant Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword8	OneHandSword8.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword8.png	mainhand	One Hand Sword	110	暮色之刃	Dusk Blade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSword9	OneHandSword2.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword2.png	mainhand	One Hand Sword	121	碧銅短劍	Variscite Blade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordE1	HeistOneHandSword.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/HeistOneHandSword.png	mainhand	One Hand Sword	103	非命魂刃	Fickle Spiritblade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordE2	HeistOneHandSword.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/HeistOneHandSword.png	mainhand	One Hand Sword	173	怪談魂刃	Capricious Spiritblade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordE3	HeistOneHandSword.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/HeistOneHandSword.png	mainhand	One Hand Sword	244	翻天魂刃	Anarchic Spiritblade
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordM1	OneHandSword9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword9.png	mainhand	One Hand Sword	117	鉤爪劍	Hook Sword
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordM2	OneHandSword9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword9.png	mainhand	One Hand Sword	191	捕捉者	Grappler
+poe_Weapons_OneHandWeapons_OneHandSwords_OneHandSwordM3	OneHandSword9.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSword9.png	mainhand	One Hand Sword	244	虎鉤	Tiger Hook
+poe_Weapons_OneHandWeapons_OneHandSwords_StormBladeOneHand	OneHandSwordStormBlade.png	Art/2DItems/Weapons/OneHandWeapons/OneHandSwords/OneHandSwordStormBlade.png	mainhand	One Hand Sword	1	能量之刃	Energy Blade
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier1	Rapier1.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier1.png	mainhand	Thrusting One Hand Sword	8	鏽刺劍	Rusted Spike
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier10	Rapier3.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier3.png	mainhand	Thrusting One Hand Sword	138	冷芒刺劍	Burnished Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier11	Rapier4.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier4.png	mainhand	Thrusting One Hand Sword	149	穿甲刺劍	Estoc
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier12	Rapier5.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier5.png	mainhand	Thrusting One Hand Sword	159	鋸齒細劍	Serrated Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier13	Rapier6.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier6.png	mainhand	Thrusting One Hand Sword	170	古典刺劍	Primeval Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier14	Rapier7.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier7.png	mainhand	Thrusting One Hand Sword	180	華麗細劍	Fancy Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier15	Rapier8.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier8.png	mainhand	Thrusting One Hand Sword	191	銳鋒細劍	Apex Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier16	Rapier2.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier2.png	mainhand	Thrusting One Hand Sword	202	龍骨細劍	Dragonbone Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier17	Rapier3.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier3.png	mainhand	Thrusting One Hand Sword	209	強化細劍	Tempered Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier18	Rapier4.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier4.png	mainhand	Thrusting One Hand Sword	216	寒光刺劍	Pecoraro
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier19	Rapier5.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier5.png	mainhand	Thrusting One Hand Sword	223	螺紋細劍	Spiraled Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier2	Rapier2.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier2.png	mainhand	Thrusting One Hand Sword	22	鯨骨細刃	Whalebone Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier20	Rapier6.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier6.png	mainhand	Thrusting One Hand Sword	230	瓦爾細劍	Vaal Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier21	Rapier7.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier7.png	mainhand	Thrusting One Hand Sword	237	寶飾細劍	Jewelled Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier22	Rapier8.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier8.png	mainhand	Thrusting One Hand Sword	244	魔喙細劍	Harpy Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier3	Rapier3.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier3.png	mainhand	Thrusting One Hand Sword	40	鈍刃細劍	Battered Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier4	Rapier4.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier4.png	mainhand	Thrusting One Hand Sword	57	練武者細劍	Basket Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier5	Rapier5.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier5.png	mainhand	Thrusting One Hand Sword	75	鋸狀薄刃	Jagged Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier6	Rapier6.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier6.png	mainhand	Thrusting One Hand Sword	89	古代細劍	Antique Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier7	Rapier7.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier7.png	mainhand	Thrusting One Hand Sword	103	貴族細劍	Elegant Foil
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier8	Rapier8.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier8.png	mainhand	Thrusting One Hand Sword	117	棘刺細劍	Thorn Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_Rapier9	Rapier2.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier2.png	mainhand	Thrusting One Hand Sword	128	龍骨細劍	Wyrmbone Rapier
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_RapierM1	Rapier9.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier9.png	mainhand	Thrusting One Hand Sword	124	小劍	Smallsword
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_RapierM2	Rapier9.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier9.png	mainhand	Thrusting One Hand Sword	198	花魁之劍	Courtesan Sword
+poe_Weapons_OneHandWeapons_OneHandThrustingSwords_RapierM3	Rapier9.png	Art/2DItems/Weapons/OneHandWeapons/Rapiers/Rapier9.png	mainhand	Thrusting One Hand Sword	251	騎兵軍刀	Dragoon Sword
+poe_Weapons_OneHandWeapons_Wands_Wand1	Wand1.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand1.png	mainhand	Wand	1	朽木法杖	Driftwood Wand
+poe_Weapons_OneHandWeapons_Wands_Wand10	Wand5.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand5.png	mainhand	Wand	170	纏繞法杖	Serpent Wand
+poe_Weapons_OneHandWeapons_Wands_Wand11	Wand6.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand6.png	mainhand	Wand	184	靈兆法杖	Omen Wand
+poe_Weapons_OneHandWeapons_Wands_Wand12	Wand2.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand2.png	mainhand	Wand	194	魔角法杖	Demon's Horn
+poe_Weapons_OneHandWeapons_Wands_Wand13	Wand3.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand3.png	mainhand	Wand	205	魔性法杖	Imbued Wand
+poe_Weapons_OneHandWeapons_Wands_Wand14	Wand4.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand4.png	mainhand	Wand	216	靈石法杖	Opal Wand
+poe_Weapons_OneHandWeapons_Wands_Wand15	Wand5.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand5.png	mainhand	Wand	226	狂風法杖	Tornado Wand
+poe_Weapons_OneHandWeapons_Wands_Wand16	Wand6.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand6.png	mainhand	Wand	237	箴言法杖	Prophecy Wand
+poe_Weapons_OneHandWeapons_Wands_Wand1Royale	Wand1.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand1.png	mainhand	Wand	1	朽木法杖	Driftwood Wand
+poe_Weapons_OneHandWeapons_Wands_Wand2	Wand2.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand2.png	mainhand	Wand	19	羊角法杖	Goat's Horn
+poe_Weapons_OneHandWeapons_Wands_Wand3	Wand3.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand3.png	mainhand	Wand	40	粗紋法杖	Carved Wand
+poe_Weapons_OneHandWeapons_Wands_Wand4	Wand4.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand4.png	mainhand	Wand	61	石英法杖	Quartz Wand
+poe_Weapons_OneHandWeapons_Wands_Wand5	Wand5.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand5.png	mainhand	Wand	82	螺紋法杖	Spiraled Wand
+poe_Weapons_OneHandWeapons_Wands_Wand6	Wand6.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand6.png	mainhand	Wand	103	賢者法杖	Sage Wand
+poe_Weapons_OneHandWeapons_Wands_Wand7	Wand2.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand2.png	mainhand	Wand	121	獸角法杖	Faun's Horn
+poe_Weapons_OneHandWeapons_Wands_Wand8	Wand3.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand3.png	mainhand	Wand	138	符文法杖	Engraved Wand
+poe_Weapons_OneHandWeapons_Wands_Wand9	Wand4.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand4.png	mainhand	Wand	156	水晶法杖	Crystal Wand
+poe_Weapons_OneHandWeapons_Wands_WandAtlas1	ConvokingWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/ConvokingWand.png	mainhand	Wand	251	召喚法杖	Convoking Wand
+poe_Weapons_OneHandWeapons_Wands_WandE1	HeistWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/HeistWand.png	mainhand	Wand	103	拼裝法杖	Assembler Wand
+poe_Weapons_OneHandWeapons_Wands_WandE2	HeistWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/HeistWand.png	mainhand	Wand	173	匯能法杖	Congregator Wand
+poe_Weapons_OneHandWeapons_Wands_WandE3	HeistWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/HeistWand.png	mainhand	Wand	244	蓄能法杖	Accumulator Wand
+poe_Weapons_OneHandWeapons_Wands_WandM1	Wand7.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand7.png	mainhand	Wand	117	異教法杖	Pagan Wand
+poe_Weapons_OneHandWeapons_Wands_WandM2	Wand7.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand7.png	mainhand	Wand	191	異徒法杖	Heathen Wand
+poe_Weapons_OneHandWeapons_Wands_WandM3	Wand7.png	Art/2DItems/Weapons/OneHandWeapons/Wands/Wand7.png	mainhand	Wand	244	褻瀆法杖	Profane Wand
+poe_Weapons_OneHandWeapons_Wands_WandMinion1	ConvokingWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/ConvokingWand.png	mainhand	Wand	68	呼喚法杖	Calling Wand
+poe_Weapons_OneHandWeapons_Wands_WandMinion2	ConvokingWand.png	Art/2DItems/Weapons/OneHandWeapons/Wands/ConvokingWand.png	mainhand	Wand	173	召集法杖	Convening Wand
+poe_Weapons_TwoHandWeapons_Bows_Bow1	Bow1.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow1.png	mainhand	Bow	1	粗製弓	Crude Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow10	Bow3.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow3.png	mainhand	Bow	131	直弓	Decurve Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow11	Bow4.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow4.png	mainhand	Bow	142	複合弓	Compound Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow12	Bow5.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow5.png	mainhand	Bow	152	狙殺弓	Sniper Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow13	Bow6.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow6.png	mainhand	Bow	163	象牙弓	Ivory Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow14	Bow7.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow7.png	mainhand	Bow	173	貴族之弓	Highborn Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow15	Bow8.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow8.png	mainhand	Bow	184	獵魂之弓	Decimation Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow16	Bow2.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow2.png	mainhand	Bow	194	林野獵弓	Thicket Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow17	Bow3.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow3.png	mainhand	Bow	202	城塞戰弓	Citadel Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow18	Bow4.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow4.png	mainhand	Bow	209	漫遊之弓	Ranger Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow19	Bow5.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow5.png	mainhand	Bow	216	暗殺弓	Assassin Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow1Royale	Bow1.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow1.png	mainhand	Bow	1	粗製弓	Crude Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow2	Bow2.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow2.png	mainhand	Bow	15	短弓	Short Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow20	Bow6.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow6.png	mainhand	Bow	223	脊弓	Spine Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow21	Bow7.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow7.png	mainhand	Bow	230	帝國之弓	Imperial Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow22	Bow8.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow8.png	mainhand	Bow	237	先驅者之弓	Harbinger Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow3	Bow3.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow3.png	mainhand	Bow	29	長弓	Long Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow4	Bow4.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow4.png	mainhand	Bow	47	合成弓	Composite Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow5	Bow5.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow5.png	mainhand	Bow	61	反曲弓	Recurve Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow6	Bow6.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow6.png	mainhand	Bow	78	骨製弓	Bone Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow7	Bow7.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow7.png	mainhand	Bow	96	皇家獵弓	Royal Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow8	Bow8.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow8.png	mainhand	Bow	110	死亡之弓	Death Bow
+poe_Weapons_TwoHandWeapons_Bows_Bow9	Bow2.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow2.png	mainhand	Bow	121	叢林獵弓	Grove Bow
+poe_Weapons_TwoHandWeapons_Bows_BowE1	HeistBowFire.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/HeistBowFire.png	mainhand	Bow	103	海德隆之弓	Hedron Bow
+poe_Weapons_TwoHandWeapons_Bows_BowE2	HeistBowFire.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/HeistBowFire.png	mainhand	Bow	173	鑄造之弓	Foundry Bow
+poe_Weapons_TwoHandWeapons_Bows_BowE3	HeistBowFire.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/HeistBowFire.png	mainhand	Bow	244	日耀之弓	Solarine Bow
+poe_Weapons_TwoHandWeapons_Bows_BowM1	Bow9.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow9.png	mainhand	Bow	124	反射弓	Reflex Bow
+poe_Weapons_TwoHandWeapons_Bows_BowM2	Bow9.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow9.png	mainhand	Bow	198	鋼木之弓	Steelwood Bow
+poe_Weapons_TwoHandWeapons_Bows_BowM3	Bow9.png	Art/2DItems/Weapons/TwoHandWeapons/Bows/Bow9.png	mainhand	Bow	247	馬拉克斯弓	Maraketh Bow
+poe_Weapons_TwoHandWeapons_Staves_Staff1	Staff1.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff1.png	mainhand	Staff	12	朽木之幹	Gnarled Branch
+poe_Weapons_TwoHandWeapons_Staves_Staff10	Staff4.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff4.png	mainhand	Warstaff	142	軍用長杖	Military Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff11	Staff5.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff5.png	mainhand	Warstaff	170	蛇紋長杖	Serpentine Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff12	Staff6.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff6.png	mainhand	Staff	180	貴族長杖	Highborn Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff13	Staff7.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff7.png	mainhand	Warstaff	191	惡靈長杖	Foul Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff14	Staff2.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff2.png	mainhand	Staff	202	史典長杖	Primordial Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff15	Staff3.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff3.png	mainhand	Staff	216	武術長杖	Lathi
+poe_Weapons_TwoHandWeapons_Staves_Staff16	Staff4.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff4.png	mainhand	Warstaff	209	艾茲麥長杖	Ezomyte Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff17	Staff5.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff5.png	mainhand	Warstaff	223	風暴長杖	Maelstr\u00f6m Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff18	Staff6.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff6.png	mainhand	Staff	230	帝國長杖	Imperial Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff19	Staff7.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff7.png	mainhand	Warstaff	237	審判長杖	Judgement Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff2	Staff2.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff2.png	mainhand	Staff	29	粗製長杖	Primitive Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff3	Staff3.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff3.png	mainhand	Staff	61	長杖	Long Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff4	Staff4.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff4.png	mainhand	Warstaff	43	鐵鍛長杖	Iron Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff5	Staff5.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff5.png	mainhand	Warstaff	78	強化長杖	Coiled Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff6	Staff6.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff6.png	mainhand	Staff	96	皇家長杖	Royal Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff7	Staff7.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff7.png	mainhand	Warstaff	114	毒牙長杖	Vile Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff8	Staff2.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff2.png	mainhand	Staff	128	堅木長杖	Woodful Staff
+poe_Weapons_TwoHandWeapons_Staves_Staff9	Staff3.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff3.png	mainhand	Staff	156	細柄長杖	Quarterstaff
+poe_Weapons_TwoHandWeapons_Staves_StaffE1	HeistStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistStaff.png	mainhand	Staff	103	變形長杖	Transformer Staff
+poe_Weapons_TwoHandWeapons_Staves_StaffE2	HeistStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistStaff.png	mainhand	Staff	173	鐘擺長杖	Reciprocation Staff
+poe_Weapons_TwoHandWeapons_Staves_StaffE3	HeistStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistStaff.png	mainhand	Staff	244	蓄能長杖	Battery Staff
+poe_Weapons_TwoHandWeapons_Staves_StaffM1	Staff8.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff8.png	mainhand	Staff	124	新月長杖	Crescent Staff
+poe_Weapons_TwoHandWeapons_Staves_StaffM2	Staff8.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff8.png	mainhand	Staff	198	月神長杖	Moon Staff
+poe_Weapons_TwoHandWeapons_Staves_StaffM3	Staff8.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/Staff8.png	mainhand	Staff	244	月蝕長杖	Eclipse Staff
+poe_Weapons_TwoHandWeapons_Staves_WarstaffE1	HeistWarStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistWarStaff.png	mainhand	Warstaff	103	才能長桿	Capacity Rod
+poe_Weapons_TwoHandWeapons_Staves_WarstaffE2	HeistWarStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistWarStaff.png	mainhand	Warstaff	173	潛能長桿	Potentiality Rod
+poe_Weapons_TwoHandWeapons_Staves_WarstaffE3	HeistWarStaff.png	Art/2DItems/Weapons/TwoHandWeapons/Staves/HeistWarStaff.png	mainhand	Warstaff	244	萬能長桿	Eventuality Rod
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe1	TwoHandAxe1.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe1.png	mainhand	Two Hand Axe	12	石斧	Stone Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe10	TwoHandAxe4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe4.png	mainhand	Two Hand Axe	156	行刑巨斧	Headsman Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe11	TwoHandAxe5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe5.png	mainhand	Two Hand Axe	170	雙影巨斧	Labrys
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe12	TwoHandAxe6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe6.png	mainhand	Two Hand Axe	180	權貴巨斧	Noble Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe13	TwoHandAxe7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe7.png	mainhand	Two Hand Axe	191	深淵巨斧	Abyssal Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe14	TwoHandAxe2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe2.png	mainhand	Two Hand Axe	202	卡魯巨斧	Karui Chopper
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe15	TwoHandAxe3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe3.png	mainhand	Two Hand Axe	209	裂甲巨斧	Sundering Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe16	TwoHandAxe4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe4.png	mainhand	Two Hand Axe	216	艾茲麥巨斧	Ezomyte Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe17	TwoHandAxe5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe5.png	mainhand	Two Hand Axe	223	瓦爾巨斧	Vaal Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe18	TwoHandAxe6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe6.png	mainhand	Two Hand Axe	230	霸主巨斧	Despot Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe19	TwoHandAxe7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe7.png	mainhand	Two Hand Axe	237	虛影巨斧	Void Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe2	TwoHandAxe2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe2.png	mainhand	Two Hand Axe	29	碎玉大斧	Jade Chopper
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe3	TwoHandAxe3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe3.png	mainhand	Two Hand Axe	43	柴斧	Woodsplitter
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe4	TwoHandAxe4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe4.png	mainhand	Two Hand Axe	61	巨戰斧	Poleaxe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe5	TwoHandAxe5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe5.png	mainhand	Two Hand Axe	78	雙刃巨斧	Double Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe6	TwoHandAxe6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe6.png	mainhand	Two Hand Axe	96	金柄之斧	Gilded Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe7	TwoHandAxe7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe7.png	mainhand	Two Hand Axe	114	幽影巨斧	Shadow Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe8	TwoHandAxe2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe2.png	mainhand	Two Hand Axe	128	靈玉巨斧	Jasper Chopper
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxe9	TwoHandAxe3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe3.png	mainhand	Two Hand Axe	142	裂木巨斧	Timber Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeE1	HeistTwoHandAxe.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/HeistTwoHandAxe.png	mainhand	Two Hand Axe	103	原始砍斧	Prime Cleaver
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeE2	HeistTwoHandAxe.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/HeistTwoHandAxe.png	mainhand	Two Hand Axe	173	珩磨砍斧	Honed Cleaver
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeE3	HeistTwoHandAxe.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/HeistTwoHandAxe.png	mainhand	Two Hand Axe	244	巔峰砍斧	Apex Cleaver
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeM1	TwoHandAxe8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe8.png	mainhand	Two Hand Axe	124	匕斧	Dagger Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeM2	TwoHandAxe8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe8.png	mainhand	Two Hand Axe	205	猛禽爪斧	Talon Axe
+poe_Weapons_TwoHandWeapons_TwoHandAxes_TwoHandAxeM3	TwoHandAxe8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandAxes/TwoHandAxe8.png	mainhand	Two Hand Axe	244	裂肉者	Fleshripper
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace1	TwoHandMace1.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace1.png	mainhand	Two Hand Mace	8	朽木巨錘	Driftwood Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace10	TwoHandMace4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace4.png	mainhand	Two Hand Mace	152	沉鋼重錘	Steelhead
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace11	TwoHandMace5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace5.png	mainhand	Two Hand Mace	166	凶刺巨錘	Spiny Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace12	TwoHandMace6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace6.png	mainhand	Two Hand Mace	177	華麗重錘	Plated Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace13	TwoHandMace7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace7.png	mainhand	Two Hand Mace	187	威權巨錘	Dread Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace14	TwoHandMace2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace2.png	mainhand	Two Hand Mace	198	卡魯重錘	Karui Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace15	TwoHandMace3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace3.png	mainhand	Two Hand Mace	205	巨型重錘	Colossus Mallet
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace16	TwoHandMace4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace4.png	mainhand	Two Hand Mace	212	掃蕩者	Piledriver
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace17	TwoHandMace5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace5.png	mainhand	Two Hand Mace	219	戮魂重錘	Meatgrinder
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace18	TwoHandMace6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace6.png	mainhand	Two Hand Mace	226	帝國重錘	Imperial Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace19	TwoHandMace7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace7.png	mainhand	Two Hand Mace	233	懼靈重錘	Terror Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace2	TwoHandMace2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace2.png	mainhand	Two Hand Mace	26	祭儀巨錘	Tribal Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace3	TwoHandMace3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace3.png	mainhand	Two Hand Mace	40	千斤錘	Mallet
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace4	TwoHandMace4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace4.png	mainhand	Two Hand Mace	57	冷鐵重錘	Sledgehammer
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace5	TwoHandMace5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace5.png	mainhand	Two Hand Mace	75	狼牙重錘	Jagged Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace6	TwoHandMace6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace6.png	mainhand	Two Hand Mace	92	銅影巨錘	Brass Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace7	TwoHandMace7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace7.png	mainhand	Two Hand Mace	110	恐懼重錘	Fright Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace8	TwoHandMace2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace2.png	mainhand	Two Hand Mace	124	圖騰巨錘	Totemic Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMace9	TwoHandMace3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace3.png	mainhand	Two Hand Mace	138	剛猛巨錘	Great Mallet
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceE1	HeistTwoHandMace.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/HeistTwoHandMace.png	mainhand	Two Hand Mace	103	鈍擊力凝聚錘	Blunt Force Condenser
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceE2	HeistTwoHandMace.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/HeistTwoHandMace.png	mainhand	Two Hand Mace	173	粉碎力增幅錘	Crushing Force Magnifier
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceE3	HeistTwoHandMace.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/HeistTwoHandMace.png	mainhand	Two Hand Mace	244	衝擊力擴散錘	Impact Force Propagator
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceM1	TwoHandMace8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace8.png	mainhand	Two Hand Mace	117	晨星	Morning Star
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceM2	TwoHandMace8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace8.png	mainhand	Two Hand Mace	194	日光錘	Solar Maul
+poe_Weapons_TwoHandWeapons_TwoHandMaces_TwoHandMaceM3	TwoHandMace8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandMaces/TwoHandMace8.png	mainhand	Two Hand Mace	240	花冠重錘	Coronal Maul
+poe_Weapons_TwoHandWeapons_TwoHandSwords_StormBladeTwoHand	TwoHandSwordStormBlade.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSwordStormBlade.png	mainhand	Two Hand Sword	1	能量之刃	Energy Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword1	TwoHandSword1.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword1.png	mainhand	Two Hand Sword	8	鏽斑巨劍	Corroded Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword10	TwoHandSword4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword4.png	mainhand	Two Hand Sword	152	高山重刃	Highland Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword11	TwoHandSword5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword5.png	mainhand	Two Hand Sword	166	符文巨劍	Engraved Greatsword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword12	TwoHandSword6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword6.png	mainhand	Two Hand Sword	177	虎牙巨劍	Tiger Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword13	TwoHandSword7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword7.png	mainhand	Two Hand Sword	187	凶靈巨劍	Wraith Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword14	TwoHandSword2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword2.png	mainhand	Two Hand Sword	198	行刑巨劍	Headman's Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword15	TwoHandSword3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword3.png	mainhand	Two Hand Sword	205	殘暴巨劍	Reaver Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword16	TwoHandSword4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword4.png	mainhand	Two Hand Sword	212	艾茲麥巨劍	Ezomyte Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword17	TwoHandSword5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword5.png	mainhand	Two Hand Sword	219	瓦爾巨劍	Vaal Greatsword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword18	TwoHandSword6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword6.png	mainhand	Two Hand Sword	226	獅爪巨劍	Lion Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword19	TwoHandSword7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword7.png	mainhand	Two Hand Sword	233	獄炎重劍	Infernal Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword2	TwoHandSword2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword2.png	mainhand	Two Hand Sword	26	大劍	Longsword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword3	TwoHandSword3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword3.png	mainhand	Two Hand Sword	40	重劍	Bastard Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword4	TwoHandSword4.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword4.png	mainhand	Two Hand Sword	57	雙手劍	Two-Handed Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword5	TwoHandSword5.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword5.png	mainhand	Two Hand Sword	75	術雕巨劍	Etched Greatsword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword6	TwoHandSword6.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword6.png	mainhand	Two Hand Sword	92	名貴巨劍	Ornate Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword7	TwoHandSword7.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword7.png	mainhand	Two Hand Sword	110	幽魂巨劍	Spectral Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword8	TwoHandSword2.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword2.png	mainhand	Two Hand Sword	124	殺戮巨劍	Butcher Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSword9	TwoHandSword3.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword3.png	mainhand	Two Hand Sword	138	士兵巨劍	Footman Sword
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordE1	HeistTwoHandSword.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/HeistTwoHandSword.png	mainhand	Two Hand Sword	103	鞭策之刃	Rebuking Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordE2	HeistTwoHandSword.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/HeistTwoHandSword.png	mainhand	Two Hand Sword	173	爆破之刃	Blasting Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordE3	HeistTwoHandSword.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/HeistTwoHandSword.png	mainhand	Two Hand Sword	244	放逐之刃	Banishing Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordM1	TwoHandSword8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword8.png	mainhand	Two Hand Sword	121	彎刃	Curved Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordM2	TwoHandSword8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword8.png	mainhand	Two Hand Sword	194	細刃	Lithe Blade
+poe_Weapons_TwoHandWeapons_TwoHandSwords_TwoHandSwordM3	TwoHandSword8.png	Art/2DItems/Weapons/TwoHandWeapons/TwoHandSwords/TwoHandSword8.png	mainhand	Two Hand Sword	244	精緻之刃	Exquisite Blade

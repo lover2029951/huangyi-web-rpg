@@ -1,0 +1,4 @@
+EyrieOrb.png
+BasiliskOrb.png
+CrusaderOrb.png
+ConquerorOrb.png
