@@ -116,6 +116,193 @@
             font-family: Consolas, monospace;
         }
 
+        /* ── 玩法公告（卡片式） ── */
+        .guide {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #38bdf8;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .guide-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(56,189,248,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #7dd3fc;
+        }
+        .guide-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .guide-bd {
+            max-height: 420px; overflow-y: auto;
+            padding: 12px 16px 14px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+        }
+        .guide-bd::-webkit-scrollbar { width: 6px; }
+        .guide-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .card {
+            background: rgba(17, 24, 34, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            padding: 10px 12px;
+            transition: border-color .15s, background .15s;
+        }
+        .card:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .card-hd {
+            display: flex; align-items: center; gap: 7px;
+            font-size: .82rem; font-weight: bold; color: #e2e8f0;
+            margin-bottom: 6px;
+        }
+        .card-hd .ico { font-size: 1rem; flex: 0 0 auto; }
+        .card-bd {
+            font-size: .74rem; line-height: 1.8; color: #94a3b8;
+        }
+        .card-bd b { color: #cbd5e1; }
+        .card-bd code {
+            background: rgba(56,189,248,.10);
+            border: 1px solid #1e3a52;
+            border-radius: 3px;
+            padding: 0 4px;
+            font-size: .72rem;
+            color: #7dd3fc;
+            font-family: Consolas, monospace;
+        }
+        .card.span2 { grid-column: 1 / -1; }
+
+        /* 進階提示 */
+        .tip {
+            grid-column: 1 / -1;
+            background: rgba(245,158,11,.09);
+            border: 1px solid #f59e0b;
+            border-left: 3px solid #fbbf24;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: .74rem; line-height: 1.85; color: #fcd34d;
+        }
+        .tip b { color: #fde68a; }
+
+        @media (max-width: 620px) {
+            .guide-bd { grid-template-columns: 1fr; max-height: 380px; }
+        }
+
+        /* ── 我的隊伍 ── */
+        .team {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #10b981;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .team-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(16,185,129,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #6ee7b7;
+        }
+        .team-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .team-bd { padding: 12px 16px 14px; }
+
+        /* 隊伍成員格 */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .member {
+            position: relative;
+            background: rgba(15, 22, 30, .95);
+            border: 2px solid #1e2a36;
+            border-radius: 8px;
+            padding: 10px 8px 9px;
+            text-align: center;
+            transition: border-color .15s, background .15s, transform .15s;
+        }
+        .member.main {
+            border-color: #00e5ff;
+            background: rgba(0, 229, 255, .07);
+            box-shadow: 0 0 16px rgba(0,229,255,.25);
+        }
+        .member.empty {
+            border-style: dashed;
+            opacity: .45;
+        }
+        .member .slot-no {
+            position: absolute; left: 5px; top: 4px;
+            font-size: .6rem; color: #475569; font-weight: bold;
+        }
+        .member .crown {
+            position: absolute; right: 5px; top: 3px;
+            font-size: .66rem;
+        }
+        .member .avatar {
+            font-size: 1.6rem; line-height: 1;
+            margin: 4px 0 6px;
+        }
+        .member .m-name {
+            font-size: .74rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+        .member.main .m-name { color: #7dd3fc; }
+        .member .m-lv {
+            font-size: .66rem; color: #fbbf24; font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .member .m-sect {
+            font-size: .62rem; color: #94a3b8;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 6px;
+            min-height: 15px;
+        }
+        .member .m-bar {
+            height: 5px; border-radius: 3px; background: #0a0f16;
+            overflow: hidden; border: 1px solid #1e2a36;
+        }
+        .member .m-bar i {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, #10b981, #6ee7b7);
+            transition: width .3s;
+        }
+        .member .m-exp {
+            font-size: .58rem; color: #64748b; margin-top: 3px;
+        }
+        .member.empty .m-name { color: #475569; font-weight: normal; }
+
+        /* 隊伍統計列 */
+        .team-stat {
+            display: flex; flex-wrap: wrap; gap: 8px 18px;
+            margin-top: 12px; padding-top: 11px;
+            border-top: 1px dashed #1a2532;
+            font-size: .74rem; color: #94a3b8;
+        }
+        .team-stat span b { color: #6ee7b7; }
+
+        /* 空狀態 */
+        .team-empty {
+            text-align: center; padding: 20px 12px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .team-empty a {
+            color: #7dd3fc; text-decoration: none;
+            border-bottom: 1px dotted #38bdf8;
+        }
+
+        @media (max-width: 620px) {
+            .team-grid { grid-template-columns: repeat(3, 1fr); }
+            .team-grid .member:nth-child(n+4) { display: none; }
+        }
+
         /* ── 底部提示 ── */
         .note {
             font-size: .76rem; color: #475569;
@@ -270,6 +457,297 @@
         </div>
     </div>
     <!-- ══════════════ 更新公告結束 ══════════════ -->
+
+    <!-- ══════════════ 玩法公告 ══════════════ -->
+    <div class="guide">
+        <div class="guide-hd">
+            <span>🎮 玩法指南</span>
+            <span class="cnt">新手必讀</span>
+        </div>
+        <div class="guide-bd">
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⚔️</span>核心循環</div>
+                <div class="card-bd">
+                    打怪升等 → 累積裝備 → 挑戰高階地圖 → 取得更好的詞綴與精隨 → 再打更難的圖。
+                    <br><b>一般戰鬥</b>只給經驗／武點／銀兩；<b>裝備與通貨全部來自打圖</b>。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🗺️</span>異界輿圖（打圖）</div>
+                <div class="card-bd">
+                    倉庫 → <b>地圖倉庫</b> → 選一張圖 → 用通貨改造詞綴 → 右欄點「開啟地圖戰鬥」。
+                    <br>地圖分 <code>T1~T16</code>，階級越高獎勵越好，怪物也越強。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🛠️</span>地圖改造（重要）</div>
+                <div class="card-bd">
+                    地圖掉落時是<b>白圖</b>，沒有詞綴。用通貨洗詞綴：
+                    <br>蛻變（白→藍）→ 增幅（加詞綴）→ 點金（藍→黃）→ 混沌（重洗）
+                    <br>詞綴越好，<b>怪物數量／掉落／難度</b>同步提升。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">👑</span>霸主與地圖掉落</div>
+                <div class="card-bd">
+                    清完小怪後<b>霸主登場</b>。擊殺霸主有 <b>25%</b> 機率掉落高一階地圖。
+                    <br>首次擊敗每個階級的霸主 → 永久 <b>+1 輿圖天賦點</b>（每階只給一次）。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🌳</span>輿圖天賦樹</div>
+                <div class="card-bd">
+                    頂部「🌳 天賦樹」或輿圖內「🌟 輿圖天賦」開啟。
+                    <br>33 個節點、4 大分支全為<b>精隨主題</b>：掉落率／階級／改造／詞綴。
+                    <br>天賦點只在地圖內生效。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⛏️</span>地心礦坑</div>
+                <div class="card-bd">
+                    頂部「⛏️ 地心礦坑」進入。<b>無限深度</b>，越深怪物越強。
+                    <br>產出：<b>硫磺</b>（燃料）、<b>化石</b>（工藝）、<b>珠寶</b>。
+                    <br>硫磺主要由打圖取得。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">💊</span>三套自動戰鬥</div>
+                <div class="card-bd">
+                    分別對應三種戰鬥，設定完全獨立：
+                    <br>🎛️ <b>時空內掛</b>（一般戰鬥）｜🗺️ <b>打圖戰術</b>（輿圖）｜⛏️ <b>礦坑戰術</b>（礦坑）
+                    <br>每個角色各自獨立設定，切換操控角色會自動套用。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">💀</span>復活機制</div>
+                <div class="card-bd">
+                    每個角色<b>獨立 3 次</b>復活。角色死亡會<b>立刻消耗自己的次數</b>原地復活，不需等全隊死亡。
+                    <br>次數用完就真的倒下，需靠隊友或退出地圖。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🔮</span>精隨系統</div>
+                <div class="card-bd">
+                    打圖時約 <b>3%</b> 的怪物會帶「精隨禁錮」詞綴（紫色光環）。
+                    <br>擊殺<b>必定掉落</b>對應家族的 1 顆精隨。精隨可直接鑲上裝備，取代一條詞綴。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🏯</span>幫會系統</div>
+                <div class="card-bd">
+                    八大建築可排班幫眾生產資源，<b>每棟最多 3 人</b>。
+                    <br>幫貢可用於「幫會祝福」（單角限 1 個生效）與「後天改命」（每角獨立）。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⚓</span>金司馬區</div>
+                <div class="card-bd">
+                    建築經營、雇傭工人、船運貿易、符文鑲嵌、金司馬重組。
+                    <br>倉庫容量 <b>2000</b>（基本 200 × 10），適合囤放大量素材。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">📈</span>等級與獎勵曲線</div>
+                <div class="card-bd">
+                    上限 <b>Lv.300</b>。<b>越後期越難練</b>：
+                    <br>Lv1 約 7 場升一級 → Lv50 約 212 場 → Lv300 約 1343 場。
+                    <br>打比自己低 <b>5 級以上</b>的怪，獎勵會大幅衰減。
+                </div>
+            </div>
+
+            <div class="tip">
+                <b>💡 新手建議路線</b>：先在揚州城郊打到 Lv10 → 累積 3 張 T1 地圖合成 T2 →
+                進軍輿圖洗詞綴刷裝備 → 裝備成型後挑戰 T5+ 拿精隨 →
+                同時經營礦坑取得珠寶與化石 → 最後挑戰 T16 霸主。
+            </div>
+
+        </div>
+    </div>
+    <!-- ══════════════ 玩法公告結束 ══════════════ -->
+
+    <!-- ══════════════ 我的隊伍 ══════════════ -->
+    <div class="team">
+        <div class="team-hd">
+            <span>👥 我的隊伍</span>
+            <span class="cnt" id="team-cnt">讀取中…</span>
+        </div>
+        <div class="team-bd" id="team-bd">
+            <div class="team-empty" id="team-loading">正在讀取本機存檔…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 我的隊伍結束 ══════════════ -->
+
+    <script>
+    /* ══════════════════════════════════════════════════════════════
+       👥 我的隊伍 —— 從本機存檔讀取角色資料
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SAVE_KEY = 'HUANGYI_WEB_RPG_SAVE_V2';
+
+        /* 門派顯示對照 */
+        var SECT_INFO = {
+            emei:       { name: '峨嵋派',   icon: '💚' },
+            shaolin:    { name: '少林寺',   icon: '🧘' },
+            wudang:     { name: '武當派',   icon: '☯️' },
+            cihang:     { name: '慈航靜齋', icon: '🌸' },
+            yinkui:     { name: '陰癸派',   icon: '🌙' },
+            momon:      { name: '魔門',     icon: '😈' },
+            jingnian:   { name: '淨念禪院', icon: '🕉️' },
+            jueqing:    { name: '絕情谷',   icon: '❄️' },
+            guigu:      { name: '鬼谷',     icon: '🌀' },
+            tianlong:   { name: '天龍寺',   icon: '🐉' },
+            xingxiu:    { name: '星宿派',   icon: '☠️' },
+            mingjiao:   { name: '明教',     icon: '🔥' },
+            bugui:      { name: '補天閣',   icon: '🧵' },
+            huanhua:    { name: '花間派',   icon: '🌺' },
+            tianlian:   { name: '天蓮宗',   icon: '🪷' }
+        };
+
+        function sectOf(sect) {
+            if (!sect) return { name: '無門無派', icon: '⚪' };
+            return SECT_INFO[sect] || { name: String(sect), icon: '⚪' };
+        }
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+
+        function render() {
+            var bd = document.getElementById('team-bd');
+            var cntEl = document.getElementById('team-cnt');
+            if (!bd) return;
+
+            var raw = null;
+            try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { raw = null; }
+
+            if (!raw) {
+                if (cntEl) cntEl.textContent = '尚無存檔';
+                bd.innerHTML =
+                    '<div class="team-empty">' +
+                    '還沒有任何角色。<br>' +
+                    '<a href="game.html">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
+                    '</div>';
+                return;
+            }
+
+            var save = null;
+            try { save = JSON.parse(raw); } catch (e) { save = null; }
+            if (!save || !Array.isArray(save.roster) || !save.roster.length) {
+                if (cntEl) cntEl.textContent = '尚無角色';
+                bd.innerHTML = '<div class="team-empty">存檔中沒有角色資料。<br>' +
+                    '<a href="game.html">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
+                return;
+            }
+
+            var roster = save.roster;
+            var party = Array.isArray(save.party) ? save.party : [];
+            var activeIdx = (typeof save.activeCharIndex === 'number') ? save.activeCharIndex : 0;
+            var activeId = (roster[activeIdx] && roster[activeIdx].id) || null;
+
+            /* 只顯示「在隊伍中」的角色；若 party 為空則顯示全部 */
+            var inParty = roster.filter(function (c) {
+                return party.indexOf(c.id) !== -1;
+            });
+            var shown = inParty.length ? inParty : roster;
+
+            if (cntEl) {
+                cntEl.textContent = shown.length + ' / ' + roster.length + ' 名角色' +
+                    (party.length ? '　·　上陣 ' + party.length + ' 人' : '');
+            }
+
+            var h = '<div class="team-grid">';
+            for (var i = 0; i < 5; i++) {
+                var c = shown[i];
+                if (!c) {
+                    h += '<div class="member empty">' +
+                        '<span class="slot-no">' + (i + 1) + '</span>' +
+                        '<div class="avatar">👤</div>' +
+                        '<div class="m-name">空缺</div>' +
+                        '<div class="m-lv">—</div>' +
+                        '<div class="m-sect">未招募</div>' +
+                        '<div class="m-bar"><i style="width:0%"></i></div>' +
+                        '<div class="m-exp">—</div>' +
+                        '</div>';
+                    continue;
+                }
+                var isMain = (c.id === activeId);
+                var sec = sectOf(c.sect);
+                var exp = Number(c.exp) || 0;
+                var maxExp = Number(c.maxExp) || 1;
+                var pct = Math.min(100, Math.round(exp / maxExp * 100));
+                h += '<div class="member' + (isMain ? ' main' : '') + '">' +
+                    '<span class="slot-no">' + (i + 1) + '</span>' +
+                    (isMain ? '<span class="crown">👑</span>' : '') +
+                    '<div class="avatar">' + sec.icon + '</div>' +
+                    '<div class="m-name" title="' + esc(c.name) + '">' + esc(c.name) + '</div>' +
+                    '<div class="m-lv">Lv.' + (Number(c.lv) || 1) + '</div>' +
+                    '<div class="m-sect" title="' + esc(sec.name) + '">' + esc(sec.name) + '</div>' +
+                    '<div class="m-bar"><i style="width:' + pct + '%"></i></div>' +
+                    '<div class="m-exp">' + pct + '% · ' + fmt(exp) + '/' + fmt(maxExp) + '</div>' +
+                    '</div>';
+            }
+            h += '</div>';
+
+            /* 統計列 */
+            var maxLv = 0, totalLv = 0, sectCount = {};
+            roster.forEach(function (c) {
+                var lv = Number(c.lv) || 1;
+                totalLv += lv;
+                if (lv > maxLv) maxLv = lv;
+                if (c.sect) sectCount[c.sect] = (sectCount[c.sect] || 0) + 1;
+            });
+            var atlas = save.atlas || {};
+            var clears = Number(atlas.clears) || 0;
+            var bestTier = Number(atlas.bestTier) || 0;
+            var gold = Number(save.gold) || 0;
+
+            h += '<div class="team-stat">' +
+                '<span>👥 角色數 <b>' + roster.length + '</b></span>' +
+                '<span>🏆 最高等級 <b>Lv.' + maxLv + '</b></span>' +
+                '<span>📊 平均等級 <b>' + (roster.length ? Math.round(totalLv / roster.length) : 0) + '</b></span>' +
+                '<span>🗺️ 通關次數 <b>' + clears + '</b></span>' +
+                (bestTier > 0 ? '<span>⭐ 最高階級 <b>T' + bestTier + '</b></span>' : '') +
+                '<span>💰 紋銀 <b>' + fmt(gold) + '</b></span>' +
+                '</div>';
+
+            bd.innerHTML = h;
+        }
+
+        /* 頁面載入後渲染 */
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', render);
+        } else {
+            render();
+        }
+
+        /* 從遊戲分頁返回時自動刷新（存檔可能已更新） */
+        window.addEventListener('focus', render);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) render();
+        });
+    })();
+    </script>
 
     <div class="note">
         建議使用 Chrome / Edge 瀏覽器　·　首次載入約需 3~5 秒<br>

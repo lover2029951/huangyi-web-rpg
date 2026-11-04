@@ -1796,7 +1796,11 @@ window.HY = window.HY || {};
         if (game.affixSys.__cfgPatched) return;
         game.affixSys.__cfgPatched = true;
         var orig = game.affixSys.applyRandomAffixes.bind(game.affixSys);
-        game.affixSys.applyRandomAffixes = function (enemy) {
+        game.affixSys.applyRandomAffixes = function (enemy, forceChance) {
+            /* ⭐ 若呼叫端明確指定機率（例如輿圖依階級提高），直接透傳不覆寫 */
+            if (typeof forceChance === 'number' && isFinite(forceChance)) {
+                return orig(enemy, forceChance);
+            }
             var target = CFG.affix.triggerChancePct;
             var D = window.HY.Data;
             if (target >= 35) return orig(enemy);
@@ -17264,10 +17268,14 @@ window.HY = window.HY || {};
             return { maxHp: 500, maxMp: 200, atk: 50, def: 20 };
         }
         // ⭐ 遭遇敵人有 35% 機率附帶 1~3 種 PoE 詞綴（65% 為普通無詞綴）
-        applyRandomAffixes(enemyObj) {
+        //    forceChance：外部指定觸發機率（輿圖高階圖可提高，不傳則用預設 35%）
+        applyRandomAffixes(enemyObj, forceChance) {
             var Data = window.HY.Data;
             if (!Data || !Data.MONSTER_AFFIXES || !Data.RARITY_TIERS) return enemyObj;
-            var hasAffixRoll = Math.random() * 100 < 35;
+            var chance = (typeof forceChance === 'number' && isFinite(forceChance))
+                ? Math.max(0, Math.min(100, forceChance))
+                : 35;
+            var hasAffixRoll = Math.random() * 100 < chance;
             if (!hasAffixRoll) {
                 var normalTier = Data.RARITY_TIERS.normal;
                 enemyObj.rarity = normalTier.id;
@@ -34894,12 +34902,17 @@ window.HY = window.HY || {};
                         '<button class="btn-primary btn-select-char" ' + (isSelected ? 'disabled' : '') + '>' +
                             (isSelected ? '👤 操控養成中' : '👤 切換操控') +
                         '</button>' +
+                        '<button class="action-btn btn-rename-char" style="border-color:#a78bfa; color:#c4b5fd;">✏️ 改名</button>' +
                         '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
                             (inParty ? '⛺ 退下休息' : '🚩 加入上陣') +
                         '</button>' +
                     '</div>';
                 card.querySelector('.btn-select-char').addEventListener('click', () => {
                     if (app.rosterSys.selectCharacter(idx)) app.renderAll();
+                });
+                /* ⭐ 改名功能 */
+                card.querySelector('.btn-rename-char').addEventListener('click', () => {
+                    this._openRenameDialog(c, idx);
                 });
                 card.querySelector('.btn-toggle-party').addEventListener('click', () => {
                     if (app.partySys.togglePartyMember(c.id)) app.renderAll();
@@ -34910,6 +34923,80 @@ window.HY = window.HY || {};
             if (formEl) {
                 this.renderFormationList(formEl, Data);
             }
+        }
+
+        /** ⭐ 角色改名對話框 */
+        _openRenameDialog(char, idx) {
+            const app = this.app;
+            const old = document.getElementById('hy-rename-dlg');
+            if (old) old.parentNode.removeChild(old);
+
+            const box = document.createElement('div');
+            box.id = 'hy-rename-dlg';
+            box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(2,6,12,.85);' +
+                'display:flex;align-items:center;justify-content:center;padding:16px;' +
+                "font-family:'Microsoft JhengHei','PingFang TC',sans-serif;";
+
+            box.innerHTML =
+                '<div style="width:min(92vw,380px);background:#0f141c;border:2px solid #a78bfa;' +
+                'border-radius:10px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.9)">' +
+                '<div style="font-size:1rem;font-weight:bold;color:#c4b5fd;margin-bottom:4px">✏️ 角色改名</div>' +
+                '<div style="font-size:.75rem;color:#64748b;margin-bottom:14px">' +
+                (idx + 1) + '號欄位　·　目前名稱：<span style="color:#e2e8f0">' +
+                this._esc(char.name) + '</span></div>' +
+                '<input id="hy-rename-input" maxlength="12" value="' + this._esc(char.name) + '" ' +
+                'style="width:100%;box-sizing:border-box;background:#0a0e14;color:#e2e8f0;' +
+                'border:1px solid #475569;border-radius:5px;padding:9px 11px;font-size:.9rem;' +
+                'outline:none;" placeholder="輸入新名稱（最多 12 字）">' +
+                '<div id="hy-rename-err" style="font-size:.72rem;color:#fca5a5;margin-top:6px;min-height:16px"></div>' +
+                '<div style="display:flex;gap:9px;margin-top:14px">' +
+                '<button id="hy-rename-ok" style="flex:1;background:#7c3aed;color:#f0f4f8;border:none;' +
+                'border-radius:6px;padding:10px;font-size:.86rem;font-weight:bold;cursor:pointer">確認改名</button>' +
+                '<button id="hy-rename-cancel" style="flex:0 0 auto;background:#22303d;color:#94a3b8;' +
+                'border:1px solid #334155;border-radius:6px;padding:10px 18px;font-size:.86rem;cursor:pointer">取消</button>' +
+                '</div></div>';
+
+            document.body.appendChild(box);
+
+            const input = box.querySelector('#hy-rename-input');
+            const errEl = box.querySelector('#hy-rename-err');
+
+            const close = () => { if (box.parentNode) box.parentNode.removeChild(box); };
+
+            const doRename = () => {
+                const v = String(input.value || '').trim();
+                if (!v) { errEl.textContent = '名稱不能空白'; return; }
+                if (v.length > 12) { errEl.textContent = '名稱最多 12 個字'; return; }
+                if (v === char.name) { close(); return; }
+                /* 檢查重複 */
+                const all = app.rosterSys.getAllCharacters();
+                const dup = all.some(c2 => c2.id !== char.id && c2.name === v);
+                if (dup) { errEl.textContent = '已有同名角色，請換一個'; return; }
+
+                const ok = app.rosterSys.renameCharacter(idx, v);
+                if (ok) {
+                    close();
+                    app.renderAll();
+                } else {
+                    errEl.textContent = '改名失敗';
+                }
+            };
+
+            box.querySelector('#hy-rename-ok').addEventListener('click', doRename);
+            box.querySelector('#hy-rename-cancel').addEventListener('click', close);
+            box.addEventListener('click', ev => { if (ev.target === box) close(); });
+            input.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter') { ev.preventDefault(); doRename(); }
+                if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+            });
+
+            setTimeout(() => { input.focus(); input.select(); }, 50);
+        }
+
+        _esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
     }
     window.HY.UICharacterParty = UICharacterParty;
@@ -35287,7 +35374,6 @@ window.HY = window.HY || {};
                         '<h4>' + enemy.name + ' (Lv.' + enemy.lv + ')</h4>' +
                         '<p style="color:#00e5ff;">⛩️ 宗門：' + (enemy.faction || '江湖散人') + '</p>' +
                         '<p style="color:#f87171;">⚡ 絕技：' + (skillNames || '基礎武技') + '</p>' +
-                        '<p style="color:#fbbf24; font-size:0.78rem;">👹 遭遇時有 35% 機率隨機附帶 1~3 種 PoE 精髓/紅獸/賽季詞綴</p>' +
                         '<p>基礎氣血：' + enemy.hp + ' | 基礎內力：' + estMp + '</p>' +
                         '<p>攻擊：' + enemy.atk + ' | 防禦：' + enemy.def + '</p>' +
                         '<p style="font-size:0.78rem; color:#94a3b8;">命中：' + (enemy.hit || 90) + '% | 閃避：' + (enemy.eva || 5) + '% | 爆擊：' + (enemy.crit || 5) + '% | 暴抗：' + (enemy.critRes || 0) + '%</p>' +
@@ -58083,8 +58169,88 @@ window.HY = window.HY || {};
         this.logger.add(cfgData.WELCOME_MSG || '⚡ 歡迎來到《黃易群俠傳 Web》！', 'time');
       }
       this.bindStaticEvents();
+      /* ⭐ 新遊戲：先讓玩家為初始角色命名，再渲染介面 */
+      if (!hasSave) {
+        this._askInitialCharName(() => {
+          this.renderAll();
+          this.startTimers();
+        });
+        return;
+      }
       this.renderAll();
       this.startTimers();
+    }
+
+    /** ⭐ 新遊戲起始命名對話框
+        @param done 完成後的回呼 */
+    _askInitialCharName(done) {
+      const self = this;
+      const char = this.charSys.rootState.roster[0];
+      if (!char) { done(); return; }
+
+      const box = document.createElement('div');
+      box.id = 'hy-initial-name-dlg';
+      box.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(2,6,12,.94);' +
+        'display:flex;align-items:center;justify-content:center;padding:16px;' +
+        "font-family:'Microsoft JhengHei','PingFang TC',sans-serif;";
+
+      box.innerHTML =
+        '<div style="width:min(94vw,460px);background:linear-gradient(160deg,#101a24,#0a0f16);' +
+        'border:2px solid #f0c674;border-radius:12px;padding:26px 26px 22px;' +
+        'box-shadow:0 24px 80px rgba(0,0,0,.95)">' +
+        '<div style="text-align:center;margin-bottom:18px">' +
+        '<div style="font-size:2rem;margin-bottom:6px">🗡️</div>' +
+        '<div style="font-size:1.15rem;font-weight:bold;color:#f0c674;' +
+        'text-shadow:0 0 20px rgba(240,198,116,.5)">歡迎來到時空之門</div>' +
+        '<div style="font-size:.78rem;color:#64748b;margin-top:6px;line-height:1.8">' +
+        '馬博士的傳送裝置已鎖定你的靈魂波長<br>請為自己在這個時空取一個名字</div>' +
+        '</div>' +
+        '<div style="font-size:.76rem;color:#94a3b8;margin-bottom:7px">👤 角色名稱</div>' +
+        '<input id="hy-init-name" maxlength="12" ' +
+        'style="width:100%;box-sizing:border-box;background:#060a12;color:#f0c674;' +
+        'border:2px solid #475569;border-radius:7px;padding:13px 15px;font-size:1.05rem;' +
+        'font-weight:bold;text-align:center;outline:none;letter-spacing:1px;" ' +
+        'placeholder="輸入你的名字（最多 12 字）" value="時空浪人">' +
+        '<div id="hy-init-err" style="font-size:.74rem;color:#fca5a5;margin-top:7px;min-height:18px;text-align:center"></div>' +
+        '<div style="display:flex;gap:9px;margin-top:10px">' +
+        '<button id="hy-init-ok" style="flex:1;background:linear-gradient(135deg,#b45309,#f59e0b);' +
+        'color:#0f141c;border:none;border-radius:7px;padding:13px;font-size:.98rem;' +
+        'font-weight:bold;cursor:pointer;box-shadow:0 4px 18px rgba(245,158,11,.4)">⚔️ 開始我的時空之旅</button>' +
+        '<button id="hy-init-skip" style="flex:0 0 auto;background:#1e2a36;color:#64748b;' +
+        'border:1px solid #334155;border-radius:7px;padding:13px 16px;font-size:.82rem;cursor:pointer">略過</button>' +
+        '</div>' +
+        '<div style="font-size:.68rem;color:#475569;margin-top:12px;text-align:center;line-height:1.7">' +
+        '之後隨時可以在「👥 角色 &amp; 組隊」頁面按 ✏️ 改名</div>' +
+        '</div>';
+
+      document.body.appendChild(box);
+
+      const input = box.querySelector('#hy-init-name');
+      const errEl = box.querySelector('#hy-init-err');
+
+      const finish = (name) => {
+        if (name) {
+          try { self.rosterSys.renameCharacter(0, name); } catch (e) { }
+          self.logger.add('🌟 歡迎【' + name + '】踏入黃易時空！', 'system');
+        }
+        if (box.parentNode) box.parentNode.removeChild(box);
+        done();
+      };
+
+      const submit = () => {
+        const v = String(input.value || '').trim();
+        if (!v) { errEl.textContent = '請輸入名字（或按「略過」使用預設）'; return; }
+        if (v.length > 12) { errEl.textContent = '名稱最多 12 個字'; return; }
+        finish(v);
+      };
+
+      box.querySelector('#hy-init-ok').addEventListener('click', submit);
+      box.querySelector('#hy-init-skip').addEventListener('click', () => finish(null));
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); submit(); }
+      });
+
+      setTimeout(() => { input.focus(); input.select(); }, 120);
     }
     renderAll() {
       this.charSys.syncActivePointer();
@@ -76646,47 +76812,21 @@ window.HY = window.HY || {};
             };
             if (affixSys) {
                 try {
-                    /* ⭐ 輿圖怪物是唯一會帶詞綴的怪 —— 依地圖階級決定數量。
-                       優先用 tpl._atlas.tier（不依賴 this.activeMap，
-                       避免補位時 activeMap 已被清空而漏套詞綴）。 */
+                    /* ⭐ 輿圖怪物專屬詞綴 —— 依地圖階級決定「帶詞綴的機率」。
+                       T1 約 38% → T16 約 90%（直接傳入 applyRandomAffixes，避免雙重判定）。 */
                     var map = this.activeMap;
-                    var tier = tpl && tpl._atlas && tpl._atlas.tier
+                    var tier = (tpl && tpl._atlas && tpl._atlas.tier)
                         ? num(tpl._atlas.tier, 1)
                         : (map ? num(map.tier, 1) : 1);
+                    var rollChance = Math.min(90, 35 + tier * 3.5);
+                    affixSys.applyRandomAffixes(e, rollChance);
 
-                    var affixCount = 1;
-                    if (tier >= 10) affixCount = 3;
-                    else if (tier >= 5) affixCount = 2;
-                    else if (tier >= 3) affixCount = (Math.random() < 0.5 ? 2 : 1);
-
-                    /* ⭐ 輿圖天賦「精隨詞綴怪出現率」→ 額外提高詞綴條數，
-                       等同讓更多怪物有機率帶到精隨詞綴。 */
+                    /* 天賦「精隨詞綴怪出現率」→ 無詞綴時補一次機會 */
                     var tbEss = self.getTalentBonus();
                     var essMonsterPct = num(tbEss.essMonsterPct, 0);
-                    if (essMonsterPct > 0 && Math.random() < essMonsterPct) {
-                        affixCount += 1;
-                    }
-
-                    /* 「宿敵契約」地圖詞綴 → 至少 2 條 */
-                    var hasNemesis = map && (map.mods || []).indexOf('nemesis') !== -1;
-                    if (hasNemesis && affixCount < 2) affixCount = 2;
-
-                    /* ⭐ applyRandomAffixes 內部有機率判定，不一定每次都加。
-                       這裡循環嘗試（上限 12 次）直到達到目標詞綴數。 */
-                    for (var tryN = 0; tryN < 12; tryN++) {
-                        if ((e.affixes || []).length >= affixCount) break;
-                        var beforeN = (e.affixes || []).length;
-                        affixSys.applyRandomAffixes(e);
-                        if ((e.affixes || []).length === beforeN) {
-                            /* 沒加上（機率失敗），繼續試，但最多 12 次 */
-                            continue;
-                        }
-                    }
-                    /* 若仍未達標（極少數），補齊最少 1 條 */
-                    if ((e.affixes || []).length === 0) {
-                        for (var rz = 0; rz < 20 && (e.affixes || []).length === 0; rz++) {
-                            try { affixSys.applyRandomAffixes(e); } catch (e2) { break; }
-                        }
+                    if (essMonsterPct > 0 && Math.random() < essMonsterPct
+                        && (e.affixes || []).length === 0) {
+                        affixSys.applyRandomAffixes(e, 100);
                     }
 
                     /* ⭐⭐ 精隨詞綴怪：地圖怪物有 10% 機率被「精隨禁錮」，
