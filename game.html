@@ -81004,19 +81004,28 @@ window.HY = window.HY || {};
 })();
 
 
-/* 所有檔案執行完畢，觸發 DOMContentLoaded 回呼，並移除載入遮罩 */
-setTimeout(function () {
-  if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__();
-  /* ⭐ 移除開機遮罩（原本由 bootLoader.js 負責，內聯後需自己處理） */
+/* ⭐ 所有檔案執行完畢 → 觸發回呼並移除開機遮罩
+   用 window.onload 確保 DOM 與資源都就緒 */
+function __HY_FINISH_BOOT__() {
+  try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) { console.error(e); }
+
+  /* 移除開機遮罩（原本由 bootLoader.js 負責，內聯後需自己處理） */
   var ov = document.getElementById('hy-boot-overlay');
-  if (ov) {
-    ov.style.transition = 'opacity 0.35s ease';
-    ov.style.opacity = '0';
-    setTimeout(function () {
-      if (ov.parentNode) ov.parentNode.removeChild(ov);
-    }, 400);
-  }
-}, 0);
+  if (!ov) return;
+  ov.style.transition = 'opacity 0.35s ease';
+  ov.style.opacity = '0';
+  setTimeout(function () {
+    if (ov.parentNode) ov.parentNode.removeChild(ov);
+  }, 400);
+}
+
+if (document.readyState === 'complete') {
+  setTimeout(__HY_FINISH_BOOT__, 50);
+} else {
+  window.addEventListener('load', function () { setTimeout(__HY_FINISH_BOOT__, 50); });
+  /* 備援：即使 load 沒觸發，3 秒後也要移除 */
+  setTimeout(__HY_FINISH_BOOT__, 3000);
+}
 </script>
 </body>
 </html>
