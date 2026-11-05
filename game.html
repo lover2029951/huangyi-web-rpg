@@ -445,6 +445,21 @@ h3 {
 .btn-group-row {
   display: flex;
   gap: 8px;
+  /* ⭐ 讓按鈕排不下時自動換到下一行，而不是把每顆壓成細長條
+     （原本沒有 flex-wrap，4~5 顆按鈕在窄卡片裡被壓成 40px 寬，
+       文字被迫一行一字變成豎排，高度撐到 114px） */
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* ⭐ 角色卡片的操作按鈕：縮小尺寸，維持單行文字 */
+.btn-group-row .action-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  border-radius: 4px;
 }
 
 /* 折疊面板（配合 UIDexAtb 的 details） */
