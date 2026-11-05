@@ -30781,11 +30781,10 @@ window.HY = window.HY || {};
                     rows.push({ k: '額外屬攻', v: '×' + (Math.round(p.extra * 100) / 100).toFixed(2) });
                     break;
                 case 'yinyang':
-                    /* 只讀取 yyHits（由 getAttackerMods 累加），確保 UI 與實際倍率一致 */
+                    /* 只讀取 yyHits（由 executeUnitFullAtbTurn 推進），確保 UI 與實際倍率一致 */
                     var yyN = (b.yyHits || b.yyTurn || 1);
                     var isYang = (yyN % 2 === 1);
                     rows.push({ k: '當前模式', v: isYang ? '陽刀' : '陰劍', hl: true });
-                    rows.push({ k: '出手次數', v: cnt(yyN) });
                     rows.push({ k: '陽刀攻擊', v: pct(p.atkUp) });
                     rows.push({ k: '陽刀減防', v: pct(p.atkDown) });
                     rows.push({ k: '陰劍防禦', v: pct(p.defUp) });
@@ -74164,15 +74163,6 @@ window.HY = window.HY || {};
             } else if (member) {
                 member._battle = { yyHits: 1 };
             }
-            /* 🔍 診斷輸出（暫時保留，確認問題後可移除） */
-            if (window.__YY_DEBUG !== false && member) {
-                try {
-                    console.log('[YY] 出手=' + (member.name || '?') +
-                        ' 次數=' + ((member._battle || {}).yyHits) +
-                        ' 模式=' + ((((member._battle || {}).yyHits || 1) % 2 === 1) ? '陽刀' : '陰劍') +
-                        ' 技能=' + skillId);
-                } catch (eD) { }
-            }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
             /* ⭐ 攻擊後「立刻」刷新 UI，讓出手次數與模式馬上反映。
                原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
@@ -74993,7 +74983,8 @@ window.HY = window.HY || {};
             } catch (e2) { return null; }
         }
 
-        buildFeatTableHtml(member) {            var featSys = window.HY.game && window.HY.game.sectFeatSys;
+        buildFeatTableHtml(member, tableId) {
+            var featSys = window.HY.game && window.HY.game.sectFeatSys;
             var Data = window.HY.Data;
             if (!featSys || !member || !member.sect) {
                 return '<div class="feat-status-table" style="border-left-color:#1e293b;"><span class="fk" style="color:#475569;">門派特色</span><span class="fv" style="color:#475569;">—</span></div>';
@@ -75008,10 +74999,23 @@ window.HY = window.HY || {};
                 return '<span class="fk">' + r.k + '</span>' +
                        '<span class="fv' + (r.hl ? ' hl' : '') + '">' + r.v + '</span>';
             }).join('');
-            return '<div class="feat-status-table" style="border-left-color:' + table.color + ';">' +
+            /* ⭐ 帶 id 以便每 tick 就地更新（不用整格重繪） */
+            var idAttr = tableId ? (' id="' + tableId + '"') : '';
+            return '<div class="feat-status-table"' + idAttr + ' style="border-left-color:' + table.color + ';">' +
                 '<span class="fk" style="color:' + table.color + '; font-weight:bold;">' + table.icon + ' ' + table.name + '</span>' +
                 '<span class="fv"></span>' + rowsHtml +
             '</div>';
+        }
+        /** ⭐ 就地刷新門派特色面板（只換內容，不重建整個戰鬥格） */
+        refreshFeatTable(member, tableId) {
+            if (!tableId) return;
+            var el = document.getElementById(tableId);
+            if (!el) return;
+            var html = this.buildFeatTableHtml(member, tableId);
+            /* 從完整 HTML 中取出內層內容，避免多包一層 div */
+            var m = /^<div[^>]*>([\s\S]*)<\/div>$/.exec(html);
+            if (m) el.innerHTML = m[1];
+            else el.innerHTML = html;
         }
         renderFixedMaxBattleArena() {
             var app = this.app;
@@ -75062,7 +75066,7 @@ window.HY = window.HY || {};
                             this.buildHpmpBar('mp', 'ally-mp-' + i, m.currentMp, md.maxMp, false) +
                             /* ⭐ 原本的「門派 ｜ 心法」改為「集氣條滿時下一招預告」 */
                             this.buildNextActionHtml(m, 'ally-next-' + i, false) +
-                            this.buildFeatTableHtml(m) +
+                            this.buildFeatTableHtml(m, 'ally-feat-' + i) +
                             '<div class="fixed-affix-line" style="border-left:2px solid #10b981; color:#94a3b8;">⚔️ 攻 ' + md.atk + ' ｜ 防 ' + md.def + ' ｜ 命 ' + md.hit + '% ｜ 閃 ' + md.eva + '% ｜ 爆 ' + md.crit + '%</div>';
                     } else {
                         row.style.borderLeft = '3px solid #1e293b';
@@ -75196,23 +75200,6 @@ window.HY = window.HY || {};
             var _atlasS = window.HY.game && window.HY.game.atlasSys;
             var _inMapNow = !!(_atlasS && typeof _atlasS.isInMap === 'function' && _atlasS.isInMap());
             var partyMembers = _inMapNow ? [] : app.partySys.getPartyMembers();
-            /* 🔍 診斷：只在 yyHits 變化時輸出，避免洗版 */
-            if (window.__YY_DEBUG !== false && window.__yyLastLog !== undefined) {
-                try {
-                    var m0 = partyMembers[0];
-                    var h0 = m0 ? ((m0._battle || {}).yyHits || 0) : -1;
-                    if (h0 !== window.__yyLastLog) {
-                        window.__yyLastLog = h0;
-                        console.log('[YY-UI] inMap=' + _inMapNow + ' 成員=' + partyMembers.length +
-                            ' hits=' + h0 + ' 模式=' + ((h0 % 2 === 1) ? '陽刀' : '陰劍'));
-                    }
-                } catch (eD2) { }
-            } else if (window.__YY_DEBUG !== false) {
-                try {
-                    var m1 = partyMembers[0];
-                    window.__yyLastLog = m1 ? ((m1._battle || {}).yyHits || 0) : -1;
-                } catch (eD3) { }
-            }
             function setBar(prefix, cur, max) {
                 var safeMax = (typeof max === 'number' && max > 0) ? max : 0;
                 var safeCur = Math.max(0, Math.min(cur || 0, safeMax));
@@ -75250,6 +75237,10 @@ window.HY = window.HY || {};
                 /* ⭐ 招式預告每 tick 一起更新（原本只在整格重繪時更新，
                    導致怪物死光後預告仍指著已死亡的目標） */
                 this.refreshNextAction(m, 'ally-next-' + idx, false);
+                /* ⭐ 門派特色面板也要每 tick 更新！
+                   原本這塊只在「整格重繪」時才重建，
+                   所以陰陽的出手次數與模式要等到下次重建才變 → 看起來「沒有立刻 +1」。 */
+                this.refreshFeatTable(m, 'ally-feat-' + idx);
                 this.updateSlotDeadState('ally-head-' + idx, isDead);
             }, this);
             // 敵方
