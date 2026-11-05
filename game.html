@@ -1038,9 +1038,6 @@ details > summary::marker {
                     </div>
 
                     <div id="roster-party-list" class="enemy-grid" style="margin-bottom:18px;"></div>
-
-                    <h3>☯️ 組隊合擊陣法選擇</h3>
-                    <div id="formation-list" class="enemy-grid"></div>
                 </div>
 
                 <div id="tab-martial" class="tab-content">
@@ -1050,6 +1047,7 @@ details > summary::marker {
                         <button class="action-btn sub-martial-btn" data-sub="sub-qinggong">🍃 輕功身法 (共通4+門派45｜常駐1)</button>
                         <button class="action-btn sub-martial-btn" data-sub="sub-mastery" style="border-color:#38bdf8; color:#38bdf8;">🎯 武道專精 (18門)</button>
                         <button class="action-btn sub-martial-btn" data-sub="sub-meridian">🧘 奇經十四脈 (14脈)</button>
+                        <button class="action-btn sub-martial-btn" data-sub="sub-formation" style="border-color:#a78bfa; color:#c4b5fd;">☯️ 陣法</button>
                     </div>
 
                     <div id="sub-skills" class="sub-martial-panel">
@@ -1088,6 +1086,15 @@ details > summary::marker {
                     <div id="sub-meridian" class="sub-martial-panel hidden">
                         <h3>🧘 奇經十四脈周天運轉（打通十四脈穴道，強化命中、暴抗、攻防與真氣）</h3>
                         <div id="meridian-list" class="enemy-grid"></div>
+                    </div>
+
+                    <!-- ⭐ 陣法（從「角色 & 組隊」移入武學心法面板） -->
+                    <div id="sub-formation" class="sub-martial-panel hidden">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                            <h3 style="margin:0;">☯️ 組隊合擊陣法（需對應靈根，全隊共享效果）</h3>
+                            <div id="formation-seed-slot" style="font-size:0.8rem; color:#fbbf24;"></div>
+                        </div>
+                        <div id="formation-list" class="enemy-grid"></div>
                     </div>
                 </div>
 
@@ -56221,6 +56228,30 @@ window.HY = window.HY || {};
                 app.martialSys.categoryFilter || '',
                 this._forceRedraw ? 'F' + (this._forceRedraw = 0) : ''
             ].join('|');
+            /* ⭐ 陣法列表（從「角色 & 組隊」移入本面板）
+               必須在快取判斷「之前」渲染，否則快取命中時陣法不會更新。 */
+            (function renderFormation() {
+                var formEl = document.getElementById('formation-list');
+                if (!formEl) return;
+                try {
+                    if (app.uiCharParty && typeof app.uiCharParty.renderFormationList === 'function') {
+                        app.uiCharParty.renderFormationList(formEl, Data);
+                    }
+                } catch (e) { }
+                /* 陣法種子顯示 */
+                var seedSlot = document.getElementById('formation-seed-slot');
+                if (seedSlot) {
+                    var seed = null;
+                    try {
+                        var ps = app.partySys;
+                        if (ps && typeof ps.getSeed === 'function') seed = ps.getSeed();
+                        else if (window.HY.game && window.HY.game.rootState) seed = window.HY.game.rootState.formationSeed;
+                    } catch (e2) { }
+                    seedSlot.innerHTML = seed
+                        ? ('🌱 陣法種子：<strong style="color:#fbbf24;">#' + seed + '</strong>')
+                        : '';
+                }
+            })();
             if (this._martialSig === _sig && document.getElementById('martial-list')) {
                 return;   /* 狀態沒變 → 不重建 */
             }
