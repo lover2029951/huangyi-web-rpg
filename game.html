@@ -11842,9 +11842,27 @@ window.HY = window.HY || {};
                 var critRes = Math.floor(con * 0.25 + intel * 0.2 + lv * 0.15);
                 var critDmg = 165;
                 var dmgReduce = 0;
+
+                /* ══════════════════════════════════════════════════
+                   ⭐ 擴充屬性系統（v2）
+                   原本只支援 8 個屬性，現在改為「資料驅動 + 加法池」：
+                     · 8 個核心屬性 → 直接累加到局部變數（保持原邏輯）
+                     · 其餘 60+ 屬性 → 累積到 ext 物件，最後掛到回傳值上
+                   這樣 PoE 的 3000+ 詞綴才有欄位可以放。
+                   ══════════════════════════════════════════════════ */
+                var ext = {};       // 擴充屬性累積池
+                var REG = (window.HY && window.HY.StatRegistry) || null;
+
+                var addExt = function (key, val) {
+                    if (!key || !isFinite(val) || val === 0) return;
+                    ext[key] = (ext[key] || 0) + val;
+                };
+
                 var addBonus = function (b, scale) {
                     if (!b) return;
                     var m = (typeof scale === 'number') ? scale : 1;
+
+                    /* ── ① 核心八維（原有的 8 個，維持整數化） ── */
                     if (b.maxHp)   maxHp   += Math.floor(b.maxHp * m);
                     if (b.maxMp)   maxMp   += Math.floor(b.maxMp * m);
                     if (b.atk)     atk     += Math.floor(b.atk * m);
@@ -11853,6 +11871,16 @@ window.HY = window.HY || {};
                     if (b.eva)     eva     += Math.floor(b.eva * m);
                     if (b.crit)    crit    += Math.floor(b.crit * m);
                     if (b.critRes) critRes += Math.floor(b.critRes * m);
+
+                    /* ── ② 擴充屬性（其餘全部走泛用通道） ── */
+                    var CORE = { maxHp:1, maxMp:1, atk:1, def:1, hit:1, eva:1, crit:1, critRes:1 };
+                    Object.keys(b).forEach(function (k) {
+                        if (CORE[k]) return;
+                        var v = b[k];
+                        if (typeof v !== 'number' || !isFinite(v)) return;
+                        /* 未在註冊表的鍵也照收（方便日後擴充詞綴） */
+                        addExt(k, v * m);
+                    });
                 };
                 // 1. 門派加成
                 if (c.sect && Data.SECTS && Data.SECTS[c.sect]) addBonus(Data.SECTS[c.sect].bonus, 1);
@@ -12230,6 +12258,131 @@ window.HY = window.HY || {};
             root.roster[index].name = newName.trim();
             this.logger.add('✏️ 角色【' + oldName + '】已改名為【' + root.roster[index].name + '】。', 'system');
             return true;
+        }
+
+        /** ⭐ 刪除角色（含所有相關資料清理）
+            @param charId 角色 id
+            @returns { ok, why? } */
+        deleteCharacter(charId) {
+            this.ensureState();
+            var root = this.charSys.rootState;
+            var idx = -1;
+            for (var i = 0; i < root.roster.length; i++) {
+                if (root.roster[i] && root.roster[i].id === charId) { idx = i; break; }
+            }
+            if (idx === -1) return { ok: false, why: '找不到該角色' };
+            if (root.roster.length <= 1) {
+                return { ok: false, why: '至少需要保留 1 名角色' };
+            }
+
+            var target = root.roster[idx];
+            var name = String(target.name || '角色');
+
+            /* ① 若該角色是主控角色，先切換到其他角色 */
+            var wasActive = (root.activeCharIndex === idx);
+            var wasLeader = (this.charSys.state && this.charSys.state.id === charId);
+
+            /* ② 從隊伍移除 */
+            var pIdx = (root.party || []).indexOf(charId);
+            if (pIdx !== -1) root.party.splice(pIdx, 1);
+
+            /* ③ 從角色陣列移除 */
+            root.roster.splice(idx, 1);
+
+            /* ④ 修正 activeCharIndex */
+            if (root.activeCharIndex >= root.roster.length) {
+                root.activeCharIndex = root.roster.length - 1;
+            } else if (root.activeCharIndex > idx) {
+                root.activeCharIndex -= 1;
+            }
+
+            /* ⑤ 若隊伍空了，至少補一個人上陣 */
+            if (!root.party || root.party.length === 0) {
+                root.party = [root.roster[0].id];
+            }
+
+            /* ⑥ 同步主控指標 */
+            this.charSys.syncActivePointer();
+
+            /* ⑦ 清理該角色殘留在其他系統的資料 */
+            this._purgeCharData(charId);
+
+            this.logger.add('🗑️ 角色【' + name + '】已刪除' +
+                (wasActive || wasLeader ? '（已自動切換主控角色）' : '') + '。', 'system');
+
+            return { ok: true, name: name };
+        }
+
+        /** ⭐ 清理角色在各系統的殘留資料 */
+        _purgeCharData(charId) {
+            var g = window.HY.game;
+            if (!g) return;
+            var root = this.charSys.rootState;
+
+            /* 陣法指派 */
+            try {
+                if (root.formationAssign && root.formationAssign[charId]) {
+                    delete root.formationAssign[charId];
+                }
+            } catch (e) { }
+
+            /* 幫會祝福 / 後天改命（存在角色物件上，已隨角色移除）*/
+
+            /* 好友系統中的該角色 */
+            try {
+                if (g.friendSystem && typeof g.friendSystem.onCharDeleted === 'function') {
+                    g.friendSystem.onCharDeleted(charId);
+                }
+            } catch (e) { }
+
+            /* 打圖戰術設定 */
+            try {
+                if (g.atlasTactics && g.atlasTactics._store) {
+                    delete g.atlasTactics._store[String(charId)];
+                    g.atlasTactics.save();
+                }
+            } catch (e) { }
+
+            /* 礦坑戰術設定 */
+            try {
+                if (g.delveTactics && g.delveTactics._store) {
+                    delete g.delveTactics._store[String(charId)];
+                    g.delveTactics.save();
+                }
+            } catch (e) { }
+
+            /* 時空內掛設定 */
+            try {
+                if (g.combatSys && g.combatSys.autoTactics && g.combatSys.autoTactics._configStore) {
+                    delete g.combatSys.autoTactics._configStore[String(charId)];
+                    if (typeof g.combatSys.autoTactics.saveConfig === 'function') {
+                        g.combatSys.autoTactics.saveConfig();
+                    }
+                }
+            } catch (e) { }
+
+            /* 鎮民/掌櫃指派 */
+            try {
+                if (g.town && typeof g.town.getSettler === 'function') {
+                    var st = g.town.getSettler(charId);
+                    if (st) {
+                        var tb = (g.town.state && g.town.state().buildings) || [];
+                        tb.forEach(function (b) {
+                            if (b && b.staffId === charId) b.staffId = null;
+                        });
+                    }
+                }
+            } catch (e) { }
+        }
+
+        /** ⭐ 檢查是否可以刪除此角色（給 UI 用） */
+        canDeleteCharacter(charId) {
+            this.ensureState();
+            var root = this.charSys.rootState;
+            if (!root.roster || root.roster.length <= 1) {
+                return { ok: false, why: '至少需要保留 1 名角色' };
+            }
+            return { ok: true };
         }
     }
     window.HY.RosterSystem = RosterSystem;
@@ -35134,6 +35287,8 @@ window.HY = window.HY || {};
                         '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
                             (inParty ? '⛺ 退下休息' : '🚩 加入上陣') +
                         '</button>' +
+                        '<button class="action-btn btn-delete-char" style="border-color:#ef4444; color:#fca5a5;" ' +
+                        (allChars.length <= 1 ? 'disabled title="至少需保留 1 名角色"' : '') + '>🗑️ 刪除</button>' +
                     '</div>';
                 card.querySelector('.btn-select-char').addEventListener('click', () => {
                     if (app.rosterSys.selectCharacter(idx)) app.renderAll();
@@ -35144,6 +35299,10 @@ window.HY = window.HY || {};
                 });
                 card.querySelector('.btn-toggle-party').addEventListener('click', () => {
                     if (app.partySys.togglePartyMember(c.id)) app.renderAll();
+                });
+                /* ⭐ 刪除角色 */
+                card.querySelector('.btn-delete-char').addEventListener('click', () => {
+                    this._openDeleteDialog(c, idx);
                 });
                 listEl.appendChild(card);
             });
@@ -35225,6 +35384,112 @@ window.HY = window.HY || {};
             return String(s == null ? '' : s)
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        /** ⭐ 角色刪除確認對話框（需輸入角色名二次確認） */
+        _openDeleteDialog(char, idx) {
+            const app = this.app;
+            const old = document.getElementById('hy-delete-dlg');
+            if (old) old.parentNode.removeChild(old);
+
+            const chk = app.rosterSys.canDeleteCharacter(char.id);
+            if (!chk.ok) {
+                this._toastMsg(chk.why, true);
+                return;
+            }
+
+            const isActive = (app.charSys.rootState.activeCharIndex === idx);
+            const box = document.createElement('div');
+            box.id = 'hy-delete-dlg';
+            box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(2,6,12,.88);' +
+                'display:flex;align-items:center;justify-content:center;padding:16px;' +
+                "font-family:'Microsoft JhengHei','PingFang TC',sans-serif;";
+
+            box.innerHTML =
+                '<div style="width:min(92vw,400px);background:#0f141c;border:2px solid #ef4444;' +
+                'border-radius:10px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.9)">' +
+                '<div style="font-size:1.02rem;font-weight:bold;color:#fca5a5;margin-bottom:10px">' +
+                '🗑️ 刪除角色</div>' +
+                '<div style="background:rgba(239,68,68,.1);border-left:3px solid #ef4444;' +
+                'border-radius:5px;padding:9px 11px;margin-bottom:14px;font-size:.78rem;' +
+                'color:#fca5a5;line-height:1.8">' +
+                '⚠️ <b>此操作無法復原</b><br>' +
+                '角色等級、裝備、武學、門派、天賦都會永久刪除。' +
+                (isActive ? '<br><span style="color:#fbbf24">此角色為當前操控，刪除後會自動切換到其他角色。</span>' : '') +
+                '</div>' +
+                '<div style="font-size:.8rem;color:#94a3b8;margin-bottom:6px">' +
+                '要刪除的是：<b style="color:#e2e8f0">' + this._esc(char.name) +
+                '</b>（Lv.' + (char.lv || 1) + '）</div>' +
+                '<div style="font-size:.76rem;color:#64748b;margin-bottom:7px">' +
+                '請輸入角色名稱以確認刪除：</div>' +
+                '<input id="hy-del-input" maxlength="20" placeholder="' + this._esc(char.name) + '" ' +
+                'style="width:100%;box-sizing:border-box;background:#0a0e14;color:#fca5a5;' +
+                'border:1px solid #475569;border-radius:5px;padding:9px 11px;font-size:.9rem;outline:none;">' +
+                '<div id="hy-del-err" style="font-size:.72rem;color:#fbbf24;margin-top:6px;min-height:16px"></div>' +
+                '<div style="display:flex;gap:9px;margin-top:12px">' +
+                '<button id="hy-del-ok" disabled style="flex:1;background:#7f1d1d;color:#fca5a5;' +
+                'border:1px solid #ef4444;border-radius:6px;padding:10px;font-size:.86rem;' +
+                'font-weight:bold;cursor:not-allowed;opacity:.5">永久刪除</button>' +
+                '<button id="hy-del-cancel" style="flex:0 0 auto;background:#22303d;color:#94a3b8;' +
+                'border:1px solid #334155;border-radius:6px;padding:10px 18px;font-size:.86rem;cursor:pointer">取消</button>' +
+                '</div></div>';
+
+            document.body.appendChild(box);
+
+            const input = box.querySelector('#hy-del-input');
+            const okBtn = box.querySelector('#hy-del-ok');
+            const errEl = box.querySelector('#hy-del-err');
+            const close = () => { if (box.parentNode) box.parentNode.removeChild(box); };
+
+            /* 輸入名稱完全相符才啟用按鈕 */
+            input.addEventListener('input', () => {
+                const match = (input.value.trim() === String(char.name || '').trim());
+                okBtn.disabled = !match;
+                okBtn.style.cursor = match ? 'pointer' : 'not-allowed';
+                okBtn.style.opacity = match ? '1' : '.5';
+                errEl.textContent = input.value.length > 0 && !match ? '名稱不符，請完整輸入' : '';
+            });
+
+            okBtn.addEventListener('click', () => {
+                if (okBtn.disabled) return;
+                const r = app.rosterSys.deleteCharacter(char.id);
+                close();
+                if (r.ok) {
+                    this._toastMsg('已刪除角色【' + r.name + '】', false);
+                    app.renderAll();
+                    /* 若刪除後角色數變動，重新渲染角色列 */
+                    try {
+                        if (app.uiCharParty && app.uiCharParty.renderCharacterPanel) {
+                            app.uiCharParty.renderCharacterPanel();
+                        }
+                    } catch (e) { }
+                } else {
+                    this._toastMsg(r.why || '刪除失敗', true);
+                }
+            });
+
+            box.querySelector('#hy-del-cancel').addEventListener('click', close);
+            box.addEventListener('click', ev => { if (ev.target === box) close(); });
+            input.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter' && !okBtn.disabled) { ev.preventDefault(); okBtn.click(); }
+                if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+            });
+
+            setTimeout(() => input.focus(), 80);
+        }
+
+        /** 簡易提示 */
+        _toastMsg(msg, isErr) {
+            const el = document.createElement('div');
+            el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:40px;' +
+                'z-index:10001;padding:10px 22px;border-radius:6px;font-size:.84rem;' +
+                'background:rgba(6,10,18,.98);box-shadow:0 12px 34px rgba(0,0,0,.9);' +
+                'border:1px solid ' + (isErr ? '#ef4444' : '#34d399') + ';' +
+                'color:' + (isErr ? '#fca5a5' : '#6ee7b7') + ';' +
+                "font-family:'Microsoft JhengHei','PingFang TC',sans-serif;";
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 2400);
         }
     }
     window.HY.UICharacterParty = UICharacterParty;
