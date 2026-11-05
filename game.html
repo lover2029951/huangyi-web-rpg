@@ -30380,11 +30380,21 @@ window.HY = window.HY || {};
             base: { atkUp: 0.40, atkDown: 0.20, defUp: 0.40, heal: 0.20 },
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                /* ⭐ 模式改由 getAttackerMods 的 b.yyHits 累加決定（見該處註解）。
-                   這裡不在新戰鬥時預設 1（否則第一招會變成陰劍），
-                   而是讓 getAttackerMods 從 0 開始累加，第一招 = 陽刀。 */
+                /* ⭐ 模式改由 preAttack 的 b.yyHits 累加決定。
+                   preAttack 每「招」只被呼叫一次（在逐目標 getAttackerMods 之前），
+                   所以用它當推進點最可靠，不受 _turnCounter 遞增次數影響。 */
                 b.yyTurn = b.yyHits || 0;
                 return (b.yyHits || 0) % 2;
+            },
+            /* ⭐ 陰陽模式只「讀取」，推進交給 combatAtbSystem 的 ATB 歸零點。
+               這樣保證「每次滿條出手 = 切換一次」，不管 preAttack 被呼叫幾次。 */
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var b = sys.battle(c);
+                if (!b.yyHits) b.yyHits = 1;
+                b.yyTurn = b.yyHits;
+                return (b.yyTurn % 2 === 1)
+                    ? ' [⚔️陽刀模式→攻擊+' + Math.round(p.atkUp * 100) + '% 防禦-' + Math.round(p.atkDown * 100) + '%]'
+                    : ' [⚔️陰劍模式→防禦+' + Math.round(p.defUp * 100) + '% 吸血' + Math.round(p.heal * 100) + '%]';
             },
             onAttack: function (sys, core, c, target, dealt, p) {
                 var b = sys.battle(c);
@@ -30550,22 +30560,10 @@ window.HY = window.HY || {};
             var b = this.battle(charObj);
             // ── 絕情谷 陽刀：攻擊 +40% ──
             if (def.key === 'yinyang') {
-                /* ⭐ 用「該角色自己的出手次數」決定模式。
-                   為什麼不用全域 _turnCounter：它有 4 個地方會遞增
-                   （我方 ATB、敵人 ATB、敵人回合、combatCore），
-                   一個回合可能 +1~+3 次，導致奇偶亂跳。
-
-                   b.yyHits：每次「本輪第一次計算傷害」時 +1，
-                   同一輪多目標攻擊用 _turnCounter 去重，只算一次。 */
-                var coreYY = this.app && this.app.combatSys;
-                var keyHits = (coreYY && typeof coreYY._turnCounter === 'number')
-                    ? ('y' + coreYY._turnCounter) : ('n' + (b.yyHits || 0));
-                if (b.yyHitKey !== keyHits) {
-                    b.yyHitKey = keyHits;
-                    b.yyHits = (b.yyHits || 0) + 1;
-                }
-                b.yyTurn = b.yyHits;
-                var isYang = (b.yyHits % 2 === 1);
+                /* ⭐ 只讀取模式，不累加（累加在 preAttack，每招一次）。
+                   這樣不管 getAttackerMods 被呼叫幾次（逐目標、重複查詢），
+                   模式都不會亂跳。 */
+                var isYang = ((b.yyHits || 1) % 2 === 1);
                 if (isYang) result.atkMult *= (1 + p.atkUp);
             }
             // ── 峨嵋 自身慈悲雙倍 ──
@@ -47226,6 +47224,9 @@ window.HY = window.HY || {};
             var activeChar = this.charSys.state;
             var self = this;
             this._turnCounter += 1;
+            /* ⭐ 舊路徑（core.useSkill）也要推進陰陽/陣門 */
+            if (!activeChar._battle) activeChar._battle = {};
+            activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
             if (activeChar.currentHp > 0) {
                 this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
             }
@@ -73963,6 +73964,9 @@ window.HY = window.HY || {};
                     return;
                 }
                 activeChar.atb = 0;
+                /* ⭐ 手動出招 = 一次真正的出手 → 推進一次陰陽/陣門 */
+                if (!activeChar._battle) activeChar._battle = {};
+                activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
                 self.executeUnitFullAtbTurn(activeChar, true, leaderSkillId, healTarget || null);
             };
         }
@@ -74094,6 +74098,10 @@ window.HY = window.HY || {};
                     var isLeader = (m.id === activeChar.id);
                     if (!isLeader || combat.isAutoBattle || inMapNow) {
                         m.atb = 0;
+                        /* ⭐ ATB 歸零 = 一次真正的出手 → 推進一次陰陽/陣門。
+                           這是唯一可靠的推進點：每次滿條只會走到這裡一次。 */
+                        if (!m._battle) m._battle = {};
+                        m._battle.yyHits = (m._battle.yyHits || 0) + 1;
                         /* ⭐ 地圖內走打圖戰術，一般戰鬥走時空內掛 */
                         if (inMapNow && mapTac) {
                             if (!mapTac.cfg.autoSkill) continue;   // 只自動集氣，不自動出招
