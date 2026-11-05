@@ -85433,6 +85433,22 @@ window.HY = window.HY || {};
             /* ── ④ 天賦貢獻（只列出有加的） ── */
             var tb = null;
             try { tb = this.talent.getBonusFor(c); } catch (e) { tb = null; }
+
+            /* ⭐ POE 官方節點的數值全部是 stats 字串（「+10 to Strength」這種），
+               不是 tb.flat / tb.more 的結構化欄位，所以上面那段永遠是空的。
+               這裡額外統計「已配置節點的效果條數」，並列出前幾條翻譯後的效果。 */
+            var poeLines = [];
+            var _TZ3 = window.HY.TalentZh;
+            var _NODES3 = window.HY.Data.TALENT_NODES || {};
+            var _alloc3 = (c.talent && c.talent.allocated) || {};
+            Object.keys(_alloc3).forEach(function (id) {
+                var n3 = _NODES3[id];
+                if (!n3 || !n3.stats || !n3.stats.length) return;
+                n3.stats.forEach(function (s) {
+                    var zh = _TZ3 ? _TZ3.stat(s) : s;
+                    poeLines.push(zh);
+                });
+            });
             if (tb) {
                 var hasAny = false;
                 var LBL = {
@@ -85471,16 +85487,22 @@ window.HY = window.HY || {};
                     hasAny = true;
                 });
                 h += '<div class="sec"><h4>🌳 天賦貢獻 <span class="n">' +
-                    lines.length + ' 項</span></h4>';
-                if (!hasAny) {
+                    (lines.length + poeLines.length) + ' 項</span></h4>';
+                if (!hasAny && !poeLines.length) {
                     h += '<div class="empty">尚未配置任何有加成效果的節點。<br>' +
                         '點擊樹上的節點開始配置。</div>';
                 } else {
                     lines.slice(0, 26).forEach(function (p) {
                         h += row(p[0], p[1], 'up');
                     });
-                    if (lines.length > 26) {
-                        h += '<div class="note">…另有 ' + (lines.length - 26) + ' 項</div>';
+                    /* ⭐ POE 節點的效果（已翻譯） */
+                    poeLines.slice(0, Math.max(0, 26 - lines.length)).forEach(function (txt) {
+                        h += '<div class="row"><span style="color:#94a3b8">・' +
+                            esc(txt) + '</span></div>';
+                    });
+                    var totalLines = lines.length + poeLines.length;
+                    if (totalLines > 26) {
+                        h += '<div class="note">…另有 ' + (totalLines - 26) + ' 項</div>';
                     }
                 }
                 h += '</div>';
@@ -85497,11 +85519,16 @@ window.HY = window.HY || {};
             if (notes.length) {
                 h += '<div class="sec"><h4>⭐ 關鍵天賦 <span class="n">' +
                     notes.length + '</span></h4>';
+                var _TZ2 = window.HY.TalentZh;
                 notes.slice(0, 10).forEach(function (n) {
+                    /* ⭐ 效果摘要也要中文化（原本直接印英文原文） */
+                    var statTxt = (n.stats || []).map(function (s) {
+                        return _TZ2 ? _TZ2.stat(s) : s;
+                    }).join('、');
                     h += '<div class="row"><span style="color:' +
                         (n.t === 'keystone' ? '#f0c674' : '#7dd3fc') + '">' +
                         esc(n.name) + '</span><span style="font-size:1.32rem;color:#64748b">' +
-                        esc((n.stats || []).join('、').slice(0, 18)) + '</span></div>';
+                        esc(statTxt.slice(0, 18)) + '</span></div>';
                 });
                 if (notes.length > 10) {
                     h += '<div class="note">…另有 ' + (notes.length - 10) + ' 個</div>';
