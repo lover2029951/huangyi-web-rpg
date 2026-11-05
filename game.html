@@ -30901,6 +30901,8 @@ window.HY = window.HY || {};
                     ? ch._battle.yyHits : 0;
                 ch._battle = {};
                 if (prev) ch._battle.yyHits = prev;
+                /* ⭐ 推進旗標也要歸零，否則新戰鬥開場的第一次推進會被誤擋 */
+                ch._battle.yyArmed = false;
             };
             keepYY(cs.state);
             if (root) {
@@ -47227,9 +47229,8 @@ window.HY = window.HY || {};
             var activeChar = this.charSys.state;
             var self = this;
             this._turnCounter += 1;
-            /* ⭐ 舊路徑（core.useSkill）也要推進陰陽/陣門 */
-            if (!activeChar._battle) activeChar._battle = {};
-            activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
+            /* ⚠ 陰陽推進統一由 combatAtbSystem 負責（含時間戳去重）。
+               這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
                 this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
             }
@@ -73967,8 +73968,14 @@ window.HY = window.HY || {};
                     return;
                 }
                 activeChar.atb = 0;
-                /* ⭐ 手動出招後清除旗標，下一輪 ATB 滿時才會再推進一次 */
-                if (activeChar._battle) activeChar._battle.yyAtbDone = false;
+                /* ⭐ 手動出招：若這一輪已被 tick 推進過（yyArmed=true），不再重複加；
+                   若還沒（玩家在 ATB 未滿時手動點），則補推進一次。 */
+                if (!activeChar._battle) activeChar._battle = {};
+                if (!activeChar._battle.yyArmed) {
+                    activeChar._battle.yyArmed = true;
+                    activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
+                }
+                activeChar._battle.yyArmed = false;   /* 歸零 → 下一輪可再推進 */
                 self.executeUnitFullAtbTurn(activeChar, true, leaderSkillId, healTarget || null);
             };
         }
@@ -74098,18 +74105,19 @@ window.HY = window.HY || {};
                 m.atb = Math.min(100, (m.atb || 0) + gain);
                 if (m.atb >= 100 && combat.currentEnemy) {
                     var isLeader = (m.id === activeChar.id);
-                    /* ⭐ 陰陽/陣門的推進必須「不管手動或自動」都算。
-                       原本寫在 if (!isLeader || isAutoBattle || inMapNow) 裡面，
-                       手動模式下主控永遠不進這個分支 → yyHits 永遠 0 → 永遠陽刀。
-                       陰陽是「回合」概念，ATB 一滿就該切換。 */
-                    if (!m._battle) m._battle = {};
-                    if (!m._battle.yyAtbDone) {
-                        m._battle.yyAtbDone = true;
+                    /* ⭐ 陰陽/陣門推進：ATB 從「未滿」變成「滿」的那一刻推進一次。
+                       用 b.yyArmed 旗標：ATB 未滿時 armed=false，滿了就 +1 並設 true，
+                       ATB 歸零後再設回 false。這樣同一輪絕不會重複 +1，
+                       也不會像時間戳那樣在快速點擊時誤擋。 */
+                    if (!m._battle) m._battle = { yyArmed: false };
+                    if (m._battle.yyArmed === undefined) m._battle.yyArmed = false;
+                    if (!m._battle.yyArmed) {
+                        m._battle.yyArmed = true;
                         m._battle.yyHits = (m._battle.yyHits || 0) + 1;
                     }
                     if (!isLeader || combat.isAutoBattle || inMapNow) {
                         m.atb = 0;
-                        m._battle.yyAtbDone = false;
+                        m._battle.yyArmed = false;
                         /* ⭐ 地圖內走打圖戰術，一般戰鬥走時空內掛 */
                         if (inMapNow && mapTac) {
                             if (!mapTac.cfg.autoSkill) continue;   // 只自動集氣，不自動出招
