@@ -1196,7 +1196,7 @@ setTimeout(function () {
   };
 })();
 
-/* ===== 1 / 184 : gameConfig.js ===== */
+/* ===== 1 / 186 : gameConfig.js ===== */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  黃易群俠傳 Web ｜ 遊戲總調節檔 — 【資料本體】
@@ -1542,7 +1542,7 @@ window.HY = window.HY || {};
         CFG.SECTION_KEYS.length + ' 個區段）');
 })();
 
-/* ===== 2 / 184 : gameConfigSpeed.js ===== */
+/* ===== 2 / 186 : gameConfigSpeed.js ===== */
 // js/gameConfigSpeed.js  (v3.3 · 2/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  速度引擎：攔截全域 setInterval / setTimeout
@@ -1679,7 +1679,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 2/5] ✓ 速度引擎已啟動');
 })();
 
-/* ===== 3 / 184 : gameConfigApply.js ===== */
+/* ===== 3 / 186 : gameConfigApply.js ===== */
 // js/gameConfigApply.js  (v3.3 · 3/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  套用器 A：元素／詞綴／掉落政策／武學／靈根／陣法／群俠靈獸
@@ -1876,7 +1876,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 3/5] ✓ 套用器 A 已註冊（目前 ' + CFG.__appliers.length + ' 個）');
 })();
 
-/* ===== 4 / 184 : gameConfigApply2.js ===== */
+/* ===== 4 / 186 : gameConfigApply2.js ===== */
 // js/gameConfigApply2.js  (v3.3 · 4/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  套用器 B：收益／掉落／屬性／幫會
@@ -2083,7 +2083,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 4/5] ✓ 套用器 B 已註冊 + API 就緒（共 ' + CFG.__appliers.length + ' 個套用器）');
 })();
 
-/* ===== 5 / 184 : gameConfigBoot.js ===== */
+/* ===== 5 / 186 : gameConfigBoot.js ===== */
 // js/gameConfigBoot.js  (v3.3 · 5/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  啟動編排：統一執行所有套用器
@@ -2162,7 +2162,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 5/5] ✓ 啟動編排已就緒');
 })();
 
-/* ===== 6 / 184 : linkBus.js ===== */
+/* ===== 6 / 186 : linkBus.js ===== */
 // js/linkBus.js (v2)
 // ⭐ 統一連動匯流排（全遊戲通用）
 //    ① EffectBus   效果註冊與聚合（任何系統都能貢獻加成）
@@ -2735,7 +2735,7 @@ window.HY = window.HY || {};
   console.log('[Link] ✓ 統一連動匯流排已啟動（' + HOOK_NAMES.length + ' 種鉤子｜自動監看中）');
 })();
 
-/* ===== 7 / 184 : linkContent.js ===== */
+/* ===== 7 / 186 : linkContent.js ===== */
 // js/linkContent.js (v1)
 // ⭐ 全系統自建內容（正本，不再是後備）
 //    20 個系統的完整資料 + 互相關聯標記（synergy / tags）
@@ -3176,7 +3176,7 @@ window.HY = window.HY || {};
     '｜離線 ' + C.OFFLINE_MODES.length + '｜敵陣 ' + C.ENEMY_FORMATIONS.length + '｜名冊職能 ' + C.ROSTER_ROLES.length + '）');
 })();
 
-/* ===== 8 / 184 : linkSystems.js ===== */
+/* ===== 8 / 186 : linkSystems.js ===== */
 // js/linkSystems.js (v1)
 // ⭐ 20 個系統的自建實作 + 全部向匯流排註冊
 //    每個系統都是「native 正本」，外部系統存在時自動升級為 hybrid（取其數值）
@@ -3610,7 +3610,7 @@ window.HY = window.HY || {};
     Object.keys(L.effectsOf('formation')).length + '+ ｜鉤子 ' + L.hookCount() + ' 個');
 })();
 
-/* ===== 9 / 184 : systemBridge.js ===== */
+/* ===== 9 / 186 : systemBridge.js ===== */
 // js/systemBridge.js (v1)
 // ⭐ 原版系統 → 連動匯流排 的橋接層
 //    為原版 40+ 支系統註冊 HY_LINK 描述子，讓它們從「外部」升級為「已接軌／混合」
@@ -4263,7 +4263,7 @@ window.HY = window.HY || {};
   }, 1500);
 })();
 
-/* ===== 10 / 184 : uiConfigData.js ===== */
+/* ===== 10 / 186 : uiConfigData.js ===== */
 // js/uiConfigData.js  (v49)
 // 全域設定 + 裝備槽位 + 自動戰鬥預設 + 掉落政策
 //
@@ -4327,7 +4327,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 11 / 184 : statRegistry.js ===== */
+/* ===== 11 / 186 : statRegistry.js ===== */
 // js/statRegistry.js
 // 📊 屬性註冊表 —— 遊戲引擎支援的全部屬性鍵
 //
@@ -4510,7 +4510,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 12 / 184 : elementData.js ===== */
+/* ===== 12 / 186 : elementData.js ===== */
 // js/elementData.js  (v47)
 // 金木水火土冰風雷 八大元素系統核心資料
 //
@@ -4621,7 +4621,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 13 / 184 : formationData.js ===== */
+/* ===== 13 / 186 : formationData.js ===== */
 // js/formationData.js  (v52)
 // 修仙十五大陣法 + 靈根需求樣式池 + 種子式隨機分配
 //
@@ -4901,7 +4901,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 14 / 184 : mapData.js ===== */
+/* ===== 14 / 186 : mapData.js ===== */
 // js/mapData.js
 // 專門存放：7大時空紀元 (ERAS) 與 Lv.1~300 共 20 張時空地圖與怪物數據 (MAPS)
 window.HY = window.HY || {};
@@ -5074,7 +5074,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 15 / 184 : sectData.js ===== */
+/* ===== 15 / 186 : sectData.js ===== */
 // js/sectData.js  (v39)
 // 15 大門派：各自擁有獨一無二的「專屬門派特色」機制
 window.HY = window.HY || {};
@@ -5270,7 +5270,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 16 / 184 : externalArtsData.js ===== */
+/* ===== 16 / 186 : externalArtsData.js ===== */
 // js/externalArtsData.js  (v32)
 // 15 大門派 × 10 式外功 = 150 招，每一式皆與該門派「專屬特色」對應
 window.HY = window.HY || {};
@@ -5532,7 +5532,7 @@ window.HY.Data = window.HY.Data || {};
     });
 })();
 
-/* ===== 17 / 184 : xinfaData.js ===== */
+/* ===== 17 / 186 : xinfaData.js ===== */
 // js/xinfaData.js  (v39)
 // 15 大門派 × 5 階心法 = 75 門
 //   ⭐ 內力上限相關屬性統一降低 500%（÷6），數值直接寫入
@@ -5691,7 +5691,7 @@ window.HY.Data = window.HY.Data || {};
     });
 })();
 
-/* ===== 18 / 184 : qinggongData.js ===== */
+/* ===== 18 / 186 : qinggongData.js ===== */
 // js/qinggongData.js  (v40)
 // 4 門江湖共通輕功 + 15 大門派 × 3 門專屬身法 = 49 門
 //
@@ -5833,7 +5833,7 @@ window.HY.Data = window.HY.Data || {};
     Data.QINGGONG = list;
 })();
 
-/* ===== 19 / 184 : masteryData.js ===== */
+/* ===== 19 / 186 : masteryData.js ===== */
 // js/masteryData.js  (v47)
 // 武道專精 18 門
 //
@@ -5942,7 +5942,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 20 / 184 : meridianData.js ===== */
+/* ===== 20 / 186 : meridianData.js ===== */
 // js/meridianData.js  (v45)
 // 獨立人體十四經脈
 //
@@ -6041,7 +6041,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 21 / 184 : spiritRootData.js ===== */
+/* ===== 21 / 186 : spiritRootData.js ===== */
 // js/spiritRootData.js  (v48)
 // 八大靈根（金、木、水、火、土、冰、雷、風）
 //
@@ -6164,7 +6164,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 22 / 184 : equipmentData.js ===== */
+/* ===== 22 / 186 : equipmentData.js ===== */
 // js/equipmentData.js  (v40)
 // PoE 裝備基底庫 + 傳奇暗金裝庫 + 黑市丹藥
 //
@@ -6367,7 +6367,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 23 / 184 : companionData.js ===== */
+/* ===== 23 / 186 : companionData.js ===== */
 // js/companionData.js  (v39)
 // 原著群俠助戰數據 (COMPANIONS)
 //   ⭐ 內力上限相關屬性統一降低 500%（÷6）
@@ -6439,7 +6439,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 24 / 184 : petData.js ===== */
+/* ===== 24 / 186 : petData.js ===== */
 // js/petData.js
 // 專門存放：靈獸與生化坐騎數據 (PETS)
 window.HY = window.HY || {};
@@ -6492,7 +6492,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 25 / 184 : partyData.js ===== */
+/* ===== 25 / 186 : partyData.js ===== */
 // js/partyData.js
 // 五人角色預設稱號 (PRESET_NAMES)。
 //
@@ -6546,7 +6546,7 @@ window.HY.Data = window.HY.Data || {};
     Data.FORMATIONS = Data.LEGACY_FORMATIONS;
 })();
 
-/* ===== 26 / 184 : affixData.js ===== */
+/* ===== 26 / 186 : affixData.js ===== */
 // js/affixData.js
 // 專門存放：完整《流亡黯道 PoE》28 種稀有怪物詞綴（宿敵詞、精髓詞 Essence、狩獵紅獸詞 Bestiary、譫妄/深淵/超越/先驅/罪魂季賽詞）
 window.HY = window.HY || {};
@@ -6842,7 +6842,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 27 / 184 : poeCraftData.js ===== */
+/* ===== 27 / 186 : poeCraftData.js ===== */
 // js/poeCraftData.js  (v45)
 // PoE 10 大通貨 / 前綴池 / 後綴池 / 瓦爾腐化詞綴
 //
@@ -6937,7 +6937,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 28 / 184 : essenceData.js ===== */
+/* ===== 28 / 186 : essenceData.js ===== */
 // js/essenceData.js  (v1)
 // PoE1 精隨（Essence）完整資料表
 //
@@ -7386,7 +7386,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 29 / 184 : fossilData.js ===== */
+/* ===== 29 / 186 : fossilData.js ===== */
 // js/fossilData.js  (v1)
 // PoE1 化石（Fossil）資料表
 //
@@ -7767,7 +7767,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 30 / 184 : delveData.js ===== */
+/* ===== 30 / 186 : delveData.js ===== */
 // js/delveData.js  (v1)
 // PoE1 礦坑（Delve）資料表：生物群系、節點類型、難度曲線、化石掉寶表
 //
@@ -8092,7 +8092,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 31 / 184 : talentData.js ===== */
+/* ===== 31 / 186 : talentData.js ===== */
 // ══════════════════════════════════════════════════════════════════════════
 //  js/talentData.js —— 自製天賦樹（v3，400 節點）
 //
@@ -9020,7 +9020,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 32 / 184 : talentDataPoe.js ===== */
+/* ===== 32 / 186 : talentDataPoe.js ===== */
 // js/talentDataPoe.js  (auto-generated from GGG official skill tree export)
 //
 // 資料來源：https://github.com/grindinggear/skilltree-export (data.json)
@@ -12358,7 +12358,472 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 33 / 184 : talentMasteryData.js ===== */
+/* ===== 33 / 186 : ascendancyData.js ===== */
+// js/ascendancyData.js  (auto-generated v2)
+// 資料來源：GGG 官方 skilltree-export（data.json）
+//
+// 昇華天賦（Ascendancy）：七職業 × 3 分支 = 21 條正式分支，
+// 每條分支是一個獨立的小型天賦樹（起點 + 14~48 個節點）。
+// 血裔（Bloodline）分支已全部排除。
+//
+// 座標：已依官方 orbitRadii / skillsPerOrbit 換算，並平移到分支自身中心。
+//       UI 直接把 (x,y) 當作以 (0,0) 為中心的區域座標即可。
+//
+// 節點格式與 talentDataPoe.js 一致，可直接餵給 poeStatEngine 解析 stats。
+// ⚠ 請勿手動編輯，要重新產生請執行 _gen_ascendancy.ps1
+window.HY = window.HY || {};
+window.HY.Data = window.HY.Data || {};
+(function () {
+  'use strict';
+  var D = window.HY.Data;
+
+  /* 職業 → 昇華分支對照 */
+  D.ASCENDANCY_CLASSES = {"Scion":[{"id":"Ascendant","name":"Ascendant"},{"id":"Reliquarian","name":"Reliquarian"},{"id":"Luminary","name":"Luminary"}],"Marauder":[{"id":"Juggernaut","name":"Juggernaut"},{"id":"Berserker","name":"Berserker"},{"id":"Chieftain","name":"Chieftain"}],"Ranger":[{"id":"Raider","name":"Warden"},{"id":"Deadeye","name":"Deadeye"},{"id":"Pathfinder","name":"Pathfinder"}],"Witch":[{"id":"Occultist","name":"Occultist"},{"id":"Elementalist","name":"Elementalist"},{"id":"Necromancer","name":"Necromancer"}],"Duelist":[{"id":"Slayer","name":"Slayer"},{"id":"Gladiator","name":"Gladiator"},{"id":"Champion","name":"Champion"}],"Templar":[{"id":"Inquisitor","name":"Inquisitor"},{"id":"Hierophant","name":"Hierophant"},{"id":"Guardian","name":"Guardian"}],"Shadow":[{"id":"Assassin","name":"Assassin"},{"id":"Trickster","name":"Trickster"},{"id":"Saboteur","name":"Saboteur"}]};
+
+  /* 分支幾何（w/h 為節點分佈範圍，n 為節點數；節點已平移到中心） */
+  D.ASCENDANCY_GEO = {"Ascendant":{"w":1200.1,"n":49,"h":1225.9},"Assassin":{"w":955.8,"n":21,"h":973.8},"Berserker":{"w":716.8,"n":15,"h":986},"Champion":{"w":885.8,"n":15,"h":621.2},"Chieftain":{"w":716.8,"n":16,"h":802.5},"Deadeye":{"w":782.8,"n":19,"h":796.5},"Elementalist":{"w":973.9,"n":17,"h":645.3},"Gladiator":{"w":828,"n":15,"h":803.9},"Guardian":{"w":986,"n":17,"h":973.8},"Hierophant":{"w":710.7,"n":17,"h":961.8},"Inquisitor":{"w":979.9,"n":17,"h":797.6},"Juggernaut":{"w":496.7,"n":15,"h":697.3},"Luminary":{"w":986,"n":18,"h":908.2},"Necromancer":{"w":955.8,"n":17,"h":546},"Occultist":{"w":973.9,"n":18,"h":645.3},"Pathfinder":{"w":639.2,"n":15,"h":636.6},"Raider":{"w":986,"n":22,"h":729.9},"Reliquarian":{"w":1214,"n":36,"h":1183.5},"Saboteur":{"w":979.9,"n":22,"h":692.7},"Slayer":{"w":986,"n":15,"h":692.7},"Trickster":{"w":932.3,"n":15,"h":642.7}};
+
+  /* 節點表：[ id, name, icon, x, y, orbit, orbitIndex, type, out, stats, asc ]
+     type：0=小天賦 1=關鍵 2=顯著 3=起點 */
+  var RAW = [
+    ["10099","Necromancer","Art/2DArt/SkillIcons/passives/Ascendants/Necromancer.png",139.4,-612.9,0,0,0,"",["Your Offering Skills also affect you","Your Offerings have 50% reduced Effect on you","Minions deal 30% increased Damage","Auras from your Skills grant 2% increased Attack and Cast\nSpeed to you and Allies","If you\u0027ve Consumed a corpse Recently, you and your Minions have 30% increased Area of Effect"],"Ascendant"],
+    ["10108","Reliquarian","Art/2DArt/SkillIcons/passives/damage.png",0,-0.1,0,0,3,"35936",[],"Reliquarian"],
+    ["10143","Brutal Fervour","Art/2DArt/SkillIcons/passives/Slayer/BrutalFervor.png",439.2,-101.3,4,7,2,"34215",["100% increased Maximum Recovery per Life Leech","Life Leech effects are not removed when Unreserved Life is Filled","10% reduced Damage taken while Leeching"],"Slayer"],
+    ["10238","Life Regeneration, Fire Damage","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenFireDamage.png",-72.6,-241.5,2,1,0,"61355",["10% increased Fire Damage","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["10635","Elemental Damage, Life Regeneration","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageAvoidElementalStatusEffects.png",146.6,-62,2,3,0,"39790",["Regenerate 0.5% of Life per second","10% increased Elemental Damage"],"Inquisitor"],
+    ["11046","Mana Regeneration, Mana","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",-3.4,297.4,3,7,0,"922",["8% increased maximum Mana","20% increased Mana Regeneration Rate"],"Hierophant"],
+    ["1105","Pursuit of Faith","Art/2DArt/SkillIcons/passives/Hierophant/SpiritualEmpowerment.png",307.8,211.7,4,13,2,"14870",["100% increased Totem Duration","+1 to maximum number of Summoned Totems","100% increased Totem Placement speed"],"Hierophant"],
+    ["11412","Inspirational","Art/2DArt/SkillIcons/passives/Champion/Inpirational.png",44.1,-310.6,4,0,2,"61478",["30% increased effect of Non-Curse Auras from your Skills","You and Allies near your Banner Regenerate 0.1% of Life per second for each Valour consumed for that Banner","When you leave your Banner\u0027s Area, recover 30% of the Valour consumed for that Banner"],"Champion"],
+    ["11490","Plaguebringer","Art/2DArt/SkillIcons/passives/Necromancer/PlagueBringer.png",300.4,-67.7,3,5,2,"23509",["If you\u0027ve Consumed a corpse Recently, you and your Minions have 30% increased Area of Effect","With at least one nearby corpse, you and nearby Allies deal 10% more Damage","With at least one nearby corpse, nearby Enemies deal 10% reduced Damage"],"Necromancer"],
+    ["11597","Lesson of the Seasons","Art/2DArt/SkillIcons/passives/Warden/WardenBarkskin2.png",493,128.1,4,10,2,"",["-25 Damage taken of each Damage Type from Spell Hits per Bark","Prevent +3% of Suppressed Spell Damage per Bark below maximum","Lose 1 Bark when Hit by Enemy Spell Damage"],"Raider"],
+    ["12003","Martial Weapon Display","Art/2DArt/SkillIcons/passives/Ascendants/ReliquarianAscendancyCenter.png",0,492.9,4,20,2,"9258,47058,26055,20160,54928,27054,25795",[],"Reliquarian"],
+    ["12146","Evasion, Spell Suppression","Art/2DArt/SkillIcons/passives/Warden/SpellSuppressionEvasion.png",439.3,351.9,4,13,0,"11597",["+5% chance to Suppress Spell Damage","15% increased Evasion Rating"],"Raider"],
+    ["12475","Elemental Damage, Cold Ailment Effect","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageFreezeShockIgnite.png",-0.1,164.6,3,8,0,"40810",["10% increased Elemental Damage","10% increased Effect of Cold Ailments"],"Elementalist"],
+    ["12597","Occultist","Art/2DArt/SkillIcons/passives/Ascendants/Occultist.png",230,-454.1,0,0,0,"",["You can apply an additional Curse","10% increased Effect of your Curses","Regenerate 1.5% of Energy Shield per second","Cannot Be Stunned while you have Energy Shield"],"Ascendant"],
+    ["12738","Elemental Damage, Fire Damage over Time Multiplier","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageFreezeShockIgnite.png",-128.3,139.1,3,9,0,"53123",["+4% to Fire Damage over Time Multiplier","10% increased Elemental Damage"],"Elementalist"],
+    ["12850","Critical Strike Chance, Power Charge Duration","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-71,149.7,2,9,0,"4242",["15% increased Power Charge Duration","15% increased Critical Strike Chance"],"Assassin"],
+    ["13219","Evasion and Energy Shield, Damage","Art/2DArt/SkillIcons/passives/Trickster/OffensiveNodeTrickster.png",-308.1,-171.7,3,12,0,"55867",["10% increased Damage","14% increased Evasion Rating","5% increased maximum Energy Shield"],"Trickster"],
+    ["13374","Master of Metal","Art/2DArt/SkillIcons/passives/Champion/ImpalePassiveNotable.png",-265.4,310.6,3,11,2,"",["Impales you inflict last 1 additional Hit","If you\u0027ve Impaled an Enemy Recently, you\nand nearby Allies have +1000 to Armour","You and nearby Allies deal 6 to 12 added Physical Damage for\neach Impale on Enemy"],"Champion"],
+    ["13851","Instruments of Zeal","Art/2DArt/SkillIcons/passives/Inquistitor/InstrumentsofZeal.png",-442.4,-223.8,4,33,2,"",["Gain Fanaticism for 5 seconds on reaching Maximum Fanatic Charges","Gain 1 Fanatic Charge every second if you\u0027ve Attacked in the past second","Lose all Fanatic Charges on reaching Maximum Fanatic Charges","+3 to Maximum Fanatic Charges"],"Inquisitor"],
+    ["14103","Calculated Risk","Art/2DArt/SkillIcons/passives/Saboteur/ExplosivesExpert.png",490,122.5,4,10,2,"",["Your Critical Strike Chance is Lucky","Damage of Enemies Hitting you is Unlucky","Damage with Hits is Unlucky"],"Saboteur"],
+    ["14156","Flask Effect and Duration","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectFlaskDuration.png",-142.2,40.4,3,13,0,"",["8% increased Flask Effect Duration","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["14603","Bone Barrier","Art/2DArt/SkillIcons/passives/Necromancer/DefensiveMinionNotable.png",143.3,273,4,18,2,"",["1% additional Physical Damage Reduction per Minion, up to 10%","1% of Damage Dealt by your Minions is Leeched to you as Life","Minions gain 40% of Maximum Life as Extra Maximum Energy Shield"],"Necromancer"],
+    ["14726","Attack Speed, Attack Damage","Art/2DArt/SkillIcons/passives/Gladiator/GLADOneHand.png",-256,67,3,12,0,"758",["10% increased Attack Damage","5% increased Attack Speed"],"Gladiator"],
+    ["14870","Mana Regeneration, Totem Placement Speed","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",355.3,65.1,4,11,0,"34434",["20% increased Mana Regeneration Rate","20% increased Totem Placement speed"],"Hierophant"],
+    ["14996","Life Regeneration, Fire Damage","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenFireDamage.png",174.9,36.4,3,5,0,"50692",["10% increased Fire Damage","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["15286","Attack Damage, Attack Speed","Art/2DArt/SkillIcons/passives/Slayer/2HdmgSpeed.png",-289.8,-276.3,4,36,0,"3184",["10% increased Attack Damage","5% increased Attack Speed"],"Slayer"],
+    ["15435","Templar Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",-371.8,-373,2,0,2,"57429,43962,42144,30919",[],"Ascendant"],
+    ["15544","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-223.8,-439.4,4,37,0,"2460",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["15550","Evasion, Elemental Ailment Duration","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-439.3,-95.8,4,33,0,"55509",["15% increased Evasion Rating","10% increased Duration of Elemental Ailments on Enemies"],"Raider"],
+    ["15616","Jagged Technique","Art/2DArt/SkillIcons/passives/Gladiator/GLADBloodInEyes.png",207.1,376.5,3,7,2,"",["Bleeding you inflict is Aggravated"],"Gladiator"],
+    ["1564","Loyal Bodyguard","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable4.png",493,14.8,4,10,2,"61133",["If your Mercenary\u0027s Life is higher than your own, 20% of Damage from Hits is\ntaken from your Mercenary\u0027s Life before you","If your Mercenary\u0027s Life is lower than your own, 40% of Damage they take is Recouped as Life"],"Luminary"],
+    ["15726","Luminary","Art/2DArt/SkillIcons/passives/damage.png",0,14.8,0,0,3,"35877",[],"Luminary"],
+    ["15900","Oath of Fealty","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable3.png",-493,14.8,4,30,2,"63954",["50% less Cost of Link Skills","Link Skills have infinite Attachment Duration","If your Linked Mercenary dies, the Link owner does not also die"],"Luminary"],
+    ["16023","Elementalist","Art/2DArt/SkillIcons/passives/damage.png",-0.1,-170.4,0,0,3,"37114,54279,6052,58998,12475,12738,47873",[],"Elementalist"],
+    ["16093","Armour, Life Regeneration","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourLifeRegeneration.png",-248.4,160.6,2,8,0,"17988",["15% increased Armour","Regenerate 0.5% of Life per second"],"Juggernaut"],
+    ["16212","Area of Effect, Trap Throwing Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMines.png",-131.2,-187,3,15,0,"38918",["8% increased Area of Effect","5% increased Trap Throwing Speed"],"Saboteur"],
+    ["16306","Masterful Form","Art/2DArt/SkillIcons/passives/Slayer/Charges.png",439.2,346.4,4,13,2,"",["Your Maximum Endurance Charges is equal to your Maximum Frenzy Charges","+1 to Maximum Frenzy Charges"],"Slayer"],
+    ["16633","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-439.2,-223.9,4,33,0,"15544",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["16745","Armour and Energy Shield, Minion Damage","Art/2DArt/SkillIcons/passives/Guardian/Minion Damage Armour and Energy Shield.png",223.8,439.3,4,17,0,"19641",["14% increased Armour","5% increased maximum Energy Shield","Minions deal 10% increased Damage"],"Guardian"],
+    ["1675","Attack Speed, Block Chance","Art/2DArt/SkillIcons/passives/Gladiator/GLADBlockChance.png",-49.2,-242.5,3,15,0,"8419",["5% increased Attack Speed","+3% Chance to Block Attack Damage"],"Gladiator"],
+    ["16848","Oath of Winter","Art/2DArt/SkillIcons/passives/Warden/WardenColdAilments.png",-309.5,-0.1,3,13,2,"61761",["Enemies you Freeze remain Frozen for at least 2 seconds","Hits that fail to Freeze due to insufficient Freeze Duration inflict Hoarfrost"],"Raider"],
+    ["16940","Pyromaniac","Art/2DArt/SkillIcons/passives/Saboteur/BlindedAssult.png",-442.3,-101.2,4,33,2,"26446,47366",["Immune to Ignite and Shock","Regenerate 2% of Life per second for each Mine Detonated Recently, up to 10% per second","Regenerate 2% of Life per Second for each Trap Triggered Recently, up to 10% per second"],"Saboteur"],
+    ["1697","Master Toxicist","Art/2DArt/SkillIcons/passives/PathFinder/Master Toxicist.png",-142.2,296.8,3,11,2,"20480",["When you kill a Poisoned Enemy during any Flask Effect, Enemies within 1.5 metres are Poisoned","Poisons you inflict during any Flask Effect have 20% chance to deal 100% more Damage"],"Pathfinder"],
+    ["16994","Vaal Caress","Art/2DArt/SkillIcons/passives/VaalCaressNode.png",-436,-98.8,0,0,0,"",["You gain Onslaught for 20 seconds on using a Vaal Skill","+2 to Level of all Vaal Skill Gems"],"Reliquarian"],
+    ["17018","Energy Shield, Curse Effect","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldManaReservation.png",-335,-170.4,3,12,0,"31344",["6% increased maximum Energy Shield","5% increased Effect of your Curses"],"Occultist"],
+    ["1729","Projectile Damage, Mirage Archer Duration","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",-207.9,-39.5,3,13,0,"2872",["10% increased Projectile Damage","15% increased Mirage Archer Duration"],"Deadeye"],
+    ["1731","Hinekora, Death's Fury","Art/2DArt/SkillIcons/passives/Chieftain/HinekoraDeathsFury.png",-262.8,217.8,3,9,2,"982",["Enemies you or your Totems Kill have 10% chance to Explode, dealing 250% of their maximum Life as Fire Damage"],"Chieftain"],
+    ["17315","Overwhelm","Art/2DArt/SkillIcons/passives/Slayer/CriticalAttacks.png",-493,122.5,4,30,2,"",["Base Critical Strike Chance for Attacks with Weapons is 8%","+10% to Critical Strike Multiplier per Nearby Enemy, up to +100%","Nearby Enemies have -30% to Critical Strike Multiplier"],"Slayer"],
+    ["1734","Unflinching","Art/2DArt/SkillIcons/passives/Juggernaut/Unflinching.png",248.4,-0.1,4,10,2,"23972,62349",["30% chance to gain an Endurance Charge when you are Hit","25% chance that if you would gain Endurance Charges, you instead gain up to maximum Endurance Charges","Gain 1 Endurance Charge every second if you\u0027ve been Hit Recently","+1 to Maximum Endurance Charges"],"Juggernaut"],
+    ["17386","Xirgil's Crank","Art/2DArt/SkillIcons/passives/XirgilsCrankNode.png",57,-591.8,0,0,0,"",["+1 to Level of all Spell Skill Gems","30% chance for Energy Shield Recharge to start when you Block"],"Reliquarian"],
+    ["17445","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-2,588.7,2,8,0,"63357",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["17765","Juggernaut","Art/2DArt/SkillIcons/passives/damage.png",-244.6,-0.1,0,0,3,"32115,51998,49153,63417,16093",[],"Juggernaut"],
+    ["17988","Untiring","Art/2DArt/SkillIcons/passives/Juggernaut/Unbreakable.png",-120.1,308.1,3,7,2,"",["40% increased Life Regeneration rate","1.5% of Physical Damage prevented from Hits in the past\n10 seconds is Regenerated as Life per second"],"Juggernaut"],
+    ["18147","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",348.6,-348.6,4,5,0,"35989",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["18309","Minion Damage, Skill Duration","Art/2DArt/SkillIcons/passives/Necromancer/IncreasedMinionDamageIncreasedSkillDuration.png",325.9,-195.9,3,4,0,"48719",["10% increased Skill Effect Duration","Minions deal 10% increased Damage"],"Necromancer"],
+    ["18335","For the Jugular","Art/2DArt/SkillIcons/passives/Assassin/Ambush.png",-289,95.3,0,0,0,"",["+100% to Critical Strike Multiplier against Enemies that are not on Low Life","100% more Critical Strike Chance against Enemies that are on Low Life","Critical Strikes have Culling Strike"],"Assassin"],
+    ["18378","Occultist","Art/2DArt/SkillIcons/passives/damage.png",0.1,-170.4,0,0,3,"48124,6728,31984,32417,17018",[],"Occultist"],
+    ["18574","Minion Damage, Mana","Art/2DArt/SkillIcons/passives/Necromancer/ManaNode.png",-318.6,-67.7,3,11,0,"3554",["8% increased maximum Mana","Minions deal 10% increased Damage"],"Necromancer"],
+    ["18635","Saboteur","Art/2DArt/SkillIcons/passives/damage.png",-3,122.5,0,0,3,"41081,64842,62067,16212,25167,869,64785",[],"Saboteur"],
+    ["19083","Opportunistic","Art/2DArt/SkillIcons/passives/Assassin/Assassinate.png",-448.3,-223.8,4,33,2,"9014",["25% more Damage while there is at most one Rare or Unique Enemy nearby","Damage cannot be Reflected","35% less Damage taken while there are at least two Rare or Unique Enemies nearby"],"Assassin"],
+    ["193","Strength","Art/2DArt/SkillIcons/passives/plusstrength.png",-221,152.3,2,3,0,"33875",["+40 to Strength"],"Ascendant"],
+    ["19417","Instruments of Virtue","Art/2DArt/SkillIcons/passives/Inquistitor/InstrumentsOfVirtue.png",-338.1,0,3,12,2,"27055,35739",["10% more Attack Damage for each Non-Instant Spell you\u0027ve Cast in the past 8 seconds, up to a maximum of 30%","Battlemage"],"Inquisitor"],
+    ["1945","Mystical Infusion","Art/2DArt/SkillIcons/passives/Assassin/DeadlyInfusion.png",-477.9,152.3,4,28,2,"",["Spell Critical Strike Chance [BifurcatedCrit|Bifurcates]","30% less Spell Critical Strike Chance"],"Assassin"],
+    ["19488","Evasion, Tincture Effect","Art/2DArt/SkillIcons/passives/Warden/TincturesNode.png",309.5,-0.1,3,3,0,"36958,29662",["15% increased Evasion Rating","Tinctures applied to you have 10% increased Effect"],"Raider"],
+    ["1953","Area of Effect, Trap and Mine Throwing Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",-312.5,-5.7,3,13,0,"16940",["8% increased Area of Effect","5% increased Trap Throwing Speed","5% increased Mine Throwing Speed"],"Saboteur"],
+    ["19587","Evasion and Energy Shield, Movement Speed","Art/2DArt/SkillIcons/passives/Trickster/DefensiveNodeTrickster.png",88.9,-22.1,2,7,0,"29825",["14% increased Evasion Rating","5% increased maximum Energy Shield","4% increased Movement Speed"],"Trickster"],
+    ["19595","Elemental Damage, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageAttackCasteSpeed.png",-439.3,53.5,4,27,0,"57197",["10% increased Elemental Damage","4% increased Attack and Cast Speed"],"Elementalist"],
+    ["19598","Toxic Delivery","Art/2DArt/SkillIcons/passives/Assassin/ToxicDelivery.png",-232.8,-439.3,4,37,2,"23024,47531",["Poison you inflict with Critical Strikes deals 20% more Damage","5% increased Poison Duration for each Poison you have inflicted Recently, up\nto a maximum of 100%","Recover 0.5% of Life per Poison affecting Enemies you Kill"],"Assassin"],
+    ["19641","Unwavering Crusade","Art/2DArt/SkillIcons/passives/Guardian/Unwavering Crusade.png",77.1,486.9,4,19,2,"",["25% chance to Trigger Level 20 Summon Elemental Relic when you or a nearby Ally Kill an Enemy, or Hit a Rare or Unique Enemy"],"Guardian"],
+    ["1977","Legendary Belts","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable12.png",-135.1,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Belts"],"Luminary"],
+    ["19993","Legendary Boots","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable11.png",323.2,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Boots"],"Luminary"],
+    ["20050","Armour and Energy Shield, Aura Effect","Art/2DArt/SkillIcons/passives/Guardian/ArmourEnergyShieldManaPool.png",223.8,-439.3,4,3,0,"64768",["14% increased Armour","5% increased maximum Energy Shield","5% increased effect of Non-Curse Auras from your Skills"],"Guardian"],
+    ["20160","Fidelitas' Spike","Art/2DArt/SkillIcons/passives/FidelitasSpikeNode.png",-114,492.9,0,0,0,"",["Hits always Shock","Deal no Physical Damage","Herald of Thunder has 100% increased Buff Effect","Herald of Thunder has 100% increased Mana Reservation Efficiency"],"Reliquarian"],
+    ["20480","Flask Effect, Poison Duration","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectDamageOverTime.png",105.3,318.3,2,9,0,"",["Flasks applied to you have 5% increased Effect","10% increased Poison Duration"],"Pathfinder"],
+    ["2060","Evasion, Tincture Effect","Art/2DArt/SkillIcons/passives/Warden/TincturesNode.png",0,-206.9,3,0,0,"40104",["15% increased Evasion Rating","Tinctures applied to you have 10% increased Effect"],"Raider"],
+    ["20954","Attack Damage, Area of Effect","Art/2DArt/SkillIcons/passives/Slayer/2HdmgAOE.png",335,122.5,3,4,0,"38180",["10% increased Attack Damage","10% increased Area of Effect"],"Slayer"],
+    ["21192","Infused Toxins","Art/2DArt/SkillIcons/passives/ChaosDamageOverTimeNotable.png",68.1,-486.9,4,1,2,"",["All Damage from Hits can Poison"],"Assassin"],
+    ["21264","Knife in the Back","Art/2DArt/SkillIcons/passives/Assassin/Ambush.png",-454,0,0,0,0,"",["100% more Critical Strike Chance against Enemies that are not on Low Life","+100% to Critical Strike Multiplier against Enemies that are on Low Life","Critical Strikes have Culling Strike"],"Assassin"],
+    ["22441","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-335,-0.1,3,12,0,"36489",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["22551","Strength and Intelligence","Art/2DArt/SkillIcons/passives/plusstrengthintelligence.png",-222.1,-149,2,5,0,"41534",["+20 to Strength and Intelligence"],"Ascendant"],
+    ["22628","Dawnbreaker","Art/2DArt/SkillIcons/passives/DawnbreakerNode.png",-436,98.8,0,0,0,"",["25% of Cold Damage taken as Fire Damage","25% of Lightning Damage taken as Fire Damage","25% of Physical Damage taken as Fire Damage"],"Reliquarian"],
+    ["22637","Mana Regeneration, Mana","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",30.4,-12.1,2,4,0,"25651",["8% increased maximum Mana","20% increased Mana Regeneration Rate"],"Hierophant"],
+    ["22852","Projectile Damage, Attack Speed","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAttackSpeed.png",-391.4,88.8,4,30,0,"23169",["5% increased Attack Speed","10% increased Projectile Damage"],"Deadeye"],
+    ["23024","Critical Strike Chance, Poison Chance","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-137.2,-309.5,3,15,0,"",["15% chance to Poison on Hit","15% increased Critical Strike Chance"],"Assassin"],
+    ["23169","Wind Ward","Art/2DArt/SkillIcons/passives/ProtectiveWinds.png",-337.7,312.5,4,27,2,"",["4% less Damage taken per Gale Force","Lose all Gale Force when Hit"],"Deadeye"],
+    ["23225","One Step Ahead","Art/2DArt/SkillIcons/passives/Trickster/OneStepAheadTrickster.png",-196.9,267.5,4,23,2,"",["Your Action Speed is at least 90% of base value","Nearby Enemy Monsters\u0027 Action Speed is at most 90% of base value"],"Trickster"],
+    ["2336","Evasion and Energy Shield, Energy Shield Leech","Art/2DArt/SkillIcons/passives/Trickster/DefensiveNodeTrickster.png",179.1,297.1,4,18,0,"48999",["14% increased Evasion Rating","5% increased maximum Energy Shield","40% increased total Recovery per second from Energy Shield Leech"],"Trickster"],
+    ["23509","Minion Damage, Cast Speed","Art/2DArt/SkillIcons/passives/Necromancer/CorpseConsumptionNode.png",339.5,152.7,4,15,0,"23572",["4% increased Cast Speed","Minions deal 10% increased Damage"],"Necromancer"],
+    ["23572","Corpse Pact","Art/2DArt/SkillIcons/passives/Necromancer/CorpseConsumptionNotable2.png",459.8,-43.6,4,12,2,"",["4% increased Attack and Cast Speed for each corpse Consumed Recently, up to a maximum of 200%","Enemies near corpses you Spawned Recently are Chilled and Shocked"],"Necromancer"],
+    ["23972","Armour, Endurance Charge Duration","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourAttackDamage.png",224.2,152.4,4,12,0,"",["15% increased Armour","15% increased Endurance Charge Duration"],"Juggernaut"],
+    ["24214","Evasion, Tincture Effect","Art/2DArt/SkillIcons/passives/Warden/TincturesNode.png",62,-21.6,2,1,0,"36958",["15% increased Evasion Rating","Tinctures applied to you have 10% increased Effect"],"Raider"],
+    ["24432","Evasion, Chance to Ignite","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-114.6,13.4,2,14,0,"33645",["15% increased Evasion Rating","10% chance to Ignite"],"Raider"],
+    ["24528","Crave the Slaughter","Art/2DArt/SkillIcons/passives/Berserker/CombatFrenzy.png",89.2,439.3,4,17,2,"",["Every Rage also grants 1% increased Attack Speed","Inherent Rage Loss starts 2 seconds later"],"Berserker"],
+    ["24538","Attack Speed, Block Chance","Art/2DArt/SkillIcons/passives/Gladiator/GLADBlockChance.png",-360.3,-156.8,4,33,0,"2598",["5% increased Attack Speed","+3% Chance to Block Attack Damage"],"Gladiator"],
+    ["2460","Caster Weapon Display","Art/2DArt/SkillIcons/passives/Ascendants/ReliquarianAscendancyCenter.png",0,-493.1,4,0,2,"18147,8081,17386,43857,37303,59067,40276",[],"Reliquarian"],
+    ["24704","Chieftain","Art/2DArt/SkillIcons/passives/damage.png",-134.6,-91.8,0,0,3,"6028,5643,9971,14996,10238",[],"Chieftain"],
+    ["24755","Path of the Marauder","Art/2DArt/SkillIcons/passives/Ascendants/Str.png",-370.6,376.3,2,8,2,"",["Can Allocate Passives from the Marauder\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["24798","Duelist Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",-151.8,488.7,2,11,2,"17445,39598,34774,43195",[],"Ascendant"],
+    ["24848","Gathering Winds","Art/2DArt/SkillIcons/passives/DeadEye/GatherWinds.png",-233.4,88.8,3,12,2,"22852",["Gain 1 Gale Force when you use a Skill\n10% increased Effect of Tailwind on you per Gale Force","You and nearby Allies have Tailwind"],"Deadeye"],
+    ["24984","Champion","Art/2DArt/SkillIcons/passives/damage.png",44.1,182.4,0,0,3,"25111,60508,6982,43725,41433",[],"Champion"],
+    ["25111","Armour and Evasion, Aura Effect","Art/2DArt/SkillIcons/passives/Champion/AnEAura.png",44.1,-152.6,3,0,0,"11412",["15% increased Evasion Rating and Armour","5% increased effect of Non-Curse Auras from your Skills"],"Champion"],
+    ["25167","Area of Effect, Mine Throwing Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMines.png",-312.5,250.8,3,11,0,"39834",["8% increased Area of Effect","5% increased Mine Throwing Speed"],"Saboteur"],
+    ["2521","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",148.8,-363.3,2,5,0,"51782",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["25309","Withering Presence","Art/2DArt/SkillIcons/passives/Occultist/WitheringPresence.png",-439.2,53.4,4,27,2,"",["+60% to Chaos Resistance","15% more Chaos Damage","Every second, inflict Withered on nearby Enemies for 15 seconds","Nearby Hindered Enemies deal 15% reduced Damage over Time"],"Occultist"],
+    ["25651","Conviction of Power","Art/2DArt/SkillIcons/passives/Hierophant/DiscipleOfRuin.png",203.4,-12.1,3,4,2,"",["+4 to Minimum Endurance Charges","+4 to Minimum Power Charges","+1 to Maximum Power Charges and Maximum Endurance Charges"],"Hierophant"],
+    ["25795","Ngamahu's Flame","Art/2DArt/SkillIcons/passives/RiriTeNgamahuNode.png",57,394.2,0,0,0,"",["Trigger Level 20 Molten Burst on Melee Hit","Damage Penetrates 20% Fire Resistance"],"Reliquarian"],
+    ["258","Bringer of Ruin","Art/2DArt/SkillIcons/passives/Elementalist/ElemancerIcon.png",487,-93.2,4,11,2,"",["66% increased Effect of Herald Buffs on you","66% increased Mana Reservation Efficiency of Herald Skills"],"Elementalist"],
+    ["25944","Legendary Arms","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable6.png",0,349.8,3,8,2,"",["Your Mercenary can equip Unique Weapons, Shields and Quivers","Your Mercenary and their Minions deal 8% more Damage for\neach Unique item they have equipped"],"Luminary"],
+    ["2598","More Than Skill","Art/2DArt/SkillIcons/passives/Gladiator/GLADVersitileCombatant.png",-414,67,4,30,2,"",["Chance to Block Attack or Spell Damage is Lucky if you\u0027ve Blocked Recently"],"Gladiator"],
+    ["26055","The Shattered Divinity","Art/2DArt/SkillIcons/passives/ShatteredDivinityNode.png",-57,591.8,0,0,0,"",["Grants Summon Greater Harbinger of Directions Skill","+40 to Strength and Dexterity"],"Reliquarian"],
+    ["26067","Endless Munitions","Art/2DArt/SkillIcons/passives/Additionalprojectile.png",-50.7,-380.2,4,38,2,"",["Skills fire 2 additional Projectiles"],"Deadeye"],
+    ["26298","Minion Damage and Life","Art/2DArt/SkillIcons/passives/Necromancer/IncreasedMinionDamageIncreasedMinionLife.png",-9.1,-33.9,2,8,0,"54159",["Minions have 10% increased maximum Life","Minions deal 10% increased Damage"],"Necromancer"],
+    ["26446","Area of Effect, Trap Throwing Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMines.png",-292.8,-276.3,4,36,0,"38918",["8% increased Area of Effect","5% increased Trap Throwing Speed"],"Saboteur"],
+    ["26714","Mana Regeneration, Totem Placement Speed","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",177.9,116.1,3,5,0,"1105",["20% increased Mana Regeneration Rate","20% increased Totem Placement speed"],"Hierophant"],
+    ["27038","Shaper of Storms","Art/2DArt/SkillIcons/passives/Elementalist/ShockSpecialisation.png",223.7,269,4,17,2,"",["Hits always Shock","Shocks from your Hits always increase Damage taken by at least 25%","All Damage can Shock"],"Elementalist"],
+    ["27054","Al Dhih","Art/2DArt/SkillIcons/passives/AldihNode.png",114,492.9,0,0,0,"",["Enemies Taunted by your Warcries Explode on death, dealing 8% of their maximum Life as Chaos Damage","Warcry Skills\u0027 Cooldown Time is 4 seconds"],"Reliquarian"],
+    ["27055","Elemental Damage, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageAttackCasteSpeed.png",-490,-77.1,4,31,0,"13851",["10% increased Elemental Damage","4% increased Attack and Cast Speed"],"Inquisitor"],
+    ["27096","Void Beacon","Art/2DArt/SkillIcons/passives/Occultist/VoidBeacon.png",-128.1,139.1,3,9,2,"31316,43242",["Nearby Enemies have -20% to Cold Resistance","Nearby Enemies have -20% to Chaos Resistance","Nearby Enemies have 100% reduced Life Regeneration rate"],"Occultist"],
+    ["27123","Mercenary Life, Light Radius","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNode.png",152.4,-454.1,4,2,0,"1564",["Your Mercenary and their Minions have 15% increased maximum Life","5% increased Light Radius"],"Luminary"],
+    ["27536","Evasion, Spell Suppression","Art/2DArt/SkillIcons/passives/Warden/SpellSuppressionEvasion.png",62,277.6,2,7,0,"4849",["+5% chance to Suppress Spell Damage","15% increased Evasion Rating"],"Raider"],
+    ["27604","First to Strike, Last to Fall","Art/2DArt/SkillIcons/passives/Champion/FirstStrikeLastFall.png",-179.8,-256.9,4,37,2,"",["Your Hits permanently Intimidate Enemies that are on Full Life","Gain Adrenaline for 20 seconds when you reach Low Life","Recover 25% of Life when you gain Adrenaline","Remove all Ailments and Burning when you gain Adrenaline"],"Champion"],
+    ["2768","Melding of the Flesh","Art/2DArt/SkillIcons/passives/MeldingoftheFleshNode.png",379,-0.1,0,0,0,"",["-5% to all maximum Elemental Resistances","Elemental Resistances are capped by your highest Maximum Elemental Resistance instead"],"Reliquarian"],
+    ["27864","Gratuitous Violence","Art/2DArt/SkillIcons/passives/Gladiator/GLADViolence.png",414,67,3,4,2,"33179",["Bleeding Enemies you Kill Explode, dealing 20% of\ntheir Maximum Life as Physical Damage"],"Gladiator"],
+    ["28535","Perfect Crime","Art/2DArt/SkillIcons/passives/Saboteur/PerfectCrime.png",-3,-212.5,3,0,2,"",["Triggers Level 20 Summon Triggerbots when Allocated","30% less Damage with Triggered Spells"],"Saboteur"],
+    ["2872","Occupying Force","Art/2DArt/SkillIcons/passives/Mirage.png",-367.3,-63.7,4,32,2,"62136",["Mirage Archers are not attached to you","+2 to maximum number of Summoned Mirage Archers","Cannot Summon Mirage Archers while near your Mirage Archers"],"Deadeye"],
+    ["28782","Mistwalker","Art/2DArt/SkillIcons/passives/Assassin/Elusive.png",477.9,77.1,4,11,2,"",["Gain Elusive on Critical Strike","100% increased Elusive Effect","You take no Extra Damage from Critical Strikes while Elusive"],"Assassin"],
+    ["28884","Heartstopper","Art/2DArt/SkillIcons/passives/Trickster/ImmuneToDoT.png",-35.1,-321.4,2,15,2,"",["Every 10 seconds:\nTake 50% less Damage from Hits for 5 seconds\nTake 50% less Damage over Time for 5 seconds"],"Trickster"],
+    ["28995","Projectile Damage, Projectile Speed","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",229.8,-220.8,3,1,0,"45313",["10% increased Projectile Speed","10% increased Projectile Damage"],"Deadeye"],
+    ["29026","Sanctuary of Thought","Art/2DArt/SkillIcons/passives/Hierophant/MindOverBeing.png",-355.4,427.2,4,23,2,"29994",["Gain 20% of Maximum Mana as Extra Maximum Energy Shield","1% increased Area of Effect per 50 Unreserved Maximum Mana, up to 100%","Regenerate 1% of Mana per second"],"Hierophant"],
+    ["29161","Energy Shield, Energy Shield Recharge Rate","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldMaximumMana.png",128.3,139.1,3,7,0,"5502",["6% increased maximum Energy Shield","15% increased Energy Shield Recharge Rate"],"Occultist"],
+    ["29294","Berserker","Art/2DArt/SkillIcons/passives/damage.png",-134.6,0,0,0,3,"50024,63673,63583,8592,5865",[],"Berserker"],
+    ["29630","Gore Dancer","Art/2DArt/SkillIcons/passives/Berserker/CloakedAgony.png",89.2,-439.3,4,3,2,"",["30% of Life Leech is Instant"],"Berserker"],
+    ["29662","Experienced Herbalist","Art/2DArt/SkillIcons/passives/Warden/WardenSaps2.png",348.6,-220.6,4,5,2,"",["You can have an additional Tincture active"],"Raider"],
+    ["29825","Escape Artist","Art/2DArt/SkillIcons/passives/Trickster/HeedfulRecovery.png",155.1,137.8,3,7,2,"58454,2336",["+4 to Evasion Rating per 1 Maximum Energy Shield on Equipped Helmet","+1 to maximum Energy Shield per 8 Evasion Rating on Equipped Body Armour"],"Trickster"],
+    ["29844","Shadowed Blood","Art/2DArt/SkillIcons/passives/LifeGainOnHitNotable.png",-9,-335,3,0,2,"",["40% of Physical Damage taken Recouped as Life","Unaffected by Damaging Ailments"],"Assassin"],
+    ["29994","Mana Regeneration, Mana","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",-131.6,480.9,4,20,0,"",["8% increased maximum Mana","20% increased Mana Regeneration Rate"],"Hierophant"],
+    ["30675","Link Cast Speed, Light Radius","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNode.png",-152.3,-454.1,4,38,0,"15900",["Link Skills have 10% increased Cast Speed","5% increased Light Radius"],"Luminary"],
+    ["30690","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-520.2,276.3,2,11,0,"24755",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["30919","Guardian","Art/2DArt/SkillIcons/passives/Ascendants/Guardian.png",-279.6,-426.2,0,0,0,"",["25% increased Reservation Efficiency of Skills","Every 4 seconds, Regenerate 50% of Life over one second","If you\u0027ve Attacked Recently, you and nearby Allies have +10% Chance to Block Attack Damage","If you\u0027ve Cast a Spell Recently, you and nearby Allies have +10% Chance to Block Spell Damage"],"Ascendant"],
+    ["30940","Hierophant","Art/2DArt/SkillIcons/passives/damage.png",-131.6,-12.1,0,0,3,"11046,22637,44797,26714,38387",[],"Hierophant"],
+    ["31316","Energy Shield, Chaos Damage","Art/2DArt/SkillIcons/passives/Occultist/EnergyShieldChaos.png",-289.7,228.4,4,24,0,"25309",["10% increased Chaos Damage","6% increased maximum Energy Shield"],"Occultist"],
+    ["31344","Unholy Authority","Art/2DArt/SkillIcons/passives/Occultist/FatefulEchoes.png",-468.8,-322.6,4,32,2,"",["You can apply an additional Curse","Your Hexes can affect Hexproof Enemies"],"Occultist"],
+    ["31364","Oath of Spring","Art/2DArt/SkillIcons/passives/Warden/WardenLightningAilments.png",-309.5,256.2,3,11,2,"63940",["Maximum Effect of Shock is 2% increased Damage taken","You can apply up to 50 Shocks to each Enemy"],"Raider"],
+    ["31517","Golden Glory","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable2.png",-223.8,454.1,4,23,2,"",["Increases and Reductions to Light Radius also apply to Effect\nof your Link Skill Buffs on your Mercenary"],"Luminary"],
+    ["3154","Instruments of Justice","Art/2DArt/SkillIcons/passives/Inquistitor/CriticalStrikeChance.png",-472,152.3,4,28,2,"",["Base Spell Critical Strike Chance of Spells is equal to that of Main Hand Weapon"],"Inquisitor"],
+    ["31598","Dexterity","Art/2DArt/SkillIcons/passives/plusdexterity.png",217.1,151.7,2,13,0,"38689",["+40 to Dexterity"],"Ascendant"],
+    ["31667","Sione, Sun's Roar","Art/2DArt/SkillIcons/passives/Chieftain/ArohunguiMoonsPresenceWarcry.png",-6.4,217.8,3,7,2,"",["30% increased Warcry Buff Effect","Warcries have infinite Power"],"Chieftain"],
+    ["31700","Fortitude","Art/2DArt/SkillIcons/passives/Champion/Fortitude.png",-395.2,-41.4,4,33,2,"35185",["Nearby Allies count as having Fortification equal to yours","You have your maximum Fortification"],"Champion"],
+    ["3184","Headsman","Art/2DArt/SkillIcons/passives/Slayer/BaneOfLegends.png",-152.4,-346.3,4,38,2,"",["Kill Enemies that have 20% or lower Life when Hit by your Skills","Gain 10% increased Attack Speed for 20 seconds when you Kill a Rare or Unique Enemy","Gain 10% increased Movement Speed for 20 seconds when you Kill an Enemy"],"Slayer"],
+    ["31984","Energy Shield, Curse Effect","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldManaReservation.png",-309.5,-42.1,3,11,0,"37127",["6% increased maximum Energy Shield","5% increased Effect of your Curses"],"Occultist"],
+    ["32095","Legendary Helmets","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable10.png",221.2,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Helmets"],"Luminary"],
+    ["32115","Armour, Attack Speed","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourAttackSpeed.png",-244.6,-162.1,2,0,0,"44297",["5% increased Attack Speed","15% increased Armour"],"Juggernaut"],
+    ["32249","Valako, Storm's Embrace","Art/2DArt/SkillIcons/passives/Chieftain/ValakoStormsEmbrace.png",264.2,-381.5,4,6,2,"",["Modifiers to Maximum Fire Resistance also apply to Maximum Cold and Lightning Resistances"],"Chieftain"],
+    ["32251","War Bringer","Art/2DArt/SkillIcons/passives/Berserker/WarBringer.png",-134.6,-335,3,0,2,"",["Warcries Exert twice as many Attacks"],"Berserker"],
+    ["32364","Armour and Energy Shield, Life Regeneration","Art/2DArt/SkillIcons/passives/Guardian/ArmourEnergyShieldDefenseFromShields.png",-162,0,2,12,0,"55146",["14% increased Armour","5% increased maximum Energy Shield","Regenerate 0.5% of Life per second"],"Guardian"],
+    ["32417","Energy Shield, Cold and Chaos Damage","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldAttackAndCastSpeed.png",-61.9,-20.6,2,9,0,"27096",["10% increased Cold Damage","10% increased Chaos Damage","6% increased maximum Energy Shield"],"Occultist"],
+    ["32640","Flask Effect and Charges Gained","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectElementalResistance.png",39.1,-140.9,3,15,0,"",["10% increased Flask Charges gained","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["32662","Flask Effect, Chaos Damage","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectDamageOverTime.png",5.3,168.6,2,12,0,"40813",["15% increased Chaos Damage","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["32669","Legendary Amulets","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable13.png",-339.5,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Amulets"],"Luminary"],
+    ["32730","Gladiator","Art/2DArt/SkillIcons/passives/damage.png",79,67,0,0,3,"3651,1675,48760,14726,37623",[],"Gladiator"],
+    ["32816","Pious Path","Art/2DArt/SkillIcons/passives/Inquistitor/GloryOfTheSavant.png",286.7,-398.8,4,4,2,"",["Consecrated Ground you create causes Life Regeneration to\nalso Recover Energy Shield for you and Allies","Effects of Consecrated Ground you create Linger for 4 seconds"],"Inquisitor"],
+    ["32947","Swift Killer","Art/2DArt/SkillIcons/passives/Trickster/UncontrolledVigour.png",-412.4,52.1,4,27,2,"37191",["200% increased Charge Duration","+2 to Maximum Frenzy Charges"],"Trickster"],
+    ["32992","Armour and Energy Shield, Block Recovery","Art/2DArt/SkillIcons/passives/Guardian/ArmourEnergyShieldStaves.png",62,149.7,2,7,0,"39728",["30% increased Block Recovery","14% increased Armour","5% increased maximum Energy Shield"],"Guardian"],
+    ["33167","Mana Regeneration, Arcane Surge Effect","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",158.2,-410.9,4,4,0,"60462",["20% increased Mana Regeneration Rate","20% increased Effect of Arcane Surge on you"],"Hierophant"],
+    ["33179","Attack Speed, Bleed Chance","Art/2DArt/SkillIcons/passives/Gladiator/GLADOneHand.png",388.4,195.2,3,5,0,"15616",["5% increased Attack Speed","Attacks have 15% chance to cause Bleeding"],"Gladiator"],
+    ["33467","Kaom's Binding","Art/2DArt/SkillIcons/passives/KaomBeltNode.png",436,-98.8,0,0,0,"",["Nearby Enemies Convert 25% of their Physical Damage to Fire","15% increased Strength"],"Reliquarian"],
+    ["33645","Oath of Summer","Art/2DArt/SkillIcons/passives/Warden/WardenFireAilments.png",-223.8,-311.2,4,37,2,"15550",["Hits that would Ignite instead Scorch","You can inflict an additional Scorch on each Enemy"],"Raider"],
+    ["33795","Slayer","Art/2DArt/SkillIcons/passives/damage.png",0,122.5,0,0,3,"42293,45696,20954,61393,50845",[],"Slayer"],
+    ["33875","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-370.6,52.3,2,0,0,"61437",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["33940","Unstoppable Hero","Art/2DArt/SkillIcons/passives/Champion/Unstopable.png",-442.9,259.5,4,29,2,"",["3% more Armour and Evasion Rating per Fortification above 20","3% increased Attack Speed per Fortification above 20"],"Champion"],
+    ["33954","Critical Strike Chance, Spell Damage","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-357.6,348.6,4,25,0,"1945",["10% increased Spell Damage","15% increased Critical Strike Chance"],"Assassin"],
+    ["34215","Attack Damage, Life Leech","Art/2DArt/SkillIcons/passives/Slayer/2HdmgLeech.png",289.8,-276.3,4,4,0,"34484",["10% increased Attack Damage","0.4% of Attack Damage Leeched as Life"],"Slayer"],
+    ["34434","Ritual of Awakening","Art/2DArt/SkillIcons/passives/Hierophant/AncestralZeal.png",355.3,-89.2,4,9,2,"",["3% more Damage per Summoned Totem","Regenerate 0.5% of Mana per second for each Summoned Totem","You and your Totems Regenerate 1% of Life per second for each Summoned Totem"],"Hierophant"],
+    ["34484","Endless Hunger","Art/2DArt/SkillIcons/passives/Slayer/EndlessHunger.png",152.3,-346.3,4,2,2,"",["20% of Overkill Damage is Leeched as Life","20% increased Attack Speed while Leeching","Cannot be Stunned while Leeching","You are Unaffected by Bleeding while Leeching"],"Slayer"],
+    ["34567","Deadeye","Art/2DArt/SkillIcons/passives/Ascendants/Deadeye.png",459.6,429.3,1,2,0,"",["25% increased Effect of your Marks","Gain a Frenzy Charge every 3 seconds while Moving","Skills fire an additional Projectile","You and nearby Allies have Tailwind"],"Ascendant"],
+    ["3458","Marshal of Divinity","Art/2DArt/SkillIcons/passives/Guardian/GuardianHallowingFlameNotable.png",493,0,4,10,2,"",["Inflict Hallowing Flame on Melee Hit","You can inflict +1 Hallowing Flame on Enemies","Gain 10% of Physical Damage as Extra Lightning Damage for each of your Hallowing Flames that have been removed by an allied hit recently, up to 80%"],"Guardian"],
+    ["34774","Gladiator","Art/2DArt/SkillIcons/passives/Ascendants/Gladiator.png",-142.4,613,1,3,0,"",["25% chance to Aggravate Bleeding on targets you Hit with Attacks","Gain 50% Chance to Block from Equipped Shield instead of the Shield\u0027s value","Inherent Bonuses from Dual Wielding are doubled","Deal 1% more Damage with Hits and Ailments to Rare and Unique Enemies for every 2 seconds they\u0027ve ever been in your Presence, up to a maximum of 50%"],"Ascendant"],
+    ["35185","Armour and Evasion, Attack Damage while Fortified","Art/2DArt/SkillIcons/passives/Champion/AnEFortify.png",-442.9,105.3,4,31,0,"33940",["15% increased Evasion Rating and Armour","10% increased Damage with Attack Skills while Fortified"],"Champion"],
+    ["35448","Kaom's Roots","Art/2DArt/SkillIcons/passives/KaomsRootsNode.png",-550,98.8,0,0,0,"",["+100 to maximum Life","Cannot be Knocked Back","Action Speed cannot be modified to below Base Value","Cannot Evade enemy Attacks\nCannot be Stunned"],"Reliquarian"],
+    ["3554","Essence Glutton","Art/2DArt/SkillIcons/passives/Necromancer/EssenceGlutton.png",-357.7,152.7,4,25,2,"",["For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second","For each nearby corpse, you and nearby Allies Regenerate 5 Mana\nper second, up to 50 per second","Regenerate 8% of Energy Shield over 2 seconds when you Consume a corpse","Regenerate 4% of Mana over 2 seconds when you Consume a corpse"],"Necromancer"],
+    ["35598","Evasion and Energy Shield, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Trickster/OffensiveNodeTrickster.png",-101.4,137.8,3,9,0,"23225",["14% increased Evasion Rating","5% increased maximum Energy Shield","4% increased Attack and Cast Speed"],"Trickster"],
+    ["35739","Elemental Damage, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageAttackCasteSpeed.png",-312.6,128.2,3,11,0,"3154",["10% increased Elemental Damage","4% increased Attack and Cast Speed"],"Inquisitor"],
+    ["35750","Worthy Causes","Art/2DArt/SkillIcons/passives/Champion/WorthyCauses.png",442.9,-107.4,4,6,2,"",["Having a placed Banner does not prevent you gaining Valour","Banner Skills have 100% increased Duration"],"Champion"],
+    ["35754","Ascendant","Art/2DArt/SkillIcons/passives/damage.png",-2,0.7,0,0,3,"22551,58029,45403,31598,607,193",[],"Ascendant"],
+    ["35877","Mercenary Damage, Light Radius","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNode.png",0,-147.2,2,0,0,"46479",["Your Mercenary and their Minions deal 15% increased Damage","5% increased Light Radius"],"Luminary"],
+    ["35936","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-162,-0.1,2,12,0,"22441",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["35989","Jewellery Display","Art/2DArt/SkillIcons/passives/Ascendants/ReliquarianAscendancyCenter.png",493,-0.1,4,10,2,"48410,36072,54569,8967,33467,2768",[],"Reliquarian"],
+    ["36017","Commander of Darkness","Art/2DArt/SkillIcons/passives/Necromancer/CommandingTheDarkness.png",-477.9,-43.6,4,28,2,"",["Auras from your Skills grant 3% increased Attack and Cast\nSpeed to you and Allies","You and nearby Allies deal 30% increased Damage","You and nearby Allies have +30% to Elemental Resistances"],"Necromancer"],
+    ["36072","Gloomfang","Art/2DArt/SkillIcons/passives/GloomfangNode.png",550,98.8,0,0,0,"",["Skills Chain +1 times","Projectiles that have Chained gain 20% of Non-Chaos Damage as extra Chaos Damage"],"Reliquarian"],
+    ["36242","Flask Effect and Duration","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectFlaskDuration.png",-319.6,91.5,4,31,0,"51101",["8% increased Flask Effect Duration","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["36489","Armour Display","Art/2DArt/SkillIcons/passives/Ascendants/ReliquarianAscendancyCenter.png",-493,-0.1,4,30,2,"16633,52094,16994,48040,56940,35448,22628",[],"Reliquarian"],
+    ["3651","Attack Speed and One Handed Damage","Art/2DArt/SkillIcons/passives/Gladiator/GLADOneHand.png",140.9,216.6,2,7,0,"52575",["5% increased Attack Speed","10% increased Damage with One Handed Weapons"],"Gladiator"],
+    ["36958","Seasoned Hunter","Art/2DArt/SkillIcons/passives/Warden/TinctureRangedNotable.png",128.2,-181.4,3,1,2,"",["Tincture Effects also apply to Ranged Weapons"],"Raider"],
+    ["37114","Elemental Damage, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageAttackCasteSpeed.png",-149.7,-108.4,2,11,0,"61259",["10% increased Elemental Damage","4% increased Attack and Cast Speed"],"Elementalist"],
+    ["37127","Profane Bloom","Art/2DArt/SkillIcons/passives/Occultist/LotusExtract.png",-487,-93.2,4,29,2,"",["Cursed Enemies you or your Minions Kill have a 50% chance to Explode, dealing a quarter of their maximum Life as Chaos Damage"],"Occultist"],
+    ["37191","Evasion and Energy Shield, Frenzy Charge Duration","Art/2DArt/SkillIcons/passives/Trickster/OffensiveNodeTrickster.png",-282.6,-43.5,3,11,0,"",["14% increased Evasion Rating","5% increased maximum Energy Shield","15% increased Frenzy Charge Duration"],"Trickster"],
+    ["37303","The Black Cane","Art/2DArt/SkillIcons/passives/TheBlackCaneNode.png",114,-493.1,0,0,0,"",["Each Summoned Phantasm grants you Phantasmal Might"],"Reliquarian"],
+    ["37419","Armour and Energy Shield, Aura Effect","Art/2DArt/SkillIcons/passives/Guardian/ArmourEnergyShieldManaPool.png",309.5,-128.2,3,3,0,"42264",["14% increased Armour","5% increased maximum Energy Shield","5% increased effect of Non-Curse Auras from your Skills"],"Guardian"],
+    ["37486","Elemental Damage, Critical Strike Multiplier","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageCasteSpeed.png",436.2,223.8,4,13,0,"48214",["10% increased Elemental Damage","+10% to Critical Strike Multiplier"],"Inquisitor"],
+    ["37492","Vile Bastion","Art/2DArt/SkillIcons/passives/Occultist/SoulCatalyst.png",309.6,-42.1,3,5,2,"29161",["Regenerate 100 Energy Shield per second","Cannot Be Stunned while you have Energy Shield","Maximum Energy Shield is increased by Chance to Block Spell Damage"],"Occultist"],
+    ["37623","Attack Speed, Block Chance","Art/2DArt/SkillIcons/passives/Gladiator/GLADBlockChance.png",79,-268,3,0,0,"63490",["5% increased Attack Speed","+3% Chance to Block Attack Damage"],"Gladiator"],
+    ["38180","Impact","Art/2DArt/SkillIcons/passives/Slayer/Impact.png",493,122.5,4,10,2,"",["+0.4 metres to Melee Strike Range","5% increased Area of Effect per Enemy killed recently, up to 50%","Deal up to 15% more Melee Damage to Enemies, based on proximity","50% increased Accuracy Rating"],"Slayer"],
+    ["38387","Mana Regeneration, Brand Damage","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",-131.6,149.9,2,8,0,"51492",["20% increased Mana Regeneration Rate","14% increased Brand Damage"],"Hierophant"],
+    ["38689","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",217.1,275.7,2,11,0,"49532",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["38918","Chain Reaction","Art/2DArt/SkillIcons/passives/Saboteur/ChainReaction.png",-155.3,-346.3,4,38,2,"",["Skills used by Traps have 50% increased Area of Effect","When your Traps Trigger, your nearby Traps also Trigger"],"Saboteur"],
+    ["38999","Ancestral Fury","Art/2DArt/SkillIcons/passives/Berserker/Blitz.png",-134.6,493,4,20,2,"",["Strike Skills also target the previous location they were used"],"Berserker"],
+    ["39598","Champion","Art/2DArt/SkillIcons/passives/Ascendants/Champion.png",-48.5,453.4,0,0,0,"",["Melee Hits have 50% chance to Fortify","Taunt on Hit","15% increased effect of Non-Curse Auras from your Skills","Your Hits permanently Intimidate Enemies that are on Full Life","Enemies Taunted by you take 10% increased Damage"],"Ascendant"],
+    ["39728","Bastion of Hope","Art/2DArt/SkillIcons/passives/Guardian/ShieldMastery.png",128.2,309.5,3,7,2,"",["If you\u0027ve Attacked Recently, you and nearby Allies have +25% Chance to Block Attack Damage","If you\u0027ve Cast a Spell Recently, you and nearby Allies have +25% Chance to Block Spell Damage"],"Guardian"],
+    ["39790","Sanctuary","Art/2DArt/SkillIcons/passives/Inquistitor/Sanctify.png",306.4,-128.2,3,3,2,"57222",["Consecrated Ground you create applies 15% increased Damage taken to Enemies","You have Consecrated Ground around you while stationary"],"Inquisitor"],
+    ["39818","Minion Damage and Life","Art/2DArt/SkillIcons/passives/Necromancer/IncreasedMinionDamageIncreasedMinionLife.png",-137.3,113.6,3,9,0,"65153",["Minions have 10% increased maximum Life","Minions deal 10% increased Damage"],"Necromancer"],
+    ["39834","Demolitions Specialist","Art/2DArt/SkillIcons/passives/Saboteur/DemolitionSpecialist.png",-442.3,346.3,4,27,2,"",["150% increased Effect of Auras from Mines","Mines Hinder Enemies near them for 2 seconds when they Land"],"Saboteur"],
+    ["40010","Armour and Energy Shield, Minion Damage","Art/2DArt/SkillIcons/passives/Guardian/Minion Damage Armour and Energy Shield.png",309.5,128.2,3,5,0,"4494",["14% increased Armour","5% increased maximum Energy Shield","Minions deal 10% increased Damage"],"Guardian"],
+    ["40059","Augury of Penitence","Art/2DArt/SkillIcons/passives/Inquistitor/ElementalDomination.png",489.9,0,4,10,2,"",["Nearby Enemies take 16% increased Elemental Damage","Nearby Enemies deal 8% less Elemental Damage"],"Inquisitor"],
+    ["40104","Enduring Suffusion","Art/2DArt/SkillIcons/passives/Warden/WardenSaps3.png",0,-364.9,4,0,2,"58650",["Tincture Effects Linger on you for 0.5 seconds per Mana Burn on you when the Tincture was deactivated, up to a maximum of 6 seconds","Tinctures applied to you have 30% less Mana Burn rate"],"Raider"],
+    ["40276","Shimmeron","Art/2DArt/SkillIcons/passives/ShimmeronNode.png",57,-394.2,0,0,0,"",["+8% to Critical Strike Multiplier per Power Charge","+0.3% to Critical Strike Chance per Power Charge","+3% Chance to Block Spell Damage per Power Charge"],"Reliquarian"],
+    ["40510","Arcane Blessing","Art/2DArt/SkillIcons/passives/Hierophant/ArcaneSurge.png",307.8,-235.9,4,7,2,"33167",["Arcane Surge also grants 20% more Spell Damage to you","Gain Arcane Surge when you or your Totems Hit an Enemy with a Spell"],"Hierophant"],
+    ["40631","Flask Effect and Charges Gained","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectElementalResistance.png",90.2,-318.3,4,39,0,"65296,61805",["10% increased Flask Charges gained","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["40810","Shaper of Winter","Art/2DArt/SkillIcons/passives/Elementalist/ChillSpecialisation.png",-0.1,322.6,4,20,2,"",["All Damage with Hits can Chill","Your Chills can reduce Action Speed by up to a maximum of 40%","Enemies Chilled by your Hits lessen their Damage dealt by half of Chill Effect"],"Elementalist"],
+    ["40813","Nature's Reprisal","Art/2DArt/SkillIcons/passives/PathFinder/MasterHerbalist.png",-167.7,168.6,3,12,2,"",["25% chance to inflict Withered for 2 seconds on Hit","50% increased Effect of Withered"],"Pathfinder"],
+    ["409","Guardian","Art/2DArt/SkillIcons/passives/damage.png",0,0,0,0,3,"37419,32364,46952,32992,40010,5929",[],"Guardian"],
+    ["41081","Area of Effect, Movement Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMovementSpeed.png",146.7,184.5,2,5,0,"51462",["4% increased Movement Speed","8% increased Area of Effect"],"Saboteur"],
+    ["41433","Armour and Evasion, Impale Chance","Art/2DArt/SkillIcons/passives/Champion/ImpalePassive.png",-290.9,182.4,3,12,0,"13374",["15% increased Evasion Rating and Armour","10% chance to Impale Enemies on Hit with Attacks"],"Champion"],
+    ["41534","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-222.1,-273,2,3,0,"15435",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["41891","Spellbreaker","Art/2DArt/SkillIcons/passives/Trickster/SupressionEnergyShieldTrickster.png",466.1,52.1,4,13,2,"",["Prevent +15% of Suppressed Spell Damage while on Full Energy Shield","50% chance for Energy Shield Recharge to start when you Suppress Spell Damage"],"Trickster"],
+    ["4194","Berserker","Art/2DArt/SkillIcons/passives/Ascendants/Berserker.png",-600,184.8,0,0,0,"",["5% increased Damage taken","15% more Damage","2% of Attack Damage Leeched as Life and Mana if you\u0027ve Killed Recently","Cannot be Stunned while you have at least 25 Rage","Inherent Rage Loss starts 1 second later"],"Ascendant"],
+    ["41996","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-151.8,364.7,2,13,0,"24798",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["42144","Hierophant","Art/2DArt/SkillIcons/passives/Ascendants/Hierophant.png",-465.6,-427.1,0,0,0,"",["25% increased maximum Mana","+1 to maximum number of Summoned Totems","8% of Damage is taken from Mana before Life","Arcane Surge also grants 10% more Spell Damage to you","Gain Arcane Surge when you or your Totems Hit an Enemy with a Spell"],"Ascendant"],
+    ["42264","Radiant Faith","Art/2DArt/SkillIcons/passives/Guardian/RadientFaith.png",439.3,-223.8,4,7,2,"20050",["Grants Armour equal to 25% of your Reserved Mana to you and nearby Allies","Grants maximum Energy Shield equal to 10% of your Reserved Mana to\nyou and nearby Allies"],"Guardian"],
+    ["42293","Attack Damage, Attack Speed","Art/2DArt/SkillIcons/passives/Slayer/2HdmgSpeed.png",-309.5,-5.8,3,13,0,"62817",["10% increased Attack Damage","5% increased Attack Speed"],"Slayer"],
+    ["4242","Unstable Infusion","Art/2DArt/SkillIcons/passives/Assassin/UnstableInfusion.png",-137.2,309.5,3,9,2,"55686,33954",["15% chance to gain a Power Charge on Critical Strike","30% chance to gain a Power Charge on Non-Critical Strike","+1 to Maximum Power Charges"],"Assassin"],
+    ["42546","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",366.9,-50.3,2,8,0,"772",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["42659","Life Regeneration, Fire Resistance","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenTotemPlacementSpeed.png",334.3,-244,4,8,0,"32249",["+15% to Fire Resistance","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["42671","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",516.6,275.7,2,5,0,"7618",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["42861","Physical Damage, Rage on Hit","Art/2DArt/SkillIcons/passives/Berserker/DmgAttackSpeed.png",304.7,223.8,4,13,0,"24528",["Gain 1 Rage on Attack Hit","10% increased Physical Damage"],"Berserker"],
+    ["43122","Assassin","Art/2DArt/SkillIcons/passives/Ascendants/Assassin.png",416.8,-183.5,0,0,0,"",["+0.75% to Critical Strike Chance","10% chance to gain a Power Charge on Critical Strike","10% chance to gain Elusive on Critical Strike","Damage cannot be Reflected"],"Ascendant"],
+    ["43193","Elemental Damage, Attack and Cast Speed","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageAttackCasteSpeed.png",-152.8,62,2,11,0,"19417",["10% increased Elemental Damage","4% increased Attack and Cast Speed"],"Inquisitor"],
+    ["43195","Slayer","Art/2DArt/SkillIcons/passives/Ascendants/Slayer.png",-234.2,454.6,0,0,0,"",["Culling Strike","Life Leech effects are not removed when Unreserved Life is Filled","30% increased Area of Effect if you\u0027ve Killed Recently","Cannot take Reflected Physical Damage"],"Ascendant"],
+    ["43215","Critical Strike Chance, Elusive Effect","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",140.7,62,2,5,0,"28782",["10% increased Elusive Effect","15% increased Critical Strike Chance"],"Assassin"],
+    ["43242","Energy Shield, Cold Damage","Art/2DArt/SkillIcons/passives/Occultist/EnergyShieldCold.png",-152.3,298.5,4,22,0,"47630",["10% increased Cold Damage","6% increased maximum Energy Shield"],"Occultist"],
+    ["43336","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",516.6,-274.3,2,3,0,"53992",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["43645","Legendary Rings","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable14.png",-237.5,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Rings"],"Luminary"],
+    ["43725","Armour and Evasion, Attack Damage","Art/2DArt/SkillIcons/passives/Champion/AnEAttDamage.png",-84.1,-127.1,3,15,0,"27604",["10% increased Attack Damage","15% increased Evasion Rating and Armour"],"Champion"],
+    ["43857","Arakaali's Fang","Art/2DArt/SkillIcons/passives/ArakaalisFangNode.png",-57,-591.8,0,0,0,"",["Trigger Level 20 Raise Spiders on Kill"],"Reliquarian"],
+    ["43962","Inquisitor","Art/2DArt/SkillIcons/passives/Ascendants/Inquisitor.png",-371.8,-264.5,0,0,0,"",["Damage Penetrates 8% of Enemy Elemental Resistances","10% chance to create Consecrated Ground when you Hit a Rare or Unique Enemy, lasting 8 seconds","Effects of Consecrated Ground you create Linger for 4 seconds","Nearby Enemies take 10% increased Elemental Damage"],"Ascendant"],
+    ["44297","Undeniable","Art/2DArt/SkillIcons/passives/Juggernaut/Undeniable.png",-116.5,-309.4,3,1,2,"",["+500 to Accuracy Rating","1% increased Attack Speed per 150 Accuracy Rating","Gain Accuracy Rating equal to twice your Strength"],"Juggernaut"],
+    ["44482","Avidity","Art/2DArt/SkillIcons/passives/DeadEye/DeadeyeFrenzyChargeNotable.png",163.6,238.3,2,7,2,"",["5% more Accuracy Rating per Frenzy Charge","Gain a Frenzy Charge each second while Moving","+1 to Maximum Frenzy Charges"],"Deadeye"],
+    ["44797","Mana Regeneration, Arcane Surge Effect","Art/2DArt/SkillIcons/passives/Hierophant/ManaRegen.png",177.9,-140.3,3,3,0,"40510",["20% increased Mana Regeneration Rate","20% increased Effect of Arcane Surge on you"],"Hierophant"],
+    ["4494","Radiant Crusade","Art/2DArt/SkillIcons/passives/Guardian/Radient Crusade.png",439.3,223.8,4,13,2,"16745",["Grants Level 20 Summon Sentinel of Radiance Skill","20% of Damage from Hits is taken from your Sentinel of Radiance\u0027s Life before you"],"Guardian"],
+    ["45313","Far Shot","Art/2DArt/SkillIcons/passives/DeadEye/FarShot.png",391.4,-310.2,4,4,2,"64028",["Projectiles gain Damage as they travel farther, dealing up\nto 30% more Damage with Hits and Ailments","Projectile Barrages have no spread"],"Deadeye"],
+    ["45403","Dexterity and Intelligence","Art/2DArt/SkillIcons/passives/plusintelligencedexterity.png",217.1,-150.3,2,11,0,"42546",["+20 to Dexterity and Intelligence"],"Ascendant"],
+    ["45696","Attack Damage, Life Leech","Art/2DArt/SkillIcons/passives/Slayer/2HdmgLeech.png",309.5,-5.8,3,3,0,"10143",["10% increased Attack Damage","0.4% of Attack Damage Leeched as Life"],"Slayer"],
+    ["46479","Noble Blood","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable1.png",0,-320.2,3,0,2,"30675,27123,32669,43645,1977,52633,32095,19993",["You can hire a Mercenary permanently"],"Luminary"],
+    ["46676","Assassination Style","Art/2DArt/SkillIcons/passives/Trickster/DamageOverTime.png",-344,0,3,12,2,"21264,18335",[],"Assassin"],
+    ["46952","Armour and Energy Shield, Shrine Buff Effect","Art/2DArt/SkillIcons/passives/Guardian/ArmourEnergyMeleeDamage.png",62,-149.7,2,1,0,"61372",["14% increased Armour","5% increased maximum Energy Shield","10% increased Effect of Shrine Buffs on you"],"Guardian"],
+    ["47058","Ahn's Might","Art/2DArt/SkillIcons/passives/AhnsMightNode.png",-57,394.2,0,0,0,"",["20% more Accuracy Rating while at maximum Frenzy Charges","-1 to Maximum Frenzy Charges","+100% to Critical Strike Multiplier while you have no Frenzy Charges"],"Reliquarian"],
+    ["47366","Area of Effect, Mine Throwing Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMines.png",-489.9,45.3,4,31,0,"39834",["8% increased Area of Effect","5% increased Mine Throwing Speed"],"Saboteur"],
+    ["47486","Life Regeneration, Melee Damage","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenStrength.png",89.2,347.6,4,17,0,"53095,31667",["10% increased Melee Damage","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["47531","Critical Strike Chance, Poison Chance","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-86.1,-486.9,4,39,0,"21192",["15% chance to Poison on Hit","15% increased Critical Strike Chance"],"Assassin"],
+    ["47630","Frigid Wake","Art/2DArt/SkillIcons/passives/Occultist/FrigidWake.png",0.1,322.6,4,20,2,"",["Cannot be Chilled","Cannot be Frozen","15% more Cold Damage","Every 4 seconds, 50% chance to Freeze nearby Non-Frozen Enemies for 0.4 seconds","Nearby Chilled Enemies deal 10% reduced Damage with Hits"],"Occultist"],
+    ["47778","Bomb Specialist","Art/2DArt/SkillIcons/passives/Saboteur/BombSpecialist.png",306.5,-5.7,3,3,2,"63135",["Hits have 30% chance to deal 50% more Area Damage","30% chance to take 50% less Area Damage from Hits"],"Saboteur"],
+    ["47873","Elemental Damage and Resistances","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageElementalResistances.png",334.9,-170.4,3,4,0,"258",["+6% to all Elemental Resistances","10% increased Elemental Damage"],"Elementalist"],
+    ["48040","Elevore","Art/2DArt/SkillIcons/passives/ElvoreNode.png",-550,-98.8,0,0,0,"",["+25% chance to Suppress Spell Damage","25% chance to Avoid Elemental Ailments","Recover 200 Life when you Suppress Spell Damage"],"Reliquarian"],
+    ["48124","Energy Shield, Energy Shield Recharge Rate","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldMaximumMana.png",62.1,-20.6,2,7,0,"37492",["6% increased maximum Energy Shield","15% increased Energy Shield Recharge Rate"],"Occultist"],
+    ["48214","Inevitable Judgement","Art/2DArt/SkillIcons/passives/Inquistitor/ElementalForce.png",286.7,398.8,4,16,2,"",["Critical Strikes ignore Enemy Monster Elemental Resistances","Non-Critical Strikes Penetrate 10% of Enemy Elemental Resistances"],"Inquisitor"],
+    ["48239","Deathmarked","Art/2DArt/SkillIcons/passives/Assassin/NoxiousStrike.png",68.1,486.9,4,19,2,"",["Trigger Level 30 Assassin\u0027s Mark on Attack Critical Strike against\na Rare or Unique Enemy and you have no Mark","Mark Skills Cost no Mana","10% increased Effect of your Marks per maximum Power Charge","3% of Leech is Instant per maximum Power Charge"],"Assassin"],
+    ["48410","Polaric Devastation","Art/2DArt/SkillIcons/passives/PolaricDevastationNode.png",436,98.8,0,0,0,"",["40% increased Duration of Ailments on Enemies","Cover Enemies in Ash for 5 seconds when you Ignite them","Cover Enemies in Frost for 5 seconds when you Freeze them"],"Reliquarian"],
+    ["48480","Tasalio, Cleansing Water","Art/2DArt/SkillIcons/passives/Chieftain/TasalioCleansingWater.png",358.4,-91.8,4,10,2,"42659",["Modifiers to Fire Resistance also apply to Cold and Lightning Resistances at 50% of their Value","Unaffected by Ignite"],"Chieftain"],
+    ["4849","Mother's Teachings","Art/2DArt/SkillIcons/passives/Warden/WardenBarkskin1.png",236.9,364.9,3,6,2,"12146",["Grants Level 20 Barkskin Skill"],"Raider"],
+    ["48719","Mistress of Sacrifice","Art/2DArt/SkillIcons/passives/Necromancer/GiftsOfTheDamned.png",477.9,-273,4,9,2,"",["Your Offering Skills also affect you","Your Offerings have 50% reduced Effect on you","40% increased Skill Effect Duration"],"Necromancer"],
+    ["48760","Attack Speed, Bleed Chance","Art/2DArt/SkillIcons/passives/Gladiator/GLADOneHand.png",241,67,2,4,0,"27864",["5% increased Attack Speed","Attacks have 15% chance to cause Bleeding"],"Gladiator"],
+    ["48904","Physical Damage, Life Leeched per Second","Art/2DArt/SkillIcons/passives/Berserker/DmgCrit.png",-134.6,-493,4,0,0,"29630",["30% increased total Recovery per second from Life Leech","10% increased Physical Damage"],"Berserker"],
+    ["48999","Soul Drinker","Art/2DArt/SkillIcons/passives/Trickster/SoulThiefTrickster.png",26.9,321.3,4,20,2,"",["2% of Damage Leeched as Energy Shield","Energy Shield Leech effects are not removed when Energy Shield is Filled"],"Trickster"],
+    ["49153","Armour, Endurance Charge Duration","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourAttackDamage.png",90.4,-0.1,3,4,0,"1734",["15% increased Armour","15% increased Endurance Charge Duration"],"Juggernaut"],
+    ["4917","Bastion of Elements","Art/2DArt/SkillIcons/passives/Elementalist/IridescentFlesh.png",468.8,-322.6,4,8,2,"",["Triggers Level 20 Primal Aegis when Allocated\nPrimal Aegis can take 75 Elemental Damage per Allocated Notable Passive Skill","Other Aegis Skills are Disabled","Cannot take Reflected Elemental Damage"],"Elementalist"],
+    ["49532","Ranger Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",366.9,375.7,2,8,2,"42671,8656,34567,9327",[],"Ascendant"],
+    ["50024","Physical Damage, Warcry Speed","Art/2DArt/SkillIcons/passives/Berserker/DmgWarcry.png",-134.6,-162,2,0,0,"32251",["20% increased Warcry Speed","10% increased Physical Damage"],"Berserker"],
+    ["50692","Ngamahu, Flame's Advance","Art/2DArt/SkillIcons/passives/Chieftain/NgamahuFlamesAdvance.png",304.7,132.1,4,13,2,"",["Non-Unique Jewels cause Increases and Reductions to other Damage Types in a Large Radius to be Transformed to apply to Fire Damage","Non-Unique Jewels cause Small and Notable Passive Skills in a Large Radius to\nalso grant +4 to Strength"],"Chieftain"],
+    ["5082","Projectile Damage, Accuracy","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",101.6,-73.2,2,0,0,"61627",["10% increased Projectile Damage","10% increased Accuracy Rating"],"Deadeye"],
+    ["50845","Attack Damage, Frenzy and Endurance Charge Duration","Art/2DArt/SkillIcons/passives/Slayer/2HdmgFrenzyEnduranceCharge.png",309.5,250.7,3,5,0,"16306",["10% increased Attack Damage","15% increased Endurance Charge Duration","15% increased Frenzy Charge Duration"],"Slayer"],
+    ["5087","Born in the Shadows","Art/2DArt/SkillIcons/passives/Saboteur/ShadowsDarknessBlind.png",-338,122.5,3,12,2,"1953",["Cannot be Blinded","15% reduced Damage taken from Blinded Enemies","Nearby Enemies are Blinded","Blind Enemies on Hit"],"Saboteur"],
+    ["50935","Energy Shield, Energy Shield Recharge Rate","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldMaximumMana.png",439.3,53.4,4,13,0,"5502",["6% increased maximum Energy Shield","15% increased Energy Shield Recharge Rate"],"Occultist"],
+    ["51101","Nature's Adrenaline","Art/2DArt/SkillIcons/passives/PathFinder/NaturesAdrenaline.png",-272,-55.2,4,33,2,"14156",["Flasks gain 3 Charges every 3 seconds"],"Pathfinder"],
+    ["51402","Critical Strike Chance, Life","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-9,-162,2,0,0,"29844",["4% increased maximum Life","15% increased Critical Strike Chance"],"Assassin"],
+    ["51462","Like Clockwork","Art/2DArt/SkillIcons/passives/Saboteur/LikeClockworkNotable.png",-3,284.5,2,8,2,"",["50% increased Cooldown Recovery Rate","Nearby Enemies have 10% reduced Cooldown Recovery Rate"],"Saboteur"],
+    ["51492","Sign of Purpose","Art/2DArt/SkillIcons/passives/Hierophant/SignOfPurpose.png",-131.6,322.9,3,8,2,"",["Brands have 100% more Activation Frequency if 75% of Attached Duration expired","Brand Recall has 100% increased Cooldown Recovery Rate"],"Hierophant"],
+    ["51782","Witch Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",148.8,-487.3,2,3,2,"62162,10099,8281,12597",[],"Ascendant"],
+    ["51998","Armour, Chaos Resistance","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourStunDuration.png",-98.6,60.6,2,5,0,"53816",["15% increased Armour","+11% to Chaos Resistance"],"Juggernaut"],
+    ["52094","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-439.2,223.8,4,27,0,"60582",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["52575","Weapon Master","Art/2DArt/SkillIcons/passives/Gladiator/GladiatorDualWiledSwordAxeNotable.png",79,402,3,8,2,"",["25% more Accuracy Rating while wielding a Sword","20% more Area of Effect while wielding a Mace or Sceptre","20% more Critical Strike Chance while wielding a Dagger","20% of Leech is Instant while wielding a Claw","30% more Damage with Hits and Ailments against Enemies that are on Low Life while you are wielding an Axe"],"Gladiator"],
+    ["52633","Legendary Gloves","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable9.png",119.2,14.8,0,0,0,"25944",["Your Mercenary can equip Unique Gloves"],"Luminary"],
+    ["53086","Projectile Damage, Mark Cast Speed","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAttackSpeed.png",-207.9,216.9,3,11,0,"5443",["10% increased Projectile Damage","Mark Skills have 25% increased Cast Speed"],"Deadeye"],
+    ["53095","Tukohama, War's Herald","Art/2DArt/SkillIcons/passives/Chieftain/TukomahaWarsHerald.png",-134.6,401.2,4,20,2,"",["Skills from Equipped Body Armour are Supported by Level 30 Ancestral Call","Skills from Equipped Body Armour are Supported by Level 20 Fist of War"],"Chieftain"],
+    ["53123","Shaper of Flames","Art/2DArt/SkillIcons/passives/Elementalist/IgniteSpecialisation.png",-223.8,269,4,23,2,"",["Hits always Ignite","All Damage can Ignite","Enemies Ignited by you have 40% of Physical Damage they deal converted to Fire"],"Elementalist"],
+    ["53421","Evasion, Chance to Freeze","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-162,128.1,2,12,0,"16848",["15% increased Evasion Rating","10% chance to Freeze"],"Raider"],
+    ["53816","Unbreakable","Art/2DArt/SkillIcons/passives/Juggernaut/JuggernautArmourNotable.png",61.1,126.9,3,5,2,"",["Armour from Equipped Body Armour is doubled","15% of Armour also applies to Chaos Damage taken from Hits"],"Juggernaut"],
+    ["53884","Righteous Providence","Art/2DArt/SkillIcons/passives/Inquistitor/ElementalMastery.png",306.4,128.2,3,5,2,"37486",["1% increased Critical Strike Chance per point of Strength or Intelligence, whichever is lower","+50 to Strength and Intelligence"],"Inquisitor"],
+    ["53992","Path of the Shadow","Art/2DArt/SkillIcons/passives/Ascendants/DexInt.png",366.9,-374.3,2,0,2,"",["Can Allocate Passives from the Shadow\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["5415","Minion Damage, Aura Effect","Art/2DArt/SkillIcons/passives/Necromancer/IncreasedMinionDamageIncreasedSkillDuration.png",-344.1,-195.9,3,12,0,"36017",["Minions deal 10% increased Damage","5% increased effect of Non-Curse Auras from your Skills"],"Necromancer"],
+    ["54159","Mindless Aggression","Art/2DArt/SkillIcons/passives/Necromancer/GenericMinionNotable.png",-9.1,139.1,3,8,2,"39818",["Minions have 20% more Maximum Life","Minions deal 10% more Damage"],"Necromancer"],
+    ["54279","Elemental Damage and Resistances","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageElementalResistances.png",149.6,-108.4,2,5,0,"",["+6% to all Elemental Resistances","10% increased Elemental Damage"],"Elementalist"],
+    ["5443","Focal Point","Art/2DArt/SkillIcons/passives/Mark.png",-26.6,398.2,3,9,2,"",["75% increased Effect of your Marks","25% less Damage taken from other Enemies near your Marked Enemy","Your Mark Transfers to another Enemy when Marked Enemy dies"],"Deadeye"],
+    ["54569","Presence of Chayula","Art/2DArt/SkillIcons/passives/PresenceofChayulaNode.png",607,-0.1,0,0,0,"",["Cannot be Stunned","20% of Maximum Life Converted to Energy Shield"],"Reliquarian"],
+    ["54877","Path of the Templar","Art/2DArt/SkillIcons/passives/Ascendants/StrInt.png",-521.5,-149,2,11,2,"",["Can Allocate Passives from the Templar\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["54928","The Sacred Chalice","Art/2DArt/SkillIcons/passives/SacredChaliceNode.png",57,591.8,0,0,0,"",["Gain a Flask Charge when you deal a Critical Strike","Gain 20% of Physical Damage as Extra Cold Damage if you\u0027ve\nused a Sapphire Flask Recently","Gain 20% of Physical Damage as Extra Fire Damage if you\u0027ve\nused a Ruby Flask Recently","Gain 20% of Physical Damage as Extra Lightning Damage if you\u0027ve\nused a Topaz Flask Recently"],"Reliquarian"],
+    ["5502","Unhallowed Rite","Art/2DArt/SkillIcons/passives/Occultist/EldrichBarrier.png",223.9,268.9,4,17,2,"",["Gain [SpiritInfusion|Spirit Infusion] every 0.5 seconds while Channelling a Spell"],"Occultist"],
+    ["55146","Time of Need","Art/2DArt/SkillIcons/passives/Guardian/TimeOfNeed.png",-493,0,4,30,2,"",["Every 4 seconds, remove Curses and Ailments from you","Every 4 seconds, Regenerate 100% of Life over one second"],"Guardian"],
+    ["55236","Trickster","Art/2DArt/SkillIcons/passives/damage.png",26.9,-171.7,0,0,3,"35598,63908,37191,13219,19587",[],"Trickster"],
+    ["55509","Avatar of the Wilds","Art/2DArt/SkillIcons/passives/Warden/WardenAllAilments.png",-493,128.1,4,30,2,"",["Grants Level 20 Unbound Avatar Skill","Gain 1 Unbound Fury when you inflict an Elemental Ailment with a Hit on an Enemy, no more than once every 0.2 seconds for each type of Ailment\nCannot gain Unbound Fury while Unbound","Your Hits always inflict Freeze, Shock and Ignite while Unbound","100% more Elemental Damage while Unbound"],"Raider"],
+    ["55646","Minion Damage and Life","Art/2DArt/SkillIcons/passives/Necromancer/IncreasedMinionDamageIncreasedMinionLife.png",119.1,113.6,3,7,0,"54159,14603",["Minions have 10% increased maximum Life","Minions deal 10% increased Damage"],"Necromancer"],
+    ["55686","Critical Strike Chance, Mark Effect","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-161.3,468.9,4,22,0,"48239",["10% increased Effect of your Marks","15% increased Critical Strike Chance"],"Assassin"],
+    ["55867","Polymath","Art/2DArt/SkillIcons/passives/Trickster/PolymathTrickster.png",-466.1,-171.7,4,30,2,"",["2% more Damage for each different type of Mastery you have Allocated","Recover 1% of Life on Kill for each different type of Mastery you have Allocated","Recover 1% of Energy Shield on Kill for each different type of Mastery you have Allocated","Recover 1% of Mana on Kill for each different type of Mastery you have Allocated"],"Trickster"],
+    ["55985","Projectile Damage, Accuracy","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",39.6,238.3,2,9,0,"44482",["10% increased Projectile Damage","10% increased Accuracy Rating"],"Deadeye"],
+    ["56134","Projectile Damage, Accuracy","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",-26.6,-220.8,3,15,0,"26067",["10% increased Projectile Damage","10% increased Accuracy Rating"],"Deadeye"],
+    ["56292","Bestowed Knighthood","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNotable5.png",223.8,454.1,4,17,2,"",["Your Mercenary Taunts on Hit","Your Mercenary has 50% increased effect of Non-Curse Auras from Skills"],"Luminary"],
+    ["5643","Life Regeneration, Fire Resistance","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenTotemPlacementSpeed.png",200.4,-91.8,3,4,0,"48480",["+15% to Fire Resistance","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["56461","Liege of the Primordial","Art/2DArt/SkillIcons/passives/Elementalist/LiegeOfThePrimordial.png",309.4,-42.1,3,5,2,"54279",["Summoned Golems are Immune to Elemental Damage","Summoned Golems are Resummoned 4 seconds after being Killed","+2 to maximum number of Summoned Golems"],"Elementalist"],
+    ["56722","Path of the Witch","Art/2DArt/SkillIcons/passives/Ascendants/Int.png",-150.5,-487.3,2,13,2,"",["Can Allocate Passives from the Witch\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["56789","Unrelenting","Art/2DArt/SkillIcons/passives/Juggernaut/Unrelenting.png",103.9,348.6,4,15,2,"23972",["1% additional Elemental Damage Reduction per Endurance Charge","1% additional Physical Damage Reduction per Endurance Charge"],"Juggernaut"],
+    ["56856","Deadeye","Art/2DArt/SkillIcons/passives/damage.png",101.6,88.8,0,0,3,"5082,55985,28995,53086,59837,1729",[],"Deadeye"],
+    ["56940","The Apostate","Art/2DArt/SkillIcons/passives/ApostateNode.png",-607,-0.1,0,0,0,"",["Removes all Energy Shield","Gain Maximum Life instead of Maximum Energy Shield from Equipped Armour Items","-12 Maximum Life per Level"],"Reliquarian"],
+    ["56967","Worthy Foe","Art/2DArt/SkillIcons/passives/Champion/WorthyFoe.png",353.6,54.2,3,3,2,"",["Taunt on Hit","Enemies Taunted by you take 15% increased Damage","Enemies Taunted by you cannot Evade Attacks"],"Champion"],
+    ["57052","Chieftain","Art/2DArt/SkillIcons/passives/Ascendants/Chieftain.png",-511,26.3,1,0,0,"",["20% chance to Cover Rare or Unique Enemies in Ash for 10 Seconds on Hit","Unaffected by Ignite","20% increased Warcry Buff Effect","10% increased Strength"],"Ascendant"],
+    ["57175","Shrapnel Specialist","Art/2DArt/SkillIcons/passives/Saboteur/ShrapnelSpecialist.png",306.5,250.8,3,5,2,"65085",["Projectiles have 50% chance to Return to you","Projectiles are fired in random directions"],"Saboteur"],
+    ["57197","Heart of Destruction","Art/2DArt/SkillIcons/passives/Elementalist/PendulumOfDestruction.png",-487,-93.2,4,29,2,"",["Gain Convergence when you Hit a Unique Enemy, no more than once every 8 seconds","60% increased Area of Effect while you don\u0027t have Convergence"],"Elementalist"],
+    ["57222","Elemental Damage, Life Regeneration","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageAvoidElementalStatusEffects.png",436.2,-223.8,4,7,0,"32816",["Regenerate 0.5% of Life per second","10% increased Elemental Damage"],"Inquisitor"],
+    ["57429","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-521.5,-273,2,13,0,"54877",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["57560","Rite of Ruin","Art/2DArt/SkillIcons/passives/Berserker/RiteOfRuin.png",358.4,0,4,10,2,"42861",["Lose 0.1% of Life per second per Rage while you are not losing Rage","50% increased Rage Effect"],"Berserker"],
+    ["58029","Intelligence","Art/2DArt/SkillIcons/passives/plusintelligence.png",-1,-263.3,2,8,0,"2521",["+40 to Intelligence"],"Ascendant"],
+    ["5819","Unstoppable","Art/2DArt/SkillIcons/passives/Juggernaut/Unstoppable.png",61.1,-129.6,3,3,2,"",["10% increased Movement Speed","Cannot be Stunned","Action Speed cannot be modified to below Base Value","Movement Speed cannot be modified to below Base Value"],"Juggernaut"],
+    ["58229","Assassin","Art/2DArt/SkillIcons/passives/damage.png",-9,0,0,0,3,"12850,6064,43215,23024,51402",[],"Assassin"],
+    ["58427","Warden","Art/2DArt/SkillIcons/passives/damage.png",0,128.1,0,0,3,"5926,24432,2060,24214,27536,53421",[],"Raider"],
+    ["58454","Evasion and Energy Shield, Energy Shield Recharge","Art/2DArt/SkillIcons/passives/Trickster/DefensiveNodeTrickster.png",316.6,227.1,4,16,0,"41891",["14% increased Evasion Rating","5% increased maximum Energy Shield","10% increased Energy Shield Recharge Rate"],"Trickster"],
+    ["5865","Physical Damage, Armour","Art/2DArt/SkillIcons/passives/Berserker/DmgLeech.png",15.1,62,2,5,0,"9271",["15% increased Armour","10% increased Physical Damage"],"Berserker"],
+    ["58650","Evasion, Tincture Effect","Art/2DArt/SkillIcons/passives/Warden/TincturesNode.png",152.3,-340.8,4,2,0,"29662",["15% increased Evasion Rating","Tinctures applied to you have 10% increased Effect"],"Raider"],
+    ["58827","Saboteur","Art/2DArt/SkillIcons/passives/Ascendants/Saboteur.png",600.1,-184.9,0,0,0,"",["30% increased Area of Effect","15% increased Cooldown Recovery Rate","Hits have 20% chance to deal 50% more Area Damage","25% chance to Blind Enemies on Hit"],"Ascendant"],
+    ["58998","Elemental Damage, Lightning Ailment Effect","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageFreezeShockIgnite.png",128.1,139.1,3,7,0,"27038",["10% increased Elemental Damage","10% increased Effect of Lightning Ailments"],"Elementalist"],
+    ["59067","Femurs of the Saints","Art/2DArt/SkillIcons/passives/FemuroftheSaintsNode.png",-57,-394.2,0,0,0,"",["+1% Chance to Block Attack Damage per Summoned Skeleton","2% increased Attack and Cast Speed per Summoned Raging Spirit","Regenerate 0.6% of Life per second for each Raised Zombie","30% increased Mana Regeneration Rate per Raised Spectre"],"Reliquarian"],
+    ["5926","Evasion, Chance to Shock","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-62,277.6,2,9,0,"31364",["15% increased Evasion Rating","10% chance to Shock"],"Raider"],
+    ["5929","Hallowing Flame Effect","Art/2DArt/SkillIcons/passives/Guardian/GuardianHallowingFlameNode.png",162,0,2,4,0,"3458",["20% increased magnitude of Hallowing Flame you inflict"],"Guardian"],
+    ["59800","Flask Effect and Charges Gained","Art/2DArt/SkillIcons/passives/PathFinder/FlaskEffectElementalResistance.png",167.3,6.6,2,0,0,"6038",["10% increased Flask Charges gained","Flasks applied to you have 5% increased Effect"],"Pathfinder"],
+    ["59837","Projectile Damage, Attack Speed","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAttackSpeed.png",-60.4,88.8,2,12,0,"24848",["5% increased Attack Speed","10% increased Projectile Damage"],"Deadeye"],
+    ["59920","Aspect of Carnage","Art/2DArt/SkillIcons/passives/Berserker/AspectOfCarnage.png",-358.4,-439.3,4,37,2,"48904",["10% increased Damage taken","40% more Damage"],"Berserker"],
+    ["6028","Life Regeneration, Warcry Duration","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenTotemPlacementSpeed.png",-72.6,57.9,2,7,0,"31667",["Regenerate 0.5% of Life per second","15% increased Warcry Duration"],"Chieftain"],
+    ["6038","Master Distiller","Art/2DArt/SkillIcons/passives/PathFinder/VeteranBowyer.png",167.3,-166.4,3,0,2,"",["Grant bonuses to Non-Channelling Skills you use by consuming 3 Charges from a Flask of\neach of the following types, if possible:","If Diamond Flask Charges are consumed, 250% increased Critical Strike Chance","If Bismuth Flask Charges are consumed, Penetrate 25% Elemental Resistances","If Amethyst Flask Charges are consumed, 37% of Physical Damage as Extra Chaos Damage"],"Pathfinder"],
+    ["60462","Illuminated Devotion","Art/2DArt/SkillIcons/passives/Hierophant/ItemAugment.png",20.8,-480.9,4,2,2,"",["Non-Damaging Ailments have 50% reduced Effect on you while you have Arcane Surge","30% increased Area of Effect while you have Arcane Surge","0.5% of Spell Damage Leeched as Life while you have Arcane Surge"],"Hierophant"],
+    ["60508","Armour and Evasion, Attack Damage while Fortified","Art/2DArt/SkillIcons/passives/Champion/AnEFortify.png",-105.6,120.4,2,13,0,"31700",["15% increased Evasion Rating and Armour","10% increased Damage with Attack Skills while Fortified"],"Champion"],
+    ["6052","Elemental Damage and Resistances","Art/2DArt/SkillIcons/passives/Elementalist/ElementalDamageElementalResistances.png",309.4,-298.5,3,3,0,"4917",["+6% to all Elemental Resistances","10% increased Elemental Damage"],"Elementalist"],
+    ["60547","Minion Damage, Cast Speed","Art/2DArt/SkillIcons/passives/Necromancer/CorpseConsumptionNode.png",140.6,-133.9,2,5,0,"11490",["4% increased Cast Speed","Minions deal 10% increased Damage"],"Necromancer"],
+    ["60582","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-223.8,439.2,4,23,0,"12003",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["6064","Critical Strike Chance and Multiplier","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-171,0,2,12,0,"46676",["+10% to Critical Strike Multiplier","15% increased Critical Strike Chance"],"Assassin"],
+    ["607","Strength and Dexterity","Art/2DArt/SkillIcons/passives/plusstrengthdexterity.png",-2,264.7,2,0,0,"41996",["+20 to Strength and Dexterity"],"Ascendant"],
+    ["60769","Elemental Damage and Resistances","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageElementalPenetration.png",331.9,0,3,4,0,"40059",["+6% to all Elemental Resistances","10% increased Elemental Damage"],"Inquisitor"],
+    ["60791","Necromancer","Art/2DArt/SkillIcons/passives/damage.png",-9.1,-195.9,0,0,3,"26298,60547,18309,18574,5415",[],"Necromancer"],
+    ["61072","Juggernaut","Art/2DArt/SkillIcons/passives/Ascendants/Juggernaut.png",-420.5,185.5,0,0,0,"",["+1000 to Accuracy Rating","Cannot be Chilled","Cannot be Stunned","5% increased Damage per Endurance Charge","Gain 1 Endurance Charge every second if you\u0027ve been Hit Recently"],"Ascendant"],
+    ["61133","Mercenary Life, Light Radius","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNode.png",439.3,238.6,4,13,0,"56292",["Your Mercenary and their Minions have 15% increased maximum Life","5% increased Light Radius"],"Luminary"],
+    ["61259","Mastermind of Discord","Art/2DArt/SkillIcons/passives/Elementalist/PrimevalForce.png",-309.6,-42.1,3,11,2,"19595",["Exposure you inflict applies an extra -25% to the affected Resistance","Regenerate 1% of Mana per second if you\u0027ve inflicted Exposure Recently"],"Elementalist"],
+    ["61355","Ramako, Sun's Light","Art/2DArt/SkillIcons/passives/Chieftain/RamakoSunsLight.png",-6.4,-401.2,3,1,2,"",["Nearby Enemy Monsters\u0027 Fire Resistance against\nDamage over Time is -20% while you are Stationary"],"Chieftain"],
+    ["61372","Harmony of Purpose","Art/2DArt/SkillIcons/passives/Guardian/HarmonyOfPurpose.png",128.2,-309.5,3,1,2,"",["Gain a random Shrine buff every 10 seconds"],"Guardian"],
+    ["61393","Attack Damage, Critical Strike Chance","Art/2DArt/SkillIcons/passives/Slayer/2HdmgCritStrikeMultiplier.png",-335,122.5,3,12,0,"17315",["10% increased Attack Damage","15% increased Critical Strike Chance"],"Slayer"],
+    ["61437","Marauder Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",-520.2,152.3,2,13,2,"30690,4194,61072,57052",[],"Ascendant"],
+    ["61478","Armour and Evasion, Aura Effect","Art/2DArt/SkillIcons/passives/Champion/AnEAura.png",267.9,-256.9,4,3,0,"35750",["15% increased Evasion Rating and Armour","5% increased effect of Non-Curse Auras from your Skills"],"Champion"],
+    ["61627","Ricochet","Art/2DArt/SkillIcons/passives/DeadEye/Ricochet.png",101.6,-246.2,3,0,2,"56134",["Skills Chain +1 times","Projectiles have 30% chance to be able to Chain when colliding with terrain"],"Deadeye"],
+    ["61761","Evasion, Elemental Ailment Duration","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-335,128.1,3,12,0,"55509",["15% increased Evasion Rating","10% increased Duration of Elemental Ailments on Enemies"],"Raider"],
+    ["61805","Master Alchemist","Art/2DArt/SkillIcons/passives/PathFinder/MasterAlchemist.png",319.6,-300.3,4,2,2,"",["Removes Elemental Ailments when you use a Flask","50% chance for Flasks you use to not consume Charges"],"Pathfinder"],
+    ["61871","Inquisitor","Art/2DArt/SkillIcons/passives/damage.png",-3.1,0,0,0,3,"60769,10635,43193,662",[],"Inquisitor"],
+    ["62067","Area of Effect, Area Damage","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",146.7,60.5,2,3,0,"47778",["8% increased Area of Effect","10% increased Area Damage"],"Saboteur"],
+    ["62136","Projectile Damage, Mirage Archer Duration","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",-247,-259.8,4,35,0,"26067",["10% increased Projectile Damage","15% increased Mirage Archer Duration"],"Deadeye"],
+    ["62162","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",-1,-587.3,2,0,0,"56722",["Grants 1 Passive Skill Point"],"Ascendant"],
+    ["62349","Armour, Stun Duration","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourStunDuration.png",224.2,-152.4,4,8,0,"62595",["15% increased Armour","20% increased Stun Duration on Enemies"],"Juggernaut"],
+    ["62504","Forbidden Power","Art/2DArt/SkillIcons/passives/Occultist/VowOfDamnation.png",487,-247.5,4,9,2,"50935",["6% increased Area of Effect per Power Charge","6% increased Damage per Power Charge","Gain a Power Charge after Spending a total of 200 Mana","+1 to Maximum Power Charges"],"Occultist"],
+    ["62595","Unyielding","Art/2DArt/SkillIcons/passives/Juggernaut/Unyielding.png",103.9,-348.6,4,5,2,"",["8% increased Damage per Endurance Charge","6% increased Area of Effect per Endurance Charge","25% chance to gain an Endurance Charge when you Stun an Enemy","10% increased Stun Duration on Enemies per Endurance Charge"],"Juggernaut"],
+    ["62817","Bane of Legends","Art/2DArt/SkillIcons/passives/Slayer/Headman.png",-439.3,-101.3,4,33,2,"15286",["10% more Damage if you\u0027ve Killed Recently","Cannot take Reflected Physical Damage","20% more Damage with Hits and Ailments against Unique Enemies"],"Slayer"],
+    ["63135","Area of Effect, Area Damage","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",465.9,-29.9,4,8,0,"14103",["8% increased Area of Effect","10% increased Area Damage"],"Saboteur"],
+    ["63293","Master Surgeon","Art/2DArt/SkillIcons/passives/PathFinder/MasterSurgeon.png",-319.6,245.7,4,29,2,"36242",["Life Flask Effects are not removed when Unreserved Life is Filled\nLife Flask Effects do not Queue","50% less Life Recovery from Flasks"],"Pathfinder"],
+    ["63357","Path of the Duelist","Art/2DArt/SkillIcons/passives/Ascendants/StrDex.png",147.5,488.7,2,5,2,"",["Can Allocate Passives from the Duelist\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["63417","Armour, Movement Speed","Art/2DArt/SkillIcons/passives/Juggernaut/IncreasedArmourMovementSpeed.png",-98.6,-63.4,2,3,0,"5819",["15% increased Armour","4% increased Movement Speed"],"Juggernaut"],
+    ["63490","Measured Retaliation","Art/2DArt/SkillIcons/passives/Gladiator/GLADViolentRetaliation.png",231.3,-401.9,4,2,2,"",["Retaliation Skills become Usable for an additional 2 seconds","50% chance for used Retaliation Skills to remain Usable and not consume a Cooldown Use"],"Gladiator"],
+    ["63583","Physical Damage, Rage on Hit","Art/2DArt/SkillIcons/passives/Berserker/DmgAttackSpeed.png",-6.4,309.5,3,7,0,"24528",["Gain 1 Rage on Attack Hit","10% increased Physical Damage"],"Berserker"],
+    ["63673","Physical Damage, Attack Speed","Art/2DArt/SkillIcons/passives/Berserker/DmgCrit.png",-262.8,-309.5,3,15,0,"59920",["5% increased Attack Speed","10% increased Physical Damage"],"Berserker"],
+    ["63908","Evasion and Energy Shield, Movement Speed","Art/2DArt/SkillIcons/passives/Trickster/DefensiveNodeTrickster.png",88.9,-321.4,2,1,0,"28884",["14% increased Evasion Rating","5% increased maximum Energy Shield","4% increased Movement Speed"],"Trickster"],
+    ["63940","Evasion, Elemental Ailment Duration","Art/2DArt/SkillIcons/passives/Raider/IncreasedElementalDamage.png",-468.9,280.4,4,28,0,"55509",["15% increased Evasion Rating","10% increased Duration of Elemental Ailments on Enemies"],"Raider"],
+    ["63954","Link Cast Speed, Light Radius","Art/2DArt/SkillIcons/passives/Luminary/LuminaryNode.png",-439.2,238.6,4,27,0,"31517",["Link Skills have 10% increased Cast Speed","5% increased Light Radius"],"Luminary"],
+    ["64028","Projectile Damage, Projectile Speed","Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAccuracy.png",178.7,-398.2,4,1,0,"26067",["10% increased Projectile Speed","10% increased Projectile Damage"],"Deadeye"],
+    ["64111","Pathfinder","Art/2DArt/SkillIcons/passives/damage.png",167.3,168.6,0,0,3,"32662,59800,32640,14156,20480",[],"Pathfinder"],
+    ["64768","Unwavering Faith","Art/2DArt/SkillIcons/passives/Guardian/UnwaveringFaith.png",77.1,-486.9,4,1,2,"",["50% increased Reservation Efficiency of Skills"],"Guardian"],
+    ["64785","Projectile Speed, Projectile Damage","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",332,122.5,3,4,0,"57175",["8% increased Projectile Speed","10% increased Projectile Damage"],"Saboteur"],
+    ["64842","Area of Effect, Blind Effect","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",-165,122.5,2,12,0,"5087",["8% increased Area of Effect","15% increased Blind Effect"],"Saboteur"],
+    ["65085","Projectile Speed, Projectile Damage","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageElementalResistance.png",465.9,274.8,4,12,0,"14103",["8% increased Projectile Speed","10% increased Projectile Damage"],"Saboteur"],
+    ["65153","Unnatural Strength","Art/2DArt/SkillIcons/passives/Necromancer/OffensiveMinionNotable.png",-161.4,273,4,22,2,"",["Minions have Unholy Might"],"Necromancer"],
+    ["65296","Nature's Boon","Art/2DArt/SkillIcons/passives/PathFinder/AlchemistGift.png",-56.5,-270.7,4,37,2,"32640",["Magic Utility Flasks applied to you have 30% increased Effect"],"Pathfinder"],
+    ["662","Elemental Damage, Critical Strike Multiplier","Art/2DArt/SkillIcons/passives/Inquistitor/IncreasedElementalDamageCasteSpeed.png",146.6,62,2,5,0,"53884",["10% increased Elemental Damage","+10% to Critical Strike Multiplier"],"Inquisitor"],
+    ["6728","Energy Shield, Power Charge Duration","Art/2DArt/SkillIcons/passives/Occultist/IncreasedEnergyShieldCriticalStrikeChance.png",162.1,-170.4,2,4,0,"62504",["6% increased maximum Energy Shield","15% increased Power Charge Duration"],"Occultist"],
+    ["6778","Trickster","Art/2DArt/SkillIcons/passives/Ascendants/Trickster.png",507.1,-25.3,0,0,0,"",["Prevent +6% of Suppressed Spell Damage while on Full Energy Shield","2% more Damage for each different type of Mastery you have Allocated","2% of Damage Leeched as Energy Shield","Nearby Enemy Monsters\u0027 Action Speed is at most 90% of base value"],"Ascendant"],
+    ["6982","Armour and Evasion, Taunt Duration","Art/2DArt/SkillIcons/passives/Champion/AnETaunt.png",172.3,-127.1,3,1,0,"56967",["15% increased Evasion Rating and Armour","20% increased Taunt Duration"],"Champion"],
+    ["758","War of Attrition","Art/2DArt/SkillIcons/passives/Gladiator/GLADBloodAndSand.png",-230.5,195.2,3,11,2,"",["Deal 1% more Damage with Hits and Ailments to Rare and Unique Enemies for each second they\u0027ve ever been in your Presence, up to a maximum of 100%"],"Gladiator"],
+    ["7618","Path of the Ranger","Art/2DArt/SkillIcons/passives/Ascendants/Dex.png",516.6,151.7,2,3,2,"",["Can Allocate Passives from the Ranger\u0027s starting point","Grants 2 Passive Skill Points"],"Ascendant"],
+    ["772","Shadow Ascendancy","Art/2DArt/SkillIcons/passives/Ascendants/Ascendancy.png",516.6,-150.3,2,5,2,"43336,43122,6778,58827",[],"Ascendant"],
+    ["8081","The Sands of Time","Art/2DArt/SkillIcons/passives/SandsofTimeNode.png",-114.7,-493.1,0,0,0,"",["Trigger level 1 Suspend in Time on Casting a Spell"],"Reliquarian"],
+    ["8281","Elementalist","Art/2DArt/SkillIcons/passives/Ascendants/Elementalist.png",48.1,-453.7,0,0,0,"",["Shocks from your Hits always increase Damage taken by at least 10%","Cannot take Reflected Elemental Damage","Exposure you inflict applies an extra -20% to the affected Resistance","+1 to maximum number of Summoned Golems"],"Ascendant"],
+    ["8419","Determined Survivor","Art/2DArt/SkillIcons/passives/Gladiator/GLADPainForged.png",-144.9,-372.3,4,37,2,"24538",["Gain 50% Chance to Block from Equipped Shield instead of the Shield\u0027s value","Inherent Bonuses from Dual Wielding are doubled"],"Gladiator"],
+    ["8592","Physical Damage, Melee Strike Range","Art/2DArt/SkillIcons/passives/Berserker/DmgAttackSpeed.png",-134.6,335,3,8,0,"38999",["+0.2 metres to Melee Strike Range","10% increased Physical Damage"],"Berserker"],
+    ["8656","Warden","Art/2DArt/SkillIcons/passives/Ascendants/Raider.png",276.6,427.7,0,0,0,"",["+20% chance to Suppress Spell Damage","Attack Damage Penetrates 8% of Enemy Elemental Resistances","You can have an additional Tincture active"],"Ascendant"],
+    ["869","Area of Effect, Movement Speed","Art/2DArt/SkillIcons/passives/Saboteur/ElementalDamageMovementSpeed.png",-3,-39.5,2,0,0,"28535",["4% increased Movement Speed","8% increased Area of Effect"],"Saboteur"],
+    ["8967","Screams of the Desiccated","Art/2DArt/SkillIcons/passives/ScreamsoftheDesiccatedNode.png",550,-98.8,0,0,0,"",["You have Impenetrable Shrine Buff while affected by no Flasks"],"Reliquarian"],
+    ["9014","Critical Strike Chance and Multiplier","Art/2DArt/SkillIcons/passives/Assassin/SmallNode.png",-318.5,-128.2,3,13,0,"46676",["+10% to Critical Strike Multiplier","15% increased Critical Strike Chance"],"Assassin"],
+    ["922","Divine Guidance","Art/2DArt/SkillIcons/passives/Hierophant/MindOverBody.png",92.2,427.2,4,17,2,"29994",["30% increased maximum Mana","10% of Damage is taken from Mana before Life","Transfiguration of Mind"],"Hierophant"],
+    ["9258","Passive Point","Art/2DArt/SkillIcons/passives/Ascendants/SkillPoint.png",348.6,348.5,4,15,0,"35989",["Grants 1 Passive Skill Point"],"Reliquarian"],
+    ["9271","Defy Pain","Art/2DArt/SkillIcons/passives/Berserker/DefyPain.png",174.9,128.2,3,5,2,"",["Gain Defiance for 10 seconds on losing Life to an Enemy Hit, no\nmore than once every 0.3 seconds","Lose all Defiance when you reach 10 Defiance","Gain 3% of Missing Unreserved Life before being Hit by an Enemy Per Defiance"],"Berserker"],
+    ["9327","Pathfinder","Art/2DArt/SkillIcons/passives/Ascendants/Pathfinder.png",366.9,267.9,0,0,0,"",["10% increased Movement Speed during any Flask Effect","10% increased Attack Speed during any Flask Effect","Removes Bleeding when you use a Flask","Flasks gain 3 Charges every 3 seconds","25% chance for Flasks you use to not consume Charges"],"Ascendant"],
+    ["982","Life Regeneration, Melee Damage","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenStrength.png",-358.4,347.6,4,23,0,"53095",["10% increased Melee Damage","Regenerate 0.5% of Life per second"],"Chieftain"],
+    ["9971","Life Regeneration, Fire Damage","Art/2DArt/SkillIcons/passives/Chieftain/LifeRegenFireDamage.png",-196.6,57.9,2,9,0,"1731",["10% increased Fire Damage","Regenerate 0.5% of Life per second"],"Chieftain"]
+  ];
+
+  var NODES = {};
+  var BY_ASC = {};
+  RAW.forEach(function (r) {
+    var n = {
+      id: r[0], name: r[1], icon: r[2], x: r[3], y: r[4],
+      orbit: r[5], orbitIndex: r[6], type: r[7],
+      out: r[8] ? r[8].split(',') : [],
+      stats: r[9] || [],
+      asc: r[10], blood: false,
+      isKeystone: r[7] === 1,
+      isNotable: r[7] === 2,
+      isAscStart: r[7] === 3
+    };
+    NODES[n.id] = n;
+    (BY_ASC[n.asc] = BY_ASC[n.asc] || []).push(n.id);
+  });
+
+  D.ASCENDANCY_NODES = NODES;
+  D.ASCENDANCY_BY_BRANCH = BY_ASC;
+
+  console.log('[ascendancyData] ✓ ' + Object.keys(NODES).length + ' 個昇華節點、' + Object.keys(BY_ASC).length + ' 個昇華分支');
+})();
+
+
+/* ===== 34 / 186 : talentMasteryData.js ===== */
 // js/talentMasteryData.js  (自動產生，請勿手改)
 // ⭐ POE 官方「天賦專精（Mastery）」資料
 //
@@ -12385,7 +12850,7 @@ window.HY.Data = window.HY.Data || {};
         ' 個專精節點、' + Object.keys(D.TALENT_MASTERY_BY_GROUP).length + ' 個叢集對照');
 })();
 
-/* ===== 34 / 184 : talentStatZh.js ===== */
+/* ===== 35 / 186 : talentStatZh.js ===== */
 // js/talentStatZh.js
 // 🌐 POE 天賦效果 → 中文翻譯層（完整版）
 //
@@ -13980,7 +14445,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 35 / 184 : talentStatZhExtra.js ===== */
+/* ===== 36 / 186 : talentStatZhExtra.js ===== */
 // js/talentStatZhExtra.js
 // 📖 POE 天賦效果「特殊句型」全句字典（補充 talentStatZh.js）
 //
@@ -14391,7 +14856,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 36 / 184 : talentStatZhWave2.js ===== */
+/* ===== 37 / 186 : talentStatZhWave2.js ===== */
 // js/talentStatZhWave2.js  (v1)
 // ⭐ 天賦效果翻譯：第二波（把剩餘 209 條全部翻完）
 //
@@ -14837,7 +15302,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 37 / 184 : talentNameZh.js ===== */
+/* ===== 38 / 186 : talentNameZh.js ===== */
 // js/talentNameZh.js  (v1)
 // ⭐ 天賦節點「名稱」中文化
 //    POE 官方樹共 1124 個唯一名稱：
@@ -15908,7 +16373,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 38 / 184 : talentIconMap.js ===== */
+/* ===== 39 / 186 : talentIconMap.js ===== */
 // js/talentIconMap.js
 // 🎨 POE 天賦圖示 → 本作圖示 對照層
 //
@@ -16147,7 +16612,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 39 / 184 : talentSprites.js ===== */
+/* ===== 40 / 186 : talentSprites.js ===== */
 // js/talentSprites.js  (auto-generated from PoeCharm2 / PathOfBuilding TreeData)
 //
 // POE 天賦圖示的精靈圖座標表。
@@ -19069,7 +19534,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 40 / 184 : talentMasterySystem.js ===== */
+/* ===== 41 / 186 : talentMasterySystem.js ===== */
 // js/talentMasterySystem.js  (v1)
 // ⭐ 天賦專精（Mastery）—— 1:1 複製 POE 機制
 //
@@ -19393,7 +19858,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 41 / 184 : talentMasteryZh.js ===== */
+/* ===== 42 / 186 : talentMasteryZh.js ===== */
 // js/talentMasteryZh.js  (v1)
 // ⭐ 天賦專精效果中文化
 //
@@ -20019,7 +20484,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 42 / 184 : jewelData.js ===== */
+/* ===== 43 / 186 : jewelData.js ===== */
 // js/jewelData.js
 // PoE1 珠寶（Jewel）資料表（繁體中文）
 //
@@ -20199,7 +20664,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 43 / 184 : guildData.js ===== */
+/* ===== 44 / 186 : guildData.js ===== */
 // js/guildData.js  (v43)
 // 幫會系統獨立資料庫
 //
@@ -20479,7 +20944,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 44 / 184 : townData.js ===== */
+/* ===== 45 / 186 : townData.js ===== */
 // js/townData.js (v2)
 // ⭐ 我的小鎮：開羅風格城鎮經營 —— 建築／組合／研究／事件／居民／職務資料
 // v2 新增：【虛擬人物定居】職務表 POSTS、修行速率、群俠客居、靈獸鎮守
@@ -20623,7 +21088,7 @@ window.HY.Data = window.HY.Data || {};
   window.HY.Data.TOWN = TOWN;
 })();
 
-/* ===== 45 / 184 : friendData.js ===== */
+/* ===== 46 / 186 : friendData.js ===== */
 // js/friendData.js (v1)
 // ⭐ 好友系統：資料層（性格 / 行動 / 好感 / 姓名池 / 全部可調參數）
 // ⚠️ 載入順序：townData.js 之後、friendSystem.js 之前。
@@ -20759,7 +21224,7 @@ window.HY = window.HY || {};
   console.log('[friendData] ✓ 已載入（性格 ' + F.PERSONAS.length + '｜行動 ' + F.ACTIONS.length + '｜好感 ' + F.FAVOR_TIERS.length + ' 階）');
 })();
 
-/* ===== 46 / 184 : friendData2.js ===== */
+/* ===== 47 / 186 : friendData2.js ===== */
 // js/friendData2.js (v1)
 // ⭐ 好友系統 v2：資料層（出團副本／排行榜／羈絆／稱號／任務／書信／對話／比武大會）
 // ⚠️ 載入順序：friendData.js 之後、所有 friendXxxSystem.js 之前
@@ -21040,7 +21505,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 47 / 184 : friendData3.js ===== */
+/* ===== 48 / 186 : friendData3.js ===== */
 // js/friendData3.js (v1)
 // ⭐ 好友系統 v3：資料層（名人好友／世界王／洞府家園／拍賣行／仇敵）
 // ⚠️ 載入順序：friendData2.js 之後、所有 friendXxxSystem.js 之前
@@ -21168,7 +21633,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 48 / 184 : friendData4.js ===== */
+/* ===== 49 / 186 : friendData4.js ===== */
 // js/friendData4.js (v1)
 // ⭐ 好友系統 v4：資料層（授業／工坊／鍛造／煉丹／保鑣／心願／日常／倉庫）
 // ⚠️ 載入順序：friendData3.js 之後
@@ -21295,7 +21760,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 49 / 184 : friendLinkData.js ===== */
+/* ===== 50 / 186 : friendLinkData.js ===== */
 // js/friendLinkData.js (v1)
 // ⭐ 好友系統 v6：跨系統連動資料層
 //    定義 20 個外部系統的連動參數 + 後備資料（外部資料缺失時仍可運作）
@@ -21479,7 +21944,7 @@ window.HY = window.HY || {};
   window.HY.FriendLinkData = { version: '1.0', systems: F.LINK_SYSTEMS.length };
 })();
 
-/* ===== 50 / 184 : lotteryCelebData.js ===== */
+/* ===== 51 / 186 : lotteryCelebData.js ===== */
 // js/lotteryCelebData.js  (v1)
 // ═══════════════════════════════════════════════════════════════════════
 //  大樂透虛擬人物資料庫（世界名人）
@@ -21563,7 +22028,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData] ✓ 已載入 ' + Data.LOTTERY_CELEBS.length + ' 位世界名人');
 })();
 
-/* ===== 51 / 184 : lotteryCelebData2.js ===== */
+/* ===== 52 / 186 : lotteryCelebData2.js ===== */
 // js/lotteryCelebData2.js  (v1)
 // 大樂透虛擬人物資料 — 第二批（中華歷史／文人／武俠）
 // 格式：[id, 名稱, 圖示, 稱號, 最小金額, 最大金額]
@@ -21732,7 +22197,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData2] ✓ 已載入 ' + Data.LOTTERY_CELEBS_V2.length + ' 位中華名人');
 })();
 
-/* ===== 52 / 184 : lotteryCelebData3.js ===== */
+/* ===== 53 / 186 : lotteryCelebData3.js ===== */
 // js/lotteryCelebData3.js  (v1)
 // 大樂透虛擬人物資料 — 第三批（西洋歷史／現代名人）
 // 格式：[id, 名稱, 圖示, 稱號, 最小金額, 最大金額]
@@ -21902,7 +22367,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData3] ✓ 已載入 ' + Data.LOTTERY_CELEBS_V3.length + ' 位西洋名人');
 })();
 
-/* ===== 53 / 184 : lotteryCelebData4.js ===== */
+/* ===== 54 / 186 : lotteryCelebData4.js ===== */
 // js/lotteryCelebData4.js (v2)
 // ⭐ 名人擴充：全球各國歷代總統／領袖
 //    ★ 180 位，涵蓋 73 國／地區
@@ -22293,7 +22758,7 @@ window.HY = window.HY || {};
     window.HY.CelebPresidents.regionCount() + ' 國／地區）');
 })();
 
-/* ===== 54 / 184 : saveSystem.js ===== */
+/* ===== 55 / 186 : saveSystem.js ===== */
 // js/saveSystem.js  (v50)
 // Logger（三通道分診）+ SaveSystem
 //
@@ -22434,7 +22899,7 @@ window.HY = window.HY || {};
     window.HY.SAVE_KEY = SAVE_KEY;      // 便捷存取
 })();
 
-/* ===== 55 / 184 : cloudSync.js ===== */
+/* ===== 56 / 186 : cloudSync.js ===== */
 // js/cloudSync.js
 // ☁️ Supabase 雲端同步（全服玩家隊伍排行）
 //
@@ -22662,7 +23127,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 56 / 184 : characterSystem.js ===== */
+/* ===== 57 / 186 : characterSystem.js ===== */
 // js/characterSystem.js  (v52)
 // 角色本體、存檔正規化、衍生屬性計算、升級/拜師、統一戰力計算
 //
@@ -22889,6 +23354,66 @@ window.HY = window.HY || {};
                         atkSpd: 100, powerScore: 100
                     };
                 }
+                /* ⭐⭐ 效能快取（關鍵）
+                   這個函式每幀會被呼叫 5~20 次（血條、AI、戰鬥、UI、排行榜…），
+                   每次都要跑 2000+ 節點的天賦彙總 + 60 條詞綴結算，
+                   累積起來就是玩家感受到的「嚴重延遲」。
+                   以「角色狀態簽章」做 50ms 快取：同一幀內重複呼叫直接回傳。
+                   ⚠ 簽章必須涵蓋所有會影響結果的欄位（等級、天賦、裝備、機制…）。
+                   ⚠ 天賦用「完整 ID 串」而非節點數量 ——
+                     同樣 10 點但換了節點時，數量簽章會誤判成沒變。 */
+                var _ta = (c.talent && c.talent.allocated) ? Object.keys(c.talent.allocated).join(',') : '';
+                var _sig = [
+                    c.lv, c.sect, c.activeXinfa, c.activeQinggong,
+                    c.currentHp, c.currentMp,
+                    _ta,
+                    Object.keys(c.equipment || {}).length,
+                    Object.keys(c.xinfa || {}).length,
+                    Object.keys(c.qinggong || {}).length,
+                    Object.keys(c.meridians || {}).length
+                ].join('|');
+                var _nowT = Date.now();
+                /* ⭐⭐ 快取必須回傳「副本」！
+                   gameConfigApply2 / spiritRootSystem / dexteritySpeedSystem
+                   等模組會在取得 derived 物件後「直接改寫」它（乘上倍率）。
+                   若回傳快取物件本身，改寫會污染快取，
+                   造成「第一次算 104，之後被改回 100」這種詭異現象
+                   —— 實測就是昇華攻速加成永遠顯示不出來。
+
+                   效能：derived 約 30 個鍵，複製成本遠低於重算
+                   （重算 = 2000+ 節點彙總 + 詞綴結算），仍是正確選擇。 */
+                var _shallowCopy = function (src) {
+                    var o = {};
+                    for (var k in src) {
+                        if (Object.prototype.hasOwnProperty.call(src, k)) o[k] = src[k];
+                    }
+                    return o;
+                };
+                if (c.__dsCache && c.__dsCache.sig === _sig && (_nowT - c.__dsCache.t) < 50) {
+                    return _shallowCopy(c.__dsCache.d);
+                }
+                var _result = this._computeDerivedStats(c, Data);
+                /* ⭐⭐ 最終保險：把 ext 的加成型數值「硬寫」進結果。
+                   本專案有 7 支檔案包裝了 getDerivedStatsForChar
+                   （gameConfigApply2 / spiritRootSystem / dexteritySpeedSystem /
+                     salvageExpeditionSystem / derivedStatsCache / friendSystem …），
+                   它們會修改或複製回傳物件，導致 ext 算出的 atkSpd 被還原成 100。
+                   這裡在進入快取前就把最終值定死，任何外層包裝都拿到正確數字。 */
+                try {
+                    var _e2 = _result.__ext || {};
+                    if (typeof _e2.atkSpd === 'number' && _e2.atkSpd) {
+                        _result.atkSpd = 100 + _e2.atkSpd;
+                    }
+                    if (typeof _e2.critDmg === 'number' && _e2.critDmg) {
+                        _result.critDmg = 165 + _e2.critDmg;
+                    }
+                } catch (eFin) { }
+                c.__dsCache = { sig: _sig, t: _nowT, d: _result };
+                return _shallowCopy(_result);
+            }
+            /** 真正的計算本體（由 getDerivedStatsForChar 快取包裝） */
+            _computeDerivedStats(c, Data) {
+                if (false) { return null; }
                 if (!c.stats) c.stats = this.createStatsTemplate();
                 var s = c.stats;
                 /* ⭐ 天賦樹的四維加成（含珠寶）*/
@@ -23120,11 +23645,28 @@ window.HY = window.HY || {};
                             critDmg: critDmg, dmgReduce: dmgReduce,
                             atkSpd: 100, atkPct: 0, physDmg: 0, elemDmg: 0, dotDmg: 0
                         };
-                        /* 先把 ext 併進去，讓 inc/more 疊在正確基底上 */
+                        /* ⭐ 先把 ext 累積的加成併進來（門派／心法／裝備／昇華…）
+                           否則下面這些硬編的 0 會把前面算好的值整個蓋掉
+                           （例如昇華給的 elemDmg 40 會被 elemDmg:0 吃掉）。 */
                         Object.keys(ext).forEach(function (k) {
-                            if (_poeOut[k] === undefined) _poeOut[k] = ext[k];
+                            if (typeof ext[k] === 'number') _poeOut[k] = ext[k];
                         });
-                        var _agg = PSE.applyTo(c, _poeOut, {});
+                        if (num2(ext.atkPct, 0)) _poeOut.atkPct = num2(ext.atkPct, 0);
+                        if (num2(ext.physDmg, 0)) _poeOut.physDmg = num2(ext.physDmg, 0);
+                        if (num2(ext.elemDmg, 0)) _poeOut.elemDmg = num2(ext.elemDmg, 0);
+                        if (num2(ext.dotDmg, 0)) _poeOut.dotDmg = num2(ext.dotDmg, 0);
+                        if (num2(ext.atkSpd, 0)) _poeOut.atkSpd = 100 + num2(ext.atkSpd, 0);
+                        /* ⭐⭐ opt.noDerived:true 至關重要！
+                           applyTo → buildContext 需要 maxHp/maxMp 判斷「滿血/低血」，
+                           但我們此刻正是在計算 maxHp/maxMp。
+                           若讓它再呼叫 getDerivedStatsForChar（會再走進這裡），
+                           就是無限遞迴 → 整個遊戲嚴重延遲／卡死。
+                           傳入目前算到一半的 maxHp/maxMp 讓條件判定使用即可。 */
+                        var _agg = PSE.applyTo(c, _poeOut, {
+                            noDerived: true,
+                            maxHp: maxHp,
+                            maxMp: maxMp
+                        });
                         /* 回填核心八維 */
                         maxHp   = _poeOut.maxHp;   maxMp = _poeOut.maxMp;
                         atk     = _poeOut.atk;     def   = _poeOut.def;
@@ -23142,9 +23684,11 @@ window.HY = window.HY || {};
                             if (k === '__poe' || k === '__poeAttr') return;
                             if (k === 'maxHp' || k === 'maxMp' || k === 'atk' || k === 'def' ||
                                 k === 'hit' || k === 'eva' || k === 'crit' || k === 'critRes' ||
-                                k === 'critDmg' || k === 'dmgReduce' || k === 'atkSpd') return;
+                                k === 'critDmg' || k === 'dmgReduce') return;
                             if (typeof _poeOut[k] === 'number') ext[k] = _poeOut[k];
                         });
+                        /* ⭐ atkSpd 以 100 為基準，ext 存的是「加成值」 */
+                        ext.atkSpd = num2(_poeOut.atkSpd, 100) - 100;
                         /* 機制資料（旗標／觸發／轉換／上限）掛到 ext 供後續使用 */
                         ext.__poe = _poeOut.__poe || null;
                         /* ⭐ 引擎算出的 critDmg 是「加成值」，本作的 critDmg 是「倍率基準 165」
@@ -23198,6 +23742,19 @@ window.HY = window.HY || {};
                 });
                 /* ⭐ ext 也保留一份，方便除錯時看出哪些是擴充來的 */
                 out.__ext = ext;
+                /* ⭐⭐ 顯式補上「加成型」屬性（不依賴 forEach 的迭代時機）
+                   這些鍵在 out 有初始值（atkSpd:100 / dmgReduce:0 / critDmg:165），
+                   靠上面的 forEach 相加在某些執行順序下會失效，
+                   這裡再算一次，確保 ext 的累積值一定被套用。 */
+                if (typeof ext.atkSpd === 'number' && ext.atkSpd) {
+                    out.atkSpd = 100 + ext.atkSpd;
+                }
+                if (typeof ext.dmgReduce === 'number' && ext.dmgReduce) {
+                    out.dmgReduce = Math.max(0, num2(out.dmgReduce, 0) + ext.dmgReduce);
+                }
+                if (typeof ext.critDmg === 'number' && ext.critDmg) {
+                    out.critDmg = 165 + ext.critDmg;
+                }
                 /* ⭐⭐ POE 引擎的機制資料（旗標／觸發／轉換／上限）
                    提升到 out 頂層，戰鬥層用 stats.__poeFlags / __poeProcs 直接讀，
                    不必每次挖 out.__ext.__poe。 */
@@ -23377,7 +23934,7 @@ window.HY = window.HY || {};
     }
 })();
 
-/* ===== 57 / 184 : rosterSystem.js ===== */
+/* ===== 58 / 186 : rosterSystem.js ===== */
 // js/rosterSystem.js  (v28)
 // 5 角色欄管理
 //
@@ -23596,7 +24153,7 @@ window.HY = window.HY || {};
     window.HY.RosterSystem = RosterSystem;
 })();
 
-/* ===== 58 / 184 : partySystem.js ===== */
+/* ===== 59 / 186 : partySystem.js ===== */
 // js/partySystem.js  (v51)
 // 五人組隊與修仙陣法系統
 //
@@ -23870,7 +24427,7 @@ window.HY = window.HY || {};
     window.HY.PartySystem = PartySystem;
 })();
 
-/* ===== 59 / 184 : martialSystem.js ===== */
+/* ===== 60 / 186 : martialSystem.js ===== */
 // js/martialSystem.js  (v32)
 // 外功／心法／輕功(身法)／專精／經脈 的升級與門派隔離
 //
@@ -24232,7 +24789,7 @@ window.HY = window.HY || {};
     window.HY.MartialSystem = MartialSystem;
 })();
 
-/* ===== 60 / 184 : inventorySystem.js ===== */
+/* ===== 61 / 186 : inventorySystem.js ===== */
 // js/inventorySystem.js  (v28)
 // 全隊共享丹藥行囊
 //
@@ -24312,7 +24869,7 @@ window.HY = window.HY || {};
     window.HY.InventorySystem = InventorySystem;
 })();
 
-/* ===== 61 / 184 : equipmentSystem.js ===== */
+/* ===== 62 / 186 : equipmentSystem.js ===== */
 // js/equipmentSystem.js  (v29)
 // 10 大裝備部位管理系統
 //
@@ -24522,7 +25079,7 @@ window.HY = window.HY || {};
     window.HY.EquipmentSystem = EquipmentSystem;
 })();
 
-/* ===== 62 / 184 : poeCraftSystem.js ===== */
+/* ===== 63 / 186 : poeCraftSystem.js ===== */
 // js/poeCraftSystem.js  (v42)
 // PoE 裝備實體生成、掉落控制、10 大通貨工藝打造系統
 //
@@ -25275,7 +25832,7 @@ window.HY = window.HY || {};
     window.HY.PoeCraftSystem = PoeCraftSystem;
 })();
 
-/* ===== 63 / 184 : essenceSystem.js ===== */
+/* ===== 64 / 186 : essenceSystem.js ===== */
 // js/essenceSystem.js  (v1)
 // PoE1 精隨工藝 + 掉落系統
 //
@@ -25588,7 +26145,7 @@ window.HY = window.HY || {};
     window.HY.EssenceSystem = EssenceSystem;
 })();
 
-/* ===== 64 / 184 : fossilSystem.js ===== */
+/* ===== 65 / 186 : fossilSystem.js ===== */
 // js/fossilSystem.js  (v1)
 // PoE1 化石工藝系統
 //
@@ -25870,7 +26427,7 @@ window.HY = window.HY || {};
     window.HY.FossilSystem = FossilSystem;
 })();
 
-/* ===== 65 / 184 : combatArbiter.js ===== */
+/* ===== 66 / 186 : combatArbiter.js ===== */
 // js/combatArbiter.js
 // ⚖️ 戰鬥仲裁器 —— 確保「同一時間只能進行一種戰鬥系統」
 //
@@ -26003,7 +26560,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 66 / 184 : delveTactics.js ===== */
+/* ===== 67 / 186 : delveTactics.js ===== */
 // js/delveTactics.js
 // ⛏️ 礦坑自動戰鬥戰術（Delve Auto Tactics）
 //
@@ -26724,7 +27281,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 67 / 184 : delveBattleSystem.js ===== */
+/* ===== 68 / 186 : delveBattleSystem.js ===== */
 // js/delveBattleSystem.js
 // ⛏️ 礦坑戰鬥系統（完全獨立於一般戰鬥／輿圖戰鬥）
 //
@@ -27195,7 +27752,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 68 / 184 : delveSystem.js ===== */
+/* ===== 69 / 186 : delveSystem.js ===== */
 // js/delveSystem.js  (v1)
 // PoE1 礦坑（Delve）無限深度系統
 //
@@ -27682,7 +28239,7 @@ window.HY = window.HY || {};
     window.HY.DelveSystem = DelveSystem;
 })();
 
-/* ===== 69 / 184 : talentSystem.js ===== */
+/* ===== 70 / 186 : talentSystem.js ===== */
 // js/talentSystem.js  (v1)
 // PoE1 天賦樹系統（核心邏輯，不含 UI）
 //
@@ -28049,6 +28606,15 @@ window.HY = window.HY || {};
             var N = this.nodes();
             var self = this;
             var PARSER = window.HY && window.HY.TalentStatsParser;
+            /* ⭐⭐ 效能：以「已點節點集合」為簽章做整份快取。
+               原本每次呼叫都對 2000+ 節點重跑全部正則（每個節點 1~5 條），
+               而 getDerivedStatsForChar 每幀會呼叫多次（血條、AI、戰鬥…）
+               → 一秒數千次正則，造成嚴重延遲。
+               天賦配置不變時直接回傳上次結果（含 deep clone 防止外部改動）。 */
+            var sig = Object.keys(t.allocated).join(',');
+            if (this._bonusCache && this._bonusCache.sig === sig && this._bonusCache.char === c) {
+                return this._cloneBonus(this._bonusCache.out);
+            }
             Object.keys(t.allocated).forEach(function (id) {
                 var n = N[id];
                 if (!n) return;
@@ -28078,7 +28644,35 @@ window.HY = window.HY || {};
                     if (mb) this._mergeBonus(out, mb);
                 } catch (e) { }
             }
+            /* ⭐ 寫入快取（簽章不變時下次直接回傳） */
+            this._bonusCache = {
+                sig: sig,
+                char: c,
+                out: this._cloneBonus(out)
+            };
             return out;
+        }
+        /** 深拷貝 bonus 物件（避免呼叫方改動污染快取） */
+        _cloneBonus(b) {
+            var o = {
+                attr: { con: 0, str: 0, agi: 0, int: 0 },
+                flat: {}, more: {}, extra: {}
+            };
+            if (!b) return o;
+            ['con', 'str', 'agi', 'int'].forEach(function (k) {
+                o.attr[k] = num((b.attr || {})[k], 0);
+            });
+            ['flat', 'more', 'extra'].forEach(function (pool) {
+                var src = b[pool] || {};
+                Object.keys(src).forEach(function (k) {
+                    if (typeof src[k] === 'number') o[pool][k] = src[k];
+                });
+            });
+            return o;
+        }
+        /** 清除快取（天賦變動時呼叫） */
+        clearBonusCache() {
+            this._bonusCache = null;
         }
         _mergeBonus(out, b) {
             if (!b) return;
@@ -28126,7 +28720,7 @@ window.HY = window.HY || {};
     window.HY.TalentSystem = TalentSystem;
 })();
 
-/* ===== 70 / 184 : talentStatsParser.js ===== */
+/* ===== 71 / 186 : talentStatsParser.js ===== */
 // js/talentStatsParser.js  (v1)
 // ⭐ POE 天賦效果解析器：把 stats 英文字串轉成角色屬性加成
 //
@@ -28516,7 +29110,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 71 / 184 : poeStatEngine.js ===== */
+/* ===== 72 / 186 : poeStatEngine.js ===== */
 // js/poeStatEngine.js  (v1)
 // ⭐⭐ POE 天賦效果引擎 —— 1:1 復刻 Path of Exile 的詞綴計算模型
 //
@@ -30547,12 +31141,43 @@ window.HY = window.HY || {};
         if (ctx.wield === 'dual') { ctx.oneHanded = true; ctx.meleeWeapon = true; }
 
         /* 生命 / 魔力狀態 */
+        /* ⚠⚠ 遞迴防護（極重要）
+           buildContext 需要 maxHp / maxMp 才能判斷「滿血 / 低血」等條件，
+           但 getDerivedStatsForChar 內部會呼叫 talentSys.getBonusFor
+           → 昇華掛鉤 → aggregateFor → buildContext → 又進來這裡。
+           若不加防護就是無限遞迴，整個遊戲會卡死（實測造成嚴重延遲）。
+
+           三層保險：
+             ① opt.noDerived = true → 由上層（昇華掛鉤）明確要求不要往下問
+             ② 全域旗標 __HY_DERIVING__ → 遞迴期間改用估算值
+             ③ 角色身上的 50ms 快取 → 同一幀內重複呼叫直接沿用 */
         var d = {};
-        try {
-            if (window.HY && HY.game && HY.game.charSys && typeof HY.game.charSys.getDerivedStatsForChar === 'function') {
-                d = HY.game.charSys.getDerivedStatsForChar(c);
+        if (!opt.noDerived && !global.__HY_DERIVING__) {
+            var _cached = c.__derivedCache;
+            var _now = Date.now();
+            if (_cached && (_now - num(_cached.t, 0)) < 50) {
+                d = _cached.d;
+            } else {
+                global.__HY_DERIVING__ = true;
+                try {
+                    if (window.HY && HY.game && HY.game.charSys && typeof HY.game.charSys.getDerivedStatsForChar === 'function') {
+                        d = HY.game.charSys.getDerivedStatsForChar(c) || {};
+                        c.__derivedCache = { t: _now, d: d };
+                    }
+                } catch (e) { d = {}; }
+                global.__HY_DERIVING__ = false;
             }
-        } catch (e) { d = {}; }
+        } else if (opt.maxHp || opt.maxMp) {
+            d = { maxHp: num(opt.maxHp, 1), maxMp: num(opt.maxMp, 1) };
+        } else {
+            /* 遞迴中／明確禁止：用等級與屬性粗估，避免再繞一圈 */
+            var _lv = num(c && c.lv, 1);
+            var _s = (c && c.stats) || {};
+            d = {
+                maxHp: 100 + num(_s.con, 10) * 15 + (_lv - 1) * 35,
+                maxMp: 50 + num(_s.int, 10) * 8 + (_lv - 1) * 15
+            };
+        }
         var hp = num(c.currentHp, num(d.maxHp, 1));
         var maxHp = num(d.maxHp, 1);
         var mp = num(c.currentMp, 0);
@@ -31063,7 +31688,715 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 72 / 184 : jewelSystem.js ===== */
+/* ===== 73 / 186 : ascendancySystem.js ===== */
+// js/ascendancySystem.js  (v1)
+// ⭐⭐ 昇華天賦系統（Path of Exile 1:1）
+//
+// ════════════════════════════════════════════════════════════════════
+// 【POE 昇華規則（本檔完全照抄）】
+//   ① 每個職業有 3 個昇華分支，玩家只能選其中 1 個
+//   ② 選定分支後，從該分支的起點開始點（起點免費）
+//   ③ 昇華點數取得（POE 標準）：
+//        一般迷宮 ×3（每完成一次 +2 點）→ 共 6 點
+//        終極迷宮 ×1                     → +2 點
+//        總計 8 點
+//      本作改為「等級門檻」取得，避免依賴迷宮系統：
+//        Lv.40 / 55 / 70 / 85 / 100 / 120 / 140 / 160  各 +1 點
+//        總計 8 點
+//   ④ 一個分支約 15~22 個節點，只能點到 8 個 → 必須取捨
+//   ⑤ 昇華節點效果與一般天賦相同，走同一套詞綴引擎
+// ════════════════════════════════════════════════════════════════════
+//
+// 【對外 API】
+//   HY.AscendancySystem
+//     ensureState(charObj)          狀態修復
+//     branchesFor(charObj)          該角色可選的 3 個分支
+//     pickBranch(charObj, asc)      選定分支（不可逆，除非重置）
+//     totalPoints(charObj)          可用昇華點數
+//     allocate(id, charObj)         點節點
+//     deallocate(id, charObj)       退節點
+//     canAllocate(id, charObj)      是否可點
+//     isAllocated(id, charObj)      是否已點
+//     getBonusFor(charObj)          彙總加成（attr/flat/more/extra）
+//     summary(charObj)              摘要
+//     resetAll(charObj)             全部重洗
+// ════════════════════════════════════════════════════════════════════
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+    var HY = window.HY;
+
+    function num(v, d) {
+        var n = Number(v);
+        return isFinite(n) ? n : (typeof d === 'number' ? d : 0);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       ① 門派 → POE 職業 對照
+       ══════════════════════════════════════════════════════════════════
+       本作沒有 POE 的七職業，改以「門派風格」對應最接近的職業：
+         少林（剛猛近戰）      → Marauder  野蠻人
+         武當（內功劍法）      → Templar   聖堂武士
+         峨嵋（治療輔助）      → Templar   聖堂武士
+         華山（劍法技巧）      → Duelist   決鬥者
+         丐幫（棍法群攻）      → Marauder  野蠻人
+         明教（火焰爆發）      → Templar   聖堂武士
+         唐門（暗器陷阱）      → Shadow    暗影刺客
+         雪山（冰系爆發）      → Ranger    遊俠
+         藥王（毒與治療）      → Witch     女巫
+         崑崙（均衡）          → Scion     貴族
+         崆峒（拳法）          → Marauder  野蠻人
+         絕情谷（陰陽）        → Witch     女巫
+         鬼谷（陣法）          → Scion     貴族
+         桃花島（五行）        → Witch     女巫
+         天龍（內力爆發）      → Templar   聖堂武士
+         天山（冰寒）          → Ranger    遊俠
+         星宿（毒功）          → Witch     女巫
+         逍遙（自在）          → Scion     貴族
+         慕容（借力）          → Duelist   決鬥者
+         爾爾（傀儡）          → Witch     女巫
+       ══════════════════════════════════════════════════════════════════ */
+    var SECT_CLASS = {
+        shaolin:    'Templar',
+        wudang:     'Templar',
+        emei:       'Templar',
+        huashan:    'Duelist',
+        gaibang:    'Marauder',
+        mingjiao:   'Templar',
+        tangmen:    'Shadow',
+        xueshan:    'Ranger',
+        yaowang:    'Witch',
+        kunlun:     'Scion',
+        kongtong:   'Marauder',
+        jueqinggu:  'Witch',
+        guigu:      'Scion',
+        taohuadao:  'Witch',
+        tianlong:   'Templar',
+        tianshan:   'Ranger',
+        xingxiu:    'Witch',
+        xiaoyao:    'Scion',
+        murong:     'Duelist',
+        erengu:     'Witch'
+    };
+
+    /* 昇華點數取得門檻（POE 的 8 點，改以等級對應） */
+    var POINT_LEVELS = [40, 55, 70, 85, 100, 120, 140, 160];
+
+    /* ══════════════════════════════════════════════════════════════════
+       ② 系統本體
+       ══════════════════════════════════════════════════════════════════ */
+    class AscendancySystem {
+        constructor(charSys, logger) {
+            this.charSys = charSys;
+            this.logger = logger;
+        }
+
+        nodes() {
+            var D = (HY.Data || {});
+            return D.ASCENDANCY_NODES || {};
+        }
+        node(id) { return this.nodes()[id] || null; }
+        classTable() {
+            var D = (HY.Data || {});
+            return D.ASCENDANCY_CLASSES || {};
+        }
+        byBranch() {
+            var D = (HY.Data || {});
+            return D.ASCENDANCY_BY_BRANCH || {};
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           狀態
+           ────────────────────────────────────────────────────────── */
+        ensureState(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            if (!c) return null;
+            if (!c.asc || typeof c.asc !== 'object') {
+                c.asc = { branch: null, allocated: {}, points: 0, spent: 0 };
+            }
+            var a = c.asc;
+            if (!a.allocated || typeof a.allocated !== 'object') a.allocated = {};
+            if (typeof a.points !== 'number' || !isFinite(a.points)) a.points = 0;
+            if (typeof a.spent !== 'number' || !isFinite(a.spent)) a.spent = 0;
+            if (a.branch === undefined) a.branch = null;
+            /* ⭐ 遷移：若分支不存在於資料中（版本更新），清掉避免幽靈狀態 */
+            if (a.branch && !this.byBranch()[a.branch]) {
+                a.branch = null;
+                a.allocated = {};
+            }
+            /* ⭐ 清掉不存在的節點 ID，避免舊存檔殘留 */
+            var N = this.nodes();
+            Object.keys(a.allocated).forEach(function (id) {
+                if (!N[id]) delete a.allocated[id];
+            });
+            return a;
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           分支選擇
+           ────────────────────────────────────────────────────────── */
+        /** 該角色所屬 POE 職業 */
+        poeClassOf(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            if (!c) return 'Scion';
+            return SECT_CLASS[c.sect] || 'Scion';
+        }
+
+        /** 該角色可選的 3 個昇華分支（回傳 [{id, name, nameZh}]） */
+        branchesFor(charObj) {
+            var cls = this.poeClassOf(charObj);
+            var tbl = this.classTable();
+            var list = tbl[cls] || [];
+            var ZH = HY.AscendancyZh || null;
+            return list.map(function (b) {
+                return {
+                    id: b.id,
+                    name: b.name,
+                    nameZh: (ZH && ZH.branch) ? ZH.branch(b.id) : b.id
+                };
+            });
+        }
+
+        /** 選定分支（POE 規則：選了就不能換，除非全部重洗） */
+        pickBranch(charObj, ascId) {
+            var a = this.ensureState(charObj);
+            if (!a) return { ok: false, why: '角色不存在' };
+            if (a.branch) {
+                if (a.branch === ascId) return { ok: false, why: '已是此分支' };
+                return { ok: false, why: '已選定「' + a.branch + '」，需先重置全部昇華天賦' };
+            }
+            var avail = this.branchesFor(charObj).map(function (b) { return b.id; });
+            if (avail.indexOf(ascId) === -1) {
+                return { ok: false, why: '此分支不屬於你的職業' };
+            }
+            a.branch = ascId;
+            /* 自動點上起點（免費） */
+            var N = this.nodes();
+            var startId = null;
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (n && n.asc === ascId && n.isAscStart) startId = id;
+            });
+            if (startId) a.allocated[startId] = 1;
+            this.syncPoints(charObj);
+            this._invalidate(charObj);
+            this._log('✨ 開啟昇華之路：【' + ascId + '】', 'system');
+            return { ok: true, branch: ascId, start: startId };
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           點數
+           ────────────────────────────────────────────────────────── */
+        /** 依等級計算應得的昇華點數 */
+        totalPoints(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            if (!c) return 0;
+            var lv = num(c.lv, 1);
+            var n = 0;
+            for (var i = 0; i < POINT_LEVELS.length; i++) {
+                if (lv >= POINT_LEVELS[i]) n++;
+            }
+            return n;
+        }
+
+        /** 下一個點數門檻（供 UI 顯示「還差幾級」） */
+        nextPointLevel(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var lv = num(c && c.lv, 1);
+            for (var i = 0; i < POINT_LEVELS.length; i++) {
+                if (lv < POINT_LEVELS[i]) return POINT_LEVELS[i];
+            }
+            return null;
+        }
+
+        syncPoints(charObj) {
+            var a = this.ensureState(charObj);
+            if (!a) return 0;
+            var total = this.totalPoints(charObj);
+            var N = this.nodes();
+            var self = this;
+            /* 起點不計費 */
+            var used = Object.keys(a.allocated).filter(function (id) {
+                var n = N[id];
+                return n && !n.isAscStart;
+            }).length;
+            a.spent = used;
+            a.points = Math.max(0, total - used);
+            return a.points;
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           查詢
+           ────────────────────────────────────────────────────────── */
+        isAllocated(id, charObj) {
+            var a = this.ensureState(charObj);
+            return !!(a && a.allocated[id]);
+        }
+
+        /** 已點節點的相鄰未點節點（前線） */
+        frontierIds(charObj) {
+            var a = this.ensureState(charObj);
+            var N = this.nodes();
+            var out = {};
+            if (!a) return [];
+            /* 反向索引（只建一次） */
+            if (!this._revIndex) {
+                this._revIndex = {};
+                Object.keys(N).forEach(function (id) {
+                    var n = N[id];
+                    if (!n) return;
+                    (n.out || []).forEach(function (nx) {
+                        if (!this._revIndex[nx]) this._revIndex[nx] = [];
+                        this._revIndex[nx].push(id);
+                    }, this);
+                }, this);
+            }
+            var self = this;
+            Object.keys(a.allocated).forEach(function (id) {
+                var n = N[id];
+                if (!n) return;
+                (n.out || []).forEach(function (nx) {
+                    if (nx && N[nx] && !a.allocated[nx]) out[nx] = true;
+                });
+                var rev = self._revIndex[id] || [];
+                rev.forEach(function (pv) {
+                    if (pv && N[pv] && !a.allocated[pv]) out[pv] = true;
+                });
+            });
+            return Object.keys(out);
+        }
+
+        canAllocate(id, charObj) {
+            var a = this.ensureState(charObj);
+            var n = this.node(id);
+            if (!n) return { ok: false, why: '節點不存在' };
+            if (!a.branch) return { ok: false, why: '尚未選擇昇華分支' };
+            if (n.asc !== a.branch) return { ok: false, why: '不屬於目前分支' };
+            if (a.allocated[id]) return { ok: false, why: '已點過' };
+            this.syncPoints(charObj);
+            if (num(a.points, 0) <= 0) {
+                var nxt = this.nextPointLevel(charObj);
+                return {
+                    ok: false,
+                    why: '昇華點不足（Lv.' + num((charObj || this.charSys.state).lv, 1) +
+                         ' 共 ' + this.totalPoints(charObj) + ' 點' +
+                         (nxt ? '，下次取得：Lv.' + nxt : '') + '）'
+                };
+            }
+            if (n.isAscStart) return { ok: true, why: '' };
+            var reach = this.frontierIds(charObj).indexOf(id) !== -1;
+            if (!reach) {
+                var outs = n.out || [];
+                for (var i = 0; i < outs.length; i++) {
+                    if (a.allocated[outs[i]]) { reach = true; break; }
+                }
+            }
+            if (!reach) return { ok: false, why: '必須與已點的昇華天賦相連' };
+            return { ok: true, why: '' };
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           點擊
+           ────────────────────────────────────────────────────────── */
+        allocate(id, charObj) {
+            var chk = this.canAllocate(id, charObj);
+            if (!chk.ok) return chk;
+            var a = this.ensureState(charObj);
+            var n = this.node(id);
+            a.allocated[id] = 1;
+            this.syncPoints(charObj);
+            this._invalidate(charObj);
+            var nameZh = this.nameZh(n);
+            this._log('✨ 昇華：' + nameZh, 'system');
+            return { ok: true, node: n };
+        }
+
+        /* ⭐ 天賦變動後必須讓 derived stats 快取失效，
+           否則玩家會看到「點了昇華但屬性沒變」（快取回傳舊物件）。 */
+        _invalidate(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            try {
+                if (c) c.__dsCache = null;
+                var DC = HY.DerivedCache;
+                if (DC && typeof DC.invalidate === 'function') DC.invalidate(c);
+                var ts = HY.game && HY.game.talentSys;
+                if (ts && typeof ts.clearBonusCache === 'function') ts.clearBonusCache();
+            } catch (e) { }
+        }
+
+        deallocate(id, charObj) {
+            var a = this.ensureState(charObj);
+            if (!a.allocated[id]) return { ok: false, why: '尚未點此昇華' };
+            var n = this.node(id);
+            if (n && n.isAscStart) return { ok: false, why: '起點不可移除' };
+            delete a.allocated[id];
+            /* 連通性檢查 */
+            var remain = Object.keys(a.allocated);
+            if (remain.length) {
+                var N = this.nodes();
+                var startId = null;
+                remain.forEach(function (rid) {
+                    if (N[rid] && N[rid].isAscStart) startId = rid;
+                });
+                if (startId) {
+                    var seen = {};
+                    var q = [startId];
+                    while (q.length) {
+                        var cur = q.shift();
+                        if (seen[cur]) continue;
+                        seen[cur] = 1;
+                        var cn = N[cur];
+                        if (!cn) continue;
+                        var self = this;
+                        (cn.out || []).forEach(function (nx) {
+                            if (a.allocated[nx] && !seen[nx]) q.push(nx);
+                        });
+                        /* 反向 */
+                        Object.keys(a.allocated).forEach(function (other) {
+                            var on = N[other];
+                            if (on && (on.out || []).indexOf(cur) !== -1 && !seen[other]) q.push(other);
+                        });
+                    }
+                    var orphan = remain.filter(function (rid) { return !seen[rid]; });
+                    if (orphan.length) {
+                        a.allocated[id] = 1;
+                        return { ok: false, why: '移除後會使 ' + orphan.length + ' 個節點失去連線' };
+                    }
+                }
+            }
+            this.syncPoints(charObj);
+            this._invalidate(charObj);
+            this._log('↩️ 退還昇華：' + this.nameZh(n), 'system');
+            return { ok: true, node: n };
+        }
+
+        resetAll(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var a = this.ensureState(c);
+            var n = Object.keys(a.allocated).length;
+            a.branch = null;
+            a.allocated = {};
+            this.syncPoints(c);
+            this._invalidate(c);
+            this._log('🔄 昇華天賦已全部重洗（退還 ' + n + ' 點）', 'system');
+            return n;
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           加成彙總
+           ────────────────────────────────────────────────────────── */
+        getBonusFor(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var out = {
+                attr: { con: 0, str: 0, agi: 0, int: 0 },
+                flat: {}, more: {}, extra: {}
+            };
+            var a = this.ensureState(c);
+            if (!a) return out;
+            var N = this.nodes();
+            var engine = HY.PoeStatEngine;
+
+            /* ⭐ 走完整詞綴引擎（含條件／三段式／旗標） */
+            if (engine && typeof engine.modsFor === 'function' &&
+                typeof engine.buildContext === 'function' &&
+                typeof engine.aggregate === 'function') {
+                try {
+                    var list = this.modsFor(c);
+                    if (list.length) {
+                        var ctx = engine.buildContext(c, {});
+                        var agg = engine.aggregate(list, ctx);
+                        return {
+                            attr: agg.attr || out.attr,
+                            flat: agg.flat || {},
+                            more: agg.more || {},
+                            extra: {},
+                            __poe: { flags: agg.flags, counts: agg.counts, conv: agg.conv, procs: agg.procs }
+                        };
+                    }
+                } catch (e) { }
+            }
+
+            /* 後備：舊的 parser */
+            var PARSER = HY.TalentStatsParser;
+            Object.keys(a.allocated).forEach(function (id) {
+                var n = N[id];
+                if (!n || !n.stats || !n.stats.length) return;
+                if (PARSER) {
+                    try {
+                        var pb = PARSER.bonusOfStats(n.stats);
+                        if (pb) {
+                            Object.keys(pb.attr || {}).forEach(function (k) {
+                                if (out.attr[k] !== undefined) out.attr[k] += num(pb.attr[k], 0);
+                            });
+                            Object.keys(pb.flat || {}).forEach(function (k) { out.flat[k] = num(out.flat[k], 0) + num(pb.flat[k], 0); });
+                            Object.keys(pb.more || {}).forEach(function (k) { out.more[k] = num(out.more[k], 0) + num(pb.more[k], 0); });
+                            Object.keys(pb.extra || {}).forEach(function (k) { out.extra[k] = num(out.extra[k], 0) + num(pb.extra[k], 0); });
+                        }
+                    } catch (e) { }
+                }
+            });
+            return out;
+        }
+
+        /** 取回已點昇華節點解析後的 mod 陣列（供 PoeStatEngine 彙總） */
+        modsFor(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var a = this.ensureState(c);
+            var out = [];
+            if (!a) return out;
+            var N = this.nodes();
+            var engine = HY.PoeStatEngine;
+            if (!engine || typeof engine.parse !== 'function') return out;
+            var self = this;
+            Object.keys(a.allocated).forEach(function (id) {
+                var n = N[id];
+                if (!n || !n.stats || !n.stats.length) return;
+                n.stats.forEach(function (s) {
+                    var m = null;
+                    try { m = engine.parse(s); } catch (e) { m = null; }
+                    if (!m) return;
+                    if (Array.isArray(m)) out = out.concat(m);
+                    else out.push(m);
+                });
+            });
+            return out;
+        }
+
+        /** 直接回傳彙總結果（含條件判定），供 getBonusFor 掛鉤使用 */
+        aggregateFor(charObj, opt) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var engine = HY.PoeStatEngine;
+            if (!engine || typeof engine.aggregate !== 'function') return null;
+            var a = this.ensureState(c);
+            if (!a || !Object.keys(a.allocated).length) return null;
+            var list = this.modsFor(c);
+            if (!list.length) return null;
+            try {
+                /* ⭐ opt.noDerived：禁止 buildContext 再回頭呼叫
+                   getDerivedStatsForChar（那會造成無限遞迴 + 嚴重延遲） */
+                var ctx = engine.buildContext(c, opt || { noDerived: true });
+                return engine.aggregate(list, ctx);
+            } catch (e) { return null; }
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           輔助
+           ────────────────────────────────────────────────────────── */
+        nameZh(n) {
+            if (!n) return '';
+            var ZH = HY.AscendancyZh;
+            if (ZH && typeof ZH.node === 'function') {
+                var z = ZH.node(n.id);
+                if (z) return z;
+            }
+            if (HY.TalentNameZh && typeof HY.TalentNameZh.name === 'function') {
+                var z2 = HY.TalentNameZh.name(n.name);
+                if (z2 && z2 !== n.name) return z2;
+            }
+            return n.name;
+        }
+
+        statsZh(n) {
+            if (!n || !n.stats) return [];
+            var ZH = HY.TalentZh;
+            if (ZH && typeof ZH.stats === 'function') {
+                try { return ZH.stats(n.stats); } catch (e) { }
+            }
+            return n.stats.slice();
+        }
+
+        summary(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var a = this.ensureState(c);
+            if (!a) return null;
+            return {
+                branch: a.branch,
+                branchZh: a.branch ? ((HY.AscendancyZh && HY.AscendancyZh.branch) ? HY.AscendancyZh.branch(a.branch) : a.branch) : null,
+                class: this.poeClassOf(c),
+                total: this.totalPoints(c),
+                spent: a.spent,
+                remaining: a.points,
+                nextLevel: this.nextPointLevel(c),
+                allocated: Object.keys(a.allocated),
+                nodes: Object.keys(this.nodes()).filter(function (id) {
+                    return a.branch && this.nodes()[id].asc === a.branch;
+                }, this).length
+            };
+        }
+
+        _log(msg, type) {
+            try {
+                if (this.logger && typeof this.logger.add === 'function') this.logger.add(msg, type || 'system');
+                else if (window.console) console.log('[HY Asc] ' + msg);
+            } catch (e) { }
+        }
+    }
+
+    AscendancySystem.SECT_CLASS = SECT_CLASS;
+    AscendancySystem.POINT_LEVELS = POINT_LEVELS;
+    HY.AscendancySystem = AscendancySystem;
+
+    /* ⭐ 自動掛載到 HY.game.ascSys
+       ⚠ 不寫在 main.js，因為 main.js 是大型手改檔，容易被外部工具還原。
+       這裡用「延遲檢查 + 首次存取時建立」的雙保險：
+         ① 若 HY.game 已存在 → 立刻建立
+         ② 否則包一個 getter，等 HY.game 出現後第一次讀取時建立 */
+    function attach() {
+        var g = HY.game;
+        if (!g || g.ascSys) return !!g;
+        if (!g.charSys) return false;
+        try {
+            g.ascSys = new AscendancySystem(g.charSys, g.logger);
+            hookTalentBonus();
+            console.log('[ascendancySystem] ✓ 已掛載 HY.game.ascSys');
+            return true;
+        } catch (e) {
+            console.warn('[ascendancySystem] 掛載失敗：', e);
+            return false;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       ⭐ 執行期掛鉤：把昇華加成併入 TalentSystem.getBonusFor
+       ──────────────────────────────────────────────────────────────────
+       為什麼用「包裝」而不是「改 characterSystem」：
+         characterSystem.getDerivedStatsForChar 是 500 行的大函式，
+         外部工具常把它整檔還原，改動容易失效。
+         而 characterSystem 本來就會讀 talentSys.getBonusFor(c) 的
+         { attr, flat, more, extra } 並完整結算（含 addBonus 的 ext 通道）。
+         所以在這裡包一層，把昇華加成合併進去即可 —— 零侵入、不會被還原。
+
+       鍵值轉換（引擎鍵 → characterSystem 認得的鍵）：
+         · core 八維的 inc/more → more 池（pct 小數，乘法）
+         · 其餘鍵的 inc      → flat 池（addBonus 會加進 ext，本就是加法）
+         · more              → more 池（非 core 也走乘法較正確，但 ext 只能加，
+                                故降到 flat 並換算成百分比相加）
+       ══════════════════════════════════════════════════════════════════ */
+    var CORE_KEYS = {
+        maxHp: 1, maxMp: 1, atk: 1, def: 1, hit: 1, eva: 1, crit: 1, critRes: 1
+    };
+
+    function toLegacyBonus(agg) {
+        var out = { attr: { con: 0, str: 0, agi: 0, int: 0 }, flat: {}, more: {}, extra: {} };
+        if (!agg) return out;
+        var KEY_MAP = (HY.PoeStatEngine && HY.PoeStatEngine.KEY_MAP) || {};
+        var DMG_KEYS = (HY.PoeStatEngine && HY.PoeStatEngine.DMG_KEYS) || {};
+
+        /* 四維 */
+        var a = agg.attr || {};
+        out.attr.con = num(a.con, 0);
+        out.attr.str = num(a.str, 0);
+        out.attr.agi = num(a.agi, 0);
+        out.attr.int = num(a.int, 0);
+
+        function mapKey(k) {
+            return KEY_MAP[k] || DMG_KEYS[k] || null;
+        }
+
+        /* flat：全部直接加 */
+        Object.keys(agg.flat || {}).forEach(function (k) {
+            var v = num(agg.flat[k], 0);
+            if (!v) return;
+            var gk = mapKey(k);
+            if (!gk) return;
+            if (k === 'allElemRes') {
+                ['fireRes', 'coldRes', 'lightningRes'].forEach(function (rk) {
+                    out.flat[rk] = num(out.flat[rk], 0) + v;
+                });
+                return;
+            }
+            out.flat[gk] = num(out.flat[gk], 0) + v;
+        });
+
+        /* inc：core 走乘法、其餘走加法 */
+        Object.keys(agg.inc || {}).forEach(function (k) {
+            var v = num(agg.inc[k], 0);
+            if (!v) return;
+            var gk = mapKey(k);
+            if (!gk) return;
+            if (CORE_KEYS[gk]) {
+                out.more[gk] = num(out.more[gk], 0) + v / 100;
+            } else {
+                out.flat[gk] = num(out.flat[gk], 0) + v;
+            }
+        });
+
+        /* more：core 走乘法、其餘換成百分比加法 */
+        Object.keys(agg.more || {}).forEach(function (k) {
+            var v = num(agg.more[k], 0);
+            if (!v) return;
+            var gk = mapKey(k);
+            if (!gk) return;
+            if (CORE_KEYS[gk]) {
+                out.more[gk] = num(out.more[gk], 0) + v / 100;
+            } else {
+                out.flat[gk] = num(out.flat[gk], 0) + v;
+            }
+        });
+
+        return out;
+    }
+
+    function hookTalentBonus() {
+        var g = HY.game;
+        if (!g || !g.talentSys) return false;
+        var ts = g.talentSys;
+        if (ts.__ascHooked) return true;
+        var orig = ts.getBonusFor;
+        if (typeof orig !== 'function') return false;
+
+        ts.getBonusFor = function (charObj) {
+            var base = orig.call(this, charObj);
+            try {
+                var asys = HY.game && HY.game.ascSys;
+                if (asys && base) {
+                    var agg = asys.aggregateFor(charObj);
+                    if (agg) {
+                        var extra = toLegacyBonus(agg);
+                        base.attr = base.attr || { con: 0, str: 0, agi: 0, int: 0 };
+                        Object.keys(extra.attr).forEach(function (k) {
+                            base.attr[k] = num(base.attr[k], 0) + num(extra.attr[k], 0);
+                        });
+                        ['flat', 'more', 'extra'].forEach(function (pool) {
+                            base[pool] = base[pool] || {};
+                            Object.keys(extra[pool]).forEach(function (k) {
+                                base[pool][k] = num(base[pool][k], 0) + num(extra[pool][k], 0);
+                            });
+                        });
+                        /* 機制旗標／觸發帶到 base 上，供 characterSystem 取用 */
+                        base.__asc = {
+                            flags: agg.flags, counts: agg.counts,
+                            conv: agg.conv, procs: agg.procs
+                        };
+                    }
+                }
+            } catch (e) { }
+            return base;
+        };
+        ts.__ascHooked = true;
+        console.log('[ascendancySystem] ✓ 已掛鉤 TalentSystem.getBonusFor');
+        return true;
+    }
+
+    if (!attach()) {
+        var tries = 0;
+        var timer = setInterval(function () {
+            tries++;
+            if (attach() || tries > 100) clearInterval(timer);
+        }, 100);
+    }
+    /* ⭐ 若 talentSys 比 ascSys 晚建立，持續嘗試掛鉤 */
+    var hookTries = 0;
+    var hookTimer = setInterval(function () {
+        hookTries++;
+        if (hookTalentBonus() || hookTries > 200) clearInterval(hookTimer);
+    }, 100);
+
+    console.log('[ascendancySystem] ✓ 已載入（POE 昇華天賦系統）');
+})();
+
+
+/* ===== 74 / 186 : jewelSystem.js ===== */
 // js/jewelSystem.js  (v1)
 // PoE1 珠寶系統
 //
@@ -31620,7 +32953,7 @@ window.HY = window.HY || {};
     window.HY.JewelSystem = JewelSystem;
 })();
 
-/* ===== 73 / 184 : blackMarketSystem.js ===== */
+/* ===== 75 / 186 : blackMarketSystem.js ===== */
 // js/blackMarketSystem.js  (v29)
 // v29 修正（收尾整理）：
 //   ⭐ buyRegularItem / buySpecialDeal 補上 item.reqLv 檢查
@@ -31759,7 +33092,7 @@ window.HY = window.HY || {};
     window.HY.BlackMarketSystem = BlackMarketSystem;
 })();
 
-/* ===== 74 / 184 : petSystem.js ===== */
+/* ===== 76 / 186 : petSystem.js ===== */
 // js/petSystem.js
 window.HY = window.HY || {};
 (function () {
@@ -31885,7 +33218,7 @@ window.HY = window.HY || {};
     window.HY.PetSystem = PetSystem;
 })();
 
-/* ===== 75 / 184 : companionSystem.js ===== */
+/* ===== 77 / 186 : companionSystem.js ===== */
 // js/companionSystem.js
 window.HY = window.HY || {};
 (function () {
@@ -32011,7 +33344,7 @@ window.HY = window.HY || {};
     window.HY.CompanionSystem = CompanionSystem;
 })();
 
-/* ===== 76 / 184 : affixSystem.js ===== */
+/* ===== 78 / 186 : affixSystem.js ===== */
 // js/affixSystem.js
 // 遭遇敵人有 35% 機率隨機套用 1~3 個 PoE 詞綴並執行戰鬥詞綴效果
 //
@@ -32258,7 +33591,7 @@ window.HY = window.HY || {};
     window.HY.AffixSystem = AffixSystem;
 })();
 
-/* ===== 77 / 184 : guildCoreSystem.js ===== */
+/* ===== 79 / 186 : guildCoreSystem.js ===== */
 // js/guildCoreSystem.js  (v44)
 // 幫會核心系統：幫會升級經驗、幫眾招募、捐獻
 //
@@ -32383,7 +33716,7 @@ window.HY = window.HY || {};
     window.HY.GuildCoreSystem = GuildCoreSystem;
 })();
 
-/* ===== 78 / 184 : guildBuildingSystem.js ===== */
+/* ===== 80 / 186 : guildBuildingSystem.js ===== */
 // js/guildBuildingSystem.js  (v43)
 // 幫會建築與成員駐守生產系統
 //
@@ -32625,7 +33958,7 @@ window.HY = window.HY || {};
     window.HY.GuildBuildingSystem = GuildBuildingSystem;
 })();
 
-/* ===== 79 / 184 : guildSkillBeastSystem.js ===== */
+/* ===== 81 / 186 : guildSkillBeastSystem.js ===== */
 // js/guildSkillBeastSystem.js  (v44)
 // 幫會祝福 / 鬼谷後天改命 / 鎮派神獸
 //
@@ -32850,7 +34183,7 @@ window.HY = window.HY || {};
     window.HY.GuildSkillBeastSystem = GuildSkillBeastSystem;
 })();
 
-/* ===== 80 / 184 : guildRealmEventSystem.js ===== */
+/* ===== 82 / 186 : guildRealmEventSystem.js ===== */
 // js/guildRealmEventSystem.js  (v29)
 // 幫會鎮妖神塔、幫會秘境與隨機事件系統
 //
@@ -33004,7 +34337,7 @@ window.HY = window.HY || {};
     window.HY.GuildRealmEventSystem = GuildRealmEventSystem;
 })();
 
-/* ===== 81 / 184 : sectFeatureSystem.js ===== */
+/* ===== 83 / 186 : sectFeatureSystem.js ===== */
 // js/sectFeatureSystem.js  (v36)
 // 15 大門派「專屬特色」戰鬥實現
 //
@@ -34030,7 +35363,7 @@ window.HY = window.HY || {};
     window.HY.SectFeatureSystem.IDENTITY_DEFENDER = IDENTITY_DEFENDER;
 })();
 
-/* ===== 82 / 184 : townSystem.js ===== */
+/* ===== 84 / 186 : townSystem.js ===== */
 // js/townSystem.js (v2)
 // ⭐ 我的小鎮：核心系統（建造／升級／組合／研究／居民／定居／職務／收益結算）
 // v2 新增：【虛擬人物定居】角色住進小鎮、擔任職務、鎮上修行
@@ -34873,7 +36206,7 @@ window.HY = window.HY || {};
   window.HY.TownSystem = TownSystem;
 })();
 
-/* ===== 83 / 184 : townExtra.js ===== */
+/* ===== 85 / 186 : townExtra.js ===== */
 // js/townExtra.js (v1)
 // ⭐ 我的小鎮：內容擴充包（額外 JS）
 //
@@ -35438,7 +36771,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 84 / 184 : townGuildSystem.js ===== */
+/* ===== 86 / 186 : townGuildSystem.js ===== */
 // js/townGuildSystem.js (v1)
 // ⭐ 我的小鎮：冒險者公會（Adventurer's Guild）
 //
@@ -36739,7 +38072,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 85 / 184 : townGuildAdvance.js ===== */
+/* ===== 87 / 186 : townGuildAdvance.js ===== */
 // js/townGuildAdvance.js (v1)
 // ⭐ 我的小鎮：冒險者深造系統（讓虛擬人物各方面等同玩家角色）
 //
@@ -37844,7 +39177,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 86 / 184 : townCelebSystem.js ===== */
+/* ===== 88 / 186 : townCelebSystem.js ===== */
 // js/townCelebSystem.js (v1)
 // ⭐ 我的小鎮：名人遊歷系統（融合大樂透的 360 位虛擬人物）
 //
@@ -38571,7 +39904,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 87 / 184 : townCelebAdvance.js ===== */
+/* ===== 89 / 186 : townCelebAdvance.js ===== */
 // js/townCelebAdvance.js (v1)
 // ⭐ 名人深造與社交 —— 讓虛擬人物「比照玩家角色」的完整功能 + 讓世界有活力
 //
@@ -39395,7 +40728,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 88 / 184 : friendSystem.js ===== */
+/* ===== 90 / 186 : friendSystem.js ===== */
 // js/friendSystem.js (v1)
 // ⭐ 江湖好友系統（核心）：虛擬人物好友 + 全自動行為 + 組隊同行
 //
@@ -40505,7 +41838,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 89 / 184 : friendCelebSystem.js ===== */
+/* ===== 91 / 186 : friendCelebSystem.js ===== */
 // js/friendCelebSystem.js (v1)
 // ⭐ 好友系統 v3：好友＝「世界名人」（取自 celebAll()，共 360 位）
 //    • 等級：由 tier（5 星身價）推導 + id 雜湊抖動（保證同一名人永遠同一等級）
@@ -40808,7 +42141,7 @@ window.HY = window.HY || {};
   console.log('[friendCeleb] ✓ 已載入（好友＝世界名人）');
 })();
 
-/* ===== 90 / 184 : friendHostileSystem.js ===== */
+/* ===== 92 / 186 : friendHostileSystem.js ===== */
 // js/friendHostileSystem.js (v1)
 // ⭐ 好友系統 v3：叛變／仇敵
 //    • 好感歸零 → 每期機率反目成仇
@@ -41133,7 +42466,7 @@ window.HY = window.HY || {};
   console.log('[friendHostile] ✓ 已載入（叛變／仇敵／打劫／招降）');
 })();
 
-/* ===== 91 / 184 : friendPartySystem.js ===== */
+/* ===== 93 / 186 : friendPartySystem.js ===== */
 // js/friendPartySystem.js (v1)
 // ⭐ 好友自行組隊出團（副本遠征）＋ 合擊技 ＋ v2 主 tick 驅動
 // ⚠️ 載入順序：friendSystem.js 之後、friendEventSystem.js 之前
@@ -41688,7 +43021,7 @@ window.HY = window.HY || {};
   console.log('[friendParty] ✓ 已載入（出團遠征 + 合擊技）');
 })();
 
-/* ===== 92 / 184 : friendEventSystem.js ===== */
+/* ===== 94 / 186 : friendEventSystem.js ===== */
 // js/friendEventSystem.js (v1)
 // ⭐ 好友系統 v2：事件層（比武大會／互助任務／江湖求救／好友來訪／名宿退隱／專屬對話）
 // ⚠️ 載入順序：friendPartySystem.js 之後、friendSocialSystem.js 之前
@@ -42215,7 +43548,7 @@ window.HY = window.HY || {};
   console.log('[friendEvent] ✓ 已載入（比武大會／互助任務／求救／來訪／退隱／對話）');
 })();
 
-/* ===== 93 / 184 : friendSocialSystem.js ===== */
+/* ===== 95 / 186 : friendSocialSystem.js ===== */
 // js/friendSocialSystem.js (v1)
 // ⭐ 好友系統 v2：社交層（羈絆關係網／稱號成就／書信）
 // ⚠️ 載入順序：friendEventSystem.js 之後、friendRankSystem.js 之前
@@ -42703,7 +44036,7 @@ window.HY = window.HY || {};
   console.log('[friendSocial] ✓ 已載入（羈絆／稱號／書信）');
 })();
 
-/* ===== 94 / 184 : friendHomeSystem.js ===== */
+/* ===== 96 / 186 : friendHomeSystem.js ===== */
 // js/friendHomeSystem.js (v1)
 // ⭐ 好友系統 v3：洞府／家園
 //    • 每位名人好友都有一處洞府（5 種風格，各自提供加成）
@@ -43030,7 +44363,7 @@ window.HY = window.HY || {};
   console.log('[friendHome] ✓ 已載入（洞府／家園／建材）');
 })();
 
-/* ===== 95 / 184 : friendAuctionSystem.js ===== */
+/* ===== 97 / 186 : friendAuctionSystem.js ===== */
 // js/friendAuctionSystem.js (v1)
 // ⭐ 好友系統 v3：委託拍賣行
 //    • 你把行囊裡的裝備委託好友代售 → 數期後售出，好友抽成
@@ -43309,7 +44642,7 @@ window.HY = window.HY || {};
   console.log('[friendAuction] ✓ 已載入（委託代售／掛售／流標）');
 })();
 
-/* ===== 96 / 184 : friendWorldBossSystem.js ===== */
+/* ===== 98 / 186 : friendWorldBossSystem.js ===== */
 // js/friendWorldBossSystem.js (v1)
 // ⭐ 好友系統 v3：世界王（跨好友團隊大型活動，需 8 人以上）
 //    • Boss HP 依「集結隊伍總戰力」縮放 → 不受戰力數值通膨影響
@@ -43757,7 +45090,7 @@ window.HY = window.HY || {};
   console.log('[friendWorldBoss] ✓ 已載入（世界王討伐）');
 })();
 
-/* ===== 97 / 184 : friendExtraSystem.js ===== */
+/* ===== 99 / 186 : friendExtraSystem.js ===== */
 // js/friendExtraSystem.js (v1)
 // ⭐ 好友系統 v4：擴充功能層
 //    授業傳功／打工採集／鍛造強化／煉丹／保鑣護衛／心願／日常互動／共同倉庫
@@ -44726,7 +46059,7 @@ window.HY = window.HY || {};
   console.log('[friendExtra] ✓ 已載入（授業／工坊／鍛造／煉丹／保鑣／心願／日常／倉庫）');
 })();
 
-/* ===== 98 / 184 : friendLinkSystem.js ===== */
+/* ===== 100 / 186 : friendLinkSystem.js ===== */
 // js/friendLinkSystem.js (v1)
 // ⭐ 好友系統 v6：跨系統連動核心
 //    20 個外部系統的連動實作 + 稽核 + 每期推進
@@ -46100,7 +47433,7 @@ window.HY = window.HY || {};
   console.log('[friendLink] ✓ 已載入（陣法／靈根／五行／寵物／同伴／詞綴／公會／門派／黑市／工藝／打撈／精通／ATB／敵陣／時光／賭局／名冊／離線／等級）');
 })();
 
-/* ===== 99 / 184 : friendRankSystem.js ===== */
+/* ===== 101 / 186 : friendRankSystem.js ===== */
 // js/friendRankSystem.js (v1)
 // ⭐ 好友系統 v2：排行榜（7 大榜）／威望／賽季結算 ＋ friendReport 整合
 // ⚠️ 載入順序：friendSocialSystem.js 之後（最後一支系統檔）
@@ -46414,7 +47747,7 @@ window.HY = window.HY || {};
   console.log('[friendRank] ✓ 已載入（排行榜 + 賽季）');
 })();
 
-/* ===== 100 / 184 : friendUnifySystem.js ===== */
+/* ===== 102 / 186 : friendUnifySystem.js ===== */
 // js/friendUnifySystem.js (v1)
 // ⭐ 好友系統：統一資源層
 //    ① 材料單一池（洞府建材 ＋ 倉庫材料 → friends.materials）
@@ -46970,7 +48303,7 @@ window.HY = window.HY || {};
   console.log('[friendUnify] ✓ 已載入（材料單一池 + 裝備共享池 + 資源統一）');
 })();
 
-/* ===== 101 / 184 : offlineBridge.js ===== */
+/* ===== 103 / 186 : offlineBridge.js ===== */
 // js/offlineBridge.js (v2)
 // ⭐ 離線掛機收益（好友）＋ 與 offlineIdleSystem.js 整合
 //
@@ -47608,7 +48941,7 @@ window.HY = window.HY || {};
   setTimeout(function () { clearInterval(intTimer); }, 35000);
 })();
 
-/* ===== 102 / 184 : combatAutoTactics.js ===== */
+/* ===== 104 / 186 : combatAutoTactics.js ===== */
 // js/combatAutoTactics.js  (v52)
 // 自動戰鬥戰術：計時器、自動連刷、自動服藥、智慧選招、隊員技能輔助
 //
@@ -48280,7 +49613,7 @@ window.HY = window.HY || {};
     console.log('[combatAutoTactics] ✓ 已載入（v52，已移除連刷暫停）');
 })();
 
-/* ===== 103 / 184 : combatPlayerTurn.js ===== */
+/* ===== 105 / 186 : combatPlayerTurn.js ===== */
 // js/combatPlayerTurn.js  (v51)
 // 我方出招、招式屬性、幫會祝福、改命、群俠與靈獸助戰、八元素附傷
 //
@@ -48857,7 +50190,7 @@ window.HY = window.HY || {};
     window.HY.CombatPlayerTurn = CombatPlayerTurn;
 })();
 
-/* ===== 104 / 184 : combatEnemyTurn.js ===== */
+/* ===== 106 / 186 : combatEnemyTurn.js ===== */
 // js/combatEnemyTurn.js  (v46)
 // 敵方小隊反擊、宗門絕技、詞綴追擊、我方防禦祝福/改命觸發、八元素傷害
 //
@@ -49140,7 +50473,7 @@ window.HY = window.HY || {};
     window.HY.CombatEnemyTurn = CombatEnemyTurn;
 })();
 
-/* ===== 105 / 184 : combatMechanics.js ===== */
+/* ===== 107 / 186 : combatMechanics.js ===== */
 // js/combatMechanics.js
 // ⚙️ 戰鬥機制層 —— 把 POE 天賦詞綴真正變成「會動的系統」
 //
@@ -50013,7 +51346,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 106 / 184 : rewardBalance.js ===== */
+/* ===== 108 / 186 : rewardBalance.js ===== */
 // js/rewardBalance.js
 // ⚖️ 獎勵平衡系統（A+B 方案）
 //
@@ -50203,7 +51536,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 107 / 184 : combatCore.js ===== */
+/* ===== 109 / 186 : combatCore.js ===== */
 // js/combatCore.js  (v44)
 // 戰鬥主控：開戰、出招調度、勝敗結算
 //
@@ -50644,7 +51977,7 @@ window.HY = window.HY || {};
     window.HY.CombatSystem = CombatCore;
 })();
 
-/* ===== 108 / 184 : timeTravelSystem.js ===== */
+/* ===== 110 / 186 : timeTravelSystem.js ===== */
 // js/timeTravelSystem.js  (v28)
 // 時空地圖移動與醫療艙
 //
@@ -50710,7 +52043,7 @@ window.HY = window.HY || {};
     window.HY.TimeTravelSystem = TimeTravelSystem;
 })();
 
-/* ===== 109 / 184 : uiCharacterParty.js ===== */
+/* ===== 111 / 186 : uiCharacterParty.js ===== */
 // js/uiCharacterParty.js  (v52)
 // 左欄角色面板 + 角色欄／陣法分頁
 //
@@ -51212,7 +52545,7 @@ window.HY = window.HY || {};
     window.HY.UICharacterParty = UICharacterParty;
 })();
 
-/* ===== 110 / 184 : uiCombatExplore.js ===== */
+/* ===== 112 / 186 : uiCombatExplore.js ===== */
 // js/uiCombatExplore.js  (v50)
 // 時空探索地圖、內掛戰術下拉、戰鬥競技場
 //
@@ -51633,7 +52966,7 @@ window.HY = window.HY || {};
     window.HY.UICombatExplore = UICombatExplore;
 })();
 
-/* ===== 111 / 184 : uiMartialSect.js ===== */
+/* ===== 113 / 186 : uiMartialSect.js ===== */
 // js/uiMartialSect.js  (v48)
 // 外功／心法／身法／專精／經脈 UI
 //
@@ -52102,7 +53435,7 @@ window.HY = window.HY || {};
     window.HY.UIMartialSect = UIMartialSect;
 })();
 
-/* ===== 112 / 184 : uiEquipMarket.js ===== */
+/* ===== 114 / 186 : uiEquipMarket.js ===== */
 // js/uiEquipMarket.js  (v28)
 // 裝備槽、PoE 工藝台、行囊、黑市
 //
@@ -52412,7 +53745,7 @@ window.HY = window.HY || {};
     window.HY.UIEquipMarket = UIEquipMarket;
 })();
 
-/* ===== 113 / 184 : uiBagOverhaul.js ===== */
+/* ===== 115 / 186 : uiBagOverhaul.js ===== */
 // js/uiBagOverhaul.js (v8)
 // ⭐ 「🛡️ 裝備行囊 & 工藝」→ 彈窗化（雙頁面：行囊 / 通貨倉庫）
 //
@@ -57434,7 +58767,7 @@ window.HY = window.HY || {};
   }
 })();
 
-/* ===== 114 / 184 : uiCompanionPet.js ===== */
+/* ===== 116 / 186 : uiCompanionPet.js ===== */
 // js/uiCompanionPet.js  (v28)
 // 群俠助戰與靈獸坐騎分頁
 //
@@ -57589,7 +58922,7 @@ window.HY = window.HY || {};
     window.HY.UICompanionPet = UICompanionPet;
 })();
 
-/* ===== 115 / 184 : uiLogPanels.js ===== */
+/* ===== 117 / 186 : uiLogPanels.js ===== */
 // js/uiLogPanels.js  (v50)
 // 右側日誌面板：戰鬥 / 掉落 / 武點 三面板 + 3 個自訂面板
 //
@@ -58336,7 +59669,7 @@ window.HY = window.HY || {};
     window.HY.UILogPanels = UILogPanels;
 })();
 
-/* ===== 116 / 184 : uiGuild.js ===== */
+/* ===== 118 / 186 : uiGuild.js ===== */
 // js/uiGuild.js  (v45)
 // 幫會分頁（八建築排班、招募、祝福、後天改命、神獸、鎮妖塔與秘境）
 //
@@ -58753,7 +60086,7 @@ window.HY = window.HY || {};
     window.HY.UIGuild = UIGuild;
 })();
 
-/* ===== 117 / 184 : uiTown.js ===== */
+/* ===== 119 / 186 : uiTown.js ===== */
 // js/uiTown.js (v2.3)
 // ⭐ 我的小鎮：全螢幕 UI（格狀城鎮／建造／研究／定居／職務／節慶／地價評鑑）
 //
@@ -60114,7 +61447,7 @@ window.HY = window.HY || {};
   window.HY.UITown = UITown;
 })();
 
-/* ===== 118 / 184 : uiTownGuild.js ===== */
+/* ===== 120 / 186 : uiTownGuild.js ===== */
 // js/uiTownGuild.js (v1)
 // ⭐ 我的小鎮 UI：冒險者公會分頁（掛載於 HY.UITown.prototype）
 //
@@ -60930,7 +62263,7 @@ window.HY = window.HY || {};
   window.HY.UITownGuild = { version: '1.0', submounts: ['roster', 'storage', 'missions', 'contracts', 'manage', 'log'] };
 })();
 
-/* ===== 119 / 184 : uiTownGuildAdvance.js ===== */
+/* ===== 121 / 186 : uiTownGuildAdvance.js ===== */
 // js/uiTownGuildAdvance.js (v1)
 // ⭐ 冒險者深造 UI —— 擴充「⚔️ 冒險者公會」分頁，新增「🎓 深造」子分頁
 //
@@ -61727,7 +63060,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 120 / 184 : uiTownCeleb.js ===== */
+/* ===== 122 / 186 : uiTownCeleb.js ===== */
 // js/uiTownCeleb.js (v1)
 // ⭐ 名人遊歷 UI —— 擴充「我的小鎮」分頁，新增「🌟 名人」分頁
 //
@@ -62202,7 +63535,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 121 / 184 : uiTownCelebAdvance.js ===== */
+/* ===== 123 / 186 : uiTownCelebAdvance.js ===== */
 // js/uiTownCelebAdvance.js (v1)
 // ⭐ 名人深造 UI —— 擴充「🌟 名人」視窗，新增 3 個子分頁
 //
@@ -62738,7 +64071,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 122 / 184 : uiTownOverlays.js ===== */
+/* ===== 124 / 186 : uiTownOverlays.js ===== */
 // js/uiTownOverlays.js (v1)
 // ⭐ 小鎮：彈出視窗化 —— 把「⚔️ 冒險者公會」「🌟 名人」改成 2/3 大視窗
 //
@@ -63108,7 +64441,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 123 / 184 : uiFriend.js ===== */
+/* ===== 125 / 186 : uiFriend.js ===== */
 // js/uiFriend.js (v2.1)
 // ⭐ 好友系統 UI：小鎮「🤝 好友」標籤 + 2/3 畫面彈出視窗
 //    （v3 起標籤由 uiFriend3.js 搬到主介面「角色&隊伍」旁，本檔仍負責渲染器與彈窗邏輯）
@@ -63913,7 +65246,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend] ✓ 已載入（好友分頁 + 彈出視窗；標籤已停用閃動）');
 })();
 
-/* ===== 124 / 184 : uiFriend2.js ===== */
+/* ===== 126 / 186 : uiFriend2.js ===== */
 // js/uiFriend2.js (v2)
 // ⭐ 好友系統 v2 UI：新增 7 個分頁
 //    🏰 出團遠征　🏆 排行榜　💞 羈絆關係　🎖️ 稱號成就　✉️ 書信　🎯 互助任務　🎪 比武大會
@@ -64621,7 +65954,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend2] ✓ 已載入（新增 ' + V2_SUBS.length + ' 個分頁）');
 })();
 
-/* ===== 125 / 184 : uiFriend3.js ===== */
+/* ===== 127 / 186 : uiFriend3.js ===== */
 // js/uiFriend3.js (v5.1)
 // ⭐ 好友系統 v3 UI：標籤搬家 + 世界王／洞府／拍賣行／仇敵
 //
@@ -65782,7 +67115,7 @@ window.HY = window.HY || {};
   setTimeout(function () { clearInterval(bootWatch); }, 30000);
 })();
 
-/* ===== 126 / 184 : uiFriend4.js ===== */
+/* ===== 128 / 186 : uiFriend4.js ===== */
 // js/uiFriend4.js (v1)
 // ⭐ 好友系統 v4 UI：
 //    ① 好友面板字體放大（calc + CSS 變數，預設 ×2，可調）
@@ -66492,7 +67825,7 @@ html.fr4-big .fr-modal.full { width: 97vw !important; height: 95vh !important; }
   setTimeout(function () { clearInterval(watch); }, 30000);
 })();
 
-/* ===== 127 / 184 : uiFriend5.js ===== */
+/* ===== 129 / 186 : uiFriend5.js ===== */
 // js/uiFriend5.js (v1.1)
 // ⭐ 好友系統 v5（補強層）
 //    ① 書信：新增「🗑️ 一鍵清空信箱（先自動領附件）」與「💣 強制清空」
@@ -66833,7 +68166,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend5] ✓ 已載入（書信清空 + 面板內徽章；已停用閃動）');
 })();
 
-/* ===== 128 / 184 : uiFriend6.js ===== */
+/* ===== 130 / 186 : uiFriend6.js ===== */
 // js/uiFriend6.js (v3)
 // ⭐ 🔗 系統連動 —— 獨立主分頁
 //    位置：插在「作弊」與「儲存進度」之間（優先插在「儲存進度」之前）
@@ -67732,7 +69065,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend6] ✓ 已載入（🔗 系統連動 — 獨立主分頁 v3，位置：作弊 ↔ 儲存進度）');
 })();
 
-/* ===== 129 / 184 : fontSystem.js ===== */
+/* ===== 131 / 186 : fontSystem.js ===== */
 // js/fontSystem.js (v1)
 // ⭐ 遊戲字體系統：全域基準 ＋ 各系統面板獨立字級
 //    ① 全域：調整 <html> font-size（影響所有 rem 介面）
@@ -68015,7 +69348,7 @@ window.HY = window.HY || {};
   else boot();
 })();
 
-/* ===== 130 / 184 : uiFontPanel.js ===== */
+/* ===== 132 / 186 : uiFontPanel.js ===== */
 // js/uiFontPanel.js (v4.1)
 // ⭐ 遊戲字體調整面板：🔠 字體標籤（掛在「📱 畫面智慧適應」旁）+ 字體調整彈窗
 //
@@ -68875,7 +70208,7 @@ window.HY = window.HY || {};
   console.log('[uiFont] ✓ 已載入（🔠 字體標籤 + 字體調整面板 v4.1；標籤已停用閃動）');
 })();
 
-/* ===== 131 / 184 : partyPanelCleanup.js ===== */
+/* ===== 133 / 186 : partyPanelCleanup.js ===== */
 // js/partyPanelCleanup.js (v1)
 // ⭐ 移除「戰鬥隊伍面板」下方的三個區塊：
 //      🔥 主控心法：……
@@ -69215,7 +70548,7 @@ window.HY = window.HY || {};
   setTimeout(function () { try { run(); } catch (e) { /* 忽略 */ } }, 3500);
 })();
 
-/* ===== 132 / 184 : uiTabFix.js ===== */
+/* ===== 134 / 186 : uiTabFix.js ===== */
 // js/uiTabFix.js (v1)
 // ⭐ 擴充標籤排版修正器
 //
@@ -69660,7 +70993,7 @@ ${CFG.CONTAINER_SEL} > button > span{
   console.log('[TabFix] ✓ 已載入（擴充標籤排版修正）');
 })();
 
-/* ===== 133 / 184 : poeBaseItems.js ===== */
+/* ===== 135 / 186 : poeBaseItems.js ===== */
 // js/poeBaseItems.js  (auto-generated by build_poe_items.bat v3)
 // Appends all PoE 1 equipment bases into window.HY.Data.POE_BASES.
 // Schema matches equipmentData.js POE_BASES, plus two extra fields:
@@ -69711,7 +71044,7 @@ window.HY.Data = window.HY.Data || {};
   }
 })();
 
-/* ===== 134 / 184 : poeAffixFull.js ===== */
+/* ===== 136 / 186 : poeAffixFull.js ===== */
 // js/poeAffixFull.js  (auto-generated from poedb affix dumps, 100 item classes)
 // 每列：[ family, genType, 文字樣板, tiers, slotMask ]
 //   genType : 1 = 前綴 (prefix)，2 = 後綴 (suffix)，0 = 不明
@@ -70558,7 +71891,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 135 / 184 : poeAffixMap.js ===== */
+/* ===== 137 / 186 : poeAffixMap.js ===== */
 // js/poeAffixMap.js
 // 🗺️ PoE 詞綴 → 本作屬性鍵 對照表
 //
@@ -71840,7 +73173,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 136 / 184 : poeItemPool.js ===== */
+/* ===== 138 / 186 : poeItemPool.js ===== */
 // js/poeItemPool.js (v3)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Makes ALL in-game equipment PoE 1 equipment.
@@ -72440,7 +73773,7 @@ window.HY.PoeOnly = window.HY.PoeItemPool;
   window.HY.PoeOnly = window.HY.PoeItemPool;
 })();
 
-/* ===== 137 / 184 : poeItemIcons.js ===== */
+/* ===== 139 / 186 : poeItemIcons.js ===== */
 // js/poeItemIcons.js (v8)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Official PoE art on equipment tiles, with NO synchronous work inside DOM
@@ -73097,7 +74430,7 @@ window.HY.PoeItemIcons = {
   };
 })();
 
-/* ===== 138 / 184 : poeCodex.js ===== */
+/* ===== 140 / 186 : poeCodex.js ===== */
 // js/poeCodex.js (v3)  [ASCII build - safe for any file encoding]
 // In-game codex: every PoE base item as icon + Chinese name + stats.
 // v3 : items with no icon data (the game's own 63 bases) now show a slot
@@ -73446,7 +74779,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 139 / 184 : poeCurrencyIcons.js ===== */
+/* ===== 141 / 186 : poeCurrencyIcons.js ===== */
 // js/poeCurrencyIcons.js (v3) -- ASCII ONLY (safe for any file encoding)
 // ---------------------------------------------------------------------
 // Replaces the diamond in #currency-orb-bar with official Path of Exile art.
@@ -73742,7 +75075,7 @@ window.HY.PoeCurrencyIcons = {
   }
 })();
 
-/* ===== 140 / 184 : poeUiFix.js ===== */
+/* ===== 142 / 186 : poeUiFix.js ===== */
 // js/poeUiFix.js (v8)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // 1. the stat panel stays gone: the panel, its button, its stylesheet and any
@@ -74972,7 +76305,7 @@ window.HY.PoeUiFix = {
   }
 })();
 
-/* ===== 141 / 184 : poeAffixPlus.js ===== */
+/* ===== 143 / 186 : poeAffixPlus.js ===== */
 // js/poeAffixPlus.js (v5)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // WHAT CHANGED
@@ -75780,7 +77113,7 @@ window.HY.PoeStats = {
 })();
 
 
-/* ===== 142 / 184 : gambleQuiet.js ===== */
+/* ===== 144 / 186 : gambleQuiet.js ===== */
 // js/gambleQuiet.js (v1)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Stops the "no pending bets" line from flooding the combat log and from
@@ -76032,7 +77365,7 @@ window.HY.GambleQuiet = {
   };
 })();
 
-/* ===== 143 / 184 : poeScale.js ===== */
+/* ===== 145 / 186 : poeScale.js ===== */
 // js/poeScale.js (v2)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Enlarges PoE item / currency art and their labels so they fill the tile they
@@ -76441,7 +77774,7 @@ window.HY.PoeScale = {
   };
 })();
 
-/* ===== 144 / 184 : main.js ===== */
+/* ===== 146 / 186 : main.js ===== */
 // js/main.js (v32)
 // GameApp：系統實例化、初始化、事件綁定、定時器
 //
@@ -76883,7 +78216,7 @@ window.HY = window.HY || {};
   });
 })();
 
-/* ===== 145 / 184 : dexteritySpeedSystem.js ===== */
+/* ===== 147 / 186 : dexteritySpeedSystem.js ===== */
 // js/dexteritySpeedSystem.js  (v34)
 // 出手攻速：各系統加成，統一套用 ÷3
 //
@@ -77119,7 +78452,7 @@ window.HY = window.HY || {};
     console.log('[dexSys] ✓ 已載入（v34，根骨不再影響攻速）');
 })();
 
-/* ===== 146 / 184 : combatAtbSystem.js ===== */
+/* ===== 148 / 186 : combatAtbSystem.js ===== */
 // js/combatAtbSystem.js  (v52)
 // ATB 集氣條戰鬥節奏
 //
@@ -77447,7 +78780,7 @@ window.HY = window.HY || {};
     window.HY.CombatAtbSystem = CombatAtbSystem;
 })();
 
-/* ===== 147 / 184 : uiDexAtb.js ===== */
+/* ===== 149 / 186 : uiDexAtb.js ===== */
 // js/uiDexAtb.js  (v56)
 // 五維加點、折疊面板、5v5 固定戰鬥欄
 //
@@ -78529,7 +79862,7 @@ window.HY = window.HY || {};
     window.HY.UIDexAtb = UIDexAtb;
 })();
 
-/* ===== 148 / 184 : combatPanelShared.js ===== */
+/* ===== 150 / 186 : combatPanelShared.js ===== */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
 //
@@ -78943,7 +80276,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 149 / 184 : spiritRootSystem.js ===== */
+/* ===== 151 / 186 : spiritRootSystem.js ===== */
 // js/spiritRootSystem.js  (v3)
 // 專責「八大靈根隨機分配、靈根淬鍊升級、洗髓易根、相生相剋與戰鬥觸發」
 //
@@ -79224,7 +80557,7 @@ window.HY = window.HY || {};
     window.HY.SpiritRootSystem = SpiritRootSystem;
 })();
 
-/* ===== 150 / 184 : uiSpiritRoot.js ===== */
+/* ===== 152 / 186 : uiSpiritRoot.js ===== */
 // js/uiSpiritRoot.js  (v50.2)
 // 八元素・八大靈根分頁
 //
@@ -79636,7 +80969,7 @@ window.HY = window.HY || {};
     window.HY.UISpiritRoot = UISpiritRoot;
 })();
 
-/* ===== 151 / 184 : enemyFormationSystem.js ===== */
+/* ===== 153 / 186 : enemyFormationSystem.js ===== */
 // js/enemyFormationSystem.js  (v53)
 // 敵方陣法系統
 //
@@ -79779,7 +81112,7 @@ window.HY = window.HY || {};
     window.HY.EnemyFormationSystem = EnemyFormationSystem;
 })();
 
-/* ===== 152 / 184 : salvageExpeditionSystem.js ===== */
+/* ===== 154 / 186 : salvageExpeditionSystem.js ===== */
 // js/salvageExpeditionSystem.js  (v29)
 // 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 靈獸時空探險
 //
@@ -80158,7 +81491,7 @@ window.HY = window.HY || {};
     window.HY.SalvageExpeditionSystem = SalvageExpeditionSystem;
 })();
 
-/* ===== 153 / 184 : uiSalvageExpedition.js ===== */
+/* ===== 155 / 186 : uiSalvageExpedition.js ===== */
 // js/uiSalvageExpedition.js  (v50.1)
 // 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 靈獸探險 UI
 //
@@ -80388,7 +81721,7 @@ window.HY = window.HY || {};
     window.HY.UISalvageExpedition = UISalvageExpedition;
 })();
 
-/* ===== 154 / 184 : uiInventorySorter.js ===== */
+/* ===== 156 / 186 : uiInventorySorter.js ===== */
 // js/uiInventorySorter.js  (v2)
 // 道具欄部位分類標籤 + 稀有度自動排序
 //
@@ -80609,7 +81942,7 @@ window.HY = window.HY || {};
     window.HY.UIInventorySorter = UIInventorySorter;
 })();
 
-/* ===== 155 / 184 : offlineIdleSystem.js ===== */
+/* ===== 157 / 186 : offlineIdleSystem.js ===== */
 // js/offlineIdleSystem.js  (v31)
 // 離線掛機結算
 //
@@ -81188,7 +82521,7 @@ window.HY = window.HY || {};
     console.log('[OfflineIdle] ✓ v31 已載入（獨立時間戳 ＋ 就緒輪詢）');
 })();
 
-/* ===== 156 / 184 : levelExpSystem.js ===== */
+/* ===== 158 / 186 : levelExpSystem.js ===== */
 // js/levelExpSystem.js  (v49)
 // 升級經驗曲線 + 十四經脈成功率 + 三個門派篩選器
 //
@@ -81415,7 +82748,7 @@ window.HY = window.HY || {};
     window.HY.LevelExpSystem = LevelExpSystem;
 })();
 
-/* ===== 157 / 184 : elementSystem.js ===== */
+/* ===== 159 / 186 : elementSystem.js ===== */
 // js/elementSystem.js  (v53)
 // 八元素計算引擎（唯一權威）
 //
@@ -82040,7 +83373,7 @@ window.HY = window.HY || {};
     window.HY.ElementSystem = ElementSystem;
 })();
 
-/* ===== 158 / 184 : responsiveLayoutSystem.js ===== */
+/* ===== 160 / 186 : responsiveLayoutSystem.js ===== */
 // js/responsiveLayoutSystem.js  (v29)
 // 使遊戲畫面隨視窗大小自動相容（4K/2K、筆電、分割視窗、平板、手機）
 //
@@ -82203,7 +83536,7 @@ window.HY = window.HY || {};
     window.HY.ResponsiveLayoutSystem = ResponsiveLayoutSystem;
 })();
 
-/* ===== 159 / 184 : cheatPanel.js ===== */
+/* ===== 161 / 186 : cheatPanel.js ===== */
 // js/cheatPanel.js  (v3)
 // 🛠️ 作弊面板：把 gameConfig.js 的全部可調參數做成可即時編輯的 UI
 //
@@ -83341,7 +84674,7 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
     }
 })();
 
-/* ===== 160 / 184 : gambleSystem.js ===== */
+/* ===== 162 / 186 : gambleSystem.js ===== */
 // js/gambleSystem.js  (v1)
 // 🎰 時空賭坊：黑市賭博系統
 //
@@ -84378,7 +85711,7 @@ window.HY = window.HY || {};
     window.HY.GAMBLE_GAMES = GAMES;
 })();
 
-/* ===== 161 / 184 : lotterySystem.js ===== */
+/* ===== 163 / 186 : lotterySystem.js ===== */
 // js/lotterySystem.js  (v5)
 // ═══════════════════════════════════════════════════════════════════════════
 //  🎟️ 大樂透核心系統（仿台灣大樂透）
@@ -85137,7 +86470,7 @@ window.HY = window.HY || {};
     window.HY.LotteryDefaults = DEFAULT_CFG;
 })();
 
-/* ===== 162 / 184 : uiLottery.js ===== */
+/* ===== 164 / 186 : uiLottery.js ===== */
 // js/uiLottery.js  (v5)
 // ═══════════════════════════════════════════════════════════════════════
 //  黑市分區折疊 + 大樂透面板 + 開獎前提醒彈窗
@@ -86073,7 +87406,7 @@ window.HY = window.HY || {};
     window.HY.UILottery = UILottery;
 })();
 
-/* ===== 163 / 184 : lotteryNoTicketFix.js ===== */
+/* ===== 165 / 186 : lotteryNoTicketFix.js ===== */
 // js/lotteryNoTicketFix.js (v1)
 // ⭐ 樂透：沒有購買彩券時，不彈「開獎結果」視窗
 //
@@ -86324,7 +87657,7 @@ window.HY = window.HY || {};
   console.log('[LotteryFix] ✓ 已載入（無票不彈開獎視窗）');
 })();
 
-/* ===== 164 / 184 : uiDelve.js ===== */
+/* ===== 166 / 186 : uiDelve.js ===== */
 // js/uiDelve.js  (v1)
 // PoE1 礦坑（Delve）全螢幕面板
 //
@@ -87118,7 +88451,7 @@ window.HY = window.HY || {};
     }, 500);
 })();
 
-/* ===== 165 / 184 : uiDelveTactics.js ===== */
+/* ===== 167 / 186 : uiDelveTactics.js ===== */
 // js/uiDelveTactics.js
 // ⛏️ 礦坑自動戰鬥戰術設定面板
 //
@@ -87509,7 +88842,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 166 / 184 : uiTalent.js ===== */
+/* ===== 168 / 186 : uiTalent.js ===== */
 // js/uiTalent.js  (v1)
 // PoE1 天賦樹 Canvas UI
 //
@@ -90332,7 +91665,7 @@ window.HY = window.HY || {};
     }, 500);
 })();
 
-/* ===== 167 / 184 : kingsmarchData.js ===== */
+/* ===== 169 / 186 : kingsmarchData.js ===== */
 // js/kingsmarchData.js
 // ⭐ 金司馬區（Kingsmarch）全資料表
 //
@@ -90878,7 +92211,7 @@ window.HY.Data = window.HY.Data || {};
   }
 })();
 
-/* ===== 168 / 184 : kingsmarchSystem.js ===== */
+/* ===== 170 / 186 : kingsmarchSystem.js ===== */
 // js/kingsmarchSystem.js
 // ⭐ 金司馬區：核心系統
 //
@@ -91606,7 +92939,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchSystem = KingsmarchSystem;
 })();
 
-/* ===== 169 / 184 : kingsmarchShip.js ===== */
+/* ===== 171 / 186 : kingsmarchShip.js ===== */
 // js/kingsmarchShip.js
 // ⭐ 金司馬區：航運系統
 //
@@ -92012,7 +93345,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchShip = KingsmarchShip;
 })();
 
-/* ===== 170 / 184 : kingsmarchRune.js ===== */
+/* ===== 172 / 186 : kingsmarchRune.js ===== */
 // js/kingsmarchRune.js
 // ⭐ 金司馬區：符文工藝
 //
@@ -92232,7 +93565,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchRune = KingsmarchRune;
 })();
 
-/* ===== 171 / 184 : kingsmarchRecombine.js ===== */
+/* ===== 173 / 186 : kingsmarchRecombine.js ===== */
 // js/kingsmarchRecombine.js
 // ⭐ 金司馬區：重組器 / 通貨交易所 / 拆解台
 //
@@ -92545,7 +93878,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchRecombine = KingsmarchRecombine;
 })();
 
-/* ===== 172 / 184 : uiKingsmarch.js ===== */
+/* ===== 174 / 186 : uiKingsmarch.js ===== */
 // js/uiKingsmarch.js
 // ⭐ 金司馬區：全螢幕面板
 //
@@ -93764,7 +95097,7 @@ window.HY = window.HY || {};
     window.HY.UIKingsmarch = UIKingsmarch;
 })();
 
-/* ===== 173 / 184 : atlasData.js ===== */
+/* ===== 175 / 186 : atlasData.js ===== */
 // js/atlasData.js
 // ⭐ 異界輿圖資料表：地圖階級、地圖詞綴、輿圖天賦
 //
@@ -94306,7 +95639,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 174 / 184 : atlasTreeData.js ===== */
+/* ===== 176 / 186 : atlasTreeData.js ===== */
 // js/atlasTreeData.js  (自動產生，請勿手改)
 // ⭐ POE 官方「輿圖天賦（Atlas Passive Tree）」1:1 資料
 //
@@ -94347,7 +95680,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[atlasTreeData] 已載入 ' + 903 + ' 個輿圖天賦節點、' + 1003 + ' 條連線');
 })();
 
-/* ===== 175 / 184 : atlasTreeSprites.js ===== */
+/* ===== 177 / 186 : atlasTreeSprites.js ===== */
 // js/atlasTreeSprites.js  (自動產生，請勿手改)
 // ⭐ POE 官方「輿圖天賦」圖集座標（1:1 復刻用）
 //
@@ -94388,7 +95721,7 @@ window.HY.Data = window.HY.Data || {};
         Object.keys(D.ATLAS_SPRITES).length + ' 組）');
 })();
 
-/* ===== 176 / 184 : atlasTreeZh.js ===== */
+/* ===== 178 / 186 : atlasTreeZh.js ===== */
 // js/atlasTreeZh.js  (v1)
 // ⭐ 輿圖天賦效果中文化
 //
@@ -95575,7 +96908,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 177 / 184 : atlasTreeZh2.js ===== */
+/* ===== 179 / 186 : atlasTreeZh2.js ===== */
 // js/atlasTreeZh2.js  (v1)
 // ⭐ 輿圖天賦效果中文化：第二波（補完剩餘 170 條 → 100%）
 //
@@ -96069,7 +97402,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 178 / 184 : atlasTreeNames.js ===== */
+/* ===== 180 / 186 : atlasTreeNames.js ===== */
 // js/atlasTreeNames.js  (v1)
 // ⭐ 輿圖天賦「節點名稱」中文化（補完 317 個未翻譯節點）
 //
@@ -96453,7 +97786,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 179 / 184 : atlasTactics.js ===== */
+/* ===== 181 / 186 : atlasTactics.js ===== */
 // js/atlasTactics.js
 // 🗺️ 打圖戰鬥戰術系統（Map Battle Tactics）
 //
@@ -97658,7 +98991,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 180 / 184 : atlasSystem.js ===== */
+/* ===== 182 / 186 : atlasSystem.js ===== */
 // js/atlasSystem.js
 // ⭐ 異界輿圖系統（核心邏輯，不含 UI）
 //
@@ -99327,7 +100660,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 181 / 184 : uiAtlas.js ===== */
+/* ===== 183 / 186 : uiAtlas.js ===== */
 // js/uiAtlas.js
 // ⭐ 異界輿圖全螢幕面板
 //
@@ -101170,7 +102503,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 182 / 184 : uiAtlasTactics.js ===== */
+/* ===== 184 / 186 : uiAtlasTactics.js ===== */
 // js/uiAtlasTactics.js
 // 🗺️ 打圖戰鬥戰術設定面板（獨立於「時空內掛」）
 //
@@ -101665,7 +102998,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 183 / 184 : uiAtlasTree.js ===== */
+/* ===== 185 / 186 : uiAtlasTree.js ===== */
 // js/uiAtlasTree.js  (v1)
 // ⭐ 輿圖天賦（Atlas Passive Tree）1:1 POE 渲染層
 //
@@ -102581,7 +103914,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 184 / 184 : uiTabDrag.js ===== */
+/* ===== 186 / 186 : uiTabDrag.js ===== */
 // js/uiTabDrag.js
 // ⭐ 頂部分頁標籤可自由拖曳排序
 //
