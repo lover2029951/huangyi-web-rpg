@@ -35438,12 +35438,52 @@ window.HY = window.HY || {};
     /* 再補一次，確保跑在所有延遲初始化的模組之後 */
     setTimeout(scheduleSelfHeal, 2000);
 
-    /* ⭐ v5：不再顯示「昇華」按鈕（v3 的需求已取消）
-       原本會在工具列插入金色「✧ 昇華天賦」按鈕，
-       現在只保留昇華系統本體（仍可用 console 或未來從其他入口開啟）。
-       ⚠ 若日後要恢復，把 installButton(g) 的呼叫打開即可。 */
+    /* ⭐ 在頂部工具列「🌳 天賦樹」旁插入「✧ 昇華天賦」按鈕
+       金色高亮 + 呼吸光暈，讓它一眼可見（原本跟旁邊 12 顆按鈕同色找不到）。
+       註：角色卡片上的「✦ 昇華」按鈕已移除，只保留工具列這一顆。 */
     function installButton(g) {
-        return;   /* 已停用 */
+        if (document.getElementById('btn-open-asc')) return;
+        var talentBtn = document.getElementById('btn-open-talent');
+        if (!talentBtn || !talentBtn.parentNode) return;
+
+        /* ⭐ 注入專屬樣式 */
+        if (!document.getElementById('hy-asc-btn-css')) {
+            var st = document.createElement('style');
+            st.id = 'hy-asc-btn-css';
+            st.textContent = [
+                '#btn-open-asc{',
+                '  background:linear-gradient(135deg,#4a3818,#2a1f0c) !important;',
+                '  border:1px solid #f0c674 !important;',
+                '  color:#fbbf24 !important;',
+                '  font-weight:bold !important;',
+                '  text-shadow:0 0 8px rgba(251,191,36,.55) !important;',
+                '  box-shadow:0 0 12px rgba(240,198,116,.35) !important;',
+                '  animation:hyAscPulse 2.4s ease-in-out infinite;',
+                '}',
+                '#btn-open-asc:hover{',
+                '  background:linear-gradient(135deg,#6b5020,#3d2d12) !important;',
+                '  border-color:#ffd479 !important;',
+                '  box-shadow:0 0 20px rgba(240,198,116,.7) !important;',
+                '  color:#ffe9b0 !important;',
+                '}',
+                '@keyframes hyAscPulse{',
+                '  0%,100%{box-shadow:0 0 10px rgba(240,198,116,.30);}',
+                '  50%{box-shadow:0 0 20px rgba(240,198,116,.65);}',
+                '}'
+            ].join('');
+            document.head.appendChild(st);
+        }
+
+        var b = document.createElement('button');
+        b.id = 'btn-open-asc';
+        b.className = talentBtn.className || 'sys-btn';
+        b.textContent = '✧ 昇華天賦';
+        b.title = '昇華天賦（POE 三選一分支，8 點）';
+        b.addEventListener('click', function () {
+            if (g.uiAsc) g.uiAsc.toggle();
+        });
+        talentBtn.parentNode.insertBefore(b, talentBtn.nextSibling);
+        console.log('[uiAscendancy] ✓ 已加入工具列按鈕');
     }
 
     if (!attach()) {
@@ -35453,10 +35493,17 @@ window.HY = window.HY || {};
             if (attach() || tries > 120) clearInterval(timer);
         }, 100);
     }
-    /* ⭐ v5：不再插入工具列按鈕，這段輪詢一併移除。
-       （保留 installButton 函式本體，日後要恢復只要把呼叫打開） */
+    /* 按鈕可能比 UI 晚出現，持續嘗試插入工具列按鈕
+       （只影響頂部「✧ 昇華天賦」，角色卡片上的按鈕已移除） */
+    var btnTries = 0;
+    var btnTimer = setInterval(function () {
+        btnTries++;
+        var g = HY.game;
+        if (g) installButton(g);
+        if (document.getElementById('btn-open-asc') || btnTries > 200) clearInterval(btnTimer);
+    }, 150);
 
-    console.log('[uiAscendancy] ✓ 已載入（昇華天賦面板，工具列按鈕已停用）');
+    console.log('[uiAscendancy] ✓ 已載入（昇華天賦面板）');
 })(window);
 
 
