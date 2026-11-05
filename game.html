@@ -37512,12 +37512,12 @@ window.HY = window.HY || {};
  display:flex;flex-direction:column;gap:8px;box-sizing:border-box;}
 .bagov-eqtitle{font-size:.79rem;color:#7dd3fc;font-weight:bold;flex:0 0 auto;}
 .bagov-eq{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:0 0 auto;}
-.bagov-slot{background:#121a22;border:2px solid #2e3b4e;border-radius:6px;
+.bagov-slot{background:#121a22;border:3px solid #2e3b4e;border-radius:6px;
  padding:5px 7px;display:flex;align-items:center;gap:7px;
  cursor:pointer;min-height:48px;overflow:hidden;box-sizing:border-box;
- transition:border-color .12s,transform .12s;}
+ transition:border-color .12s,transform .12s,box-shadow .12s;}
 .bagov-slot:hover{border-color:#34d399;transform:translateY(-1px);}
-.bagov-slot.empty{border-style:dashed;opacity:.5;}
+.bagov-slot.empty{border-style:dashed;border-width:2px;opacity:.5;}
 .bagov-slot.target{border-color:#00e5ff!important;box-shadow:0 0 12px rgba(0,229,255,.75);}
 .bagov-slot .ic{font-size:1.15rem;line-height:1;flex:0 0 22px;width:22px;text-align:center;
  display:flex;align-items:center;justify-content:center;}
@@ -37536,6 +37536,59 @@ window.HY = window.HY || {};
 .bagov-kv span:first-child{color:#94a3b8;flex:0 0 auto;white-space:nowrap;}
 .bagov-kv span:last-child{color:#e2e8f0;font-weight:bold;text-align:right;
  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ══════════════════════════════════════════════════════════════════
+   ⭐ 倉庫頁「行囊可改造」的裝備卡片
+   ──────────────────────────────────────────────────────────────────
+   原本這些項目沿用 .bagov-kv（清單列樣式），所有稀有度都是同一條
+   灰線，玩家分不出白／藍／黃／傳奇，也看不出哪件值得改造。
+   改成獨立的「卡片」：
+     · 稀有度顏色邊框（白/藍/黃/橘）
+     · 邊框加粗到 2px，hover 再亮到 3px
+     · 內側加一層同色漸層光暈，強化辨識度
+   ══════════════════════════════════════════════════════════════════ */
+.bagov-pickcard{
+ position:relative;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:4px;padding:7px 5px 6px;cursor:pointer;
+ background:linear-gradient(180deg,#0f171f,#131c26);
+ border:3px solid #3a4453;border-radius:7px;box-sizing:border-box;
+ transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;
+ overflow:hidden;
+}
+.bagov-pickcard::before{
+ content:'';position:absolute;inset:0;pointer-events:none;border-radius:5px;
+ background:radial-gradient(circle at 50% 0%,var(--pk-glow,rgba(226,232,240,.10)),transparent 72%);
+ opacity:.55;
+}
+.bagov-pickcard .pk-img{position:relative;width:100%;display:flex;align-items:center;
+ justify-content:center;min-height:38px;}
+.bagov-pickcard .pk-img img.poe-item-icon{max-width:100%;max-height:46px;object-fit:contain;}
+.bagov-pickcard .pk-name{position:relative;font-size:.66rem;font-weight:bold;line-height:1.2;
+ max-width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bagov-pickcard .pk-pow{position:relative;font-size:.62rem;color:#fcd34d;font-weight:bold;}
+.bagov-pickcard .pk-lv{position:relative;font-size:.56rem;color:#64748b;}
+.bagov-pickcard .pk-tgt{position:absolute;right:3px;top:2px;font-size:.6rem;}
+.bagov-pickcard:hover{transform:translateY(-2px);
+ box-shadow:0 0 0 1px var(--pk-color,#e2e8f0),0 4px 14px -2px var(--pk-glow,rgba(226,232,240,.4));}
+/* 依稀有度上色（3px 邊框 + 同色外光暈） */
+.bagov-pickcard.r-normal{--pk-color:#e2e8f0;--pk-glow:rgba(226,232,240,.30);
+ border-color:#e2e8f0;box-shadow:0 0 0 1px rgba(226,232,240,.22),0 0 12px -1px rgba(226,232,240,.45);}
+.bagov-pickcard.r-magic{--pk-color:#60a5fa;--pk-glow:rgba(96,165,250,.45);
+ border-color:#60a5fa;box-shadow:0 0 0 1px rgba(96,165,250,.32),0 0 14px -1px rgba(96,165,250,.65);}
+.bagov-pickcard.r-rare{--pk-color:#fbbf24;--pk-glow:rgba(251,191,36,.50);
+ border-color:#fbbf24;box-shadow:0 0 0 1px rgba(251,191,36,.36),0 0 15px -1px rgba(251,191,36,.70);}
+.bagov-pickcard.r-unique{--pk-color:#f97316;--pk-glow:rgba(249,115,22,.55);
+ border-color:#f97316;box-shadow:0 0 0 1px rgba(249,115,22,.40),0 0 17px -1px rgba(249,115,22,.80);}
+/* 目前選中的改造目標：邊框再 +1px，並加白色虛線內圈 */
+.bagov-pickcard.is-target{border-width:4px;}
+.bagov-pickcard.is-target::after{
+ content:'';position:absolute;inset:2px;border:1px dashed rgba(255,255,255,.65);
+ border-radius:4px;pointer-events:none;
+}
+/* ⭐ auto-fit（不是 auto-fill）：空軌道會收合，
+   6 件裝備就剛好鋪滿一列，不會留下 3 個空位。 */
+.bagov-pickgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+ gap:7px;margin-top:2px;}
 
 .bagov-right{flex:1 1 auto;min-width:0;overflow-y:auto;overflow-x:hidden;
  padding:10px 12px;display:flex;flex-direction:column;gap:9px;box-sizing:border-box;}
@@ -39799,10 +39852,54 @@ window.HY = window.HY || {};
     h += '</div>';
     return h;
   }
+  /* ══════════════════════════════════════════════════════════════
+     ⭐ 倉庫頁「行囊可改造」裝備卡片
+     ──────────────────────────────────────────────────────────────
+     原本這裡用 .bagov-kv（純文字清單列），所有稀有度都是同一條灰線。
+     改成帶稀有度顏色邊框的卡片：
+       · 白（normal）／藍（magic）／黃（rare）／橘（unique）
+       · 邊框 2px，比原本的清單底線粗得多
+       · 同色外光暈，深色底上辨識度高
+       · 選中為改造目標時加 3px 邊框 + 白色虛線內圈
+     ══════════════════════════════════════════════════════════════ */
+  function pickCardHtml(it, ctUid) {
+    var r = rarityOf(it);
+    var isCt = !!(ctUid && uidOf(it) === ctUid);
+    var cls = 'bagov-pickcard r-' + r.key + (isCt ? ' is-target' : '');
+    var nm = String(it.name || '未知').slice(0, 10);
+    var lv = num(it.reqLv, 1);
+    return '<div class="' + cls + '" data-bagov-pick="' + esc(uidOf(it)) + '"' +
+        ' title="' + esc(String(it.rareTitle || '') + nm + '　[' + r.short + '] Lv.' + lv) + '">' +
+      (isCt ? '<span class="pk-tgt">🎯</span>' : '') +
+      '<div class="pk-img">' + tgtIconHtml(it) + '</div>' +
+      '<div class="pk-name" style="color:' + r.color + '">' + esc(nm) + '</div>' +
+      '<div class="pk-pow">' + fmt(ACC.itemPower(it)) + '</div>' +
+      '<div class="pk-lv">Lv.' + lv + '　' + esc(r.short) + '</div>' +
+    '</div>';
+  }
+  /** 行囊可改造區塊（通貨／化石／精隨三個倉庫頁共用） */
+  function bagPickSectionHtml() {
+    var all = bagAll();
+    var ctUid = craftTargetUid();
+    var h = '<div class="bagov-sum"><h4>🎒 行囊可改造（點擊送來改造）</h4>';
+    if (!all.length) {
+      h += '<div class="bagov-dim" style="font-size:.74rem;color:#64748b">行囊沒有裝備。</div>';
+    } else {
+      h += '<div class="bagov-pickgrid">';
+      /* 只顯示前 6 件，維持原本版面高度 */
+      all.slice(0, 6).forEach(function (it) { h += pickCardHtml(it, ctUid); });
+      h += '</div>';
+      if (all.length > 6) {
+        h += '<div class="bagov-dim" style="font-size:.68rem;color:#64748b;margin-top:5px">' +
+          '（僅顯示前 6 件，另有 ' + (all.length - 6) + ' 件請到行囊頁查看）</div>';
+      }
+    }
+    h += '</div>';
+    return h;
+  }
   function applyOrb(orbId) {
     var poe = safe(function () { return APP().poeSys; }, null);
-    if (!poe) { toast('工藝系統未載入', 'err'); return; }
-    var tgt = craftTargetItem();
+    if (!poe) { toast('工藝系統未載入', 'err'); return; }    var tgt = craftTargetItem();
     if (!tgt) { toast('請先選擇改造目標', 'err'); return; }
     var D = currencyDB(), orb = D[orbId];
     var bl = orbBlocked(orb, tgt);
@@ -40093,21 +40190,8 @@ window.HY = window.HY || {};
     });
     left += '</div>';
     left += stashTargetHtml();
-    var all = bagAll();
-    left += '<div class="bagov-sum"><h4>🎒 行囊可改造（點擊送來改造）</h4>';
-    if (!all.length) {
-      left += '<div class="bagov-dim" style="font-size:.74rem;color:#64748b">行囊沒有裝備。</div>';
-    } else {
-      all.slice(0, 6).forEach(function (it) {
-        var r = rarityOf(it);
-        var isCt = (ctUid && uidOf(it) === ctUid);
-        left += '<div class="bagov-kv" style="cursor:pointer" data-bagov-pick="' + esc(uidOf(it)) + '">' +
-          '<span style="color:' + r.color + ';overflow:hidden;text-overflow:ellipsis">' +
-            esc(String(it.name || '').slice(0, 10)) + (isCt ? ' 🎯' : '') + '</span>' +
-          '<span style="color:#fcd34d">' + fmt(ACC.itemPower(it)) + '</span></div>';
-      });
-    }
-    left += '</div>';
+    /* ⭐ 改用帶稀有度顏色邊框的卡片（原本是純文字清單列） */
+    left += bagPickSectionHtml();
     /* 右欄：通貨格 */
     var right = '';
     right += '<div class="bagov-stash-top">' +
@@ -40238,21 +40322,8 @@ window.HY = window.HY || {};
     });
     left += '</div>';
     left += stashTargetHtml();
-    var all = bagAll();
-    left += '<div class="bagov-sum"><h4>🎒 行囊可改造（點擊送來改造）</h4>';
-    if (!all.length) {
-      left += '<div class="bagov-dim" style="font-size:.74rem;color:#64748b">行囊沒有裝備。</div>';
-    } else {
-      all.slice(0, 6).forEach(function (it) {
-        var r = rarityOf(it);
-        var isCt = (ctUid && uidOf(it) === ctUid);
-        left += '<div class="bagov-kv" style="cursor:pointer" data-bagov-pick="' + esc(uidOf(it)) + '">' +
-          '<span style="color:' + r.color + ';overflow:hidden;text-overflow:ellipsis">' +
-            esc(String(it.name || '').slice(0, 10)) + (isCt ? ' 🎯' : '') + '</span>' +
-          '<span style="color:#fcd34d">' + fmt(ACC.itemPower(it)) + '</span></div>';
-      });
-    }
-    left += '</div>';
+    /* ⭐ 改用帶稀有度顏色邊框的卡片 */
+    left += bagPickSectionHtml();
     var right = '<div class="bagov-charbar">' + charBarHtml() + '</div>';
     right += fossilStashHtml();
     _els.head.className = 'bagov-head fos';
@@ -41195,21 +41266,8 @@ window.HY = window.HY || {};
     });
     left += '</div>';
     left += stashTargetHtml();
-    var all = bagAll();
-    left += '<div class="bagov-sum"><h4>🎒 行囊可改造（點擊送來改造）</h4>';
-    if (!all.length) {
-      left += '<div class="bagov-dim" style="font-size:.74rem;color:#64748b">行囊沒有裝備。</div>';
-    } else {
-      all.slice(0, 6).forEach(function (it) {
-        var r = rarityOf(it);
-        var isCt = (ctUid && uidOf(it) === ctUid);
-        left += '<div class="bagov-kv" style="cursor:pointer" data-bagov-pick="' + esc(uidOf(it)) + '">' +
-          '<span style="color:' + r.color + ';overflow:hidden;text-overflow:ellipsis">' +
-            esc(String(it.name || '').slice(0, 10)) + (isCt ? ' 🎯' : '') + '</span>' +
-          '<span style="color:#fcd34d">' + fmt(ACC.itemPower(it)) + '</span></div>';
-      });
-    }
-    left += '</div>';
+    /* ⭐ 改用帶稀有度顏色邊框的卡片 */
+    left += bagPickSectionHtml();
     /* 右欄：精隨格（標題列 + 頁籤列 + 格，結構等同通貨倉庫） */
     var right = '<div class="bagov-charbar">' + charBarHtml() + '</div>';
     right += essenceStashHtml();
@@ -57159,7 +57217,7 @@ window.HY.PoeItemIcons = {
   function uidOfEl(el) {
     if (!el || !el.getAttribute) return '';
     return el.getAttribute('data-uid') || el.getAttribute('data-eq-uid') ||
-           el.getAttribute('data-item-uid') || '';
+           el.getAttribute('data-item-uid') || el.getAttribute('data-bagov-pick') || '';
   }
   function note(kind, text) {
     st.noMatch++;
@@ -57194,6 +57252,23 @@ window.HY.PoeItemIcons = {
     var tpl = tplFor(hit.it);
     if (!tpl) { note('slot', hit.it.name); return false; }
     if (!put(host, tpl, PX_SLOT)) return false;
+    st.art++;
+    if (hit.via === 'uid') st.byUid++; else st.byName++;
+    return true;
+  }
+  /* ⭐ 倉庫頁「行囊可改造」卡片：圖示注入到 .pk-img 容器
+     （容器本身有固定高度，圖示不會把卡片撐開） */
+  function decoratePickCard(el) {
+    var host = el.querySelector('.pk-img');
+    if (!host) return false;
+    if (host.querySelector('img.poe-item-icon')) return false;
+    st.pick = (st.pick || 0) + 1;
+    var nm = el.querySelector('.pk-name');
+    var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
+    if (!hit) { note('pick', nm ? nm.textContent : el.textContent); return false; }
+    var tpl = tplFor(hit.it);
+    if (!tpl) { note('pick', hit.it.name); return false; }
+    if (!put(host, tpl, 46)) return false;
     st.art++;
     if (hit.via === 'uid') st.byUid++; else st.byName++;
     return true;
@@ -57281,6 +57356,8 @@ window.HY.PoeItemIcons = {
         for (j = 0; j < els.length; j++) { if (decorateCell(els[j])) n++; }
         try { els = r.querySelectorAll('.bagov-slot'); } catch (e) { els = []; }
         for (j = 0; j < els.length; j++) { if (decorateSlot(els[j])) n++; }
+        try { els = r.querySelectorAll('.bagov-pickcard'); } catch (e) { els = []; }
+        for (j = 0; j < els.length; j++) { if (decoratePickCard(els[j])) n++; }
         try { els = r.querySelectorAll('.card-item'); } catch (e) { els = []; }
         for (j = 0; j < els.length; j++) { if (decorateCard(els[j])) n++; }
         if (r.id === 'craft-item-preview' && decoratePreview(r)) n++;
