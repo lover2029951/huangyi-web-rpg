@@ -37846,6 +37846,29 @@ window.HY = window.HY || {};
 .bagov-morb.m-magic{border-color:#3b9bea;box-shadow:0 0 8px rgba(96,165,250,.55),inset 0 0 10px rgba(96,165,250,.18);}
 .bagov-morb.m-rare{border-color:#f0b53c;box-shadow:0 0 11px rgba(251,191,36,.7),inset 0 0 10px rgba(251,191,36,.22);}
 
+/* ⭐ 地圖堆疊：
+   同階同名的白圖合成一格，右下角顯示 ×N。
+   堆疊格加一圈虛線外框＋右上角斜角亮帶，讓玩家一眼看出
+   「這格代表一疊，不是單張」。 */
+.bagov-morb.stacked{
+ border-style:solid;
+ box-shadow:3px 3px 0 -1px #0b141d, 3px 3px 0 1px #3a4453,
+            0 0 0 1px rgba(148,163,184,.35);
+}
+.bagov-morb.stacked::before{
+ content:'';position:absolute;right:-1px;top:-1px;width:14px;height:14px;
+ background:linear-gradient(225deg,rgba(148,163,184,.55) 0%,rgba(148,163,184,.55) 48%,transparent 50%);
+ border-top-right-radius:2px;pointer-events:none;
+}
+.bagov-morb .mq{
+ position:absolute;left:2px;bottom:1px;
+ font-size:.72rem;font-weight:bold;line-height:1;
+ color:#fff;background:#1d4ed8;border:1px solid #60a5fa;border-radius:4px;
+ padding:1px 4px;box-shadow:0 1px 4px rgba(0,0,0,.75);
+ text-shadow:0 1px 2px rgba(0,0,0,.8);
+}
+.bagov-morb.stacked .mc{right:3px;bottom:19px;}
+
 .bagov-mgrid .mg-tier{margin-bottom:10px;}
 /* ⭐ T1~T16 篩選列 */
 .bagov-mgrid .mg-filter{display:flex;align-items:center;gap:3px;flex-wrap:wrap;
@@ -40352,7 +40375,8 @@ window.HY = window.HY || {};
   /* 供其他模組（輿圖面板）共用同一份圖示對應 */
   window.HY.mapIconSrc = mapIconSrc;
 
-  /** 地圖格子（單一 map 卡片，做成珠寶 orb 樣式） */
+  /** 地圖格子（單一 map 卡片，做成珠寶 orb 樣式）
+      ⭐ 支援堆疊：opts.count > 1 時顯示數量角標，並帶 data-map-stack 屬性 */
   function mapOrbHtml(m, opts) {
     var o = opts || {};
     var rarity = mapSys() ? mapSys().mapRarity(m) : 'normal';
@@ -40360,8 +40384,13 @@ window.HY = window.HY || {};
     var selCls = o.selected ? ' sel' : '';
     var modN = (m.mods || []).length;
     var icon = mapIconSrc(m);
+    var cnt = num(o.count, 1);
+    var stackCls = cnt > 1 ? ' stacked' : '';
 
-    return '<button class="bagov-morb ' + rarCls + selCls + '" data-map="' + esc(m.uid) + '">' +
+    return '<button class="bagov-morb ' + rarCls + selCls + stackCls + '"' +
+      ' data-map="' + esc(m.uid) + '"' +
+      (cnt > 1 ? ' data-map-stack="' + cnt + '"' : '') +
+      (cnt > 1 ? ' title="' + esc(String(m.name || '地圖')) + ' ×' + cnt + '（點擊取出 1 張）"' : '') + '>' +
       '<span class="mt">T' + m.tier + '</span>' +
       '<span class="mi"><img src="' + esc(icon) + '" alt="" ' +
         'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">' +
@@ -40369,7 +40398,64 @@ window.HY = window.HY || {};
       '<span class="mn">' + esc(String(m.name || '地圖').slice(0, 5)) + '</span>' +
       '<span class="mc">' + modN + '</span>' +
       '<span class="ml">Lv.' + m.level + '</span>' +
+      (cnt > 1 ? '<span class="mq">×' + cnt + '</span>' : '') +
       '</button>';
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     ⭐ 地圖堆疊
+     ──────────────────────────────────────────────────────────────
+     問題：白圖（mods.length === 0）每次掉落都是一個獨立 uid，
+     同一個 T 階可能會累積十幾二十張，全部鋪在網格上非常雜亂，
+     而且根本分不出哪張是哪張（白圖除了 mobCount 之外完全一樣）。
+
+     解法：把「相同」的白圖合成一格並顯示 ×N。
+     判定「相同」的條件：
+       · 稀有度都是 normal（沒有詞綴）
+       · tier 相同
+
+     ⚠️ 為什麼連 name 都不比：
+       atlasRollMap() 每產一張圖就用 atlasMapName(t) 重新隨機抽名字，
+       所以同一張 T1 可能叫「幽暗林道」也可能叫「枯骨墓園」。
+       若把 name 納入判定，15 張 T1 白圖會被拆成 4~6 堆
+       （實測 42 張只併成 8 堆，仍然雜亂）。
+
+       對玩家來說，「T1 白圖」在功能上完全等價 ——
+       入場後的地形、怪物、掉落都一樣，只有名字不同。
+       POE 本身也是這樣處理：同階白圖就是一疊，不分名字。
+       因此只按 tier 合併，卡片以「該堆疊的第一張」的名字為代表。
+     ══════════════════════════════════════════════════════════════ */
+  /** 地圖的堆疊鍵（稀有度不是 normal 就回 null，代表不參與堆疊） */
+  function mapStackKey(m) {
+    if (!m) return null;
+    var sys = mapSys();
+    var rarity = sys ? sys.mapRarity(m) : ((m.mods || []).length ? 'x' : 'normal');
+    if (rarity !== 'normal') return null;
+    return String(num(m.tier, 1));
+  }
+
+  /** 把地圖清單壓成堆疊群組
+      @returns [{ key, map, uids:[uid...], count }]（保持原本排序） */
+  function groupMaps(maps) {
+    var groups = [];
+    var idxByKey = {};
+    (maps || []).forEach(function (m) {
+      var key = mapStackKey(m);
+      if (key === null) {
+        /* 藍圖／黃圖：各自獨立一格 */
+        groups.push({ key: null, map: m, uids: [m.uid], count: 1 });
+        return;
+      }
+      if (idxByKey[key] !== undefined) {
+        var g = groups[idxByKey[key]];
+        g.uids.push(m.uid);
+        g.count += 1;
+      } else {
+        idxByKey[key] = groups.length;
+        groups.push({ key: key, map: m, uids: [m.uid], count: 1 });
+      }
+    });
+    return groups;
   }
 
   /** 左欄：地圖改造通貨清單（仿珠寶改造的直行佈局：圖示 + 名稱 + 說明 + 持有量） */
@@ -40554,15 +40640,21 @@ window.HY = window.HY || {};
 
     tiers.forEach(function (t) {
       var list = byTier[t];
+      /* ⭐ 同一階內先把白圖壓成堆疊，再算「可合成」——
+         白圖堆疊後仍以「張數」計算合成材料 */
+      var groups = groupMaps(list);
       var canCmb = list.length >= need;
       h += '<div class="mg-tier">' +
         '<div class="mg-ttl">T' + t + '<span>(' + list.length + ')</span>' +
         (canCmb ? '<span class="mg-ok">✔ 可合成 T' + (t + 1) + '</span>' : '') +
         '</div><div class="fg-cells" style="grid-template-columns:repeat(6,minmax(0,1fr))">';
-      list.forEach(function (m) {
-        h += mapOrbHtml(m, { selected: (m.uid === _mapSelUid) });
+      groups.forEach(function (g) {
+        h += mapOrbHtml(g.map, {
+          selected: (g.uids.indexOf(_mapSelUid) !== -1),
+          count: g.count
+        });
       });
-      var rem = list.length % 6;
+      var rem = groups.length % 6;
       if (rem !== 0) for (var k = 0; k < 6 - rem; k++) h += '<div class="bagov-morb empty"></div>';
       h += '</div></div>';
     });
@@ -60248,19 +60340,31 @@ window.HY.PoeStats = {
   window.HY.PoePlus.ready = true;
   window.HY.PoePlus.apply = apply;
   window.HY.PoePlus.hideButtons = hideButtons;
-  window.HY.PoePlus.families = PRE.length + SUF.length;
+  /* ⭐ 詞綴組數改讀 PoeAffixMap（舊的 PRE/SUF 表已於 v46 移除，直接引用會 ReferenceError） */
+  window.HY.PoePlus.families = (function () {
+    var M = window.HY.PoeAffixMap;
+    if (!M || typeof M.stats !== 'function') return 0;
+    var s = M.stats();
+    return num(s.prefixGroups, 0) + num(s.suffixGroups, 0);
+  })();
   window.HY.PoePlus.stats = function () {
     var d = D();
+    var M = window.HY.PoeAffixMap;
+    var ms = (M && typeof M.stats === 'function') ? M.stats() : {};
     return {
       version: 5,
+      /* 舊池已停用，長度固定 0；真正的詞綴來源在 affixMap */
       prefixes: Array.isArray(d.POE_PREFIXES) ? d.POE_PREFIXES.length : -1,
       suffixes: Array.isArray(d.POE_SUFFIXES) ? d.POE_SUFFIXES.length : -1,
+      affixMapPrefixes: num(ms.prefixGroups, 0),
+      affixMapSuffixes: num(ms.suffixGroups, 0),
+      affixMapFamilies: num(ms.total, 0),
       addedPrefixes: report.pre,
       addedSuffixes: report.suf,
       rareNames: [Array.isArray(d.POE_RARE_NAME_PREFIX) ? d.POE_RARE_NAME_PREFIX.length : -1,
                   Array.isArray(d.POE_RARE_NAME_SUFFIX) ? d.POE_RARE_NAME_SUFFIX.length : -1],
       vaal: Array.isArray(d.VAAL_IMPLICITS) ? d.VAAL_IMPLICITS.length : -1,
-      families: PRE.length + SUF.length,
+      families: num(ms.prefixGroups, 0) + num(ms.suffixGroups, 0),
       touchesCharacterPanel: false,
       cleanedLeftovers: cleanupCount,
       buttonsHidden: !!document.getElementById('poe-plus-css')
