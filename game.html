@@ -61597,6 +61597,12 @@ window.HY = window.HY || {};
             var equipSys = this.app.equipSys;
             var poeSys = this.app.poeSys;
             var self = this;
+            /* ⭐ 幂等防護：這個方法會被建構子呼叫，也可能被外部重複觸發。
+               若重複執行，origGetItemTotal 會綁到「已包裝的」函式上，
+               變成雙重包裝 → 攻速被重複計算（+20% 變成 +44%）。
+               因此用一次性標記鎖住。 */
+            if (charSys.__dexHooked) return;
+            charSys.__dexHooked = true;
             // 清除舊存檔的 dex 殘留
             this.purgeDexRemnants();
             // ① 包裝 poeSys.getItemTotalBonus（補上 atkSpd 欄位）
@@ -61644,8 +61650,9 @@ window.HY = window.HY || {};
                 // ③ 裝備說明補上「攻速+」
                 // ⭐ 已停用：formatBonusText 現在會自己把 atkSpd 之類的擴充屬性
                 //    顯示成「攻擊速度+15%」，這層包裝會變成重複的「攻速+15」尾巴。
-                //    （保留 origFormatBonus 變數只是為了不破壞後續參照。）
-                void origFormatBonus;
+                //    ⚠ 這裡不可留任何 origFormatBonus 參照 —— 該變數的宣告已移除，
+                //    殘留的 void origFormatBonus 會直接拋 ReferenceError，
+                //    導致整個 DexteritySpeedSystem 建構中斷（攻速加成為 0）。
             }
             // ④ ⭐ 核心：包裝 getDerivedStatsForChar，計算出手攻速
             var origGetDerived = charSys.getDerivedStatsForChar.bind(charSys);
