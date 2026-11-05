@@ -50926,6 +50926,8 @@ window.HY = window.HY || {};
     btn.id = TAB_ID;
     btn.textContent = '🔗 系統連動';
     btn.title = '全系統連動總覽（原版玩法對照／系統註冊表／效果聚合／交叉關聯網）';
+    /* ⭐ 依使用者要求隱藏標籤（功能仍可用，Console 執行對應函式開啟） */
+    btn.style.display = 'none';
     btn.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation(); toggleModal();
     }, true);
@@ -53113,8 +53115,8 @@ window.HY = window.HY || {};
     FALLBACK_SEL: '#top-bar',
     /* 固定順序（左→右）。未列出的會接在最後，並保持原本相對順序 */
     ORDER: ['offline', 'adaptive', 'font', 'town', 'friend', 'bag', 'link', 'save', 'cheat'],
-    /* 隱藏清單 */
-    HIDDEN: {},
+    /* 隱藏清單（⭐ 作弊面板 / 系統連動 依使用者要求隱藏） */
+    HIDDEN: { cheat: 1, link: 1 },
     /* 統一尺寸 */
     BTN_HEIGHT: 30,
     BTN_PAD: 11,
@@ -64522,6 +64524,8 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
             btn.style.borderColor = '#f472b6';
             btn.style.color = '#f9a8d4';
             btn.textContent = '🛠️ 作弊面板';
+            /* ⭐ 依使用者要求隱藏標籤（功能仍可用，Console 執行 HY.game.cheatPanel.open()） */
+            btn.style.display = 'none';
             var self = this;
             btn.addEventListener('click', function () { self.open(); });
             // 重啟鈕已移至頂部最左，故直接附加至系統控制列尾端
