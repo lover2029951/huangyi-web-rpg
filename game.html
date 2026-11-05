@@ -803,7 +803,7 @@ details > summary::marker {
                     <button class="tab-btn active" data-tab="tab-explore">🌀 時空探索(Lv.300)</button>
                     <button class="tab-btn" data-tab="tab-party">👥 角色 & 組隊(5人)</button>
                     <button class="tab-btn" data-tab="tab-martial">☯️ 武學心法</button>
-                    <button class="tab-btn" data-tab="tab-sect">⛩️ 十五大門派</button>
+                    <button class="tab-btn" data-tab="tab-sect">⛩️ 門派</button>
                     <button class="tab-btn tab-stash" data-tab="tab-inventory">🗄️ 倉庫</button>
                     <!-- ⭐ 已移除 (丹藥) 字樣 -->
                     <button class="tab-btn" data-tab="tab-blackmarket">🏪 時空黑市</button>
@@ -1099,7 +1099,7 @@ details > summary::marker {
                 </div>
 
                 <div id="tab-sect" class="tab-content">
-                    <h3>⛩️ 黃易武學十五大宗派（各派擁有獨一無二的「專屬門派特色」，並以 10 式外功、5 階心法、3 階身法對應強化！）</h3>
+                    <h3>⛩️ 黃易武學門派（各派擁有獨一無二的「專屬門派特色」，並以 10 式外功、5 階心法、3 階身法對應強化！）</h3>
                     <div id="sect-list" class="card-list"></div>
                 </div>
 
@@ -3790,7 +3790,7 @@ window.HY = window.HY || {};
       }
     },
     {
-      id: 'sect', name: '門派系統', icon: '⛩️', desc: '十五大門派與特色。',
+      id: 'sect', name: '門派系統', icon: '⛩️', desc: '各大門派與獨佔特色機制。',
       probe: ['HY.game.sectFeatureSys', 'HY.game.sectSys', 'HY.SectFeatureSystem'],
       caps: ['data'],
       build: function (o) {
@@ -5126,7 +5126,7 @@ window.HY.Data = window.HY.Data || {};
 
 /* ===== 15 / 194 : sectData.js ===== */
 // js/sectData.js  (v39)
-// 15 大門派：各自擁有獨一無二的「專屬門派特色」機制
+// 各大門派：各自擁有獨一無二的「專屬門派特色」機制
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
 (function () {
@@ -5445,6 +5445,70 @@ window.HY.Data = window.HY.Data || {};
             mechanicName: '護體',
             signatureSkill: 'guixian_art_1',
             skillTree: tree('guixian')
+        },
+
+        /* ── 🗡️ 萬劍山莊 — 萬劍歸宗（圖騰流）── */
+        wanjian: {
+            id: 'wanjian', name: '萬劍山莊', reqLv: 10,
+            desc: '【萬劍歸宗以劍為陣】以劍氣化形、御劍成陣的劍道聖地，十式萬劍訣與萬劍歸宗，佈下劍陣圖騰群起殺敵。',
+            bonus: { atk: 68, hit: 20, crit: 12 },
+            feature: {
+                id: 'swordarray', name: '萬劍歸宗', icon: '🗡️', color: '#60a5fa', maxStack: 3,
+                shortDesc: '佈下劍陣圖騰，每回合自動攻擊',
+                desc: '開場自動佈下 1 座「劍陣圖騰」（上限 3 座），每座圖騰在自身出手後獨立攻擊敵人；弩炮型圖騰可連射 3 段。圖騰存在時每個使自身攻擊提升 5%。\n【機制連動】劍陣共用天賦樹的 Totem 系統——所有「increased Totem Damage」「+1 to maximum number of Summoned Totems」「increased Totem Duration」等 58 條圖騰天賦全部生效。'
+            },
+            mechanic: 'totem',
+            mechanicName: '圖騰',
+            signatureSkill: 'wanjian_art_1',
+            skillTree: tree('wanjian')
+        },
+
+        /* ── 🕷️ 陰癸派 — 天魔解體（詛咒流）── */
+        yingui: {
+            id: 'yingui', name: '陰癸派', reqLv: 10,
+            desc: '【天魔解體魅惑眾生】魔門兩派六道之首，以天魔大法操控人心，十式天魔秘與解體訣，以詛咒削弱敵人於無形。',
+            bonus: { atk: 55, maxMp: 45, crit: 15, critRes: 10 },
+            feature: {
+                id: 'cursefield', name: '天魔解體', icon: '🕷️', color: '#c084fc', maxStack: 2,
+                shortDesc: '對敵人施放詛咒，削弱其攻防',
+                desc: '對當前敵人自動施放 1 道「天魔詛咒」（可同時存在 2 道）：\n· 脆弱 → 目標受到傷害 +15%\n· 衰弱 → 目標攻擊 -20%\n· 絕望 → 目標防禦 -25%\n【機制連動】詛咒共用天賦樹的 Curse 系統——「increased Effect of your Curses」「increased Curse Duration」等 51 條詛咒天賦全部生效。'
+            },
+            mechanic: 'curse',
+            mechanicName: '詛咒',
+            signatureSkill: 'yingui_art_1',
+            skillTree: tree('yingui')
+        },
+
+        /* ── 🔯 真言宗 — 梵音烙印（烙印流）── */
+        zhenyan: {
+            id: 'zhenyan', name: '真言宗', reqLv: 10,
+            desc: '【梵音繚繞烙印加身】西域密宗佛門，以真言咒語將佛力銘刻於敵身，十式真言咒與大日如來印，以烙印持續灼燒。',
+            bonus: { atk: 52, maxHp: 260, hit: 18, critRes: 12 },
+            feature: {
+                id: 'brandmark', name: '梵音烙印', icon: '🔯', color: '#fbbf24', maxStack: 3,
+                shortDesc: '烙印附著敵人，持續灼燒並自動跳轉',
+                desc: '每次出手後自動在敵人身上附著 1 道「梵音烙印」（上限 3 道），每道烙印每回合造成 0.25 倍攻擊力的灼燒傷害，持續 8 回合；目標死亡時烙印會自動跳轉至其他存活敵人。\n【機制連動】烙印共用天賦樹的 Brand 系統——「increased Brand Damage」「Brand Skills have increased Duration」「Brand Recall」等 22 條烙印天賦全部生效。'
+            },
+            mechanic: 'brand',
+            mechanicName: '烙印',
+            signatureSkill: 'zhenyan_art_1',
+            skillTree: tree('zhenyan')
+        },
+
+        /* ── 🔗 淨念禪院 — 心心相印（連結流）── */
+        jingnian: {
+            id: 'jingnian', name: '淨念禪院', reqLv: 10,
+            desc: '【心心相印同氣連枝】以禪心感應眾生的清淨佛門，十式淨念禪功與心心相印，與隊友建立連結共享攻防。',
+            bonus: { maxHp: 340, def: 48, maxMp: 38, critRes: 15 },
+            feature: {
+                id: 'soulbond', name: '心心相印', icon: '🔗', color: '#34d399', maxStack: 1,
+                shortDesc: '與隊友建立連結，共享攻防增益',
+                desc: '開場自動與最近的一名隊友建立「心心相印」連結（無隊友則連結自身），持續 8 回合；連結期間自身攻擊 +12%、受到傷害 -6%，隊友同步獲得一半效果。連結結束後自動重新建立。\n【機制連動】連結共用天賦樹的 Link 系統——所有 Link Skill 相關的 16 條天賦（持續時間、效果強化）全部生效。'
+            },
+            mechanic: 'link',
+            mechanicName: '連結',
+            signatureSkill: 'jingnian_art_1',
+            skillTree: tree('jingnian')
         }
     };
 
@@ -5456,6 +5520,7 @@ window.HY.Data = window.HY.Data || {};
     Data.SECT_MECHANIC_TAGS = {
         wudu: '召喚', shenji: '地雷', jiguan: '陷阱', xueyu: '怒氣',
         yaowang: '光環', guixian: '護體',
+        wanjian: '圖騰', yingui: '詛咒', zhenyan: '烙印', jingnian: '連結',
         tangmen: '機關', guigu: '陣法', taohuadao: '五行',
         shaolin: '反震', mingjiao: '點燃', gaibang: '連擊',
         wudang: '反擊', emei: '治療', xingxiu: '劇毒',
@@ -5467,7 +5532,7 @@ window.HY.Data = window.HY.Data || {};
 
 /* ===== 17 / 194 : externalArtsData.js ===== */
 // js/externalArtsData.js  (v32)
-// 15 大門派 × 10 式外功 = 150 招，每一式皆與該門派「專屬特色」對應
+// 每門派 × 10 式外功，每一式皆與該門派「專屬特色」對應
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
 (function () {
@@ -5826,12 +5891,65 @@ window.HY.Data = window.HY.Data || {};
             ['不滅金身・金剛不壞', '金剛不壞，萬法不侵。', { fortify: 3, pen: 0.44, critRes: 16, heal: 0.14 }],
             ['鬼仙教主・陰煞化罡', '陰煞化罡，護體圓滿。', { fortify: 4, pen: 0.46, crit: 28 }],
             ['鬼仙鎮派・不滅金身大成', '鬼仙教鎮派絕學，金身大成。', { fortify: 5, aoe: true, pen: 0.52, critRes: 20 }]
+        ],
+        /* 🗡️ 萬劍山莊 — 萬劍歸宗（圖騰流） */
+        wanjian: [
+            ['萬劍訣・一劍西來', '一劍西來，劍氣初凝。', { totem: 1, pen: 0.24, crit: 12 }],
+            ['萬劍訣・劍氣縱橫', '劍氣縱橫，遍佈四方。', { totem: 1, aoe: true, pen: 0.30 }],
+            ['萬劍歸宗・百劍齊發', '百劍齊發，劍陣初成。', { totem: 2, aoe: true, pen: 0.36, crit: 18 }],
+            ['萬劍訣・御劍術', '御劍千里，取敵首級。', { totem: 2, pen: 0.32, hit: 30 }],
+            ['劍心通明・萬劍朝宗', '劍心通明，萬劍朝宗。', { totem: 2, pen: 0.36, crit: 20 }],
+            ['萬劍歸宗・劍陣天羅', '劍陣天羅，密不透風。', { totem: 3, aoe: true, pen: 0.40, crit: 22 }],
+            ['萬劍訣・劍破蒼穹', '一劍破空，蒼穹為裂。', { totem: 3, pen: 0.42, crit: 26 }],
+            ['萬劍山莊・萬劍齊鳴', '萬劍齊鳴，聲震九霄。', { totem: 3, pen: 0.44, hit: 34 }],
+            ['劍聖・萬劍歸一', '萬劍歸一，劍聖之境。', { totem: 4, pen: 0.46, crit: 30 }],
+            ['萬劍鎮派・萬劍歸宗', '萬劍山莊鎮派絕學，萬劍歸宗。', { totem: 5, aoe: true, pen: 0.52, crit: 32 }]
+        ],
+        /* 🕷️ 陰癸派 — 天魔解體（詛咒流） */
+        yingui: [
+            ['天魔秘・魅影', '天魔魅影，亂敵心神。', { curse: 1, pen: 0.26, crit: 14 }],
+            ['天魔解體・蝕心', '解體蝕心，削弱敵志。', { curse: 1, pen: 0.32, heal: 0.10 }],
+            ['天魔大法・攝魂', '天魔攝魂，敵心動搖。', { curse: 2, aoe: true, pen: 0.38, crit: 20 }],
+            ['天魔秘・鎖魂印', '鎖魂之印，束縛其身。', { curse: 2, pen: 0.32, crit: 18 }],
+            ['陰癸派・天魔舞', '天魔亂舞，迷離莫測。', { curse: 2, pen: 0.36, crit: 20 }],
+            ['天魔解體・萬魔朝宗', '萬魔朝宗，邪氣沖天。', { curse: 3, aoe: true, pen: 0.40, crit: 22 }],
+            ['天魔大法・解體訣', '解體訣出，敵力盡失。', { curse: 3, pen: 0.42, crit: 26 }],
+            ['陰癸派・天魔真身', '天魔真身現世。', { curse: 3, pen: 0.44, crit: 28, heal: 0.14 }],
+            ['陰癸派主・天魔降世', '天魔降世，眾生沉淪。', { curse: 4, pen: 0.46, crit: 30 }],
+            ['陰癸鎮派・天魔解體大法', '陰癸派鎮派絕學，天魔解體。', { curse: 5, aoe: true, pen: 0.52, crit: 32 }]
+        ],
+        /* 🔯 真言宗 — 梵音烙印（烙印流） */
+        zhenyan: [
+            ['真言咒・唵', '一字真言，佛力初印。', { brand: 1, pen: 0.24, critRes: 4 }],
+            ['真言咒・嘛呢', '嘛呢真言，烙印加身。', { brand: 1, pen: 0.30, heal: 0.10 }],
+            ['梵音咒・叭咪', '梵音繚繞，印記灼燒。', { brand: 2, aoe: true, pen: 0.36, crit: 16 }],
+            ['真言咒・吽', '吽字真言，佛力貫體。', { brand: 2, pen: 0.32, crit: 18 }],
+            ['大日如來印・金剛', '金剛印成，萬法不侵。', { brand: 2, pen: 0.36, critRes: 12 }],
+            ['真言宗・六字真言', '六字真言齊出。', { brand: 3, aoe: true, pen: 0.40, crit: 20 }],
+            ['梵音烙印・千葉蓮', '千葉蓮開，烙印遍地。', { brand: 3, pen: 0.42, crit: 24 }],
+            ['真言宗・大日如來神咒', '大日如來神咒加持。', { brand: 3, pen: 0.44, critRes: 16, heal: 0.12 }],
+            ['真言宗主・萬字真言', '萬字真言，佛光普照。', { brand: 4, pen: 0.46, crit: 28 }],
+            ['真言鎮派・大日如來印', '真言宗鎮派絕學，大日如來印。', { brand: 5, aoe: true, pen: 0.52, critRes: 20 }]
+        ],
+        /* 🔗 淨念禪院 — 心心相印（連結流） */
+        jingnian: [
+            ['淨念禪功・一念', '一念清淨，禪心初定。', { link: 1, heal: 0.12, critRes: 5 }],
+            ['心心相印・感應', '心心感應，同氣連枝。', { link: 1, heal: 0.18, mp: 30 }],
+            ['淨念禪功・無相', '無相禪功，普渡眾生。', { link: 2, aoe: true, heal: 0.20 }],
+            ['心心相印・同體', '同體大悲，共享苦樂。', { link: 2, heal: 0.22, critRes: 8 }],
+            ['淨念禪院・明心見性', '明心見性，禪心通明。', { link: 2, heal: 0.20, critRes: 10 }],
+            ['心心相印・萬法一心', '萬法一心，眾志成城。', { link: 3, aoe: true, heal: 0.24 }],
+            ['淨念禪功・涅槃寂靜', '涅槃寂靜，超脫生死。', { link: 3, heal: 0.26, critRes: 12 }],
+            ['心心相印・同證菩提', '同證菩提，共赴大道。', { link: 3, heal: 0.28, pen: 0.34 }],
+            ['淨念禪院・萬佛同心', '萬佛同心，慈悲無量。', { link: 4, heal: 0.32, critRes: 16 }],
+            ['淨念鎮派・心心相印大成', '淨念禪院鎮派絕學，心心相印。', { link: 5, aoe: true, heal: 0.35 }]
         ]
     };
 
     var SECT_DISPLAY = {
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
-        yaowang: '藥王谷', guixian: '鬼仙教'
+        yaowang: '藥王谷', guixian: '鬼仙教',
+        wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院'
     };
 
     Object.keys(SECT_ARTS).forEach(function (sectId) {
@@ -5842,7 +5960,8 @@ window.HY.Data = window.HY.Data || {};
             var id = sectId + '_art_' + (i + 1);
             var isUltimate = (i === 9);
             var feat = {};
-            ['swarm', 'minefield', 'trapweb', 'rage', 'aura', 'fortify'].forEach(function (k) {
+            ['swarm', 'minefield', 'trapweb', 'rage', 'aura', 'fortify',
+             'totem', 'curse', 'brand', 'link'].forEach(function (k) {
                 if (m[k] !== undefined) feat[k] = m[k];
             });
             /* 若該門派資料已存在則不覆寫，避免重複載入時蓋掉既有招式 */
@@ -5873,7 +5992,7 @@ window.HY.Data = window.HY.Data || {};
 
 /* ===== 19 / 194 : xinfaData.js ===== */
 // js/xinfaData.js  (v39)
-// 15 大門派 × 5 階心法 = 75 門
+// 每門派 × 5 階心法
 //   ⭐ 內力上限相關屬性統一降低 500%（÷6），數值直接寫入
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
@@ -6126,12 +6245,65 @@ window.HY.Data = window.HY.Data || {};
                 { maxHp: 700, def: 118, critRes: 15 }, { max: 5, perStack: 0.002 }, '護體上限 +5、每層減傷 +0.2%'],
             ['鬼仙鎮派・不滅金身真經', '鬼仙教至高總綱，金身大成。',
                 { maxHp: 980, def: 172, critRes: 22 }, { max: 6, perStack: 0.003 }, '護體上限 +6、每層減傷 +0.3%']
+        ],
+        /* 🗡️ 萬劍山莊 — 圖騰：數量 / 威力 */
+        wanjian: [
+            ['萬劍訣心法', '萬劍訣入門，劍氣初凝。',
+                { atk: 32, hit: 4, crit: 1 }, { max: 1 }, '圖騰上限 +1'],
+            ['萬劍歸宗心法', '萬劍歸宗，劍陣漸成。',
+                { atk: 60, hit: 8, crit: 2 }, { max: 1, dmg: 0.04 }, '圖騰上限 +1、圖騰傷害 +4%'],
+            ['萬劍歸一心法', '萬劍歸一，劍心通明。',
+                { atk: 96, hit: 13, crit: 3 }, { max: 1, dmg: 0.06, duration: 2 }, '圖騰上限 +1、傷害 +6%、持續 +2 回合'],
+            ['劍聖心訣', '劍聖之境，萬劍聽令。',
+                { atk: 142, hit: 19, crit: 5 }, { max: 2, dmg: 0.08, duration: 3 }, '圖騰上限 +2、傷害 +8%、持續 +3 回合'],
+            ['萬劍山莊鎮派・萬劍歸宗真經', '萬劍山莊至高總綱。',
+                { atk: 200, hit: 26, crit: 7 }, { max: 3, dmg: 0.10, duration: 5 }, '圖騰上限 +3、傷害 +10%、持續 +5 回合']
+        ],
+        /* 🕷️ 陰癸派 — 詛咒：數量 / 強度 */
+        yingui: [
+            ['天魔秘典', '天魔秘典入門，魅惑初成。',
+                { atk: 26, maxMp: 10, crit: 2 }, { max: 1 }, '詛咒數量 +1'],
+            ['天魔解體心法', '天魔解體，詛咒漸深。',
+                { atk: 52, maxMp: 20, crit: 3 }, { max: 1, cursePct: 5 }, '詛咒數量 +1、詛咒強度 +5%'],
+            ['天魔大法・攝魂篇', '天魔攝魂，敵志動搖。',
+                { atk: 84, maxMp: 34, crit: 5 }, { max: 1, cursePct: 8, duration: 2 }, '詛咒 +1、強度 +8%、持續 +2 回合'],
+            ['陰癸派・天魔真身訣', '天魔真身，邪氣沖天。',
+                { atk: 124, maxMp: 52, crit: 7 }, { max: 2, cursePct: 12, duration: 3 }, '詛咒 +2、強度 +12%、持續 +3 回合'],
+            ['陰癸鎮派・天魔解體大法', '陰癸派至高總綱。',
+                { atk: 176, maxMp: 74, crit: 10 }, { max: 3, cursePct: 18, duration: 5 }, '詛咒 +3、強度 +18%、持續 +5 回合']
+        ],
+        /* 🔯 真言宗 — 烙印：數量 / 威力 */
+        zhenyan: [
+            ['真言咒心法', '真言咒入門，佛力初印。',
+                { atk: 30, maxHp: 80, critRes: 2 }, { max: 1 }, '烙印上限 +1'],
+            ['梵音咒心法', '梵音繚繞，烙印漸深。',
+                { atk: 56, maxHp: 160, critRes: 4 }, { max: 1, dmg: 0.04 }, '烙印上限 +1、烙印傷害 +4%'],
+            ['六字真言心法', '六字真言，佛光普照。',
+                { atk: 90, maxHp: 260, critRes: 6 }, { max: 1, dmg: 0.06, duration: 2 }, '烙印 +1、傷害 +6%、持續 +2 回合'],
+            ['大日如來心法', '大日如來，萬法歸一。',
+                { atk: 134, maxHp: 380, critRes: 9 }, { max: 2, dmg: 0.08, duration: 3 }, '烙印 +2、傷害 +8%、持續 +3 回合'],
+            ['真言鎮派・大日如來真經', '真言宗至高總綱。',
+                { atk: 190, maxHp: 540, critRes: 13 }, { max: 3, dmg: 0.10, duration: 5 }, '烙印 +3、傷害 +10%、持續 +5 回合']
+        ],
+        /* 🔗 淨念禪院 — 連結：效果 / 持續 */
+        jingnian: [
+            ['淨念禪功', '淨念禪功入門，禪心初定。',
+                { maxHp: 110, def: 16, maxMp: 8 }, { duration: 2 }, '連結持續 +2 回合'],
+            ['心心相印心法', '心心相印，同氣連枝。',
+                { maxHp: 230, def: 34, maxMp: 16 }, { linkEffectPct: 4, duration: 3 }, '連結效果 +4%、持續 +3 回合'],
+            ['同體大悲心法', '同體大悲，共享苦樂。',
+                { maxHp: 370, def: 58, maxMp: 28, critRes: 4 }, { linkEffectPct: 8, duration: 4 }, '連結效果 +8%、持續 +4 回合'],
+            ['明心見性心法', '明心見性，禪心通明。',
+                { maxHp: 540, def: 88, maxMp: 44, critRes: 8 }, { linkEffectPct: 14, duration: 6 }, '連結效果 +14%、持續 +6 回合'],
+            ['淨念鎮派・心心相印真經', '淨念禪院至高總綱。',
+                { maxHp: 760, def: 128, maxMp: 64, critRes: 13 }, { linkEffectPct: 22, duration: 8 }, '連結效果 +22%、持續 +8 回合']
         ]
     };
 
     var SECT_DISPLAY = {
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
-        yaowang: '藥王谷', guixian: '鬼仙教'
+        yaowang: '藥王谷', guixian: '鬼仙教',
+        wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院'
     };
 
     Object.keys(SECT_XINFA).forEach(function (sectId) {
@@ -6166,7 +6338,7 @@ window.HY.Data = window.HY.Data || {};
 
 /* ===== 21 / 194 : qinggongData.js ===== */
 // js/qinggongData.js  (v40)
-// 4 門江湖共通輕功 + 15 大門派 × 3 門專屬身法 = 49 門
+// 江湖共通輕功 + 每門派 × 3 門專屬身法
 //
 // v40 修正（收尾整理）：
 //   ⭐ desc 移除「每級提升：…」的數值列 —— 該數值由 uiMartialSect.formatScaledBonus
@@ -6375,12 +6547,49 @@ window.HY.Data = window.HY.Data || {};
                 { maxHp: 460, def: 62, critRes: 7, atkSpd: 2 }, { max: 3, perStack: 0.001 }],
             ['不滅步・金身不壞', '金身不壞，舉步如山。',
                 { maxHp: 1050, def: 145, critRes: 14, atkSpd: 3 }, { max: 5, perStack: 0.002 }]
+        ],
+        /* 🗡️ 萬劍山莊 — 劍步：圖騰 */
+        wanjian: [
+            ['萬劍步・劍影無蹤', '劍影無蹤，身法飄逸。',
+                { atk: 28, hit: 5, atkSpd: 1 }, { max: 1 }],
+            ['御劍步・踏劍而行', '踏劍而行，御風千里。',
+                { atk: 68, hit: 11, maxHp: 250, atkSpd: 2 }, { max: 1, dmg: 0.04 }],
+            ['萬劍步・萬劍隨身', '萬劍隨身，所向披靡。',
+                { atk: 156, hit: 20, maxHp: 600, atkSpd: 3 }, { max: 2, dmg: 0.06, duration: 2 }]
+        ],
+        /* 🕷️ 陰癸派 — 魅步：詛咒 */
+        yingui: [
+            ['天魔步・魅影無形', '天魔魅影，無形無跡。',
+                { atk: 24, maxMp: 12, crit: 2, atkSpd: 1 }, { max: 1 }],
+            ['解體步・亂心神', '亂敵心神，步伐詭譎。',
+                { atk: 58, maxMp: 26, crit: 4, atkSpd: 2 }, { max: 1, cursePct: 5 }],
+            ['陰癸步・天魔降世', '天魔降世，魅影漫天。',
+                { atk: 132, maxMp: 58, crit: 7, atkSpd: 3 }, { max: 2, cursePct: 10, duration: 2 }]
+        ],
+        /* 🔯 真言宗 — 禪步：烙印 */
+        zhenyan: [
+            ['真言步・蓮花足', '蓮花足下，步步生蓮。',
+                { atk: 26, maxHp: 140, critRes: 3, atkSpd: 1 }, { max: 1 }],
+            ['梵音步・烙印隨行', '烙印隨行，佛力環繞。',
+                { atk: 62, maxHp: 340, critRes: 7, atkSpd: 2 }, { max: 1, dmg: 0.04 }],
+            ['真言步・大日普照', '大日普照，佛光無邊。',
+                { atk: 142, maxHp: 780, critRes: 13, atkSpd: 3 }, { max: 2, dmg: 0.06, duration: 2 }]
+        ],
+        /* 🔗 淨念禪院 — 禪步：連結 */
+        jingnian: [
+            ['淨念步・一念清淨', '一念清淨，步履安詳。',
+                { maxHp: 170, def: 20, critRes: 3, atkSpd: 1 }, { duration: 2 }],
+            ['相印步・同氣連枝', '同氣連枝，步伐相應。',
+                { maxHp: 400, def: 48, critRes: 8, atkSpd: 2 }, { linkEffectPct: 5, duration: 3 }],
+            ['禪院步・心心相印', '心心相印，步調一致。',
+                { maxHp: 900, def: 108, critRes: 16, atkSpd: 3 }, { linkEffectPct: 10, duration: 5 }]
         ]
     };
 
     var SECT_DISPLAY = {
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
-        yaowang: '藥王谷', guixian: '鬼仙教'
+        yaowang: '藥王谷', guixian: '鬼仙教',
+        wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院'
     };
 
     Object.keys(SECT_QINGGONG).forEach(function (sectId) {
@@ -21806,7 +22015,7 @@ window.HY = window.HY || {};
     { id: 'grind',    name: '自行刷怪', icon: '🗡️', desc: '好友會自己去找怪打，累積經驗與戰利品。' },
     { id: 'level',    name: '自行練等', icon: '📈', desc: '經驗滿了自動升級（上限 Lv.300）。' },
     { id: 'point',    name: '自動點潛能', icon: '🎯', desc: '升級拿到的 5 點潛能，依性格自動配到四維。' },
-    { id: 'sect',     name: '自動入門派', icon: '⛩️', desc: '等級足夠時自行拜入十五大門派。' },
+    { id: 'sect',     name: '自動入門派', icon: '⛩️', desc: '等級足夠時自行拜入門派。' },
     { id: 'skill',    name: '自動學技能', icon: '📖', desc: '用自己賺的武學點數學外功招式並升招。' },
     { id: 'xinfa',    name: '自動修心法', icon: '🔥', desc: '自動修習內功心法並常駐最高階。' },
     { id: 'qinggong', name: '自動修身法', icon: '🍃', desc: '自動修習輕功身法並常駐最高階。' },
@@ -29046,7 +29255,9 @@ window.HY = window.HY || {};
                 kunlun: 'SCION', kongtong: 'RANGER',
                 /* ⭐ v41 新門派 */
                 wudu: 'WITCH', shenji: 'SHADOW', jiguan: 'RANGER', xueyu: 'MARAUDER',
-                yaowang: 'TEMPLAR', guixian: 'MARAUDER'
+                yaowang: 'TEMPLAR', guixian: 'MARAUDER',
+                /* ⭐ v42 新門派 */
+                wanjian: 'DUELIST', yingui: 'WITCH', zhenyan: 'TEMPLAR', jingnian: 'TEMPLAR'
             };
             var want = SECT_CLASS[c.sect] || null;
             var pick = null;
@@ -32437,7 +32648,12 @@ window.HY = window.HY || {};
         jiguan:     'Ranger',
         xueyu:      'Marauder',
         yaowang:    'Templar',
-        guixian:    'Marauder'
+        guixian:    'Marauder',
+        /* ⭐ v42 新門派 */
+        wanjian:    'Duelist',
+        yingui:     'Witch',
+        zhenyan:    'Templar',
+        jingnian:   'Templar'
     };
 
     /* 昇華點數取得門檻（POE 的 8 點，改以等級對應） */
@@ -38007,7 +38223,7 @@ window.HY = window.HY || {};
 
 /* ===== 90 / 194 : sectFeatureSystem.js ===== */
 // js/sectFeatureSystem.js  (v36)
-// 15 大門派「專屬特色」戰鬥實現
+// 各大門派「專屬特色」戰鬥實現
 //
 // v36 修正（門派特色補完）：
 //   ⭐ 新增戰鬥修正查詢 API：getAttackerMods / getDefenderMods / getEnemySpeedMult
@@ -38839,6 +39055,221 @@ window.HY = window.HY || {};
                     { k: '維持方式', v: '持續近戰命中' }
                 ];
             }
+        },
+
+        /* 🗡️ 萬劍山莊 — 萬劍歸宗（totem 系統） */
+        wanjian: {
+            key: 'swordarray',
+            base: { max: 3, dmg: 0.55, perTotemAtk: 0.05, duration: 10 },
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.summonTotem) return '';
+                var m = CM.init(c);
+                if (!m.enabled || !m.enabled.totem) m.enabled.totem = true;
+                if (!m.power) m.power = {};
+                if (!m.power.totemMax) m.power.totemMax = p.max;
+                var alive = (m.totems || []).filter(function (t) { return t && t.turns > 0; }).length;
+                if (alive >= Math.round(p.max)) return '';
+                var tkind = String((m.power && m.power.totemKind) || 'melee');
+                var tt = CM.summonTotem(c, tkind);
+                if (!tt) return '';
+                /* 門派自訂強度 */
+                tt.dmg = Math.max(1, Math.floor(sys.atkOf(c) * p.dmg));
+                tt.turns = Math.max(tt.turns, Math.round(p.duration));
+                return ' [🗡️劍陣圖騰→' + tt.name + '（' + (alive + 1) + '/' + Math.round(p.max) + '）]';
+            },
+            mods: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.init) return null;
+                var m = CM.init(ctx.char);
+                var n = (m.totems || []).filter(function (t) { return t && t.turns > 0; }).length;
+                if (n <= 0) return null;
+                return { atkMult: 1 + n * ctx.params.perTotemAtk };
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.totemsAct) return '';
+                var r = CM.totemsAct(c);
+                if (!r.totalDmg) return '';
+                core.syncCurrentEnemyPointer();
+                return ' [🗡️劍陣齊發→追加' + r.totalDmg + ' 傷（' + r.log.length + ' 座）]';
+            },
+            summary: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var n = ((m && m.totems) || []).filter(function (t) { return t && t.turns > 0; }).length;
+                return '劍陣 ' + n + '/' + Math.round(ctx.params.max);
+            },
+            statusRows: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var list = ((m && m.totems) || []).filter(function (t) { return t && t.turns > 0; });
+                var rows = [
+                    { k: '劍陣數量', v: list.length + ' / ' + Math.round(ctx.params.max), hl: true },
+                    { k: '每座傷害', v: ctx.pct(ctx.params.dmg) + ' 攻擊力' },
+                    { k: '每座加成', v: ctx.pct(ctx.params.perTotemAtk) + ' 攻擊' },
+                    { k: '持續回合', v: Math.round(ctx.params.duration) + ' 回合' }
+                ];
+                list.slice(0, 3).forEach(function (t, i) {
+                    rows.push({ k: '劍陣 ' + (i + 1), v: t.name + ' / ' + t.dmg + ' 傷 / 剩 ' + t.turns });
+                });
+                return rows;
+            }
+        },
+
+        /* 🕷️ 陰癸派 — 天魔解體（curse 系統） */
+        yingui: {
+            key: 'cursefield',
+            base: { max: 2, cursePct: 0, duration: 6 },
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.applyCurse) return '';
+                var m = CM.init(c);
+                if (!m.enabled || !m.enabled.curse) m.enabled.curse = true;
+                if (!m.power) m.power = {};
+                if (!m.power.curseMax) m.power.curseMax = p.max;
+                if (!m.power.curseDuration) m.power.curseDuration = p.duration;
+                var tgt = target || ((core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0]);
+                if (!tgt) return '';
+                var uid = String(tgt.uid || tgt.id || '');
+                if (m.curseState && m.curseState[uid]) return '';
+                /* 依序輪替三種詛咒 */
+                var kinds = ['vulnerability', 'enfeeble', 'despair'];
+                var idx = (m.curses || []).length % kinds.length;
+                var ce = CM.applyCurse(c, tgt, kinds[idx]);
+                if (!ce) return '';
+                return ' [🕷️天魔詛咒→' + ce.kindName + '（' + tgt.name + '）]';
+            },
+            /* 詛咒傷害加成由 combatPlayerTurn 的 curseOn 查詢處理 */
+            summary: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var n = ((m && m.curses) || []).filter(function (x) { return x && x.turns > 0; }).length;
+                return '詛咒 ' + n + '/' + Math.round(ctx.params.max);
+            },
+            statusRows: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var list = ((m && m.curses) || []).filter(function (x) { return x && x.turns > 0; });
+                var rows = [
+                    { k: '詛咒數量', v: list.length + ' / ' + Math.round(ctx.params.max), hl: true },
+                    { k: '脆弱效果', v: '目標受傷 +15%' },
+                    { k: '衰弱效果', v: '目標攻擊 -20%' },
+                    { k: '絕望效果', v: '目標防禦 -25%、受傷 +8%' }
+                ];
+                list.forEach(function (x, i) {
+                    rows.push({ k: '詛咒 ' + (i + 1), v: x.kindName + ' → ' + x.name + '（剩 ' + x.turns + '）' });
+                });
+                return rows;
+            }
+        },
+
+        /* 🔯 真言宗 — 梵音烙印（brand 系統） */
+        zhenyan: {
+            key: 'brandmark',
+            base: { max: 3, dmg: 0.25, duration: 8 },
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.applyBrand) return '';
+                var m = CM.init(c);
+                if (!m.enabled || !m.enabled.brand) m.enabled.brand = true;
+                if (!m.power) m.power = {};
+                if (!m.power.brandMax) m.power.brandMax = p.max;
+                if (!m.power.brandDuration) m.power.brandDuration = p.duration;
+                var tgt = target || ((core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0]);
+                if (!tgt) return '';
+                var before = (m.brands || []).length;
+                if (before >= Math.round(p.max)) return '';
+                var b = CM.applyBrand(c, tgt);
+                if (!b) return '';
+                b.dmg = Math.max(1, Math.floor(sys.atkOf(c) * p.dmg));
+                return ' [🔯梵音烙印→' + tgt.name + '（' + (before + 1) + '/' + Math.round(p.max) + '）]';
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.brandsAct) return '';
+                var r = CM.brandsAct(c);
+                if (!r.totalDmg) return '';
+                core.syncCurrentEnemyPointer();
+                return ' [🔯烙印灼燒→' + r.totalDmg + ' 傷]';
+            },
+            summary: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var n = ((m && m.brands) || []).filter(function (b) { return b && b.turns > 0; }).length;
+                return '烙印 ' + n + '/' + Math.round(ctx.params.max);
+            },
+            statusRows: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var list = ((m && m.brands) || []).filter(function (b) { return b && b.turns > 0; });
+                var rows = [
+                    { k: '烙印數量', v: list.length + ' / ' + Math.round(ctx.params.max), hl: true },
+                    { k: '每道灼燒', v: ctx.pct(ctx.params.dmg) + ' 攻擊力/回合' },
+                    { k: '持續回合', v: Math.round(ctx.params.duration) + ' 回合' },
+                    { k: '目標死亡', v: '烙印自動跳轉' }
+                ];
+                list.forEach(function (b, i) {
+                    rows.push({ k: '烙印 ' + (i + 1), v: b.name + ' / ' + b.dmg + ' 傷 / 剩 ' + b.turns });
+                });
+                return rows;
+            }
+        },
+
+        /* 🔗 淨念禪院 — 心心相印（link 系統） */
+        jingnian: {
+            key: 'soulbond',
+            base: { max: 1, atkPct: 0.12, drPct: 0.06 },
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.createLink) return '';
+                var m = CM.init(c);
+                if (!m.enabled || !m.enabled.link) m.enabled.link = true;
+                if (m.link && m.link.turns > 0 && m.link.targetId) return '';
+                var ps = window.HY.game && window.HY.game.partySys;
+                var allies = ps && ps.getPartyMembers ? ps.getPartyMembers() : [];
+                var ally = allies.filter(function (a) { return a && a.id !== c.id; })[0] || null;
+                CM.createLink(c, ally);
+                return ' [🔗心心相印→' + (ally ? ally.name : '自身') + ']';
+            },
+            mods: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.init) return null;
+                var m = CM.init(ctx.char);
+                if (!m.link || m.link.turns <= 0) return null;
+                var pw = m.power || {};
+                var boost = 1 + (pw.linkEffectPct || 0) / 100;
+                return { atkMult: 1 + ctx.params.atkPct * boost };
+            },
+            defMods: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                if (!CM || !CM.init) return null;
+                var m = CM.init(ctx.char);
+                if (!m.link || m.link.turns <= 0) return null;
+                var pw = m.power || {};
+                var boost = 1 + (pw.linkEffectPct || 0) / 100;
+                return { defMult: 1 + ctx.params.drPct * boost };
+            },
+            summary: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var on = !!(m && m.link && m.link.turns > 0);
+                return on ? '連結中（剩 ' + m.link.turns + '）' : '連結待建立';
+            },
+            statusRows: function (sys, ctx) {
+                var CM = window.HY && window.HY.CombatMechanics;
+                var m = CM && CM.init ? CM.init(ctx.char) : null;
+                var lk = (m && m.link) || { turns: 0, targetId: null };
+                var pw = (m && m.power) || {};
+                var boost = 1 + (pw.linkEffectPct || 0) / 100;
+                return [
+                    { k: '連結狀態', v: lk.turns > 0 ? '生效中' : '未建立', hl: true },
+                    { k: '剩餘回合', v: Math.round(lk.turns) + ' 回合' },
+                    { k: '攻擊加成', v: ctx.pct(ctx.params.atkPct * boost) },
+                    { k: '減傷加成', v: ctx.pct(ctx.params.drPct * boost) },
+                    { k: '連結對象', v: lk.targetId ? '隊友' : '自身' }
+                ];
+            }
         }
     };
     // ══════════════════════════════════════════════════════
@@ -39590,7 +40021,7 @@ window.HY = window.HY || {};
 
 /* ===== 91 / 194 : sectFeatureUi.js ===== */
 // js/sectFeatureUi.js  (v38)
-// 15 大門派「專屬特色」顯示層
+// 各大門派「專屬特色」顯示層
 //
 // ══════════════════════════════════════════════════════════════
 // 【為什麼獨立成一支檔案】
@@ -54451,6 +54882,18 @@ window.HY = window.HY || {};
                 var poePen = Math.min(0.85, (num(stats.armorPen, 0) / 100));
                 var effTotalPen = Math.min(0.95, effPen + poePen);
                 var effectiveDef = target.def * (1 - effTotalPen);
+                /* ⭐ v42：詛咒「絕望」降低目標防禦 */
+                var _curseDmgTaken = 0;
+                try {
+                    var _CMc = window.HY.CombatMechanics;
+                    if (_CMc && typeof _CMc.curseOn === 'function') {
+                        var _cs = _CMc.curseOn(charObj, target);
+                        if (_cs) {
+                            effectiveDef *= Math.max(0, 1 - num(_cs.defDown, 0));
+                            _curseDmgTaken = num(_cs.dmgTaken, 0);
+                        }
+                    }
+                } catch (eC) { }
                 var rawDmg = effAtk * skillMult - effectiveDef * 0.6;
                 rawDmg = Math.max(5, rawDmg);
                 /* ⭐ 總傷害加成（PoE 的 atkPct / physDmg / elemDmg 等）
@@ -54494,6 +54937,8 @@ window.HY = window.HY || {};
                     rawDmg *= (1 + Math.min(100, num(stats.aoeRadius, 0)) / 100);
                 }
                 if (art.isAoe && targetList.length > 1) rawDmg *= 0.85;
+                /* ⭐ v42：詛咒「脆弱」讓目標受到更多傷害 */
+                if (_curseDmgTaken > 0) rawDmg *= (1 + _curseDmgTaken);
                 var finalDmg = Math.floor(rawDmg * (0.95 + Math.random() * 0.1));
                 target.currentHp = Math.max(0, target.currentHp - finalDmg);
                 totalDealt += finalDmg;
@@ -54853,6 +55298,16 @@ window.HY = window.HY || {};
             var defFactor = (eff === 'pierce' || penAf) ? 0.40 : 0.7;
             // ⭐ v46：改用 effectiveTargetDef（含門派特色防禦乘算）
             var enemyDmg = enemy.atk * mult - effectiveTargetDef * defFactor;
+            /* ⭐ v42：詛咒「衰弱」降低敵人攻擊力 */
+            try {
+                var _CMe = window.HY.CombatMechanics;
+                if (_CMe && typeof _CMe.curseOn === 'function') {
+                    var _ce = _CMe.curseOn(targetMember, enemy);
+                    if (_ce && _ce.atkDown > 0) {
+                        enemyDmg *= Math.max(0.2, 1 - _ce.atkDown);
+                    }
+                }
+            } catch (eCe) { }
             var execAf = affixSys ? affixSys.hasProperty(enemy, 'executioner') : null;
             if (execAf && targetMember.currentHp < targetStats.maxHp * 0.5) {
                 enemyDmg *= (1 + (execAf.executeBonus || 0.40));
@@ -55088,8 +55543,15 @@ window.HY = window.HY || {};
         /* ── 詛咒 ── */
         curse: {
             name: '詛咒',
-            maxCurses: 1,
-            effect: '降低目標能力'
+            maxCurses: 2,
+            kinds: {
+                vulnerability: { name: '脆弱', effect: '目標受到傷害 +15%', dmgTaken: 0.15 },
+                enfeeble:      { name: '衰弱', effect: '目標攻擊 -20%',        atkDown: 0.20 },
+                /* ⭐ 絕望：本作防禦只佔傷害公式的一小部分（def*0.6），
+                   單靠 defDown 幾乎無感，因此同時給 dmgTaken 才符合「絕望」的強度預期 */
+                despair:       { name: '絕望', effect: '目標防禦 -25%、受到傷害 +8%', defDown: 0.25, dmgTaken: 0.08 }
+            },
+            effect: '降低目標能力（可疊 2 個）'
         },
         /* ── 戰吼 ── */
         warcry: {
@@ -55099,13 +55561,19 @@ window.HY = window.HY || {};
         /* ── 圖騰 ── */
         totem: {
             name: '圖騰',
-            maxTotems: 1,
-            effect: '獨立攻擊的召喚物'
+            maxTotems: 3,
+            kinds: {
+                melee:  { name: '戰士圖騰', dmgMul: 0.55, hits: 1 },
+                spell:  { name: '法術圖騰', dmgMul: 0.45, hits: 1 },
+                ballista: { name: '弩炮圖騰', dmgMul: 0.30, hits: 3 }
+            },
+            effect: '獨立攻擊的召喚圖騰，每個回合自動攻擊'
         },
         /* ── 聖印 ── */
         brand: {
             name: '聖印',
-            effect: '附著於目標持續造成傷害'
+            maxBrands: 3,
+            effect: '附著於目標，每回合持續造成傷害並在敵人死亡時跳轉'
         },
         /* ── 酊劑 ── */
         tincture: {
@@ -55231,6 +55699,10 @@ window.HY = window.HY || {};
         /* 詛咒（目前套在誰身上） */
         if (!m.curses || !Array.isArray(m.curses)) m.curses = [];
 
+        /* ⭐ v42：詛咒詳細狀態（每個敵人一個 entry）
+           { uid, kind, turns, atkDown, defDown, dmgTaken } */
+        if (!m.curseState || typeof m.curseState !== 'object') m.curseState = {};
+
         /* 戰吼 */
         if (!m.warcry) m.warcry = { turns: 0, atkBonus: 0 };
 
@@ -55260,6 +55732,11 @@ window.HY = window.HY || {};
 
         /* 連結 */
         if (!m.link || typeof m.link !== 'object') m.link = { targetId: null };
+
+        /* ⭐ v42：連結詳細狀態（與隊友共享增益）
+           { targetId, turns, sharePct } */
+        if (typeof m.link.turns !== 'number') m.link.turns = 0;
+        if (typeof m.link.sharePct !== 'number') m.link.sharePct = 0.15;
 
         /* ⭐ v41：6 套補完機制的狀態容器 */
         /* 召喚物：陣列，每個元素 { kind, name, hp, maxHp, dmg, turns } */
@@ -55293,7 +55770,8 @@ window.HY = window.HY || {};
             };
         }
         /* 舊存檔可能沒有新旗標，補齊 */
-        ['minion', 'mine', 'trap', 'rage', 'fortify', 'aura', 'offering'].forEach(function (k) {
+        ['minion', 'mine', 'trap', 'rage', 'fortify', 'aura', 'offering',
+         'totem', 'curse', 'brand', 'link'].forEach(function (k) {
             if (typeof m.enabled[k] !== 'boolean') m.enabled[k] = false;
         });
         /* 機制加成幅度（從天賦數值推導，預設為 0 表示該機制未啟用） */
@@ -55312,7 +55790,14 @@ window.HY = window.HY || {};
        ══════════════════════════════════════════════════════════ */
 
     /* 關鍵字 → 機制名稱。順序有意義：長字串先比對
-       ⚠ 這一組是原本 14 套機制（v41 之前就有），行為完全保持不變。 */
+       ⚠ 這一組是原本 14 套機制（v41 之前就有），行為完全保持不變。
+
+       ⚠⚠ v42：Brand / Totem / Curse / Link 已從此表「移除」。
+          原因：這 4 個旗標原本會由舊門派的天賦設定，
+          但補上實際效果後，舊門派就會突然獲得圖騰／詛咒／烙印／連結
+          → 等於暗中改動舊門派。
+          改由下面的 SECT_MECHANIC_OWNER 綁定到獨佔門派。
+          （移除前它們沒有任何讀取點，因此移除不造成任何行為變化。） */
     var TALENT_TRIGGERS = [
         ['Ghost Shroud', 'ghostShroud'],
         ['Consecrated Ground', 'consecrated'],
@@ -55323,11 +55808,7 @@ window.HY = window.HY || {};
         ['Sand Stance', 'stance'],
         ['Stance', 'stance'],
         ['Impale', 'impale'],
-        ['Brand', 'brand'],
-        ['Totem', 'totem'],
-        ['Curse', 'curse'],
         ['Mark', 'mark'],
-        ['Link Skill', 'link'],
         ['Endurance Charge', 'charges'],
         ['Frenzy Charge', 'charges'],
         ['Power Charge', 'charges']
@@ -55357,7 +55838,12 @@ window.HY = window.HY || {};
         jiguan:  'trap',     /* 機巧閣 — 天羅地網 */
         xueyu:   'rage',     /* 血玉門 — 怒血狂瀾 */
         yaowang: 'aura',     /* 藥王谷 — 百草靈氣 */
-        guixian: 'fortify'   /* 鬼仙教 — 不滅金身 */
+        guixian: 'fortify',  /* 鬼仙教 — 不滅金身 */
+        /* ⭐ v42 新增 4 派 */
+        wanjian:  'totem',   /* 萬劍山莊 — 萬劍歸宗（圖騰） */
+        yingui:   'curse',   /* 陰癸派   — 天魔解體（詛咒） */
+        zhenyan:  'brand',   /* 真言宗   — 梵音烙印（烙印） */
+        jingnian: 'link'     /* 淨念禪院 — 心心相印（連結） */
     };
 
     /* 機制 → 對應的天賦關鍵字（僅供該機制的擁有門派使用） */
@@ -55639,6 +56125,41 @@ window.HY = window.HY || {};
             out.tags.push('陷阱×' + m.trap.count);
         }
 
+        /* ══════════════════════════════════════════════════════════
+           ⭐ v42：圖騰 / 詛咒 / 烙印 / 連結
+           ══════════════════════════════════════════════════════════ */
+
+        /* ── 圖騰：每個圖騰提供小幅自身加成（主力輸出在圖騰自身）── */
+        if (en.totem && m.totems.length > 0) {
+            var totemAlive = m.totems.filter(function (t) { return t && t.turns > 0; }).length;
+            if (totemAlive > 0) {
+                out.atkPct += Math.round(totemAlive * (5 + num(pw.totemDmgPct, 0)));
+                out.tags.push('圖騰×' + totemAlive);
+            }
+        }
+
+        /* ── 詛咒：被詛咒的目標受到更多傷害（由外層 target 查詢）── */
+        if (en.curse && m.curses.length > 0) {
+            out.tags.push('詛咒×' + m.curses.length);
+        }
+
+        /* ── 烙印：每個附著中的烙印提供持續傷害加成 ── */
+        if (en.brand && m.brands.length > 0) {
+            var brandAlive = m.brands.filter(function (b) { return b && b.turns > 0; }).length;
+            if (brandAlive > 0) {
+                out.atkPct += Math.round(brandAlive * (6 + num(pw.brandDmgPct, 0)));
+                out.tags.push('烙印×' + brandAlive);
+            }
+        }
+
+        /* ── 連結：與隊友連結時，雙方共享增益 ── */
+        if (en.link && m.link.turns > 0 && m.link.targetId) {
+            var linkBonus = Math.round(12 + num(pw.linkEffectPct, 0));
+            out.atkPct += linkBonus;
+            out.dmgReduce += Math.round(linkBonus * 0.5);
+            out.tags.push('連結+' + linkBonus + '%');
+        }
+
         return out;
     }
 
@@ -55860,7 +56381,33 @@ window.HY = window.HY || {};
             }
         }
 
-        /* ⭐ v41：召喚物存活回合倒數（限時召喚物） */
+        /* ⭐ v42：圖騰存活回合倒數 */
+        if (m.totems && m.totems.length) {
+            m.totems.forEach(function (t) { if (t && t.turns > 0) t.turns -= 1; });
+            m.totems = m.totems.filter(function (t) { return t && t.turns > 0; });
+            /* 圖騰耗盡時清掉，避免永久累積 */
+        }
+
+        /* ⭐ v42：詛咒回合倒數 */
+        if (m.curses && m.curses.length) {
+            m.curses.forEach(function (c2) { if (c2 && c2.turns > 0) c2.turns -= 1; });
+            var expired = m.curses.filter(function (c2) { return c2 && c2.turns <= 0; });
+            expired.forEach(function (c2) {
+                if (c2 && m.curseState) delete m.curseState[c2.uid];
+            });
+            m.curses = m.curses.filter(function (c2) { return c2 && c2.turns > 0; });
+        }
+
+        /* ⭐ v42：連結回合倒數 */
+        if (m.link && m.link.turns > 0) {
+            m.link.turns -= 1;
+            if (m.link.turns === 0) {
+                m.link.targetId = null;
+                log.push('🔗 連結解除');
+            }
+        }
+
+        /* ⭐ v42：召喚物存活回合倒數（限時召喚物） */
         if (m.minions.length) {
             m.minions.forEach(function (mn) {
                 if (mn && mn.turns > 0) mn.turns -= 1;
@@ -55977,6 +56524,55 @@ window.HY = window.HY || {};
         if (en.offering && m.offering.turns <= 0) {
             useOffering(charObj, 6);
             log.push('💀 施放奉獻（攻速 +15%）');
+        }
+
+        /* ⭐ v42：⑫ 圖騰：未達上限時自動召喚 */
+        if (en.totem) {
+            var totemMax = num(pw.totemMax, MECHANICS.totem.maxTotems);
+            var totemN = (m.totems || []).filter(function (t) { return t && t.turns > 0; }).length;
+            if (totemN < totemMax) {
+                var tkind = String(pw.totemKind || 'melee');
+                var tt = summonTotem(charObj, tkind);
+                if (tt) log.push('🗿 召喚【' + tt.name + '】（' + (totemN + 1) + '/' + totemMax + '）');
+            }
+        }
+
+        /* ⭐ v42：⑬ 詛咒：自動施放（目標為當前敵人） */
+        if (en.curse) {
+            var cCore = window.HY.game && window.HY.game.combatSys;
+            var cTgt = cCore && (cCore.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0];
+            if (cTgt) {
+                var cUid = String(cTgt.uid || cTgt.id || '');
+                var already = (m.curseState && m.curseState[cUid]);
+                if (!already) {
+                    var ckind = String(pw.curseKind || 'vulnerability');
+                    var ce = applyCurse(charObj, cTgt, ckind);
+                    if (ce) log.push('☠️ 詛咒【' + cTgt.name + '】→' + ce.kindName);
+                }
+            }
+        }
+
+        /* ⭐ v42：⑭ 烙印：自動附著 */
+        if (en.brand) {
+            var bCore = window.HY.game && window.HY.game.combatSys;
+            var bTgt = bCore && (bCore.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0];
+            if (bTgt) {
+                var brandMax = num(pw.brandMax, MECHANICS.brand.maxBrands);
+                var brandN = (m.brands || []).length;
+                if (brandN < brandMax) {
+                    var bb = applyBrand(charObj, bTgt);
+                    if (bb) log.push('🔯 烙印附著【' + bTgt.name + '】');
+                }
+            }
+        }
+
+        /* ⭐ v42：⑮ 連結：自動建立（有隊友就連結，否則連自己） */
+        if (en.link && (!m.link.targetId || m.link.turns <= 0)) {
+            var ps = window.HY.game && window.HY.game.partySys;
+            var allies = ps && ps.getPartyMembers ? ps.getPartyMembers() : [];
+            var ally = allies.filter(function (a) { return a && a.id !== charObj.id; })[0] || null;
+            createLink(charObj, ally);
+            log.push('🔗 建立連結' + (ally ? '【' + ally.name + '】' : '（自身）'));
         }
 
         return { log: log };
@@ -56154,6 +56750,165 @@ window.HY = window.HY || {};
         return true;
     }
 
+    /* ══════════════════════════════════════════════════════════
+       ⭐ v42：圖騰 / 詛咒 / 烙印 / 連結
+       ══════════════════════════════════════════════════════════ */
+
+    /** 召喚圖騰 */
+    function summonTotem(charObj, kind) {
+        var m = init(charObj);
+        if (!m) return null;
+        var K = MECHANICS.totem.kinds[kind] || MECHANICS.totem.kinds.melee;
+        var maxN = num((m.power || {}).totemMax, MECHANICS.totem.maxTotems);
+        if (m.totems.length >= maxN) m.totems.shift();
+        var cs = window.HY.game && window.HY.game.charSys;
+        var st = cs ? cs.getDerivedStatsForChar(charObj) : null;
+        var baseAtk = st ? (st.atk || 20) : 20;
+        var pw = m.power || {};
+        var boost = 1 + num(pw.totemDmgPct, 0) / 100;
+        var t = {
+            kind: kind,
+            name: K.name,
+            dmg: Math.max(1, Math.floor(baseAtk * K.dmgMul * boost)),
+            hits: K.hits || 1,
+            turns: Math.max(1, num(pw.totemDuration, 10))
+        };
+        m.totems.push(t);
+        return t;
+    }
+
+    /** 圖騰行動：每個圖騰對隨機敵人攻擊（可多段） */
+    function totemsAct(charObj) {
+        var m = init(charObj);
+        if (!m || !m.totems.length) return { log: [], totalDmg: 0 };
+        var core = window.HY.game && window.HY.game.combatSys;
+        var alive = (core && core.enemies || []).filter(function (e) { return e && e.currentHp > 0; });
+        if (!alive.length) return { log: [], totalDmg: 0 };
+        var log = [];
+        var total = 0;
+        m.totems.forEach(function (t) {
+            if (!t || t.turns <= 0) return;
+            for (var h = 0; h < (t.hits || 1); h++) {
+                var tgt = alive.filter(function (e) { return e.currentHp > 0; })[0];
+                if (!tgt) break;
+                var dmg = Math.max(1, Math.floor(t.dmg * (0.85 + Math.random() * 0.3)));
+                tgt.currentHp = Math.max(0, tgt.currentHp - dmg);
+                total += dmg;
+            }
+            log.push('🗿 ' + t.name + ' 攻擊（' + (t.hits || 1) + ' 段）');
+        });
+        return { log: log, totalDmg: total };
+    }
+
+    /** 施放詛咒（套在指定敵人身上） */
+    function applyCurse(charObj, target, kind) {
+        var m = init(charObj);
+        if (!m || !target) return null;
+        var K = MECHANICS.curse.kinds[kind] || MECHANICS.curse.kinds.vulnerability;
+        var uid = String(target.uid || target.id || '');
+        var maxC = num((m.power || {}).curseMax, MECHANICS.curse.maxCurses);
+        /* 已滿：移除最早的一個 */
+        if (m.curses.length >= maxC) {
+            var old = m.curses.shift();
+            if (old && m.curseState) delete m.curseState[old.uid];
+        }
+        var pw = m.power || {};
+        var boost = 1 + num(pw.cursePct, 0) / 100;
+        var eff = {
+            uid: uid,
+            name: target.name,
+            kind: kind,
+            kindName: K.name,
+            turns: Math.max(1, num(pw.curseDuration, 6)),
+            atkDown: (K.atkDown || 0) * boost,
+            defDown: (K.defDown || 0) * boost,
+            dmgTaken: (K.dmgTaken || 0) * boost
+        };
+        m.curses.push(eff);
+        if (!m.curseState) m.curseState = {};
+        m.curseState[uid] = eff;
+        return eff;
+    }
+
+    /** 查詢某敵人身上的詛咒效果（供傷害計算使用） */
+    function curseOn(charObj, target) {
+        var m = init(charObj);
+        if (!m || !target || !m.enabled || !m.enabled.curse) return null;
+        var uid = String(target.uid || target.id || '');
+        return (m.curseState && m.curseState[uid]) || null;
+    }
+
+    /** 施放烙印（附著在敵人身上） */
+    function applyBrand(charObj, target) {
+        var m = init(charObj);
+        if (!m || !target) return null;
+        var uid = String(target.uid || target.id || '');
+        var maxB = num((m.power || {}).brandMax, MECHANICS.brand.maxBrands);
+        var exist = m.brands.filter(function (b) { return b && b.uid === uid && b.turns > 0; })[0];
+        if (exist) {
+            exist.turns = Math.max(exist.turns, 5);
+            return exist;
+        }
+        if (m.brands.length >= maxB) m.brands.shift();
+        var cs = window.HY.game && window.HY.game.charSys;
+        var st = cs ? cs.getDerivedStatsForChar(charObj) : null;
+        var baseAtk = st ? (st.atk || 20) : 20;
+        var pw = m.power || {};
+        var boost = 1 + num(pw.brandDmgPct, 0) / 100;
+        var b = {
+            uid: uid,
+            name: target.name,
+            dmg: Math.max(1, Math.floor(baseAtk * 0.25 * boost)),
+            turns: Math.max(1, num(pw.brandDuration, 8))
+        };
+        m.brands.push(b);
+        return b;
+    }
+
+    /** 烙印行動：對附著目標持續傷害，目標死亡則跳轉 */
+    function brandsAct(charObj) {
+        var m = init(charObj);
+        if (!m || !m.brands.length) return { log: [], totalDmg: 0 };
+        var core = window.HY.game && window.HY.game.combatSys;
+        var enemies = (core && core.enemies) || [];
+        var log = [];
+        var total = 0;
+        var keep = [];
+        m.brands.forEach(function (b) {
+            if (!b || b.turns <= 0) return;
+            var tgt = enemies.filter(function (e) { return e && e.currentHp > 0 && String(e.uid || e.id) === b.uid; })[0];
+            if (!tgt) {
+                /* 目標已死 → 跳轉到最近的存活敵人（POE 烙印行為） */
+                var next = enemies.filter(function (e) { return e && e.currentHp > 0; })[0];
+                if (next) {
+                    b.uid = String(next.uid || next.id);
+                    b.name = next.name;
+                    log.push('🔯 烙印跳轉至【' + next.name + '】');
+                    tgt = next;
+                } else {
+                    return;
+                }
+            }
+            tgt.currentHp = Math.max(0, tgt.currentHp - b.dmg);
+            total += b.dmg;
+            log.push('🔯 烙印灼燒【' + b.name + '】' + b.dmg + ' 傷');
+            b.turns -= 1;
+            if (b.turns > 0) keep.push(b);
+        });
+        m.brands = keep;
+        return { log: log, totalDmg: total };
+    }
+
+    /** 建立連結（與隊友共享增益） */
+    function createLink(charObj, ally) {
+        var m = init(charObj);
+        if (!m) return false;
+        m.link.targetId = ally ? String(ally.id || ally.name || '') : 'self';
+        m.link.turns = 8;
+        m.link.sharePct = 0.15;
+        return true;
+    }
+
     function useWarcry(charObj, bonusPct, turns) {
         var m = init(charObj);
         if (!m) return false;
@@ -56292,6 +57047,22 @@ window.HY = window.HY || {};
                         if (!core.currentEnemy) { core.handleVictory(); return; }
                     }
                 }
+
+                /* ⭐ v42：⑦ 圖騰追加攻擊 */
+                if (c.mech && c.mech.totems && c.mech.totems.length > 0) {
+                    var tot = totemsAct(c);
+                    tot.log.forEach(function (t) { core.log(t, 'combat'); });
+                    if (tot.totalDmg > 0) core.syncCurrentEnemyPointer();
+                    if (!core.currentEnemy) { core.handleVictory(); return; }
+                }
+
+                /* ⭐ v42：⑧ 烙印持續傷害 */
+                if (c.mech && c.mech.brands && c.mech.brands.length > 0) {
+                    var br = brandsAct(c);
+                    br.log.forEach(function (t) { core.log(t, 'combat'); });
+                    if (br.totalDmg > 0) core.syncCurrentEnemyPointer();
+                    if (!core.currentEnemy) { core.handleVictory(); return; }
+                }
             },
 
             /* ⭐ 敵人攻擊我方後：幽靈護罩吸收。
@@ -56399,6 +57170,14 @@ window.HY = window.HY || {};
         triggerTraps: triggerTraps,
         enableAura: enableAura,
         useOffering: useOffering,
+        /* ⭐ v42：圖騰 / 詛咒 / 烙印 / 連結 */
+        summonTotem: summonTotem,
+        totemsAct: totemsAct,
+        applyCurse: applyCurse,
+        curseOn: curseOn,
+        applyBrand: applyBrand,
+        brandsAct: brandsAct,
+        createLink: createLink,
         install: install,
         /** 供 UI 顯示目前機制狀態 */
         summary: function (c) {
@@ -56422,6 +57201,11 @@ window.HY = window.HY || {};
                 fortify: m.fortify,
                 auras: m.auras,
                 offering: m.offering,
+                /* ⭐ v42 */
+                totems: m.totems,
+                curses: m.curses,
+                brands: m.brands,
+                link: m.link,
                 mods: getMods(c)
             };
         }
