@@ -34288,6 +34288,8 @@ window.HY = window.HY || {};
             this.isOpen = true;
             this.el.root.classList.remove('hidden');
             this.sys.ensureState(this.char);
+            /* ⭐ 預載職業插畫圖集（背景用），避免第一次開啟時缺圖 */
+            try { this._bgImg(); } catch (e) { }
             this._layout();
             this._renderBranchList();
             this._renderSide();
@@ -34699,10 +34701,15 @@ window.HY = window.HY || {};
         }
 
         /** ⭐ 目前選定分支的職業插畫座標（在 ascendancy-3.webp 裡） */
+        /** ⭐ 目前「顯示中」分支的職業插畫座標（在 ascendancy-3.webp 裡）
+            v4：改用 activeBranch（已正式加入優先，否則看預覽），
+                這樣預覽某職業時背景就會顯示該職業的插畫。 */
         _branchArt() {
             var c = this.char;
             if (!c) return null;
-            var a = (c.asc && c.asc.branch) || null;
+            var a = (this.sys && typeof this.sys.activeBranch === 'function')
+                ? this.sys.activeBranch(c)
+                : ((c.asc && c.asc.branch) || null);
             if (!a) return null;
             var art = (HY.Data && HY.Data.ASC_CLASS_ART) ? HY.Data.ASC_CLASS_ART[a] : null;
             return art || null;
@@ -34872,25 +34879,21 @@ window.HY = window.HY || {};
                     '</span>' +
                     '<span class="asc-txt">' +
                         '<span class="bn">' + (b.nameZh || b.id) +
-                        (joined ? ' <i class="asc-tag">已加入</i>' : '') +
-                        (b.isMine && !joined ? ' <i class="asc-tag">本職</i>' : '') + '</span>' +
+                        (joined ? ' <i class="asc-tag joined-tag">已加入</i>' : '') + '</span>' +
                         '<span class="be">' + b.id + '　' + b.nodeCount + ' 節點</span>' +
                     '</span>' +
                     '</button>';
             }
 
+            /* ⭐ v4：不再分「本職 / 其他」兩組，改成單一列表
+               （分組會讓玩家誤以為只有本職能選，實際上 21 個都能玩）
+               本職仍保留金色「本職」小標籤做識別。 */
             var html = '';
-            if (mine.length) {
-                html += '<div class="asc-bh">' + clsZh + '・本職昇華</div>';
-                mine.forEach(function (b) { html += btn(b); });
-            }
-            if (others.length) {
-                html += '<div class="asc-bh" style="margin-top:14px;">其他昇華分支（共 ' +
-                    others.length + ' 個）</div>';
-                others.forEach(function (b) { html += btn(b); });
-            }
             if (!list.length) {
                 html += '<div class="asc-empty">沒有可用的昇華分支資料。</div>';
+            } else {
+                html += '<div class="asc-bh">昇華分支（共 ' + list.length + ' 個）</div>';
+                list.forEach(function (b) { html += btn(b); });
             }
             this.el.branches.innerHTML = html;
 
@@ -35079,20 +35082,58 @@ window.HY = window.HY || {};
             var w = this._vw, h = this._vh;
             ctx.clearRect(0, 0, w, h);
 
-            /* ⭐ 背景：純深色（v3 改動）
-               原本這裡會鋪 ascendancy-3.webp 整張圖集當背景，
-               但那是「所有職業的插畫拼在一起」的圖集，
-               鋪在主畫面看起來像一堆大頭貼，不像 POE 的昇華介面。
-               → 改成純深色漸層，讓節點與連線成為視覺焦點。
-               （職業插畫仍保留在左側分支列表的小圓與節點圖示裡） */
+            /* ⭐⭐ 背景：依「目前顯示的分支」鋪對應的職業插畫
+               ──────────────────────────────────────────────────────
+               v4：進入某個職業的昇華面板時，背景顯示該職業的插畫
+                   （從 ascendancy-3.webp 圖集裁切，每格 498×498）。
+               未選分支 → 退回純深色漸層。 */
             ctx.fillStyle = '#070a10';
             ctx.fillRect(0, 0, w, h);
-            var _bgGrad = ctx.createRadialGradient(w / 2, h * 0.45, 40, w / 2, h * 0.45, Math.max(w, h) * 0.75);
-            _bgGrad.addColorStop(0, 'rgba(22,34,52,0.85)');
-            _bgGrad.addColorStop(0.55, 'rgba(12,19,30,0.75)');
-            _bgGrad.addColorStop(1, 'rgba(5,7,11,0.95)');
-            ctx.fillStyle = _bgGrad;
-            ctx.fillRect(0, 0, w, h);
+
+            var _art = this._branchArt();          /* 依 activeBranch 取得 */
+            var _artImg = _art ? this._bgImg() : null;
+            if (_art && _artImg) {
+                /* cover 鋪滿 + 稍微超出，避免邊緣留黑 */
+                var aw = _art.w, ah = _art.h;
+                var scA = Math.max(w / aw, h / ah) * 1.06;
+                var dwA = aw * scA, dhA = ah * scA;
+                ctx.save();
+                ctx.globalAlpha = 0.95;            /* 拉高：讓職業插畫成為主視覺 */
+                ctx.drawImage(_artImg, _art.x, _art.y, aw, ah,
+                              (w - dwA) / 2, (h - dhA) / 2, dwA, dhA);
+                ctx.restore();
+                /* 輕微提亮 */
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.10;
+                ctx.fillStyle = '#1c2c46';
+                ctx.fillRect(0, 0, w, h);
+                ctx.restore();
+                /* 深色漸層：中央較透（看得到插畫），四周收暗讓節點對比更清楚 */
+                var _vg = ctx.createRadialGradient(w / 2, h * 0.44, Math.min(w, h) * 0.14,
+                                                   w / 2, h * 0.44, Math.max(w, h) * 0.68);
+                _vg.addColorStop(0, 'rgba(6,10,17,0.10)');
+                _vg.addColorStop(0.5, 'rgba(6,10,17,0.58)');
+                _vg.addColorStop(1, 'rgba(3,5,9,0.93)');
+                ctx.fillStyle = _vg;
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                /* 未選分支 / 圖未載完 → 純深色漸層 + 重試 */
+                var _bgGrad = ctx.createRadialGradient(w / 2, h * 0.45, 40,
+                                                       w / 2, h * 0.45, Math.max(w, h) * 0.75);
+                _bgGrad.addColorStop(0, 'rgba(22,34,52,0.85)');
+                _bgGrad.addColorStop(0.55, 'rgba(12,19,30,0.75)');
+                _bgGrad.addColorStop(1, 'rgba(5,7,11,0.95)');
+                ctx.fillStyle = _bgGrad;
+                ctx.fillRect(0, 0, w, h);
+                if (_art && !this._bgRetry) {
+                    var _selfB = this;
+                    this._bgRetry = setTimeout(function () {
+                        _selfB._bgRetry = null;
+                        if (_selfB.isOpen) _selfB._draw();
+                    }, 120);
+                }
+            }
 
             var nodes = this._nodes || [];
             if (!nodes.length) {
@@ -35132,17 +35173,26 @@ window.HY = window.HY || {};
                     var x1 = n.x * s + ox, y1 = n.y * s + oy;
                     var x2 = t.x * s + ox, y2 = t.y * s + oy;
                     var both = n.allocated && t.allocated;
+                    /* 先畫一層深色描邊，確保在插畫背景上仍看得見 */
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = 'rgba(2,5,10,0.75)';
+                    ctx.lineWidth = Math.max(3, 5 * s);
+                    ctx.shadowBlur = 0;
+                    ctx.stroke();
+                    /* 再畫主線 */
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
                     if (both) {
-                        ctx.strokeStyle = 'rgba(56,189,248,0.85)';
+                        ctx.strokeStyle = 'rgba(56,189,248,0.90)';
                         ctx.lineWidth = Math.max(2, 3.2 * s);
-                        ctx.shadowColor = 'rgba(56,189,248,0.55)';
-                        ctx.shadowBlur = 9;
+                        ctx.shadowColor = 'rgba(56,189,248,0.65)';
+                        ctx.shadowBlur = 10;
                     } else {
-                        ctx.strokeStyle = 'rgba(51,65,85,0.85)';
-                        ctx.lineWidth = Math.max(1, 1.9 * s);
+                        ctx.strokeStyle = 'rgba(120,142,168,0.75)';
+                        ctx.lineWidth = Math.max(1.2, 2.0 * s);
                         ctx.shadowBlur = 0;
                     }
                     ctx.stroke();
@@ -35184,6 +35234,11 @@ window.HY = window.HY || {};
                     var sp = spInfo.sp;
                     /* 圖示繪製範圍：以節點半徑為基準，略放大讓圖示填滿 */
                     var ir = r * (n.node.isKeystone ? 1.15 : 1.05);
+                    /* ⭐ 先畫一圈深色底，讓圖示在明亮背景下仍有邊界 */
+                    ctx.beginPath();
+                    ctx.arc(x, y, ir + 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(4,8,14,0.82)';
+                    ctx.fill();
                     ctx.save();
                     /* 圓形裁切，讓圖示是圓的（POE 節點就是圓形） */
                     ctx.beginPath();
@@ -35191,7 +35246,7 @@ window.HY = window.HY || {};
                     ctx.closePath();
                     ctx.clip();
                     /* 未配置時壓暗，已配置時全亮 */
-                    ctx.globalAlpha = n.allocated ? 1.0 : (n.canAlloc ? 0.82 : 0.45);
+                    ctx.globalAlpha = n.allocated ? 1.0 : (n.canAlloc ? 0.88 : 0.55);
                     ctx.drawImage(spInfo.img, sp.x, sp.y, sp.w, sp.h,
                                   x - ir, y - ir, ir * 2, ir * 2);
                     ctx.restore();
