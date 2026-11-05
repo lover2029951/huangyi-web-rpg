@@ -5603,6 +5603,22 @@ window.HY.Data = window.HY.Data || {};
             mechanicName: '元素異常',
             signatureSkill: 'binghuo_art_1',
             skillTree: tree('binghuo')
+        },
+
+        /* ── 💨 狂影門 — 疾影追命（疾影狀態流）── */
+        kuangying: {
+            id: 'kuangying', name: '狂影門', reqLv: 10,
+            desc: '【疾如狂影追命無蹤】以極速身法與暗影殺法著稱的刺客之門，十式追命刺與影遁術，靠累積疾影狀態高速遊擊。',
+            bonus: { atk: 62, eva: 22, crit: 16, hit: 12 },
+            feature: {
+                id: 'shadowstep', name: '疾影追命', icon: '💨', color: '#f59e0b', maxStack: 4,
+                shortDesc: '擊殺得迅捷相位，受擊得迷蹤回朔',
+                desc: '靠戰鬥事件累積 4 種疾影狀態：\n· 迅捷（擊殺獲得）→ 攻速 +20%、移動 +10%，持續 4 回合\n· 相位（擊殺獲得）→ 閃避 +40%，持續 4 回合\n· 迷蹤（受擊獲得）→ 閃避 +15%，逐回合遞減\n· 回朔（受擊累積）→ 受到的傷害 4% 在後續 2 回合返還為氣血\n\n攻擊時還會對敵人施加致盲／殘廢／恐嚇／嘲諷／碎裂等減益。\n【機制連動】疾影整合了天賦樹的 Onslaught / Phasing / Elusive / Recoup 四大系統——共 27 條相關天賦全部生效。'
+            },
+            mechanic: 'shadow',
+            mechanicName: '疾影',
+            signatureSkill: 'kuangying_art_1',
+            skillTree: tree('kuangying')
         }
     };
 
@@ -5615,6 +5631,7 @@ window.HY.Data = window.HY.Data || {};
     Data.SECT_MECHANIC_TAGS.cihang = '護盾';
     Data.SECT_MECHANIC_TAGS.leiting = '暈眩';
     Data.SECT_MECHANIC_TAGS.binghuo = '元素異常';
+    Data.SECT_MECHANIC_TAGS.kuangying = '疾影';
 })();
 
 
@@ -6070,6 +6087,19 @@ window.HY.Data = window.HY.Data || {};
             ['兩儀神功・太極化生', '太極化生，冰火生生不息。', { ailment: 3, pen: 0.42, crit: 24, heal: 0.12 }],
             ['冰火島主・兩極歸一', '兩極歸一，冰火大成。', { ailment: 4, pen: 0.46, crit: 30 }],
             ['冰火鎮派・冰火九重天', '冰火島鎮派絕學，九重天。', { ailment: 5, aoe: true, pen: 0.52, crit: 32 }]
+        ],
+        /* 💨 狂影門 — 疾影追命（疾影狀態流） */
+        kuangying: [
+            ['追命刺・影襲', '暗影中一刺穿心。', { shadow: 1, pen: 0.28, crit: 18 }],
+            ['影遁術・無蹤', '影遁無蹤，來去如風。', { shadow: 1, eva: 6, crit: 16 }],
+            ['追命刺・連環影殺', '連環影殺，快如閃電。', { shadow: 2, aoe: true, pen: 0.36, crit: 22 }],
+            ['暗影步・斷魂', '暗影斷魂，一擊斃命。', { shadow: 2, pen: 0.34, crit: 24 }],
+            ['疾影殺・狂影亂舞', '狂影亂舞，目不暇給。', { shadow: 2, pen: 0.38, hit: 32 }],
+            ['狂影門・萬影追命', '萬影追命，避無可避。', { shadow: 3, aoe: true, pen: 0.42, crit: 26 }],
+            ['影殺術・奪魄', '奪魄一刺，魂飛魄散。', { shadow: 3, pen: 0.44, crit: 30 }],
+            ['疾影身法・幻影分身', '幻影分身，真假難辨。', { shadow: 3, eva: 10, pen: 0.40, crit: 28 }],
+            ['狂影門主・影帝降臨', '影帝降臨，萬影朝宗。', { shadow: 4, pen: 0.48, crit: 34 }],
+            ['狂影鎮派・疾影追命殺', '狂影門鎮派絕學，追命無赦。', { shadow: 5, aoe: true, pen: 0.54, crit: 38 }]
         ]
     };
 
@@ -6077,7 +6107,7 @@ window.HY.Data = window.HY.Data || {};
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
         yaowang: '藥王谷', guixian: '鬼仙教',
         wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院',
-        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島'
+        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島', kuangying: '狂影門'
     };
 
     Object.keys(SECT_ARTS).forEach(function (sectId) {
@@ -6089,7 +6119,7 @@ window.HY.Data = window.HY.Data || {};
             var isUltimate = (i === 9);
             var feat = {};
             ['swarm', 'minefield', 'trapweb', 'rage', 'aura', 'fortify',
-             'totem', 'curse', 'brand', 'link', 'es', 'stun', 'ailment'].forEach(function (k) {
+             'totem', 'curse', 'brand', 'link', 'es', 'stun', 'ailment', 'shadow'].forEach(function (k) {
                 if (m[k] !== undefined) feat[k] = m[k];
             });
             /* 若該門派資料已存在則不覆寫，避免重複載入時蓋掉既有招式 */
@@ -6464,6 +6494,19 @@ window.HY.Data = window.HY.Data || {};
                 { atk: 140, crit: 9, maxMp: 60 }, { ailmentEffectPct: 16 }, '元素異常效果 +16%'],
             ['冰火鎮派・冰火九重天真經', '冰火島至高總綱。',
                 { atk: 196, crit: 13, maxMp: 86 }, { ailmentEffectPct: 22 }, '元素異常效果 +22%']
+        ],
+        /* 💨 狂影門 — 疾影：效果 / 持續 */
+        kuangying: [
+            ['影遁基礎功', '暗影行蹤，疾影初現。',
+                { atk: 36, eva: 6, crit: 2 }, { shadowEffectPct: 4 }, '疾影效果 +4%'],
+            ['追命刺心法', '追命一刺，快如閃電。',
+                { atk: 66, eva: 11, crit: 4 }, { shadowEffectPct: 7 }, '疾影效果 +7%'],
+            ['疾影殺心法', '疾影殺出，萬影隨行。',
+                { atk: 104, eva: 17, crit: 6 }, { shadowEffectPct: 10 }, '疾影效果 +10%'],
+            ['萬影追命心法', '萬影追命，無所遁形。',
+                { atk: 152, eva: 24, crit: 9 }, { shadowEffectPct: 14 }, '疾影效果 +14%'],
+            ['狂影鎮派・疾影追命真經', '狂影門至高總綱。',
+                { atk: 214, eva: 33, crit: 13 }, { shadowEffectPct: 20 }, '疾影效果 +20%']
         ]
     };
 
@@ -6471,7 +6514,7 @@ window.HY.Data = window.HY.Data || {};
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
         yaowang: '藥王谷', guixian: '鬼仙教',
         wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院',
-        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島'
+        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島', kuangying: '狂影門'
     };
 
     Object.keys(SECT_XINFA).forEach(function (sectId) {
@@ -6778,6 +6821,15 @@ window.HY.Data = window.HY.Data || {};
                 { atk: 66, crit: 4, maxMp: 32, atkSpd: 2 }, { ailmentEffectPct: 7 }],
             ['兩極步・冰火九重', '冰火九重，兩極大成。',
                 { atk: 150, crit: 7, maxMp: 74, atkSpd: 3 }, { ailmentEffectPct: 11 }]
+        ],
+        /* 💨 狂影門 — 影步：疾影 */
+        kuangying: [
+            ['影步・無影無蹤', '無影無蹤，疾行如風。',
+                { atk: 30, eva: 10, crit: 2, atkSpd: 1 }, { shadowEffectPct: 3 }],
+            ['疾影步・幻影隨行', '幻影隨行，真假莫辨。',
+                { atk: 70, eva: 22, crit: 4, atkSpd: 2 }, { shadowEffectPct: 6 }],
+            ['追命步・萬影奔騰', '萬影奔騰，追命無赦。',
+                { atk: 158, eva: 42, crit: 7, atkSpd: 3 }, { shadowEffectPct: 10 }]
         ]
     };
 
@@ -6785,7 +6837,7 @@ window.HY.Data = window.HY.Data || {};
         wudu: '五毒教', shenji: '神機門', jiguan: '機巧閣', xueyu: '血玉門',
         yaowang: '藥王谷', guixian: '鬼仙教',
         wanjian: '萬劍山莊', yingui: '陰癸派', zhenyan: '真言宗', jingnian: '淨念禪院',
-        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島'
+        cihang: '慈航靜齋', leiting: '雷庭堡', binghuo: '冰火島', kuangying: '狂影門'
     };
 
     Object.keys(SECT_QINGGONG).forEach(function (sectId) {
@@ -29472,7 +29524,9 @@ window.HY = window.HY || {};
                 /* ⭐ v42 新門派 */
                 wanjian: 'DUELIST', yingui: 'WITCH', zhenyan: 'TEMPLAR', jingnian: 'TEMPLAR',
                 /* ⭐ v43 新門派 */
-                cihang: 'TEMPLAR', leiting: 'MARAUDER', binghuo: 'WITCH'
+                cihang: 'TEMPLAR', leiting: 'MARAUDER', binghuo: 'WITCH',
+                /* ⭐ v44 新門派 */
+                kuangying: 'RANGER'
             };
             var want = SECT_CLASS[c.sect] || null;
             var pick = null;
@@ -32872,7 +32926,9 @@ window.HY = window.HY || {};
         /* ⭐ v43 新門派 */
         cihang:     'Templar',
         leiting:    'Marauder',
-        binghuo:    'Witch'
+        binghuo:    'Witch',
+        /* ⭐ v44 新門派 */
+        kuangying:  'Ranger'
     };
 
     /* 昇華點數取得門檻（POE 的 8 點，改以等級對應） */
@@ -39611,6 +39667,66 @@ window.HY = window.HY || {};
                     rows.push({ k: K[k] || k, v: '剩 ' + e.turns + ' 回合' + (e.dps ? ' / ' + e.dps + ' 傷' : '') });
                 });
                 if (list.length === 0) rows.push({ k: '說明', v: '依靈根屬性攻擊時自動附加' });
+                return rows;
+            }
+        },
+
+        /* 💨 狂影門 — 疾影追命（shadow 狀態流） */
+        kuangying: {
+            key: 'shadowstep',
+            base: { max: 4, effectPct: 0, recoupPct: 4 },
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var EX = window.HY && window.HY.CombatMechanicsExtra;
+                if (EX && typeof EX.shadowInit === 'function') EX.shadowInit(c);
+                return '';
+            },
+            /* 疾影屬性加成（攻速／閃避）由 getMods 的 shadow 分支處理，
+               這裡只提供門派層面的額外加成 */
+            mods: function (sys, ctx) {
+                var EX = window.HY && window.HY.CombatMechanicsExtra;
+                if (!EX || !EX.shadowInit) return null;
+                var s = EX.shadowInit(ctx.char);
+                if (!s) return null;
+                /* 有任何疾影狀態時，額外增傷 5% */
+                var active = 0;
+                if (s.onslaught > 0) active++;
+                if (s.phasing > 0) active++;
+                if (s.elusive > 0) active++;
+                if (active <= 0) return null;
+                return { atkMult: 1 + active * 0.05 };
+            },
+            summary: function (sys, ctx) {
+                var EX = window.HY && window.HY.CombatMechanicsExtra;
+                var s = EX && EX.shadowInit ? EX.shadowInit(ctx.char) : null;
+                if (!s) return '疾影 0';
+                var n = 0;
+                if (s.onslaught > 0) n++;
+                if (s.phasing > 0) n++;
+                if (s.elusive > 0) n++;
+                if (s.recoupPool > 0) n++;
+                return '疾影 ' + n + '/4';
+            },
+            statusRows: function (sys, ctx) {
+                var EX = window.HY && window.HY.CombatMechanicsExtra;
+                var s = EX && EX.shadowInit ? EX.shadowInit(ctx.char) : null;
+                if (!s) return [{ k: '—', v: '無' }];
+                var K = (EX && EX.EXTRA && EX.EXTRA.shadow) ? EX.EXTRA.shadow : {};
+                var rows = [
+                    { k: '迅捷', v: s.onslaught > 0 ? ('生效中（剩 ' + s.onslaught + '）') : '未獲得', hl: s.onslaught > 0 },
+                    { k: '相位', v: s.phasing > 0 ? ('生效中（剩 ' + s.phasing + '）') : '未獲得', hl: s.phasing > 0 },
+                    { k: '迷蹤', v: s.elusive > 0 ? ('生效中（剩 ' + s.elusive + '）') : '未獲得', hl: s.elusive > 0 },
+                    { k: '回朔池', v: s.recoupPool > 0 ? (Math.round(s.recoupPool) + ' （' + s.recoupTurns + ' 回合內返還）') : '無', hl: s.recoupPool > 0 }
+                ];
+                /* 敵人身上的減益 */
+                var core = window.HY.game && window.HY.game.combatSys;
+                var tgt = core && (core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0];
+                if (tgt && tgt._debuff) {
+                    var names = Object.keys(tgt._debuff).map(function (k) {
+                        var d = tgt._debuff[k];
+                        return d.name + '(' + d.turns + ')';
+                    });
+                    if (names.length) rows.push({ k: '敵方減益', v: names.join('、') });
+                }
                 return rows;
             }
         }
@@ -56163,7 +56279,7 @@ window.HY = window.HY || {};
         }
         /* 舊存檔可能沒有新旗標，補齊 */
         ['minion', 'mine', 'trap', 'rage', 'fortify', 'aura', 'offering',
-         'totem', 'curse', 'brand', 'link', 'es', 'stun', 'ailment'].forEach(function (k) {
+         'totem', 'curse', 'brand', 'link', 'es', 'stun', 'ailment', 'shadow'].forEach(function (k) {
             if (typeof m.enabled[k] !== 'boolean') m.enabled[k] = false;
         });
         /* 機制加成幅度（從天賦數值推導，預設為 0 表示該機制未啟用） */
@@ -56239,7 +56355,9 @@ window.HY = window.HY || {};
         /* ⭐ v43 新增 3 派 */
         cihang:   'es',      /* 慈航靜齋 — 慈航護體（能量護盾） */
         leiting:  'stun',    /* 雷庭堡   — 雷霆萬鈞（暈眩） */
-        binghuo:  'ailment'  /* 冰火島   — 冰火雙絕（元素異常） */
+        binghuo:  'ailment', /* 冰火島   — 冰火雙絕（元素異常） */
+        /* ⭐ v44 新增 1 派 */
+        kuangying: 'shadow'  /* 狂影門   — 疾影追命（疾影狀態流） */
     };
 
     /* 機制 → 對應的天賦關鍵字（僅供該機制的擁有門派使用） */
@@ -56554,6 +56672,19 @@ window.HY = window.HY || {};
             out.atkPct += linkBonus;
             out.dmgReduce += Math.round(linkBonus * 0.5);
             out.tags.push('連結+' + linkBonus + '%');
+        }
+
+        /* ── ⭐ v44 疾影：迅捷／相位／迷蹤（僅獨佔門派）── */
+        if (en.shadow) {
+            var _SHM = window.HY && window.HY.CombatMechanicsExtra;
+            if (_SHM && typeof _SHM.shadowMods === 'function') {
+                var sm = _SHM.shadowMods(charObj);
+                if (sm) {
+                    if (sm.atkSpd) out.atkSpd += sm.atkSpd;
+                    if (sm.eva) out.eva += sm.eva;
+                    if (sm.tags) sm.tags.forEach(function (t) { out.tags.push(t); });
+                }
+            }
         }
 
         return out;
@@ -57510,6 +57641,33 @@ window.HY = window.HY || {};
                         });
                     } catch (eES) { }
                 }
+
+                /* ⭐ v44：⑪ 疾影推進（迅捷／相位／迷蹤倒數、回朔返還） */
+                try {
+                    if (_ALX2 && typeof _ALX2.shadowTick === 'function') {
+                        var _isShadow = c.mech && c.mech._ownedMechanic === 'shadow';
+                        if (_isShadow) {
+                            var _stk = _ALX2.shadowTick(c);
+                            _stk.log.forEach(function (t) { core.log(t, 'combat'); });
+                            if (_stk.heal > 0) {
+                                var _cs2 = g.charSys;
+                                if (_cs2 && _cs2.restoreVitals) _cs2.restoreVitals(_stk.heal, 0, c);
+                            }
+                            /* 減益施加：攻擊時對敵人附加致盲等 */
+                            var _tgt2 = (core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0];
+                            if (_tgt2) {
+                                var _dbKinds = ['blind', 'maim', 'intimidate', 'taunt', 'crush'];
+                                var _dk = _dbKinds[Math.floor(Math.random() * _dbKinds.length)];
+                                var _dkInfo = _ALX2.debuffApply(_tgt2, _dk);
+                                if (_dkInfo) core.log('🎯 對【' + _tgt2.name + '】施加【' + _dkInfo.name + '】', 'combat');
+                            }
+                        }
+                        /* 所有敵人的減益倒數（無論誰造成都會走完） */
+                        (core.enemies || []).forEach(function (e) {
+                            if (e && e.currentHp > 0) _ALX2.debuffTick(e);
+                        });
+                    }
+                } catch (eSH) { }
             },
 
             /* ⭐ 敵人攻擊我方後：幽靈護罩吸收。
@@ -57526,7 +57684,16 @@ window.HY = window.HY || {};
                     if (cs && typeof cs.restoreVitals === 'function') {
                         cs.restoreVitals(absorbed, 0, tgt);
                     }
-                    r.log.forEach(function (t) { core.log(t, 'combat'); });
+                    r.log.forEach(function (t) { _core.log(t, 'combat'); });
+                }
+
+                /* ⭐ v44：疾影門派受擊時獲得迷蹤與回朔池 */
+                var _SHY = window.HY && window.HY.CombatMechanicsExtra;
+                if (_SHY && typeof _SHY.shadowOnHit === 'function') {
+                    if (tgt.mech && tgt.mech._ownedMechanic === 'shadow') {
+                        var _sr = _SHY.shadowOnHit(tgt, dmg);
+                        _sr.log.forEach(function (t) { _core.log(t, 'combat'); });
+                    }
                 }
             },
 
@@ -57543,6 +57710,18 @@ window.HY = window.HY || {};
                 members.forEach(function (c) {
                     dead.forEach(function (t) { onKill(c, t); });
                 });
+
+                /* ⭐ v44：疾影門派在擊殺時獲得迅捷／相位
+                   舊門派完全不受影響（只看 _ownedMechanic） */
+                var _SHX = window.HY && window.HY.CombatMechanicsExtra;
+                if (_SHX && typeof _SHX.shadowOnKill === 'function') {
+                    members.forEach(function (c) {
+                        if (!c || !c.mech || c.mech._ownedMechanic !== 'shadow') return;
+                        if (dead.length <= 0) return;
+                        var r = _SHX.shadowOnKill(c);
+                        r.log.forEach(function (t) { _core.log(t, 'combat'); });
+                    });
+                }
             }
         });
         return true;
@@ -57727,6 +57906,37 @@ window.HY = window.HY || {};
                 scorch:  { name: '焦灼', color: '#f97316', resDownPct: 0.12, turns: 3, effect: '抗性降低' }
             },
             effect: '攻擊時依元素屬性附加異常狀態'
+        },
+        /* ══════════════════════════════════════════════════════════
+           ⭐ v44：疾影機制（把 POE 剩下的零散增益狀態整合成一套）
+           ──────────────────────────────────────────────────────────
+           這 4 個狀態在 POE 各自獨立，但詞條都很少（8/6/3/10），
+           單獨做成一套機制撐不起流派。它們的共同點是
+           「靠擊殺／受擊累積 → 短時間強化 → 會衰減」，
+           因此整合為「疾影」，一次讓 27 條天賦詞綴全部生效。
+
+             迅捷 Onslaught — 攻速 +20%、移動 +10%（擊殺獲得）
+             相位 Phasing   — 閃避大幅提升、可穿過敵人（擊殺獲得）
+             迷蹤 Elusive   — 閃避 +15%，效果逐回合衰減（受擊獲得）
+             回朔 Recoup    — 受到的傷害在後續回合返還為氣血
+
+           搭配「致盲／殘廢／恐嚇／嘲諷」等減益施加，
+           構成一個「高速遊擊 + 狀態壓制」的完整流派。
+           ══════════════════════════════════════════════════════════ */
+        shadow: {
+            name: '疾影',
+            onslaught: { name: '迅捷', atkSpdPct: 20, movePct: 10, turns: 4, color: '#f59e0b' },
+            phasing:   { name: '相位', evaPct: 40, turns: 4, color: '#22d3ee' },
+            elusive:   { name: '迷蹤', evaPct: 15, decayPct: 20, turns: 5, color: '#a78bfa' },
+            recoup:    { name: '回朔', ratioPct: 4, turns: 2, color: '#34d399' },
+            debuffs: {
+                blind:      { name: '致盲', hitDownPct: 20, turns: 3 },
+                maim:       { name: '殘廢', slowPct: 15, turns: 3 },
+                intimidate: { name: '恐嚇', dmgTakenPct: 10, turns: 4 },
+                taunt:      { name: '嘲諷', dmgTakenPct: 8, turns: 3 },
+                crush:      { name: '碎裂', armourDownPct: 15, turns: 4 }
+            },
+            effect: '擊殺／受擊累積多種增益狀態，高速遊擊流派'
         }
     };
 
@@ -57919,10 +58129,143 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════════
+       ⭐ v44：疾影機制（迅捷／相位／迷蹤／回朔 + 減益施加）
+       ══════════════════════════════════════════════════════════ */
+
+    /** 初始化疾影狀態 */
+    function shadowInit(c) {
+        if (!c) return null;
+        if (!c._shadow || typeof c._shadow !== 'object') {
+            c._shadow = {
+                onslaught: 0, phasing: 0, elusive: 0,
+                recoupPool: 0, recoupTurns: 0
+            };
+        }
+        var s = c._shadow;
+        ['onslaught', 'phasing', 'elusive'].forEach(function (k) {
+            if (typeof s[k] !== 'number') s[k] = 0;
+        });
+        if (typeof s.recoupPool !== 'number') s.recoupPool = 0;
+        if (typeof s.recoupTurns !== 'number') s.recoupTurns = 0;
+        return s;
+    }
+
+    /** 擊殺時累積迅捷與相位 */
+    function shadowOnKill(c) {
+        var s = shadowInit(c);
+        if (!s) return { log: [] };
+        var log = [];
+        var K = EXTRA.shadow;
+        s.onslaught = K.onslaught.turns;
+        s.phasing = K.phasing.turns;
+        log.push('💨 獲得【迅捷】（攻速+' + K.onslaught.atkSpdPct + '%）');
+        log.push('🌀 獲得【相位】（閃避+' + K.phasing.evaPct + '%）');
+        return { log: log, state: s };
+    }
+
+    /** 受擊時累積迷蹤與回朔 */
+    function shadowOnHit(c, dmg) {
+        var s = shadowInit(c);
+        if (!s) return { log: [] };
+        var log = [];
+        var K = EXTRA.shadow;
+        /* 迷蹤：受擊獲得 */
+        s.elusive = K.elusive.turns;
+        /* 回朔：受到的傷害一部分在後續回合返還 */
+        var ratio = K.recoup.ratioPct / 100;
+        s.recoupPool = Math.min(1e9, (s.recoupPool || 0) + Math.floor(dmg * ratio));
+        s.recoupTurns = K.recoup.turns;
+        log.push('👣 獲得【迷蹤】（閃避+' + K.elusive.evaPct + '%）');
+        return { log: log, state: s };
+    }
+
+    /** 每回合推進：倒數 + 回朔返還 */
+    function shadowTick(c) {
+        var s = shadowInit(c);
+        if (!s) return { log: [], heal: 0 };
+        var log = [];
+        var heal = 0;
+        if (s.onslaught > 0) s.onslaught -= 1;
+        if (s.phasing > 0) s.phasing -= 1;
+        if (s.elusive > 0) {
+            s.elusive -= 1;
+            if (s.elusive === 0) log.push('👣 迷蹤消散');
+        }
+        /* 回朔：把池子均分到剩餘回合返還 */
+        if (s.recoupPool > 0 && s.recoupTurns > 0) {
+            var give = Math.max(1, Math.floor(s.recoupPool / s.recoupTurns));
+            give = Math.min(give, s.recoupPool);
+            s.recoupPool -= give;
+            s.recoupTurns -= 1;
+            heal += give;
+            log.push('♻️ 回朔返還 +' + give + ' 氣血');
+            if (s.recoupTurns <= 0) s.recoupPool = 0;
+        }
+        return { log: log, heal: heal };
+    }
+
+    /** 疾影提供的屬性加成 */
+    function shadowMods(c) {
+        var s = shadowInit(c);
+        if (!s) return null;
+        var K = EXTRA.shadow;
+        var cs = window.HY.game && window.HY.game.charSys;
+        var st = cs ? cs.getDerivedStatsForChar(c) : null;
+        /* 天賦「increased Effect of Onslaught / Elusive」放大 */
+        var onPct = st ? num(st.onslaughtEffectPct, 0) : 0;
+        var elPct = st ? num(st.elusiveEffectPct, 0) : 0;
+        var out = { atkSpd: 0, eva: 0, tags: [] };
+        if (s.onslaught > 0) {
+            var v = K.onslaught.atkSpdPct * (1 + onPct / 100);
+            out.atkSpd += Math.round(v);
+            out.tags.push('迅捷+攻速' + Math.round(v) + '%');
+        }
+        if (s.phasing > 0) {
+            out.eva += K.phasing.evaPct;
+            out.tags.push('相位+閃避' + K.phasing.evaPct + '%');
+        }
+        if (s.elusive > 0) {
+            var ev = K.elusive.evaPct * (1 + elPct / 100);
+            out.eva += Math.round(ev);
+            out.tags.push('迷蹤+閃避' + Math.round(ev) + '%');
+        }
+        return out;
+    }
+
+    /* ── 減益施加（致盲／殘廢／恐嚇／嘲諷／碎裂）── */
+    function debuffApply(enemy, kind) {
+        if (!enemy) return null;
+        if (!enemy._debuff || typeof enemy._debuff !== 'object') enemy._debuff = {};
+        var K = EXTRA.shadow.debuffs[kind];
+        if (!K) return null;
+        enemy._debuff[kind] = { name: K.name, turns: K.turns };
+        return K;
+    }
+
+    function debuffTick(enemy) {
+        if (!enemy || !enemy._debuff) return { log: [] };
+        var log = [];
+        Object.keys(enemy._debuff).forEach(function (k) {
+            var d = enemy._debuff[k];
+            if (!d || d.turns <= 0) { delete enemy._debuff[k]; return; }
+            d.turns -= 1;
+            if (d.turns <= 0) delete enemy._debuff[k];
+        });
+        return { log: log };
+    }
+
+    /** 查詢敵人身上的減益（供傷害／命中計算） */
+    function debuffOn(enemy, kind) {
+        var d = enemy && enemy._debuff;
+        if (!d || !d[kind]) return null;
+        return EXTRA.shadow.debuffs[kind];
+    }
+
+    /* ══════════════════════════════════════════════════════════
        對外 API
        ══════════════════════════════════════════════════════════ */
     window.HY.CombatMechanicsExtra = {
-        v: 1,
+        v: 2,
         EXTRA: EXTRA,
         /* ES */
         esInit: esInit,
@@ -57937,11 +58280,20 @@ window.HY = window.HY || {};
         ailmentInit: ailmentInit,
         ailmentApply: ailmentApply,
         ailmentTick: ailmentTick,
-        ailmentMods: ailmentMods
+        ailmentMods: ailmentMods,
+        /* ⭐ v44 疾影 */
+        shadowInit: shadowInit,
+        shadowOnKill: shadowOnKill,
+        shadowOnHit: shadowOnHit,
+        shadowTick: shadowTick,
+        shadowMods: shadowMods,
+        debuffApply: debuffApply,
+        debuffTick: debuffTick,
+        debuffOn: debuffOn
     };
 
     if (window.console && window.console.log) {
-        console.log('[combatMechanicsExtra] ✓ 已載入（3 套機制：能量護盾／暈眩／元素異常）');
+        console.log('[combatMechanicsExtra] ✓ 已載入（4 套機制：能量護盾／暈眩／元素異常／疾影）');
     }
 })();
 
