@@ -26684,8 +26684,16 @@ window.HY = window.HY || {};
                elem_*_atk_9 以上、attr_*_10 以上…）都已不存在。
                不清掉的話，這些「幽靈節點」會讓已配置數虛高、點數算錯。
                已鑲嵌在不存在插槽上的珠寶要還回珠寶袋，不能憑空消失。
-               ⚠ 用一次性標記，因為 ensureState 會被繪圖迴圈每幀呼叫。 */
-            if (t._v !== 3) {
+               ⚠ 用一次性標記，因為 ensureState 會被繪圖迴圈每幀呼叫。
+
+               ⭐ v4：天賦樹已整棵換成 POE 官方 2429 節點。
+                 舊自製樹的 ID（root / gate_N / attr_str_N / core_* 等）
+                 在新樹裡全部不存在，但 _v 已經是 3，所以上一版遷移
+                 不會再跑 → 舊 ID 永遠卡在存檔裡，導致：
+                   · 已配置數虛高（顯示 16 點卻一個 POE 節點都沒點）
+                   · frontierIds 全空 → 玩家完全無法點任何 POE 天賦
+                 因此升到 v4 再清一次。 */
+            if (t._v !== 4) {
                 var N = this.nodes();
                 var staleSocketJewels = [];
                 Object.keys(t.allocated).forEach(function (id) {
@@ -26711,7 +26719,7 @@ window.HY = window.HY || {};
                         }
                     } catch (e) { }
                 }
-                t._v = 3;
+                t._v = 4;
             }
             return t;
         }
@@ -26760,6 +26768,41 @@ window.HY = window.HY || {};
             var D = window.HY.Data || {};
             var roots = D.TALENT_ROOTS || [];
             return roots.filter(function (r) { return r && r.id; }).map(function (r) { return String(r.id); });
+        }
+        /**
+         * ⭐ 確保角色有一個「起點」可以開始點天賦。
+         * POE 的設計是：玩家從自己職業的中心出發，那個中心節點本身免費。
+         * 但本作沒有「選職業」的概念（走的是門派），若不自動給一個起點，
+         * frontierIds() 會永遠回傳空陣列 → 玩家完全點不了任何天賦。
+         * 規則：若完全沒點過任何節點，自動配置離角色最近的那個職業起點。
+         */
+        ensureRoot(charObj) {
+            var c = charObj || this.charSys.state;
+            if (!c) return null;
+            var t = this.ensureState(c);
+            var ids = Object.keys(t.allocated || {});
+            if (ids.length > 0) return null;      /* 已有節點 → 不必動 */
+            var roots = this.rootIds();
+            if (!roots.length) return null;
+            var N = this.nodes();
+            /* 依門派挑最接近的職業起點（沒有門派就用第一個） */
+            var SECT_CLASS = {
+                shaolin: 'TEMPLAR', wudang: 'TEMPLAR', emei: 'TEMPLAR',
+                huashan: 'DUELIST', gaibang: 'MARAUDER', mingjiao: 'MARAUDER',
+                tangmen: 'SHADOW', xueshan: 'RANGER', yaowang: 'WITCH',
+                kunlun: 'SCION', kongtong: 'RANGER'
+            };
+            var want = SECT_CLASS[c.sect] || null;
+            var pick = null;
+            if (want) {
+                for (var i = 0; i < roots.length; i++) {
+                    var nm = String((N[roots[i]] || {}).name || '').toUpperCase();
+                    if (nm === want || (want === 'SCION' && nm === 'SIX')) { pick = roots[i]; break; }
+                }
+            }
+            if (!pick) pick = roots[0];
+            t.allocated[pick] = 1;
+            return pick;
         }
         /** 取得所有可「延伸」的節點 id（已點節點的 out + 反查 in） */
         frontierIds(charObj) {
@@ -44217,8 +44260,13 @@ window.HY = window.HY || {};
                     ? setFeatSys.getAttackerMods(charObj, target, art.isAoe)
                     : IDENTITY_MODS;
                 var effAtk = stats.atk * mods.atkMult;
-                var effHit = stats.hit + artHitBonus + mods.hitFlat;
-                var effCrit = stats.crit + artCritBonus + mods.critFlat;
+                /* ⭐ 命中／爆擊要一併吃「機制與詞綴」的平面加成。
+                   原本只加 mods.hitFlat（門派特色），導致：
+                     · 機制層寫入 stats.hitFlat 的沙姿態 +10 命中 → 完全無效
+                     · 暴擊球每顆 +4% 爆擊率（寫入 stats.critFlat）→ 完全無效
+                   這裡把 derived stats 的平面加成也加進來。 */
+                var effHit = stats.hit + artHitBonus + mods.hitFlat + num(stats.hitFlat, 0);
+                var effCrit = stats.crit + artCritBonus + mods.critFlat + num(stats.critFlat, 0);
                 var effTargetEva = Math.max(0, (target.eva || 0) - mods.evaIgnore);
                 var effPen = Math.min(0.85, basePen + mods.penBonus);
                 var minHitFloor = rtLv > 0 ? Math.min(75, 35 + rtLv * 2.5) : 25;
@@ -44256,6 +44304,12 @@ window.HY = window.HY || {};
                 // ⭐ 唐門群攻增幅
                 if (art.isAoe && mods.aoeBonus > 0) {
                     rawDmg *= (1 + mods.aoeBonus);
+                }
+                /* ⭐ 機制／詞綴的範圍傷害加成（沙姿態、範圍詞綴等）
+                   機制層寫入 stats.aoeRadius（百分比），與門派 aoeBonus（比例）不同單位，
+                   這裡除以 100 再套用，上限 100% 避免失控。 */
+                if (art.isAoe && num(stats.aoeRadius, 0) > 0) {
+                    rawDmg *= (1 + Math.min(100, num(stats.aoeRadius, 0)) / 100);
                 }
                 if (art.isAoe && targetList.length > 1) rawDmg *= 0.85;
                 var finalDmg = Math.floor(rawDmg * (0.95 + Math.random() * 0.1));
@@ -44420,7 +44474,11 @@ window.HY = window.HY || {};
                 (critCount > 0 ? ' (💥會心!)' : '') + elemTag + supportText + leechText + '！';
             core.log(logMsg, 'combat');
             if (!isTwinEcho) {
-                core.runPluginHooks('onAfterPlayerAttack', { charObj: charObj, skillId: skillId, totalDealt: totalDealt });
+                core.runPluginHooks('onAfterPlayerAttack', {
+                    charObj: charObj, skillId: skillId, totalDealt: totalDealt,
+                    /* ⭐ 機制層需要知道「是否有爆擊」才能給暴擊球 */
+                    isCrit: critCount > 0, critCount: critCount
+                });
             }
             core.syncCurrentEnemyPointer();
             if (!isTwinEcho && !isSupportMode && quadSpiritLv > 0 && core.currentEnemy && Math.random() * 100 < (12.5 + quadSpiritLv * 2.5)) {
@@ -44877,7 +44935,122 @@ window.HY = window.HY || {};
         /* 連結 */
         if (!m.link || typeof m.link !== 'object') m.link = { targetId: null };
 
+        /* ⭐ 機制啟用旗標：由「已配置的天賦」推導
+           沒有這層的話，所有機制都只是存在但永不啟用（等於沒做）。 */
+        if (!m.enabled || typeof m.enabled !== 'object') {
+            m.enabled = {
+                charges: false, impale: false, curse: false, warcry: false,
+                totem: false, brand: false, tincture: false, stance: false,
+                ghostShroud: false, consecrated: false, banner: false,
+                mark: false, link: false
+            };
+        }
+        /* 機制加成幅度（從天賦數值推導，預設為 0 表示該機制未啟用） */
+        if (!m.power || typeof m.power !== 'object') m.power = {};
+
         return m;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       ②b 天賦 → 機制啟用（真正的橋接層）
+       ──────────────────────────────────────────────────────────
+       天賦效果只是一個個字串（例如「10% chance to gain an Endurance
+       Charge on Kill」），本身不會驅動任何系統。
+       這裡掃描「已配置天賦」的文字，把出現的機制標記為 enabled，
+       之後 getMods / tickTurn / onHit 才會真的產生效果。
+       ══════════════════════════════════════════════════════════ */
+
+    /* 關鍵字 → 機制名稱。順序有意義：長字串先比對 */
+    var TALENT_TRIGGERS = [
+        ['Ghost Shroud', 'ghostShroud'],
+        ['Consecrated Ground', 'consecrated'],
+        ['Warcry', 'warcry'],
+        ['Tincture', 'tincture'],
+        ['Banner', 'banner'],
+        ['Blood Stance', 'stance'],
+        ['Sand Stance', 'stance'],
+        ['Stance', 'stance'],
+        ['Impale', 'impale'],
+        ['Brand', 'brand'],
+        ['Totem', 'totem'],
+        ['Curse', 'curse'],
+        ['Mark', 'mark'],
+        ['Link Skill', 'link'],
+        ['Endurance Charge', 'charges'],
+        ['Frenzy Charge', 'charges'],
+        ['Power Charge', 'charges']
+    ];
+
+    /**
+     * 依角色「已配置的天賦」同步機制啟用狀態。
+     * 只在天賦變動後需要呼叫一次（成本：掃描已配置節點的文字）。
+     */
+    function syncFromTalents(charObj) {
+        var c = charObj;
+        if (!c) return null;
+        var m = init(c);
+        var HYD = window.HY.Data || {};
+        var N = HYD.TALENT_NODES || {};
+        var ts = window.HY.game && window.HY.game.talentSys;
+        if (!ts || typeof ts.ensureState !== 'function') return m;
+
+        var st = null;
+        try { st = ts.ensureState(c); } catch (e) { st = null; }
+        if (!st || !st.allocated) return m;
+
+        /* 把所有已配置天賦的效果文字串成一大段，逐一比對關鍵字 */
+        var texts = [];
+        Object.keys(st.allocated).forEach(function (id) {
+            var n = N[id];
+            if (!n || !n.stats) return;
+            (n.stats || []).forEach(function (s) { texts.push(String(s || '')); });
+        });
+        var blob = texts.join(' \n ');
+        if (!blob) return m;
+
+        /* ① 啟用旗標 */
+        TALENT_TRIGGERS.forEach(function (pair) {
+            if (blob.indexOf(pair[0]) >= 0) m.enabled[pair[1]] = true;
+        });
+
+        /* ⭐ 充能球：只要天賦提到任何充能球就啟用（擊殺/爆擊時才會實際獲得） */
+        if (/Charge/.test(blob)) m.enabled.charges = true;
+
+        /* ② 量化幅度：從天賦文字撈出「N% increased X」的數值 */
+        var grab = function (re) {
+            var total = 0, mm;
+            var rx = new RegExp(re, 'gi');
+            while ((mm = rx.exec(blob)) !== null) {
+                total += num(mm[1], 0);
+            }
+            return total;
+        };
+        m.power.warcryPct = grab('([\\d.]+)%\\s+increased\\s+(?:Warcry|Effect of Warcries)');
+        m.power.tincturePct = grab('([\\d.]+)%\\s+increased\\s+(?:Tincture|Effect of Tinctures)');
+        m.power.bannerPct = grab('([\\d.]+)%\\s+increased\\s+(?:Banner|Effect of Banners)');
+        m.power.consecratedPct = grab('([\\d.]+)%\\s+increased\\s+(?:Effect of )?Consecrated Ground');
+        m.power.stancePct = grab('([\\d.]+)%\\s+increased\\s+.*?Stance');
+        m.power.impalePct = grab('([\\d.]+)%\\s+increased\\s+Effect of Impales');
+        m.power.markPct = grab('([\\d.]+)%\\s+increased\\s+Damage.*?against Marked');
+        m.power.cursePct = grab('([\\d.]+)%\\s+increased\\s+Effect of your Curses');
+
+        /* 幽靈護罩層數上限 */
+        var shroudMax = blob.match(/(?:maximum of|up to a maximum of)\s*(\d+)/i);
+        m.power.ghostShroudMax = shroudMax ? num(shroudMax[1], 3) : 3;
+
+        /* ⭐ 只保留「擊殺獲得充能球」那幾行，供 onKill 擲骰用
+           （整段 blob 拿去比對會誤命中「格擋時獲得」等非擊殺來源） */
+        m._killChargeText = texts.filter(function (t) {
+            return /charge/i.test(t) && /on\s+kill/i.test(t);
+        }).join(' \n ');
+
+        return m;
+    }
+
+    /** 是否啟用某個機制 */
+    function has(charObj, key) {
+        var m = init(charObj);
+        return !!(m && m.enabled && m.enabled[key]);
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -44896,58 +45069,75 @@ window.HY = window.HY || {};
         };
         if (!m) return out;
 
+        /* ⭐ 只有「天賦真的提到這個機制」時才給加成。
+           否則每個角色都白白獲得戰吼 +20%、旗幟 +15% 等，
+           等於憑空多一堆不存在的增益。 */
+        var en = m.enabled || {};
+        var pw = m.power || {};
+
         /* ── 充能球 ── */
         var ch = m.charges;
-        if (ch.power > 0) {
+        if (en.charges && ch.power > 0) {
             out.critFlat += ch.power * 4;
             out.tags.push('暴擊球×' + ch.power);
         }
-        if (ch.frenzy > 0) {
+        if (en.charges && ch.frenzy > 0) {
             out.atkSpd += ch.frenzy * 4;
             out.atkPct += ch.frenzy * 4;
             out.tags.push('狂怒球×' + ch.frenzy);
         }
-        if (ch.endurance > 0) {
+        if (en.charges && ch.endurance > 0) {
             out.allRes += ch.endurance * 4;
             out.dmgReduce += ch.endurance * 4;
             out.tags.push('耐力球×' + ch.endurance);
         }
 
-        /* ── 戰吼 ── */
-        if (m.warcry.turns > 0 && m.warcry.atkBonus > 0) {
-            out.atkPct += m.warcry.atkBonus;
-            out.tags.push('戰吼+' + m.warcry.atkBonus + '%');
+        /* ── 戰吼（幅度受天賦影響）── */
+        if (en.warcry && m.warcry.turns > 0 && m.warcry.atkBonus > 0) {
+            var wcBonus = m.warcry.atkBonus * (1 + num(pw.warcryPct, 0) / 100);
+            out.atkPct += Math.round(wcBonus);
+            out.tags.push('戰吼+' + Math.round(wcBonus) + '%');
         }
 
         /* ── 姿態 ── */
-        if (m.stance === 'blood') {
+        if (en.stance && m.stance === 'blood') {
             out.atkPct += 20;
             out.dmgReduce -= 10;
             out.tags.push('血姿態');
-        } else if (m.stance === 'sand') {
+        } else if (en.stance && m.stance === 'sand') {
             out.aoeBonus += 15;
             out.hitBonus += 10;
             out.tags.push('沙姿態');
         }
 
         /* ── 聖化地面 ── */
-        if (m.consecrated > 0) {
-            out.hitBonus += 10;
-            out.allRes += 10;
+        if (en.consecrated && m.consecrated > 0) {
+            var cBonus = 10 * (1 + num(pw.consecratedPct, 0) / 100);
+            out.hitBonus += Math.round(cBonus);
+            out.allRes += Math.round(cBonus);
             out.tags.push('聖化地面');
         }
 
         /* ── 旗幟 ── */
-        if (m.banner.active) {
-            out.atkPct += 15;
+        if (en.banner && m.banner.active) {
+            var bBonus = 15 * (1 + num(pw.bannerPct, 0) / 100);
+            out.atkPct += Math.round(bBonus);
             out.dmgReduce += 8;
             out.tags.push('旗幟');
         }
 
         /* ── 酊劑 ── */
-        if (m.tincture.turns > 0 && m.tincture.effect) {
-            out[ m.tincture.effect.key ] = (out[ m.tincture.effect.key ] || 0) + num(m.tincture.effect.val, 0);
+        if (en.tincture && m.tincture.turns > 0 && m.tincture.effect) {
+            var tVal = num(m.tincture.effect.val, 0) * (1 + num(pw.tincturePct, 0) / 100);
+            out[ m.tincture.effect.key ] = (out[ m.tincture.effect.key ] || 0) + Math.round(tVal);
             out.tags.push('酊劑');
+        }
+
+        /* ── 印記（對已標記目標的傷害加成）── */
+        if (en.mark && m.mark.uid && m.mark.turns > 0) {
+            var mkBonus = 10 + num(pw.markPct, 0);
+            out.atkPct += Math.round(mkBonus);
+            out.tags.push('印記+' + Math.round(mkBonus) + '%');
         }
 
         return out;
@@ -44963,19 +45153,21 @@ window.HY = window.HY || {};
         var log = [];
         var extraDmg = 0;
 
-        /* ── 穿刺堆疊：物理為主的攻擊才有 ── */
-        if (o.isPhysical !== false) {
+        /* ── 穿刺堆疊：只有「天賦真的提到穿刺」才會累積 ── */
+        if (o.isPhysical !== false && m.enabled && m.enabled.impale) {
             var uid = String(target.uid || target.id || '');
             var stack = num(m.impale[uid], 0);
-            var mods = getMods(charObj);
+            var pwI = m.power || {};
             var maxStacks = 5;
+            /* 每層額外傷害：基礎 10%，受天賦「increased Effect of Impales」加成 */
+            var perStack = 0.10 * (1 + num(pwI.impalePct, 0) / 100);
             if (stack < maxStacks) {
                 m.impale[uid] = stack + 1;
                 log.push('🗡️ 穿刺+' + (stack + 1) + '/' + maxStacks);
             }
             /* 已有的穿刺層數 → 額外物理傷害 */
             if (stack > 0) {
-                var impaleDmg = Math.floor(dmg * 0.1 * stack);
+                var impaleDmg = Math.floor(dmg * perStack * stack);
                 extraDmg += impaleDmg;
                 log.push('🗡️ 穿刺引爆 +' + impaleDmg);
             }
@@ -45002,6 +45194,33 @@ window.HY = window.HY || {};
         if (!m) return { log: [] };
         var log = [];
         var uid = String((target && (target.uid || target.id)) || '');
+        var en = m.enabled || {};
+
+        /* ⭐ 擊殺獲得充能球：天賦裡大量出現「N% chance to gain a X Charge on Kill」。
+           原本這裡只清記錄、不給球，導致這類天賦全是裝飾。
+           這裡依天賦實際寫的機率擲骰（沒寫機率就視為必得）。 */
+        if (en.charges) {
+            var blob = String(m._killChargeText || '');
+            /* _killChargeText 由 syncFromTalents 填入（只含擊殺相關的充能球詞條） */
+            var roll = function (kw) {
+                var rx = new RegExp('(\\d+(?:\\.\\d+)?)%\\s+chance\\s+to\\s+gain\\s+(?:a|an|a Power, Frenzy or)\\s*[^.]*?' + kw, 'i');
+                var mm = blob.match(rx);
+                var pct = mm ? num(mm[1], 100) : (blob.indexOf(kw) >= 0 ? 100 : 0);
+                return pct > 0 && Math.random() * 100 < pct;
+            };
+            if (roll('Endurance Charge')) {
+                m.charges.endurance = Math.min(3, m.charges.endurance + 1);
+                log.push('⚡ 擊殺獲得耐力球×' + m.charges.endurance);
+            }
+            if (roll('Frenzy Charge')) {
+                m.charges.frenzy = Math.min(3, m.charges.frenzy + 1);
+                log.push('⚡ 擊殺獲得狂怒球×' + m.charges.frenzy);
+            }
+            if (roll('Power Charge')) {
+                m.charges.power = Math.min(3, m.charges.power + 1);
+                log.push('⚡ 擊殺獲得暴擊球×' + m.charges.power);
+            }
+        }
 
         /* 清掉該目標的穿刺記錄 */
         if (m.impale[uid]) delete m.impale[uid];
@@ -45065,13 +45284,16 @@ window.HY = window.HY || {};
             if (m.consecrated === 0) log.push('✨ 聖化地面消失');
         }
 
-        /* 幽靈護罩：每 2 回合累積 1 層（上限 3） */
-        if (m.ghostShroud < 3) {
-            m._shroudTick = num(m._shroudTick, 0) + 1;
-            if (m._shroudTick >= 2) {
-                m._shroudTick = 0;
-                m.ghostShroud += 1;
-                log.push('👻 凝聚幽靈護罩×' + m.ghostShroud);
+        /* 幽靈護罩：每 2 回合累積 1 層（上限由天賦決定，預設 3） */
+        if (m.enabled && m.enabled.ghostShroud) {
+            var shroudMax = num((m.power || {}).ghostShroudMax, 3);
+            if (m.ghostShroud < shroudMax) {
+                m._shroudTick = num(m._shroudTick, 0) + 1;
+                if (m._shroudTick >= 2) {
+                    m._shroudTick = 0;
+                    m.ghostShroud += 1;
+                    log.push('👻 凝聚幽靈護罩×' + m.ghostShroud + '/' + shroudMax);
+                }
             }
         }
 
@@ -45088,6 +45310,78 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════════
+       ⑦b 自動觸發（讓機制真的會動）
+       ──────────────────────────────────────────────────────────
+       機制狀態雖然定義完整，但沒有任何地方會呼叫 useWarcry /
+       useTincture / setStance …，所以永遠停在「未啟用」。
+       這裡在每回合推進時，依「已啟用的機制」自動維持效果，
+       玩家不必手動操作也能看到天賦詞綴真的在運作。
+       ══════════════════════════════════════════════════════════ */
+    function autoTrigger(charObj) {
+        var m = init(charObj);
+        if (!m) return { log: [] };
+        var en = m.enabled || {};
+        var pw = m.power || {};
+        var log = [];
+
+        /* ① 戰吼：效果結束後自動再吼（有冷卻，每 4 回合一次） */
+        if (en.warcry) {
+            if (m.warcry.turns <= 0) {
+                m._warcryCd = num(m._warcryCd, 0) - 1;
+                if (m._warcryCd <= 0) {
+                    var pct = 20 + num(pw.warcryPct, 0);
+                    m.warcry.turns = 5;
+                    m.warcry.atkBonus = pct;
+                    m.charges.endurance = Math.min(3, m.charges.endurance + 1);
+                    m._warcryCd = 4;
+                    log.push('📢 自動戰吼（攻擊 +' + Math.round(pct) + '%、獲得耐力球）');
+                }
+            }
+        }
+
+        /* ② 酊劑：效果結束自動補上 */
+        if (en.tincture && m.tincture.turns <= 0) {
+            m.tincture.turns = 8;
+            m.tincture.effect = { key: 'atkSpd', val: 20 };
+            log.push('🧪 自動塗抹酊劑（攻速 +20%）');
+        }
+
+        /* ③ 姿態：未設定時自動選血姿態（近戰）或沙姿態（範圍） */
+        if (en.stance && !m.stance) {
+            m.stance = 'blood';
+            log.push('⚔️ 自動進入血姿態');
+        }
+
+        /* ④ 旗幟：未升起時自動放置 */
+        if (en.banner && !m.banner.active) {
+            m.banner.active = true;
+            m.banner.turns = 10;
+            log.push('🚩 自動放置旗幟');
+        }
+
+        /* ⑤ 聖化地面：未創造時自動創造 */
+        if (en.consecrated && m.consecrated <= 0) {
+            m.consecrated = 8;
+            log.push('✨ 自動創造聖化地面');
+        }
+
+        /* ⑥ 印記：場上有敵人但未標記時自動標記 */
+        if (en.mark && (!m.mark.uid || m.mark.turns <= 0)) {
+            var core = window.HY.game && window.HY.game.combatSys;
+            var tgt = core && (core.enemies || []).filter(function (e) {
+                return e && e.currentHp > 0;
+            })[0];
+            if (tgt) {
+                m.mark.uid = String(tgt.uid || tgt.id || '');
+                m.mark.turns = 8;
+                log.push('🎯 自動標記【' + tgt.name + '】');
+            }
+        }
+
+        return { log: log };
+    }
+
+    /* ══════════════════════════════════════════════════════════
        ⑦ 受擊結算（敵人打中我方時）
        ══════════════════════════════════════════════════════════ */
     function onDamaged(charObj, incomingDmg) {
@@ -45096,8 +45390,8 @@ window.HY = window.HY || {};
         var log = [];
         var dmg = incomingDmg;
 
-        /* 幽靈護罩：抵銷一次傷害 */
-        if (m.ghostShroud > 0) {
+        /* 幽靈護罩：抵銷一次傷害（只有天賦提到才會累積） */
+        if (m.enabled && m.enabled.ghostShroud && m.ghostShroud > 0) {
             m.ghostShroud -= 1;
             var absorb = Math.floor(dmg * 0.5);
             dmg -= absorb;
@@ -45165,16 +45459,77 @@ window.HY = window.HY || {};
 
         core.registerPlugin({
             name: 'CombatMechanics',
+
+            /* ⭐ 開場：初始化機制狀態 + 依天賦啟用機制 + 首次自動觸發 */
             onBattleStart: function (payload) {
                 var members = (payload && payload.partyMembers) || [];
-                members.forEach(function (c) { init(c); });
+                var st = g.charSys && g.charSys.state;
+                if (st && members.indexOf(st) < 0) members.push(st);
+                members.forEach(function (c) {
+                    init(c);
+                    /* 依「已配置天賦」決定哪些機制真的啟用 */
+                    syncFromTalents(c);
+                    /* 清空上一場的穿刺記錄（穿刺不跨戰鬥累積） */
+                    if (c.mech && c.mech.impale) c.mech.impale = {};
+                    /* 開場自動啟動戰吼／酊劑／姿態／旗幟／聖化地面／印記 */
+                    autoTrigger(c).log.forEach(function (t) { core.log(t, 'combat'); });
+                });
             },
+
+            /* ⭐ 玩家攻擊後：穿刺堆疊、充能球、機制倒數 */
             onAfterPlayerAttack: function (payload) {
                 var c = payload && payload.charObj;
                 if (!c) return;
-                var logs = tickTurn(c).log;
-                logs.forEach(function (t) { core.log(t, 'combat'); });
+                var dealt = num(payload && payload.totalDealt, 0);
+
+                /* ① 命中結算：穿刺堆疊 + 擊中得球 */
+                if (dealt > 0) {
+                    var target = (core.enemies || []).filter(function (e) {
+                        return e && e.currentHp > 0;
+                    })[0];
+                    if (target) {
+                        var isCrit = !!(payload && payload.isCrit);
+                        var r = onHit(c, target, dealt, {
+                            isPhysical: true,
+                            isCrit: isCrit,
+                            /* 爆擊 → 累積暴擊球；滿球時 getMods 會把 critFlat 加進 derived */
+                            gainPower: isCrit,
+                            gainFrenzy: false
+                        });
+                        /* 穿刺引爆的額外傷害要真的扣血 */
+                        if (r.extraDmg > 0 && target.currentHp > 0) {
+                            target.currentHp = Math.max(0, target.currentHp - r.extraDmg);
+                        }
+                        r.log.forEach(function (t) { core.log(t, 'combat'); });
+                    }
+                }
+
+                /* ② 機制倒數 */
+                tickTurn(c).log.forEach(function (t) { core.log(t, 'combat'); });
+
+                /* ③ 自動維持機制（戰吼／酊劑／姿態／旗幟／聖化地面／印記） */
+                autoTrigger(c).log.forEach(function (t) { core.log(t, 'combat'); });
             },
+
+            /* ⭐ 敵人攻擊我方後：幽靈護罩吸收。
+               ⚠ 這個 hook 在敵人已經扣血之後才觸發，無法回頭改傷害，
+                 因此改用「事後補血」的方式抵銷吸收量。 */
+            onAfterEnemyAttack: function (payload) {
+                var tgt = payload && payload.targetMember;
+                var dmg = num(payload && payload.enemyDmg, 0);
+                if (!tgt || dmg <= 0 || tgt.currentHp <= 0) return;
+                var r = onDamaged(tgt, dmg);
+                var absorbed = dmg - r.dmg;
+                if (absorbed > 0) {
+                    var cs = g.charSys;
+                    if (cs && typeof cs.restoreVitals === 'function') {
+                        cs.restoreVitals(absorbed, 0, tgt);
+                    }
+                    r.log.forEach(function (t) { core.log(t, 'combat'); });
+                }
+            },
+
+            /* ⭐ 勝利：清穿刺記錄、印記 */
             onVictory: function (payload) {
                 var dead = (payload && payload.defeatedEnemies) || [];
                 var members = [];
@@ -45182,12 +45537,52 @@ window.HY = window.HY || {};
                     var ps = g.partySys;
                     if (ps && typeof ps.getPartyMembers === 'function') members = ps.getPartyMembers();
                 } catch (e) { members = []; }
+                var st = g.charSys && g.charSys.state;
+                if (st) members.push(st);
                 members.forEach(function (c) {
                     dead.forEach(function (t) { onKill(c, t); });
                 });
             }
         });
         return true;
+    }
+
+    /* ⭐ 自動安裝：等 game / combatSys 就緒後註冊 plugin，
+       並為目前主角初始化機制狀態。
+       （原版只有 install() 函式，卻沒有任何地方呼叫 → 整套機制從未生效） */
+    function autoInstall() {
+        var g = window.HY.game;
+        if (!g || !g.combatSys) return false;
+        var ok = install();
+        if (ok) {
+            var st = g.charSys && g.charSys.state;
+            if (st) {
+                init(st);
+                /* ⭐ 依目前角色的天賦，立刻決定哪些機制啟用 */
+                syncFromTalents(st);
+            }
+            if (window.console && window.console.log) {
+                var en = st && st.mech && st.mech.enabled;
+                var on = en ? Object.keys(en).filter(function (k) { return en[k]; }) : [];
+                console.log('[combatMechanics] ✓ plugin 已註冊（' +
+                    Object.keys(MECHANICS).length + ' 個機制），已啟用：' +
+                    (on.length ? on.join(', ') : '無（天賦尚未配置）'));
+            }
+        }
+        return ok;
+    }
+    if (window.addEventListener) {
+        window.addEventListener('DOMContentLoaded', function () {
+            /* 用輪詢確保 game 與 combatSys 都建好（順序不保證） */
+            var tries = 0;
+            var timer = setInterval(function () {
+                tries += 1;
+                if (autoInstall() || tries > 40) clearInterval(timer);
+            }, 250);
+        });
+        window.addEventListener('load', function () {
+            setTimeout(autoInstall, 300);
+        });
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -45202,6 +45597,10 @@ window.HY = window.HY || {};
         onKill: onKill,
         tickTurn: tickTurn,
         onDamaged: onDamaged,
+        /* ⭐ 新增：天賦 → 機制橋接與自動觸發 */
+        syncFromTalents: syncFromTalents,
+        autoTrigger: autoTrigger,
+        has: has,
         useWarcry: useWarcry,
         useTincture: useTincture,
         setStance: setStance,
@@ -83993,6 +84392,7 @@ window.HY = window.HY || {};
             this.renderSidePanel();
             this._draw();
             this._fillTip(id);
+            this._syncMechanics();      /* ⭐ 天賦變動 → 重新判定機制啟用 */
             if (r.free) this._toast('🔓 已開啟路徑節點', false);
         }
         _deallocate(id) {
@@ -84007,6 +84407,7 @@ window.HY = window.HY || {};
             this._refreshHeader();
             this.renderSidePanel();
             this._draw();
+            this._syncMechanics();      /* ⭐ 天賦變動 → 重新判定機制啟用 */
             this._toast('↩️ 已退還【' + (n ? this._zhName(n.name) : id) + '】', false);
         }
         _resetAll() {
@@ -84018,6 +84419,7 @@ window.HY = window.HY || {};
             this._refreshHeader();
             this.renderSidePanel();
             this._draw();
+            this._syncMechanics();      /* ⭐ 重洗後機制全部停用 */
             this._toast('🔄 天賦已全部重洗', false);
         }
         // ──────────────────────────────────────────────────────────
@@ -84825,6 +85227,9 @@ window.HY = window.HY || {};
             if (!this.talent) { this._toast('天賦系統未載入', true); return; }
             this.talent.ensureState();
             this.talent.syncPoints();
+            /* ⭐ 首次開啟：自動配置職業起點，否則整棵樹一個都點不了
+               （frontierIds() 從已配置節點展開，沒有起點就永遠是空的） */
+            try { this.talent.ensureRoot(this.app.charSys.state); } catch (e) { }
             this.isOpen = true;
             this.el.root.classList.remove('hidden');
             this._resize();
@@ -84847,6 +85252,19 @@ window.HY = window.HY || {};
             var TZ = window.HY.TalentZh;
             if (TZ && TZ.name) return TZ.name(raw);
             return raw;
+        }
+        /**
+         * ⭐ 天賦變動後，重新判定「哪些戰鬥機制被啟用」。
+         * 沒有這一步，玩家點完天賦只會看到數字變化，
+         * 依賴機制的詞綴（戰吼、酊劑、姿態…）永遠不會生效。
+         */
+        _syncMechanics() {
+            var CM = window.HY && window.HY.CombatMechanics;
+            if (!CM || typeof CM.syncFromTalents !== 'function') return;
+            try {
+                var c = this.app.charSys.state;
+                CM.syncFromTalents(c);
+            } catch (e) { }
         }
         _refreshHeader() {
             var c = this.app.charSys.state;
