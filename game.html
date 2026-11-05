@@ -30890,18 +30890,21 @@ window.HY = window.HY || {};
             /* ⭐ 主角的戰鬥狀態要清在「charSys.state」上，
                不是 root.state —— rootState 根本沒有 state 這個屬性
                （實際結構是 { roster, activeCharIndex, party, ... }）。
-               之前寫 root.state._battle = {} 是無效代碼，
-               導致主角跨戰鬥殘留 yyTurn / karma / chi。
-               ⚠ 另外也一併清 activeCharIndex 指向的角色（有些流程會用它）。 */
-            if (cs.state) cs.state._battle = {};
+
+               ⚠ 重要：yyHits（陰陽出手次數）必須「跨戰鬥保留」。
+                 速刷時一場只打 1~2 招，若每場重置，
+                 玩家永遠只看得到陽刀 → 主觀感受就是「完全不會交替」。
+                 保留 yyHits 讓陰陽模式連續累積，才能真正交替。 */
+            var keepYY = function (ch) {
+                if (!ch) return;
+                var prev = (ch._battle && typeof ch._battle.yyHits === 'number')
+                    ? ch._battle.yyHits : 0;
+                ch._battle = {};
+                if (prev) ch._battle.yyHits = prev;
+            };
+            keepYY(cs.state);
             if (root) {
-                var idx = root.activeCharIndex;
-                if (typeof idx === 'number' && root.roster && root.roster[idx]) {
-                    root.roster[idx]._battle = {};
-                }
-                (root.roster || []).forEach(function (c) {
-                    if (c) c._battle = {};
-                });
+                (root.roster || []).forEach(function (c) { keepYY(c); });
             }
             this._paramCache = {};
             this._cacheSig = {};
