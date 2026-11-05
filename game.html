@@ -1012,12 +1012,12 @@ details > summary::marker {
                 <div id="tab-party" class="tab-content">
                     <div class="combat-header-row">
                         <div>
-                            <h3>👥 時空行者角色欄（最高可創建 5 名獨立角色，上限 Lv.300）</h3>
+                            <h3>👥 時空行者角色欄（最高可創建 20 名獨立角色，上限 Lv.300；上陣隊伍最多 5 人）</h3>
                             <p style="font-size:0.83rem; color:#94a3b8;">點擊「切換操控」即可為該角色獨立拜入不同門派、修煉 10 式外功、5 階心法與 3 階身法，激發專屬門派特色！</p>
                         </div>
                         <div class="btn-group-row">
                             <input type="text" id="inp-new-char-name" placeholder="輸入新角色名 (選填)" style="background:#121822; border:1px solid #334155; color:#fff; padding:6px 10px; border-radius:4px;">
-                            <button id="btn-create-char" class="btn-primary">➕ 創建新角色 (最高5人)</button>
+                            <button id="btn-create-char" class="btn-primary">➕ 創建新角色 (最高20人)</button>
                             <button id="btn-deploy-all" class="action-btn" style="border-color:#10b981; color:#10b981;">🚩 全員一鍵上陣</button>
                         </div>
                     </div>
@@ -4300,7 +4300,10 @@ window.HY.Data = window.HY.Data || {};
     const Data = window.HY.Data;
     Data.CONFIG = {
         MAX_LEVEL: 300,
-        MAX_CHARS: 5,
+        /* ⭐ 角色欄上限 20（可創建的角色數）
+           ⚠ 與 MAX_PARTY_SIZE（上陣隊伍上限 5）是兩件不同的事，
+             不要把兩者混用 —— 否則隊伍也會變成 20 人。 */
+        MAX_CHARS: 20,
         MAX_PARTY_SIZE: 5,
         REWARD_RATE: 0.085,
         AUTO_SAVE_INTERVAL: 30000,
@@ -23945,6 +23948,17 @@ window.HY = window.HY || {};
                 if (!Data.SECTS || !Data.SECTS[sectId]) return false;
                 var sect = Data.SECTS[sectId];
                 var reqLv = sect.reqLv || 10;
+                /* ⭐⭐ 已拜入門派 → 不可更換（v2）
+                   原本這裡允許「轉換師門」，會把原門派專屬的武學／心法／身法
+                   全部刪除，玩家一旦誤點就救不回來（除非重練）。
+                   改成：已入門派者一律擋下，要換門派必須先「叛出師門」。 */
+                if (this.state.sect && this.state.sect !== sectId) {
+                    var curSect = Data.SECTS[this.state.sect];
+                    this.logger.add('⛔ 【' + this.state.name + '】已拜入【' +
+                        (curSect ? curSect.name : this.state.sect) +
+                        '】，無法再拜其他門派（需先叛出師門）。', 'system');
+                    return false;
+                }
                 if (this.state.lv < reqLv) {
                     this.logger.add('🔒 等級不足！【' + this.state.name + '】需達到 Lv.' + reqLv + ' 才能拜入【' + sect.name + '】！', 'system');
                     return false;
@@ -24029,7 +24043,14 @@ window.HY = window.HY || {};
         constructor(charSys, logger) {
             this.charSys = charSys;
             this.logger = logger;
-            this.MAX_CHARS = 5;
+            /* ⭐ 角色欄上限 20（v2）
+               原本是 5 —— 但「可創建的角色數」與「可上陣人數」是兩件事：
+                 角色欄：20 人（收藏、切換操控）
+                 上陣隊伍：仍為 5 人（見 partySystem.MAX_PARTY）
+               這樣玩家可以養多隻不同流派，但戰鬥永遠只有 5 人上場。 */
+            this.MAX_CHARS = 20;
+            /* 上陣隊伍上限（獨立設定，不要跟著 MAX_CHARS 變大） */
+            this.MAX_PARTY = 5;
         }
         // ⭐ 統一由 Data.PRESET_NAMES 取得（partyData.js），避免雙份定義
         get PRESET_NAMES() {
@@ -24080,7 +24101,7 @@ window.HY = window.HY || {};
             this.ensureState();
             var root = this.charSys.rootState;
             if (root.roster.length >= this.MAX_CHARS) {
-                this.logger.add('⚠️ 角色欄已達上限（最高可創建並操作 5 名時空行者）！', 'system');
+                this.logger.add('⚠️ 角色欄已達上限（最高可創建 ' + this.MAX_CHARS + ' 名時空行者）！', 'system');
                 return false;
             }
             var nextIdx = root.roster.length + 1;
@@ -35417,53 +35438,12 @@ window.HY = window.HY || {};
     /* 再補一次，確保跑在所有延遲初始化的模組之後 */
     setTimeout(scheduleSelfHeal, 2000);
 
-    /* ⭐ 在頂部工具列「🌳 天賦樹」旁插入「✧ 昇華」按鈕
-       ⚠️ 這顆按鈕原本用 sys-btn 樣式，跟旁邊 12 顆按鈕同色同大小，
-          玩家根本找不到（實測詢問「昇華天賦在哪」）。
-          這裡改成金色高亮 + 呼吸光暈，讓它一眼可見。 */
+    /* ⭐ v5：不再顯示「昇華」按鈕（v3 的需求已取消）
+       原本會在工具列插入金色「✧ 昇華天賦」按鈕，
+       現在只保留昇華系統本體（仍可用 console 或未來從其他入口開啟）。
+       ⚠ 若日後要恢復，把 installButton(g) 的呼叫打開即可。 */
     function installButton(g) {
-        if (document.getElementById('btn-open-asc')) return;
-        var talentBtn = document.getElementById('btn-open-talent');
-        if (!talentBtn || !talentBtn.parentNode) return;
-
-        /* ⭐ 注入專屬樣式 */
-        if (!document.getElementById('hy-asc-btn-css')) {
-            var st = document.createElement('style');
-            st.id = 'hy-asc-btn-css';
-            st.textContent = [
-                '#btn-open-asc{',
-                '  background:linear-gradient(135deg,#4a3818,#2a1f0c) !important;',
-                '  border:1px solid #f0c674 !important;',
-                '  color:#fbbf24 !important;',
-                '  font-weight:bold !important;',
-                '  text-shadow:0 0 8px rgba(251,191,36,.55) !important;',
-                '  box-shadow:0 0 12px rgba(240,198,116,.35) !important;',
-                '  animation:hyAscPulse 2.4s ease-in-out infinite;',
-                '}',
-                '#btn-open-asc:hover{',
-                '  background:linear-gradient(135deg,#6b5020,#3d2d12) !important;',
-                '  border-color:#ffd479 !important;',
-                '  box-shadow:0 0 20px rgba(240,198,116,.7) !important;',
-                '  color:#ffe9b0 !important;',
-                '}',
-                '@keyframes hyAscPulse{',
-                '  0%,100%{box-shadow:0 0 10px rgba(240,198,116,.30);}',
-                '  50%{box-shadow:0 0 20px rgba(240,198,116,.65);}',
-                '}'
-            ].join('');
-            document.head.appendChild(st);
-        }
-
-        var b = document.createElement('button');
-        b.id = 'btn-open-asc';
-        b.className = talentBtn.className || 'sys-btn';
-        b.textContent = '✧ 昇華天賦';
-        b.title = '昇華天賦（POE 三選一分支，8 點）';
-        b.addEventListener('click', function () {
-            if (g.uiAsc) g.uiAsc.toggle();
-        });
-        talentBtn.parentNode.insertBefore(b, talentBtn.nextSibling);
-        console.log('[uiAscendancy] ✓ 已加入工具列按鈕');
+        return;   /* 已停用 */
     }
 
     if (!attach()) {
@@ -35473,16 +35453,10 @@ window.HY = window.HY || {};
             if (attach() || tries > 120) clearInterval(timer);
         }, 100);
     }
-    /* 按鈕可能比 UI 晚出現，持續嘗試 */
-    var btnTries = 0;
-    var btnTimer = setInterval(function () {
-        btnTries++;
-        var g = HY.game;
-        if (g) installButton(g);
-        if (document.getElementById('btn-open-asc') || btnTries > 200) clearInterval(btnTimer);
-    }, 150);
+    /* ⭐ v5：不再插入工具列按鈕，這段輪詢一併移除。
+       （保留 installButton 函式本體，日後要恢復只要把呼叫打開） */
 
-    console.log('[uiAscendancy] ✓ 已載入（昇華天賦面板）');
+    console.log('[uiAscendancy] ✓ 已載入（昇華天賦面板，工具列按鈕已停用）');
 })(window);
 
 
@@ -55427,22 +55401,11 @@ window.HY = window.HY || {};
                         '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
                             (inParty ? '⛺ 退下休息' : '🚩 加入上陣') +
                         '</button>' +
-                        /* ⭐ 昇華按鈕：開啟該角色的昇華天賦（預覽模式，不會馬上套用） */
-                        '<button class="action-btn btn-asc-char" style="border-color:#f0c674; color:#fbbf24;" title="昇華天賦（先預覽，確認後才加入）">' +
-                            '✦ 昇華' + (c.sect && app.ascSys && app.ascSys.isJoined(c) ? '（已選）' : '') +
-                        '</button>' +
                         '<button class="action-btn btn-delete-char" style="border-color:#ef4444; color:#fca5a5;" ' +
                         (allChars.length <= 1 ? 'disabled title="至少需保留 1 名角色"' : '') + '>🗑️ 刪除</button>' +
                     '</div>';
                 card.querySelector('.btn-select-char').addEventListener('click', () => {
                     if (app.rosterSys.selectCharacter(idx)) app.renderAll();
-                });
-                /* ⭐ 昇華：直接開啟該角色的昇華面板（預覽，不套用） */
-                card.querySelector('.btn-asc-char').addEventListener('click', () => {
-                    if (!app.uiAsc) return;
-                    /* 先切到該角色，再開面板 */
-                    if (!isSelected) app.rosterSys.selectCharacter(idx);
-                    app.uiAsc.open(c);
                 });
                 /* ⭐ 改名功能 */
                 card.querySelector('.btn-rename-char').addEventListener('click', () => {
@@ -56511,6 +56474,11 @@ window.HY = window.HY || {};
             const charLv = app.charSys.state.lv;
             const charSect = app.charSys.state.sect;
 
+            /* ⭐ v2：是否已拜入門派（有門派就不能再拜其他門派） */
+            const hasSect = !!charSect;
+            const curSectObj = charSect ? (Data.SECTS || {})[charSect] : null;
+            const curSectName = curSectObj ? curSectObj.name : (charSect || '其他門派');
+
             /* ⭐ 效能：狀態沒變就不重建（同 renderMartialTab 的理由） */
             var _sig = [charLv, charSect, JSON.stringify(app.charSys.state.skills || {})].join('|');
             if (this._sectSig === _sig) return;
@@ -56549,7 +56517,9 @@ window.HY = window.HY || {};
                 card.innerHTML =
                     '<div>' +
                         '<h4>⛩️ ' + sect.name + ' <small style="color:#fbbf24;">[需 Lv.' + reqLv + '+]</small> ' +
-                        (isCurrent ? '<span class="sci-color">【' + app.charSys.state.name + ' 當前師門】</span>' : '') + '</h4>' +
+                        (isCurrent ? '<span class="sci-color">【' + app.charSys.state.name + ' 當前師門】</span>' : '') +
+                        (hasSect && !isCurrent ? '<span style="color:#94a3b8; font-size:0.82rem;">［已加入其他門派］</span>' : '') +
+                    '</h4>' +
                         '<p style="margin:6px 0;">' + sect.desc + '</p>' +
                         featHtml +
                         '<p style="color:#10b981;">✨ 入門屬性加成：' + bonusStr + '</p>' +
@@ -56558,9 +56528,28 @@ window.HY = window.HY || {};
                         '<div style="margin-top:6px;"><strong style="color:#6ee7b7; font-size:0.85rem;">🍃 本門三階身法（常駐強化特色）：</strong><div style="margin-top:4px;">' + qgHtml + '</div></div>' +
                     '</div>' +
                     '<button class="btn-primary" ' + ((isCurrent || locked) ? 'disabled' : '') + '>' +
-                        (isCurrent ? '✅ 已拜入此門派' : (locked ? '🔒 需達 Lv.' + reqLv + ' 拜師' : '⛩️ 讓【' + app.charSys.state.name + '】拜入師門')) +
+                        (isCurrent
+                            ? '✅ 已拜入此門派'
+                            : (locked
+                                ? '🔒 需達 Lv.' + reqLv + ' 拜師'
+                                : (hasSect
+                                    ? '⛔ 已加入其他門派'
+                                    : '⛩️ 讓【' + app.charSys.state.name + '】拜入師門'))) +
                     '</button>';
-                card.querySelector('button').addEventListener('click', () => {
+                /* ⭐ v2：已拜入其他門派 → 按鈕禁用，點擊只提示，不執行加入 */
+                var joinBtn = card.querySelector('button');
+                if (hasSect && !isCurrent) {
+                    joinBtn.disabled = true;
+                    joinBtn.style.opacity = '0.5';
+                    joinBtn.style.cursor = 'not-allowed';
+                    joinBtn.title = '已拜入【' + curSectName + '】，需先叛出師門才能加入其他門派';
+                }
+                joinBtn.addEventListener('click', () => {
+                    if (hasSect && !isCurrent) {
+                        app.logger.add('⛔ 【' + app.charSys.state.name + '】已拜入【' +
+                            curSectName + '】，無法再拜其他門派。', 'system');
+                        return;
+                    }
                     if (app.charSys.joinSect(sect.id)) {
                         if (app.uiMartialSect && app.uiMartialSect.invalidate) app.uiMartialSect.invalidate();
                         app.renderAll();
