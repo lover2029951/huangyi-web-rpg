@@ -6897,156 +6897,31 @@ window.HY.Data = window.HY.Data || {};
             desc: '【極度稀有】為詞綴未滿 6 條的【稀有(黃裝)】新增 1 條隨機前綴或後綴（最多3前3後）！'
         }
     };
-    // ═══════ 2. 🗡️ PoE 裝備前綴庫（基礎 5 組）═══════
-    Data.POE_PREFIXES = [
-        {
-            groupId: 'flat_atk', statKey: 'atk', label: '外功基礎攻擊', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 磨利的', min: 8,   max: 18 },
-                { tier: 4, tName: 'T4 鋒銳的', min: 22,  max: 45 },
-                { tier: 3, tName: 'T3 削鐵的', min: 55,  max: 110 },
-                { tier: 2, tName: 'T2 殘酷的', min: 130, max: 260 },
-                { tier: 1, tName: 'T1 獨裁者的', min: 300, max: 600 }
-            ]
-        },
-        {
-            groupId: 'pct_atk_flat', statKey: 'atk', label: '宗師霸氣攻擊', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 侍從的', min: 12,  max: 25 },
-                { tier: 4, tName: 'T4 騎士的', min: 35,  max: 70 },
-                { tier: 3, tName: 'T3 暴君的', min: 85,  max: 165 },
-                { tier: 2, tName: 'T2 征服者的', min: 200, max: 380 },
-                { tier: 1, tName: 'T1 帝王的', min: 450, max: 850 }
-            ]
-        },
-        {
-            groupId: 'flat_hp', statKey: 'maxHp', label: '最大氣血上限', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 健康的', min: 50,   max: 110 },
-                { tier: 4, tName: 'T4 健壯的', min: 140,  max: 280 },
-                { tier: 3, tName: 'T3 強健的', min: 350,  max: 700 },
-                { tier: 2, tName: 'T2 巨人的', min: 850,  max: 1600 },
-                { tier: 1, tName: 'T1 不朽之體的', min: 2000, max: 4000 }
-            ]
-        },
-        {
-            groupId: 'flat_def', statKey: 'def', label: '護體罡氣防禦', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 堅固的', min: 8,   max: 18 },
-                { tier: 4, tName: 'T4 強化的', min: 24,  max: 48 },
-                { tier: 3, tName: 'T3 鋼鐵的', min: 60,  max: 120 },
-                { tier: 2, tName: 'T2 壁壘的', min: 150, max: 290 },
-                { tier: 1, tName: 'T1 金剛不壞的', min: 340, max: 680 }
-            ]
-        },
-        {
-            groupId: 'flat_mp', statKey: 'maxMp', label: '丹田最大內力', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 蔚藍的', min: 5,   max: 11 },
-                { tier: 4, tName: 'T4 湛藍的', min: 13,  max: 27 },
-                { tier: 3, tName: 'T3 深海的', min: 33,  max: 67 },
-                { tier: 2, tName: 'T2 浩瀚的', min: 80,  max: 150 },
-                { tier: 1, tName: 'T1 無量真元的', min: 183, max: 367 }
-            ]
-        }
-    ];
-    // ═══════ 3. 🎯 PoE 裝備後綴庫（基礎 5 組）═══════
-    Data.POE_SUFFIXES = [
-        {
-            groupId: 'suffix_hit', statKey: 'hit', label: '精準命中率', unit: '%',
-            tiers: [
-                { tier: 5, tName: 'T5 穩健之', min: 2,  max: 4 },
-                { tier: 4, tName: 'T4 精準之', min: 5,  max: 8 },
-                { tier: 3, tName: 'T3 狙擊之', min: 9,  max: 13 },
-                { tier: 2, tName: 'T2 鷹眼之', min: 14, max: 19 },
-                { tier: 1, tName: 'T1 天眼必中之', min: 20, max: 28 }
-            ]
-        },
-        {
-            groupId: 'suffix_eva', statKey: 'eva', label: '輕功閃避率', unit: '%',
-            tiers: [
-                { tier: 5, tName: 'T5 靈巧之', min: 1,  max: 3 },
-                { tier: 4, tName: 'T4 迷蹤之', min: 4,  max: 6 },
-                { tier: 3, tName: 'T3 幻影之', min: 7,  max: 10 },
-                { tier: 2, tName: 'T2 流雲之', min: 11, max: 15 },
-                { tier: 1, tName: 'T1 虛空無影之', min: 16, max: 22 }
-            ]
-        },
-        {
-            groupId: 'suffix_crit', statKey: 'crit', label: '會心爆擊率', unit: '%',
-            tiers: [
-                { tier: 5, tName: 'T5 穿刺之', min: 1,  max: 3 },
-                { tier: 4, tName: 'T4 撕裂之', min: 4,  max: 6 },
-                { tier: 3, tName: 'T3 致命之', min: 7,  max: 10 },
-                { tier: 2, tName: 'T2 毀滅之', min: 11, max: 15 },
-                { tier: 1, tName: 'T1 破天誅仙之', min: 16, max: 22 }
-            ]
-        },
-        {
-            groupId: 'suffix_critres', statKey: 'critRes', label: '暴擊抵抗', unit: '%',
-            tiers: [
-                { tier: 5, tName: 'T5 堅韌之', min: 2,  max: 4 },
-                { tier: 4, tName: 'T4 磐石之', min: 5,  max: 8 },
-                { tier: 3, tName: 'T3 鎮嶽之', min: 9,  max: 13 },
-                { tier: 2, tName: 'T2 不動之', min: 14, max: 19 },
-                { tier: 1, tName: 'T1 萬劫不壞之', min: 20, max: 28 }
-            ]
-        },
-        {
-            groupId: 'suffix_hybrid_combat', statKey: 'atk', label: '後綴殺伐內勁 (攻擊)', unit: '',
-            tiers: [
-                { tier: 5, tName: 'T5 鬥士之', min: 10,  max: 22 },
-                { tier: 4, tName: 'T4 狂戰之', min: 28,  max: 55 },
-                { tier: 3, tName: 'T3 猛將之', min: 70,  max: 140 },
-                { tier: 2, tName: 'T2 武神之', min: 160, max: 320 },
-                { tier: 1, tName: 'T1 破碎無雙之', min: 360, max: 720 }
-            ]
-        }
-    ];
-    // ═══════ 4. 🎨 程式化生成「8 種元素攻擊前綴 + 8 種元素防禦後綴」═══════
-    var elems = Data.ELEMENTS || {};
-    var atkTiers = Data.ELEMENT_ATK_TIERS || [];
-    var defTiers = Data.ELEMENT_DEF_TIERS || [];
-    var atkPrefixes = [];
-    var defSuffixes = [];
-    Object.keys(elems).forEach(function (key) {
-        var m = elems[key];
-        // 元素攻擊（前綴）
-        atkPrefixes.push({
-            groupId: 'elAtk_' + key,
-            statKey: 'elAtk_' + key,
-            elementKey: key,
-            label: m.name + '元素攻擊',
-            unit: '',
-            tiers: atkTiers.map(function (t) {
-                return {
-                    tier: t.tier,
-                    tName: t.tName.replace('元素之', m.name + '元素之'),
-                    min: t.min, max: t.max
-                };
-            })
-        });
-        // 元素防禦（後綴）
-        defSuffixes.push({
-            groupId: 'elDef_' + key,
-            statKey: 'elDef_' + key,
-            elementKey: key,
-            label: m.name + '元素防禦',
-            unit: '',
-            tiers: defTiers.map(function (t) {
-                return {
-                    tier: t.tier,
-                    tName: t.tName.replace('元素之', m.name + '元素之'),
-                    min: t.min, max: t.max
-                };
-            })
-        });
-    });
-    Data.POE_PREFIXES = Data.POE_PREFIXES.concat(atkPrefixes);
-    Data.POE_SUFFIXES = Data.POE_SUFFIXES.concat(defSuffixes);
-    // 供 UI 篩選 / 統計使用
-    Data.POE_ELEMENT_ATK_GROUPS = atkPrefixes.map(function (p) { return p.groupId; });
-    Data.POE_ELEMENT_DEF_GROUPS = defSuffixes.map(function (s) { return s.groupId; });
+    /* ══════════════════════════════════════════════════════════════
+       ⭐ 舊詞綴池已完全移除（v46）
+       ──────────────────────────────────────────────────────────────
+       這裡原本有兩組「手工 5 階通用詞綴」（POE_PREFIXES / POE_SUFFIXES），
+       加上程式化生成的 8 種元素攻擊／防禦詞綴，總共 21 組。
+
+       問題：
+         · 不分裝備部位 —— 戒指會骰到「護甲」，胸甲會骰到「武器攻擊速度」
+         · 只有 21 組，且是固定 5 階，詞綴池單薄、重複度極高
+         · 與 poeAffixFull.js 的 825 組 / 2,463 階完整詞綴完全脫節
+           （新系統接了，但工藝台還在用舊的這 21 組）
+
+       現況：
+         所有詞綴一律由 HY.PoeAffixMap 提供（依部位過濾、依等級縮放）。
+         若要調整詞綴，請改 js/poeAffixMap.js 的 RULES / POST_SCALE，
+         不要再在這裡新增靜態詞綴，否則會與新系統並存造成混亂。
+
+       保留空陣列只是為了讓 `Data.POE_PREFIXES` 這類舊引用不會 undefined，
+       實際內容永遠是空的（poeCraftSystem._poolFor 不會回退到這裡）。
+       ══════════════════════════════════════════════════════════════ */
+    Data.POE_PREFIXES = [];
+    Data.POE_SUFFIXES = [];
+    Data.POE_ELEMENT_ATK_GROUPS = [];
+    Data.POE_ELEMENT_DEF_GROUPS = [];
+
     // ═══════ 5. 🩸 瓦爾寶珠腐化專屬固定詞綴池 ═══════
     Data.VAAL_IMPLICITS = [
         { statKey: 'crit',      val: 12,   text: '🩸 瓦爾腐化基底：會心爆擊率 +12%' },
@@ -7060,6 +6935,7 @@ window.HY.Data = window.HY.Data || {};
     Data.POE_RARE_NAME_PREFIX = ['天魔', '破碎', '龍魂', '驚雁', '覆雨', '混沌', '太虛', '劫火', '星辰', '無上'];
     Data.POE_RARE_NAME_SUFFIX = ['狂嘯', '救贖', '裁決', '壁壘', '榮耀', '災厄', '神罰', '聖痕', '霸業', '輪迴'];
 })();
+
 
 /* ===== 28 / 166 : essenceData.js ===== */
 // js/essenceData.js  (v1)
@@ -7559,8 +7435,15 @@ window.HY.Data = window.HY.Data || {};
         if (!group) return [];
         var gid = String(group.groupId || '');
         var sk = String(group.statKey || '');
+        /* ⭐ 新詞綴池（poeAffixMap）的識別資訊在 poeFamily 與 label，
+           groupId 是 poe_FamilyName_N 這種不帶語意的形式。
+           原本只用 groupId/statKey 比對，新池的詞綴幾乎全部對不到標籤，
+           導致化石的「保證／排除」完全失效。這裡把三個欄位併起來比對。 */
+        var fam = String(group.poeFamily || '');
+        var lbl = String(group.label || '');
+        var hay = gid + ' ' + sk + ' ' + fam + ' ' + lbl;
         var tags = [];
-        function has(re) { return re.test(gid) || re.test(sk); }
+        function has(re) { return re.test(gid) || re.test(sk) || re.test(fam) || re.test(lbl); }
         if (gid.indexOf('elAtk_') === 0) tags.push(Data.FOSSIL_TAGS.ELEM_ATK, Data.FOSSIL_TAGS.ELEMENT);
         /* ⭐ 元素抗性歸類為「抗性」，不列為「防禦」。
            否則密集化石（保證防禦、排除攻擊）會把抗性當成防禦詞綴，
@@ -13930,15 +13813,20 @@ window.HY = window.HY || {};
            只有在對照表未載入時才退回舊池。
            ══════════════════════════════════════════════════════════ */
         _poolFor(itemInst, isPrefix) {
-            var Data = window.HY.Data;
             var M = window.HY.PoeAffixMap;
-            var slot = itemInst && itemInst.slotType;
-            if (M && typeof M.poolFor === 'function' && slot) {
-                var list = null;
-                try { list = M.poolFor(slot, isPrefix); } catch (e) { list = null; }
-                if (list && list.length >= 20) return list;
+            var slot = (itemInst && itemInst.slotType) || 'ring';
+            if (!M || typeof M.poolFor !== 'function') {
+                /* ⭐ 舊詞綴池已完全移除（poeCraftData 不再產生 POE_PREFIXES）。
+                   對照表未載入時直接回空陣列，讓上層走「無詞綴可用」分支，
+                   寧可裝備是白板，也不要用錯誤的通用池骰出亂七八糟的詞綴。 */
+                if (window.console && window.console.warn) {
+                    console.warn('[poeCraft] PoeAffixMap 未載入，無法取得詞綴池');
+                }
+                return [];
             }
-            return isPrefix ? Data.POE_PREFIXES : Data.POE_SUFFIXES;
+            var list = null;
+            try { list = M.poolFor(slot, isPrefix); } catch (e) { list = null; }
+            return (list && list.length) ? list : [];
         }
         rollMagicMods(itemInst, opts) {
             var Data = window.HY.Data;
@@ -14123,11 +14011,14 @@ window.HY = window.HY || {};
                         return false;
                     }
                     wallet[orbId] -= 1;
+                    /* ⭐ 改用部位過濾池（原本直接用 Data.POE_PREFIXES，
+                       不管裝備部位，戒指會骰到「武器攻擊速度」這種詞綴） */
+                    var roA = { reqLv: nz(targetItem.reqLv, 30) };
                     if (targetItem.prefixes.length === 0) {
-                        var newP = this.rollOneAffix(Data.POE_PREFIXES, targetItem.prefixes);
+                        var newP = this.rollOneAffix(this._poolFor(targetItem, true), targetItem.prefixes, roA);
                         if (newP) targetItem.prefixes.push(newP);
                     } else {
-                        var newS = this.rollOneAffix(Data.POE_SUFFIXES, targetItem.suffixes);
+                        var newS = this.rollOneAffix(this._poolFor(targetItem, false), targetItem.suffixes, roA);
                         if (newS) targetItem.suffixes.push(newS);
                     }
                     this.logger.add('🔵 使用【增幅石】：成功為【' + targetItem.name + '】增幅出 1 條新詞綴！', 'combat');
@@ -14140,11 +14031,12 @@ window.HY = window.HY || {};
                     wallet[orbId] -= 1;
                     targetItem.rarity = 'rare';
                     targetItem.rareTitle = this.generateRareTitle();
+                    var roR = { reqLv: nz(targetItem.reqLv, 30) };
                     if (Math.random() < 0.5) {
-                        var rp = this.rollOneAffix(Data.POE_PREFIXES, targetItem.prefixes);
+                        var rp = this.rollOneAffix(this._poolFor(targetItem, true), targetItem.prefixes, roR);
                         if (rp) targetItem.prefixes.push(rp);
                     } else {
-                        var rs = this.rollOneAffix(Data.POE_SUFFIXES, targetItem.suffixes);
+                        var rs = this.rollOneAffix(this._poolFor(targetItem, false), targetItem.suffixes, roR);
                         if (rs) targetItem.suffixes.push(rs);
                     }
                     this.logger.add('🟡 使用【富豪石】：【' + targetItem.name + '】晉升為稀有黃裝 ' + targetItem.rareTitle + '！', 'combat');
@@ -14182,9 +14074,10 @@ window.HY = window.HY || {};
                     }
                     wallet[orbId] -= 1;
                     var pickP = canP && (!canS || Math.random() < 0.5);
+                    var roE = { reqLv: nz(targetItem.reqLv, 30) };
                     var exMod = pickP
-                        ? this.rollOneAffix(Data.POE_PREFIXES, targetItem.prefixes)
-                        : this.rollOneAffix(Data.POE_SUFFIXES, targetItem.suffixes);
+                        ? this.rollOneAffix(this._poolFor(targetItem, true), targetItem.prefixes, roE)
+                        : this.rollOneAffix(this._poolFor(targetItem, false), targetItem.suffixes, roE);
                     if (exMod) {
                         if (pickP) targetItem.prefixes.push(exMod);
                         else targetItem.suffixes.push(exMod);
@@ -14728,8 +14621,24 @@ window.HY = window.HY || {};
                     return false;
                 });
             }
-            var prePool = poolHasTag(D2.POE_PREFIXES || []);
-            var sufPool = poolHasTag(D2.POE_SUFFIXES || []);
+            /* ⭐ 依裝備部位取詞綴池（舊的通用池已移除）
+               呼叫 poeCraftSystem._poolFor 以保持與工藝系統同一來源。 */
+            var craft = window.HY.game && window.HY.game.poeSys;
+            var preAll = [], sufAll = [];
+            if (craft && typeof craft._poolFor === 'function') {
+                preAll = craft._poolFor(item, true) || [];
+                sufAll = craft._poolFor(item, false) || [];
+            } else {
+                var M = window.HY.PoeAffixMap;
+                var slot = (item && item.slotType) || 'ring';
+                if (M && typeof M.poolFor === 'function') {
+                    preAll = M.poolFor(slot, true) || [];
+                    sufAll = M.poolFor(slot, false) || [];
+                }
+            }
+            /* ⭐ 改用部位過濾池（呼叫端已透過 poeCraft._poolFor 取得正確池） */
+            var prePool = poolHasTag(preAll);
+            var sufPool = poolHasTag(sufAll);
             /* 選邊規則：
                1. 只有一邊有符合標籤的群組 → 用那一邊
                2. 兩邊都有 → 選目前條數較少的一邊（避免滿邊塞不進去）
@@ -14737,12 +14646,12 @@ window.HY = window.HY || {};
             var usePrefix = null;
             var pool = null;
             if (prePool.length && !sufPool.length) {
-                usePrefix = true; pool = D2.POE_PREFIXES;
+                usePrefix = true; pool = preAll;
             } else if (!prePool.length && sufPool.length) {
-                usePrefix = false; pool = D2.POE_SUFFIXES;
+                usePrefix = false; pool = sufAll;
             } else if (prePool.length && sufPool.length) {
                 usePrefix = item.prefixes.length <= item.suffixes.length;
-                pool = usePrefix ? D2.POE_PREFIXES : D2.POE_SUFFIXES;
+                pool = usePrefix ? preAll : sufAll;
             }
             if (!pool) return null;
             var list = usePrefix ? item.prefixes : item.suffixes;
@@ -59684,96 +59593,25 @@ window.HY.PoeStats = {
     } catch (e) { warn(LOG + 'hideButtons ' + e); return false; }
   }
   /* =====================================================================
-     2. affix pool growth (unchanged in spirit from v4)
+     2. 舊詞綴池注入已移除（v46）
+     ---------------------------------------------------------------------
+     這裡原本有兩大張手工詞綴表：
+       PRE  —  40 條前綴（p_flat_atk / p_fire_add / p_pct_atk …）
+       SUF  —  43 條後綴（s_res_fire / s_crit / s_atkspd …）
+     再由 parseRecord() 解析成 groupId/statKey/tiers，用 buildAll() 展開後
+     uniqPush() 塞進 Data.POE_PREFIXES / POE_SUFFIXES。
+
+     問題：這和 poeCraftData.js 裡的 21 組舊池重複，而且兩者都不分部位。
+     現在所有詞綴統一由 HY.PoeAffixMap 產生（825 組樣板 → 依部位過濾成
+     每部位 23~28 前綴 / 32~38 後綴，數值隨裝備等級縮放）。
+
+     若要調整詞綴，請改 js/poeAffixMap.js：
+       RULES       — 英文樣板 → 屬性鍵的對照規則
+       POST_SCALE  — 各屬性的量級係數
+       CORE_STATS / ALLOWED_LABELS — 白名單
+     不要再往這裡加靜態詞綴，否則又會變成兩套系統並存。
      ===================================================================== */
-  var PRE = [
-    'p_flat_atk|atk||18,45,110,260,600|\u5916\u529F\u57FA\u790E\u653B\u64CA',
-    'p_pct_atk|atk||22,55,140,320,720|\u5168\u57DF\u653B\u64CA\u5F37\u5316',
-    'p_phys_add|atk||14,36,90,210,480|\u7269\u7406\u50B7\u5BB3\u9644\u52A0',
-    'p_fire_add|atk||16,40,98,230,520|\u706B\u7130\u50B7\u5BB3\u9644\u52A0',
-    'p_cold_add|atk||15,38,95,220,500|\u51B0\u971C\u50B7\u5BB3\u9644\u52A0',
-    'p_light_add|atk||12,30,75,175,400|\u96F7\u970D\u50B7\u5BB3\u9644\u52A0',
-    'p_chaos_add|atk||10,26,64,150,340|\u6DF7\u6C8C\u50B7\u5BB3\u9644\u52A0',
-    'p_elem_add|atk||20,50,124,286,650|\u5143\u7D20\u50B7\u5BB3\u9644\u52A0',
-    'p_spell_dmg|atk||24,60,150,344,780|\u5167\u529F\u50B7\u5BB3\u63D0\u5347',
-    'p_dot_dmg|atk||20,50,124,286,650|\u6301\u7E8C\u50B7\u5BB3\u63D0\u5347',
-    'p_leech_atk|atk||26,64,158,364,820|\u5438\u8840\u8207\u64C3\u53D6',
-    'p_flat_hp|maxHp||110,280,700,1600,4000|\u6700\u5927\u6C23\u8840\u4E0A\u9650',
-    'p_pct_hp|maxHp||95,240,600,1380,3120|\u6C23\u8840\u4E0A\u9650\u63D0\u5347',
-    'p_es_flat|maxHp||130,330,820,1880,4260|\u8B77\u9AD4\u771F\u6C23\u50A8\u91CF',
-    'p_life_regen|maxHp||70,175,440,1010,2280|\u6C23\u8840\u81EA\u56DE\u5FA9',
-    'p_flat_mp|maxMp||6,27,67,150,367|\u4E39\u7530\u6700\u5927\u5167\u529B',
-    'p_pct_mp|maxMp||6,25,62,140,340|\u5167\u529B\u4E0A\u9650\u63D0\u5347',
-    'p_mana_regen|maxMp||8,30,74,166,392|\u5167\u529B\u81EA\u56DE\u5FA9',
-    'p_flat_def|def||8,48,120,290,680|\u8B77\u9AD4\u57FA\u790E\u9632\u79A6',
-    'p_pct_def|def||10,52,130,312,728|\u8B77\u9AD4\u9632\u79A6\u5F37\u5316',
-    'p_block|def||12,58,144,344,800|\u683C\u64CB\u8207\u9632\u79A6',
-    'p_stun_thr|def||14,62,155,372,860|\u9707\u64C4\u9580\u6ABB',
-    'p_armour_pen|def||16,68,170,400,920|\u7834\u7532\u8207\u7A7F\u900F',
-    'p_flat_eva|eva||4,20,48,112,260|\u8F15\u529F\u57FA\u790E\u9583\u907F',
-    'p_ward|eva||5,22,54,126,290|\u5FC3\u6CD5\u6E1B\u50B7\u8B77\u76FE',
-    'p_accuracy|hit||5,22,54,126,290|\u7CBE\u6E96\u5EA6\u57FA\u790E',
-    'p_ele_pen|hit||6,24,58,136,312|\u5143\u7D20\u7A7F\u900F',
-    'p_aoe|hit||7,26,64,148,340|\u7FA4\u653B\u7BC4\u570D',
-    'p_projectile|hit||6,24,58,136,312|\u6295\u5C04\u7269\u5F37\u5316',
-    'p_crit_chance|crit||4,19,46,106,244|\u6703\u5FC3\u7387\u57FA\u790E',
-    'p_crit_multi|crit||5,21,52,120,276|\u6703\u5FC3\u50B7\u500D',
-    'p_atk_speed|crit||6,23,56,130,300|\u51FA\u62DB\u901F\u5EA6',
-    'p_cull|crit||7,25,60,140,320|\u65AC\u6BBA\u8207\u6536\u5272'
-  ];
-  var SUF = [
-    's_hit|hit|%|4,19,46,106,244|\u7CBE\u6E96\u547D\u4E2D\u7387',
-    's_accuracy|hit|%|5,21,50,116,268|\u547D\u4E2D\u8207\u611F\u77E5',
-    's_cast_speed|hit|%|4,18,44,102,236|\u5167\u529F\u65BD\u5C55\u901F\u5EA6',
-    's_eva|eva|%|3,17,42,98,226|\u8F15\u529F\u9583\u907F\u7387',
-    's_move|eva|%|3,16,40,92,212|\u79FB\u52D5\u8207\u8EAB\u6CD5',
-    's_suppress|eva|%|4,18,44,102,236|\u5FC3\u6CD5\u6291\u5236',
-    's_dex|eva||6,24,58,134,310|\u8EAB\u6CD5\u6839\u9AA8',
-    's_dodge|eva|%|3,15,38,88,204|\u9583\u907F\u8207\u8F15\u8EAB',
-    's_crit|crit|%|3,16,40,92,212|\u6703\u5FC3\u7206\u64CA\u7387',
-    's_crit_mult|crit|%|4,18,44,102,236|\u6703\u5FC3\u50B7\u5BB3\u500D\u7387',
-    's_crit_res|critRes|%|4,18,44,102,236|\u66B4\u64CA\u62B5\u6297',
-    's_res_all|critRes|%|4,19,46,106,244|\u5168\u80FD\u6297\u6027',
-    's_res_fire|critRes|%|5,21,48,112,258|\u706B\u7130\u6297\u6027',
-    's_res_cold|critRes|%|5,21,48,112,258|\u51B0\u971C\u6297\u6027',
-    's_res_light|critRes|%|5,21,48,112,258|\u96F7\u970D\u6297\u6027',
-    's_res_chaos|critRes|%|4,17,42,98,226|\u6DF7\u6C8C\u6297\u6027',
-    's_ailment|critRes|%|4,17,42,98,226|\u7570\u5E38\u72C0\u614B\u514D\u75AB',
-    's_stun_avoid|critRes|%|5,20,46,108,248|\u514D\u75AB\u9707\u64C4',
-    's_str|maxHp||6,24,58,134,310|\u9AD4\u9B44\u6839\u9AA8',
-    's_int|maxMp||6,24,58,134,310|\u5167\u606F\u6839\u9AA8',
-    's_all_attr|maxHp||5,22,54,124,286|\u56DB\u7DAD\u6839\u9AA8\u5168\u63D0',
-    's_flat_hp|maxHp||72,180,450,1040,2340|\u6C23\u8840\u4E0A\u9650',
-    's_flat_mp|maxMp||5,22,54,124,286|\u5167\u529B\u4E0A\u9650',
-    's_flat_def|def||6,26,64,148,340|\u8B77\u9AD4\u9632\u79A6',
-    's_regen|maxHp||46,116,290,670,1520|\u56DE\u6C23\u8207\u56DE\u8840',
-    's_leech|atk||60,148,368,848,1920|\u5438\u8840\u8207\u56DE\u5FA9',
-    's_pct_dmg|atk||26,64,158,364,820|\u5168\u9AD4\u50B7\u5BB3\u63D0\u5347',
-    's_hybrid_atk|atk||19,47,116,268,606|\u5167\u5916\u517C\u4FEE\u653B\u64CA',
-    's_hybrid_crit|crit|%|4,17,42,98,226|\u5167\u5916\u517C\u4FEE\u6703\u5FC3',
-    's_fortify|def|%|6,24,58,134,310|\u5805\u9663\u8207\u6B7B\u5B88',
-    's_mana_cost|maxMp|%|5,22,54,124,286|\u5167\u529B\u6D88\u8017\u964D\u4F4E',
-    's_totem|atk||30,74,182,420,946|\u5175\u4ED1\u8207\u5085\u795E',
-    's_minion|atk||28,70,172,396,892|\u6021\u60C5\u8207\u53EC\u559A'
-  ];
-  function parseRecord(s) {
-    var p = String(s).split('|');
-    if (p.length < 5) return null;
-    var vals = String(p[3]).split(','), i, maxV, minV, tiers = [];
-    if (vals.length < 5) return null;
-    for (i = 0; i < 5; i++) {
-      maxV = Number(vals[i]) || 1;
-      minV = Math.max(1, Math.round(maxV * 0.45));
-      if (minV >= maxV) minV = maxV - 1;
-      tiers.push({ tier: 5 - i, tName: 'T' + (5 - i), min: minV, max: maxV });
-    }
-    return { groupId: p[0], statKey: p[1], unit: p[2], label: p[4] || p[0], tiers: tiers };
-  }
-  function buildAll(list) {
-    var out = [], i, g;
-    for (i = 0; i < list.length; i++) { g = parseRecord(list[i]); if (g) out.push(g); }
-    return out;
-  }
+
   var RARE_P = ('\u7834\u788E \u592A\u7384 \u661F\u8574 \u707C\u708E \u6EC5\u7D55 \u98AF\u723D '
     + '\u99B3\u98A8 \u5929\u8CE6 \u9451\u9244 \u7121\u4E0A \u51B0\u9B42 \u96F7\u970D '
     + '\u5E7D\u51A5 \u6DF7\u6C8C \u795E\u6A5F \u592A\u865B \u6D69\u6E5B \u5BD2\u661F '
@@ -59794,28 +59632,24 @@ window.HY.PoeStats = {
     'hit|28|Vaal: elemental damage +28%',
     'atk|420|Vaal: attack damage +420'
   ];
-  function uniqPush(arr, item) {
-    for (var i = 0; i < arr.length; i++) {
-      if (arr[i] && arr[i].groupId === item.groupId) return false;
-    }
-    arr.push(item);
-    return true;
-  }
   var report = { pre: 0, suf: 0, preBefore: 0, sufBefore: 0, rareP: 0, rareS: 0, vaal: 0 };
   function apply() {
     var d = D();
     if (!d) return report;
+    /* ⭐ 舊詞綴池注入已完全停用（v46）。
+       這裡原本會往 Data.POE_PREFIXES / POE_SUFFIXES 塞入數百條手工詞綴
+       （buildAll(PRE) / buildAll(SUF) 兩大張靜態表）。
+       現在所有詞綴統一由 HY.PoeAffixMap 依部位 + 等級動態產生，
+       再往舊池塞東西只會變成死資料（工藝台已不再讀取）。
+
+       瓦爾詞綴（VAAL_IMPLICITS）仍保留注入，因為瓦爾寶珠的腐化詞綴
+       確實走 Data.VAAL_IMPLICITS 這條固定池，與隨機詞綴無關。 */
     var pre = d.POE_PREFIXES, suf = d.POE_SUFFIXES;
-    if (!Array.isArray(pre) || !Array.isArray(suf)) {
-      warn(LOG + 'affix pools not found, is poeCraftData.js loaded?');
-      return report;
-    }
-    report.preBefore = pre.length;
-    report.sufBefore = suf.length;
-    var i, list = buildAll(PRE);
-    for (i = 0; i < list.length; i++) { if (uniqPush(pre, list[i])) report.pre++; }
-    list = buildAll(SUF);
-    for (i = 0; i < list.length; i++) { if (uniqPush(suf, list[i])) report.suf++; }
+    report.preBefore = Array.isArray(pre) ? pre.length : 0;
+    report.sufBefore = Array.isArray(suf) ? suf.length : 0;
+    report.pre = 0;
+    report.suf = 0;
+    var i;
     if (Array.isArray(d.POE_RARE_NAME_PREFIX)) {
       for (i = 0; i < RARE_P.length; i++) {
         if (RARE_P[i] && d.POE_RARE_NAME_PREFIX.indexOf(RARE_P[i]) === -1) {
@@ -59842,9 +59676,8 @@ window.HY.PoeStats = {
         }
       }
     }
-    log(LOG + 'affixes: prefixes ' + report.preBefore + ' -> ' + pre.length + ' (+' + report.pre
-      + ') | suffixes ' + report.sufBefore + ' -> ' + suf.length + ' (+' + report.suf
-      + ') | rareNames +' + report.rareP + '/+' + report.rareS + ' | vaal +' + report.vaal);
+    log(LOG + 'affixes: 舊詞綴池已停用，改用 PoeAffixMap 動態生成'
+      + ' | rareNames +' + report.rareP + '/+' + report.rareS + ' | vaal +' + report.vaal);
     return report;
   }
   /* =====================================================================
@@ -60472,6 +60305,7 @@ window.HY.PoeStats = {
     };
   };
 })();
+
 
 /* ===== 129 / 166 : gambleQuiet.js ===== */
 // js/gambleQuiet.js (v1)  [ASCII build - safe for any file encoding]
@@ -61602,25 +61436,12 @@ window.HY = window.HY || {};
         integrateIntoStaticData() {
             var Data = window.HY.Data;
             if (!Data) return;
-            // ① 攻速後綴（若不存在則注入）
-            if (Array.isArray(Data.POE_SUFFIXES)) {
-                var existing = Data.POE_SUFFIXES.find(function (s) { return s.groupId === 'suffix_atkspd'; });
-                var reducedTiers = [
-                    { tier: 5, tName: 'T5 迅捷之', min: 1,  max: 2 },
-                    { tier: 4, tName: 'T4 疾風之', min: 3,  max: 4 },
-                    { tier: 3, tName: 'T3 閃電之', min: 5,  max: 6 },
-                    { tier: 2, tName: 'T2 流光之', min: 7,  max: 9 },
-                    { tier: 1, tName: 'T1 瞬息破空之', min: 10, max: 15 }
-                ];
-                if (existing) {
-                    existing.tiers = reducedTiers;
-                } else {
-                    Data.POE_SUFFIXES.push({
-                        groupId: 'suffix_atkspd', statKey: 'atkSpd', label: '出手攻速', unit: '',
-                        tiers: reducedTiers
-                    });
-                }
-            }
+            // ① 攻速後綴
+            //    ⭐ 已移除：舊的靜態詞綴池（Data.POE_SUFFIXES）已完全廢棄。
+            //    「出手攻速」現在由 poeAffixMap.js 的
+            //      [/^#% increased Attack Speed$/, 'atkSpd', '攻擊速度', '%']
+            //    這條規則統一提供，並依裝備部位過濾（戒指不會骰到武器攻速）。
+            //    原本這裡會往舊池 push 一組 5 階詞綴，新系統完全看不到它。
             // ② 裝備基底攻速（靴子／手套／主手）
             if (Array.isArray(Data.POE_BASES)) {
                 Data.POE_BASES.forEach(function (b) {
@@ -63651,24 +63472,11 @@ window.HY = window.HY || {};
         integrateIntoEquipmentAndSkills() {
             var Data = window.HY.Data;
             if (!Data) return;
-            if (Array.isArray(Data.POE_PREFIXES)) {
-                var beforeP = Data.POE_PREFIXES.length;
-                Data.POE_PREFIXES = Data.POE_PREFIXES.filter(function (p) {
-                    return p.groupId !== 'flat_elematk';
-                });
-                if (Data.POE_PREFIXES.length !== beforeP) {
-                    console.log('[spiritRootSystem] 已移除重複的 flat_elematk 前綴（元素攻防統一由 elAtk_* / elDef_* 處理）');
-                }
-            }
-            if (Array.isArray(Data.POE_SUFFIXES)) {
-                var beforeS = Data.POE_SUFFIXES.length;
-                Data.POE_SUFFIXES = Data.POE_SUFFIXES.filter(function (s) {
-                    return s.groupId !== 'suffix_elemdef';
-                });
-                if (Data.POE_SUFFIXES.length !== beforeS) {
-                    console.log('[spiritRootSystem] 已移除重複的 suffix_elemdef 後綴');
-                }
-            }
+            /* ⭐ 舊詞綴池清理邏輯已移除。
+               原本這裡會從 Data.POE_PREFIXES / POE_SUFFIXES 中刪掉
+               flat_elematk / suffix_elemdef 兩個「重複的元素詞綴」。
+               但舊池已於 v46 完全廢棄（poeCraftData 現在給的是空陣列），
+               這段過濾只會對著空陣列空轉，留著反而誤導後續維護者。 */
         }
         getElementCounterInfo(attackerRootId, defenderRootId) {
             var Data = window.HY.Data;
