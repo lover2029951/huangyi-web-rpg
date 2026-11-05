@@ -303,6 +303,130 @@
             .team-grid .member:nth-child(n+4) { display: none; }
         }
 
+        /* ── 全服排行 ── */
+        .rank {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #f0c674;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .rank-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(240,198,116,.15), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .rank-tabs {
+            display: flex; gap: 5px; padding: 9px 16px 0;
+            flex-wrap: wrap;
+        }
+        .rank-tab {
+            padding: 4px 11px; border-radius: 11px;
+            font-size: .72rem; cursor: pointer;
+            background: #16202c; color: #94a3b8;
+            border: 1px solid #253244;
+            transition: all .14s;
+        }
+        .rank-tab:hover { border-color: #38bdf8; color: #7dd3fc; }
+        .rank-tab.on {
+            background: rgba(240,198,116,.16); color: #f0c674;
+            border-color: #f0c674; font-weight: bold;
+        }
+        .rank-bd {
+            padding: 8px 16px 14px;
+            max-height: 380px; overflow-y: auto;
+        }
+        .rank-bd::-webkit-scrollbar { width: 6px; }
+        .rank-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .rank-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; margin-bottom: 5px;
+            background: rgba(15, 22, 30, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: border-color .14s, background .14s;
+        }
+        .rank-row:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .rank-row.me { border-color: #00e5ff; background: rgba(0,229,255,.07); }
+
+        .rank-no {
+            flex: 0 0 30px; text-align: center;
+            font-size: .82rem; font-weight: bold; color: #64748b;
+        }
+        .rank-no.g1 { color: #fbbf24; font-size: 1rem; }
+        .rank-no.g2 { color: #cbd5e1; font-size: .92rem; }
+        .rank-no.g3 { color: #d97706; font-size: .88rem; }
+
+        .rank-info { flex: 1 1 auto; min-width: 0; }
+        .rank-name {
+            font-size: .84rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-sub {
+            font-size: .68rem; color: #64748b; margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-val {
+            flex: 0 0 auto; text-align: right;
+        }
+        .rank-val .v {
+            font-size: .88rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-val .k {
+            font-size: .62rem; color: #475569; margin-top: 1px;
+        }
+
+        /* 展開的隊伍詳情 */
+        .rank-detail {
+            display: none;
+            padding: 8px 10px 10px 40px;
+            background: rgba(6, 10, 16, .7);
+            border-radius: 0 0 7px 7px;
+            margin: -3px 0 5px;
+            border: 1px solid #1e2a36;
+            border-top: none;
+        }
+        .rank-detail.open { display: block; }
+        .rd-char {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .74rem; padding: 3px 0;
+            color: #94a3b8;
+        }
+        .rd-char .rd-ico { flex: 0 0 16px; }
+        .rd-char .rd-nm {
+            flex: 1 1 auto; min-width: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            color: #cbd5e1;
+        }
+        .rd-char .rd-lv { flex: 0 0 auto; color: #fbbf24; font-weight: bold; }
+        .rd-char .rd-sect { flex: 0 0 auto; color: #64748b; font-size: .68rem; }
+
+        .rank-empty {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .rank-loading {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #475569;
+        }
+        .rank-spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #253244; border-top-color: #38bdf8;
+            border-radius: 50%; animation: rspin .8s linear infinite;
+            vertical-align: -2px; margin-right: 6px;
+        }
+        @keyframes rspin { to { transform: rotate(360deg); } }
+
         /* ── 底部提示 ── */
         .note {
             font-size: .76rem; color: #475569;
@@ -746,6 +870,212 @@
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden) render();
         });
+    })();
+    </script>
+
+    <!-- ══════════════ 全服排行 ══════════════ -->
+    <div class="rank">
+        <div class="rank-hd">
+            <span>🏆 全服玩家排行</span>
+            <span class="cnt" id="rank-cnt">讀取中…</span>
+        </div>
+        <div class="rank-tabs">
+            <div class="rank-tab on" data-sort="max_lv">🏅 最高等級</div>
+            <div class="rank-tab" data-sort="clears">🗺️ 通關次數</div>
+            <div class="rank-tab" data-sort="best_tier">⭐ 最高階級</div>
+            <div class="rank-tab" data-sort="gold">💰 紋銀</div>
+        </div>
+        <div class="rank-bd" id="rank-bd">
+            <div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 全服排行結束 ══════════════ -->
+
+    <script>
+    /* ══════════════════════════════════════════════════════════════
+       🏆 全服玩家排行 —— 從 Supabase 讀取
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SUPABASE_URL = 'https://gcbdbywobmehbqxigmnw.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjYmRieXdvYm1laGJxeGlnbW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4MjE1NTksImV4cCI6MjEwOTM5NzU1OX0.rutr6p5pcSea-kfN5npCD9B3dCQcPV2eTmqCAlpxLiQ';
+        var MY_KEY = null;
+        try { MY_KEY = localStorage.getItem('HY_PLAYER_KEY'); } catch (e) { }
+
+        var SECT_ICON = {
+            emei: '💚', shaolin: '🧘', wudang: '☯️', cihang: '🌸',
+            yinkui: '🌙', momon: '😈', jingnian: '🕉️', jueqing: '❄️',
+            guigu: '🌀', tianlong: '🐉', xingxiu: '☠️', mingjiao: '🔥',
+            bugui: '🧵', huanhua: '🌺', tianlian: '🪷'
+        };
+        var SECT_NAME = {
+            emei: '峨嵋派', shaolin: '少林寺', wudang: '武當派', cihang: '慈航靜齋',
+            yinkui: '陰癸派', momon: '魔門', jingnian: '淨念禪院', jueqing: '絕情谷',
+            guigu: '鬼谷', tianlong: '天龍寺', xingxiu: '星宿派', mingjiao: '明教',
+            bugui: '補天閣', huanhua: '花間派', tianlian: '天蓮宗'
+        };
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 100000000) return (v / 100000000).toFixed(1) + 'E';
+            if (v >= 1000000) return (v / 1000000).toFixed(2) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+        function ago(ts) {
+            if (!ts) return '';
+            var d = Date.now() - new Date(ts).getTime();
+            if (d < 60000) return '剛剛';
+            if (d < 3600000) return Math.floor(d / 60000) + ' 分鐘前';
+            if (d < 86400000) return Math.floor(d / 3600000) + ' 小時前';
+            return Math.floor(d / 86400000) + ' 天前';
+        }
+
+        var curSort = 'max_lv';
+        var cache = [];
+
+        function headers() {
+            return {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function render() {
+            var bd = document.getElementById('rank-bd');
+            var cntEl = document.getElementById('rank-cnt');
+            if (!bd) return;
+
+            if (!cache.length) {
+                if (cntEl) cntEl.textContent = '0 位玩家';
+                bd.innerHTML = '<div class="rank-empty">' +
+                    '目前還沒有人上傳隊伍。<br>' +
+                    '<a href="game.html" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
+                    '，你的隊伍會自動出現在這裡。</div>';
+                return;
+            }
+
+            if (cntEl) cntEl.textContent = cache.length + ' 位玩家';
+
+            var keyMap = {
+                max_lv: { k: '最高等級', f: function (r) { return 'Lv.' + r.max_lv; } },
+                clears: { k: '通關次數', f: function (r) { return r.clears + ' 次'; } },
+                best_tier: { k: '最高階級', f: function (r) { return r.best_tier > 0 ? 'T' + r.best_tier : '—'; } },
+                gold: { k: '紋銀', f: function (r) { return fmt(r.gold); } }
+            };
+            var km = keyMap[curSort] || keyMap.max_lv;
+
+            var h = '';
+            cache.forEach(function (r, i) {
+                var rankCls = i === 0 ? ' g1' : (i === 1 ? ' g2' : (i === 2 ? ' g3' : ''));
+                var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : (i + 1)));
+                var isMe = (MY_KEY && r.player_key === MY_KEY);
+                var chars = Array.isArray(r.chars) ? r.chars : [];
+                var mainChar = chars.find(function (c) {
+                    return c.name === r.player_name;
+                }) || chars[0] || {};
+                var secIcon = SECT_ICON[mainChar.sect] || '⚪';
+                var secName = SECT_NAME[mainChar.sect] || '無門無派';
+
+                h += '<div class="rank-row' + (isMe ? ' me' : '') + '" data-idx="' + i + '">' +
+                    '<div class="rank-no' + rankCls + '">' + medal + '</div>' +
+                    '<div class="rank-info">' +
+                    '<div class="rank-name">' + secIcon + ' ' + esc(r.player_name) +
+                    (isMe ? ' <span style="color:#00e5ff;font-size:.66rem">(你)</span>' : '') + '</div>' +
+                    '<div class="rank-sub">' + chars.length + ' 名角色　·　均等 Lv.' + (r.avg_lv || 1) +
+                    '　·　' + esc(secName) + '　·　' + ago(r.updated_at) + '</div>' +
+                    '</div>' +
+                    '<div class="rank-val"><div class="v" style="color:' +
+                    (curSort === 'gold' ? '#6ee7b7' : (curSort === 'best_tier' ? '#c084fc' : '#f0c674')) +
+                    '">' + km.f(r) + '</div><div class="k">' + km.k + '</div></div>' +
+                    '</div>';
+
+                /* 展開的隊伍詳情 */
+                h += '<div class="rank-detail" id="rd-' + i + '">';
+                if (chars.length) {
+                    chars.forEach(function (c) {
+                        var ic = SECT_ICON[c.sect] || '⚪';
+                        var sn = SECT_NAME[c.sect] || '無門無派';
+                        h += '<div class="rd-char">' +
+                            '<span class="rd-ico">' + ic + '</span>' +
+                            '<span class="rd-nm">' + esc(c.name) + '</span>' +
+                            '<span class="rd-sect">' + esc(sn) + '</span>' +
+                            '<span class="rd-lv">Lv.' + (c.lv || 1) + '</span>' +
+                            '</div>';
+                    });
+                } else {
+                    h += '<div class="rd-char" style="color:#475569">（無角色資料）</div>';
+                }
+                h += '</div>';
+            });
+
+            bd.innerHTML = h;
+
+            /* 點擊展開／收合 */
+            bd.querySelectorAll('.rank-row').forEach(function (row) {
+                row.addEventListener('click', function () {
+                    var idx = row.getAttribute('data-idx');
+                    var det = document.getElementById('rd-' + idx);
+                    if (det) det.classList.toggle('open');
+                });
+            });
+        }
+
+        function load(sortBy) {
+            curSort = sortBy || curSort;
+            var bd = document.getElementById('rank-bd');
+            if (bd && !cache.length) {
+                bd.innerHTML = '<div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>';
+            }
+            var url = SUPABASE_URL + '/rest/v1/teams' +
+                '?select=player_key,player_name,chars,max_lv,avg_lv,clears,best_tier,gold,updated_at' +
+                '&order=' + curSort + '.desc,max_lv.desc' +
+                '&limit=50';
+
+            fetch(url, { headers: headers() })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function (rows) {
+                    cache = Array.isArray(rows) ? rows : [];
+                    render();
+                })
+                .catch(function (e) {
+                    var bd2 = document.getElementById('rank-bd');
+                    if (bd2) {
+                        bd2.innerHTML = '<div class="rank-empty">' +
+                            '無法連線全服伺服器。<br>' +
+                            '<span style="font-size:.72rem;color:#475569">' + esc(e.message) + '</span><br>' +
+                            '<span style="font-size:.72rem;color:#475569">請確認網路連線後重新整理</span></div>';
+                    }
+                    var cntEl = document.getElementById('rank-cnt');
+                    if (cntEl) cntEl.textContent = '連線失敗';
+                });
+        }
+
+        /* 排序切換 */
+        document.querySelectorAll('.rank-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.rank-tab').forEach(function (t) {
+                    t.classList.remove('on');
+                });
+                tab.classList.add('on');
+                cache = [];
+                load(tab.getAttribute('data-sort'));
+            });
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { load('max_lv'); });
+        } else {
+            load('max_lv');
+        }
     })();
     </script>
 
