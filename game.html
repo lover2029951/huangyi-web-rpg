@@ -30380,19 +30380,11 @@ window.HY = window.HY || {};
             base: { atkUp: 0.40, atkDown: 0.20, defUp: 0.40, heal: 0.20 },
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                /* ⭐ 冪等保護：同一「回合」只推進一次。
-                   之前若 advanceTurn 被呼叫兩次（例如 performCharAttack 走兩條分支、
-                   或多目標攻擊時重複進入），yyTurn 會 1→3→5→7 永遠是奇數，
-                   結果就是「永遠陽刀、只有敵人死掉重置後才偶爾變陰劍」。
-                   用 core._turnCounter 當回合識別碼，重複呼叫直接回傳上次結果。 */
-                var key = (core && typeof core._turnCounter === 'number')
-                    ? ('t' + core._turnCounter) : null;
-                if (key && b.yyLastKey === key) {
-                    return (b.yyTurn || 1) % 2;
-                }
-                if (key) b.yyLastKey = key;
-                b.yyTurn = (b.yyTurn || 0) + 1;
-                return b.yyTurn % 2;
+                /* ⭐ 模式改由 getAttackerMods 的 b.yyHits 累加決定（見該處註解）。
+                   這裡不在新戰鬥時預設 1（否則第一招會變成陰劍），
+                   而是讓 getAttackerMods 從 0 開始累加，第一招 = 陽刀。 */
+                b.yyTurn = b.yyHits || 0;
+                return (b.yyHits || 0) % 2;
             },
             onAttack: function (sys, core, c, target, dealt, p) {
                 var b = sys.battle(c);
@@ -30558,13 +30550,22 @@ window.HY = window.HY || {};
             var b = this.battle(charObj);
             // ── 絕情谷 陽刀：攻擊 +40% ──
             if (def.key === 'yinyang') {
-                /* ⭐ 自癒：確保 yyTurn 至少初始化為 1。
-                   正常流程下 advanceTurn() 已經累加過，
-                   但若某條路徑繞過它（舊快取、ATB 分支），
-                   yyTurn 會是 undefined，而 (undefined || 1) % 2 永遠是陽刀。
-                   這裡只在「完全沒值」時補 1，不干擾正常累加。 */
-                if (!b.yyTurn) b.yyTurn = 1;
-                var isYang = (b.yyTurn % 2 === 1);
+                /* ⭐ 用「該角色自己的出手次數」決定模式。
+                   為什麼不用全域 _turnCounter：它有 4 個地方會遞增
+                   （我方 ATB、敵人 ATB、敵人回合、combatCore），
+                   一個回合可能 +1~+3 次，導致奇偶亂跳。
+
+                   b.yyHits：每次「本輪第一次計算傷害」時 +1，
+                   同一輪多目標攻擊用 _turnCounter 去重，只算一次。 */
+                var coreYY = this.app && this.app.combatSys;
+                var keyHits = (coreYY && typeof coreYY._turnCounter === 'number')
+                    ? ('y' + coreYY._turnCounter) : ('n' + (b.yyHits || 0));
+                if (b.yyHitKey !== keyHits) {
+                    b.yyHitKey = keyHits;
+                    b.yyHits = (b.yyHits || 0) + 1;
+                }
+                b.yyTurn = b.yyHits;
+                var isYang = (b.yyHits % 2 === 1);
                 if (isYang) result.atkMult *= (1 + p.atkUp);
             }
             // ── 峨嵋 自身慈悲雙倍 ──
@@ -30618,7 +30619,8 @@ window.HY = window.HY || {};
             }
             // ── 絕情谷 陰陽：陽刀 -20% / 陰劍 +40% ──
             if (def.key === 'yinyang') {
-                var isYang = ((b.yyTurn || 1) % 2 === 1);
+                /* 只讀取，不增加次數（次數由 getAttackerMods 統一累加） */
+                var isYang = ((b.yyHits || b.yyTurn || 1) % 2 === 1);
                 if (isYang) {
                     result.defMult *= (1 - p.atkDown);
                 } else {
@@ -30781,8 +30783,11 @@ window.HY = window.HY || {};
                     rows.push({ k: '額外屬攻', v: '×' + (Math.round(p.extra * 100) / 100).toFixed(2) });
                     break;
                 case 'yinyang':
-                    var isYang = ((b.yyTurn || 1) % 2 === 1);
+                    /* 只讀取 yyHits（由 getAttackerMods 累加），確保 UI 與實際倍率一致 */
+                    var yyN = (b.yyHits || b.yyTurn || 1);
+                    var isYang = (yyN % 2 === 1);
                     rows.push({ k: '當前模式', v: isYang ? '陽刀' : '陰劍', hl: true });
+                    rows.push({ k: '出手次數', v: cnt(yyN) });
                     rows.push({ k: '陽刀攻擊', v: pct(p.atkUp) });
                     rows.push({ k: '陽刀減防', v: pct(p.atkDown) });
                     rows.push({ k: '陰劍防禦', v: pct(p.defUp) });
