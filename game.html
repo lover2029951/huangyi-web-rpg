@@ -30414,6 +30414,11 @@ window.HY = window.HY || {};
         }
         getSig(c) {
             var sig = [];
+            /* ⭐ 必須把門派本身納入簽章。
+               原本只算心法／身法，同一角色切換門派後 c.id 不變，
+               會直接命中舊快取 → 拿到「上一個門派」的參數，
+               導致效果數值全錯（例如絕情谷拿到少林的 base）。 */
+            sig.push('S:' + (c.sect || ''));
             if (c.xinfa) Object.keys(c.xinfa).sort().forEach(function (k) { sig.push(k + ':' + c.xinfa[k]); });
             sig.push('AX:' + c.activeXinfa);
             if (c.qinggong) Object.keys(c.qinggong).sort().forEach(function (k) { sig.push(k + ':' + c.qinggong[k]); });
@@ -30424,7 +30429,8 @@ window.HY = window.HY || {};
             var def = this.getDef(c && c.sect);
             if (!def) return null;
             var sig = this.getSig(c);
-            if (this._cacheSig[c.id] === sig && this._paramCache[c.id]) return this._paramCache[c.id];
+            var key = (c.id || 'x') + '|' + (c.sect || '');
+            if (this._cacheSig[key] === sig && this._paramCache[key]) return this._paramCache[key];
             var Data = window.HY.Data;
             var p = {};
             Object.keys(def.base).forEach(function (k) {
@@ -30435,7 +30441,8 @@ window.HY = window.HY || {};
                 var mult = isActive ? lv * 1.3 : lv;
                 Object.keys(src.featBoost).forEach(function (k) {
                     if (p[k] === undefined) return;
-                    p[k] += src.featBoost[k] * mult;
+                    var add = Number(src.featBoost[k]) * Number(mult);
+                    if (isFinite(add)) p[k] += add;       /* ⭐ 防 NaN 污染 */
                 });
             }
             if (c.xinfa) {
@@ -30452,8 +30459,8 @@ window.HY = window.HY || {};
                     applyBoost(qg, c.qinggong[id] || 0, c.activeQinggong === id);
                 });
             }
-            this._cacheSig[c.id] = sig;
-            this._paramCache[c.id] = p;
+            this._cacheSig[key] = sig;
+            this._paramCache[key] = p;
             return p;
         }
         // ── v36：峨嵋慈悲的全隊加成（不含施術者本人）──
@@ -30766,6 +30773,10 @@ window.HY = window.HY || {};
         }
         resetBattleState() {
             var root = this.app.charSys.rootState;
+            /* ⭐ 主角（root.state）必須一起清空。
+               原本只清 roster，若主角不在 roster 裡，_battle 會殘留上一場的
+               yyTurn / karma / chi 等累積值 → 絕情谷陰陽模式會從錯誤的回合數開始。 */
+            if (root.state) root.state._battle = {};
             (root.roster || []).forEach(function (c) { c._battle = {}; });
             this._paramCache = {};
             this._cacheSig = {};
@@ -73971,6 +73982,16 @@ window.HY = window.HY || {};
                 var e = aliveEnemies[j];
                 var dex = self.getDexSys();
                 e.atkSpd = dex ? dex.getEnemyAtkSpd(e) : 100;
+                /* ⭐ 天山「冰魄凍結」減速：getEnemySpeedMult 原本定義了卻沒人呼叫，
+                   導致「每層 -4% 速度」只寫在 tooltip 上、實際完全不影響敵人行動。
+                   這裡把減速係數併入集氣速度。 */
+                var sectSys = window.HY.game && window.HY.game.sectFeatSys;
+                if (sectSys && typeof sectSys.getEnemySpeedMult === 'function') {
+                    try {
+                        var slowMul = sectSys.getEnemySpeedMult(e);
+                        if (typeof slowMul === 'number' && isFinite(slowMul)) e.atkSpd *= slowMul;
+                    } catch (err) { }
+                }
                 var eGain = e.atkSpd * self.ENEMY_GAIN_COEF;
                 e.atb = Math.min(100, (e.atb || 0) + eGain);
                 if (e.atb >= 100 && e.currentHp > 0) {
@@ -84818,7 +84839,25 @@ window.HY = window.HY || {};
                 '.tl-legend .lg-soc{border-color:#4a7ab5;background:rgba(74,122,181,.30);',
                 'border-style:dashed;}',
                 '.tl-canvas-wrap{flex:1 1 auto;position:relative;overflow:hidden;min-height:0;}',
-                '#tl-canvas{display:block;width:100%;height:100%;cursor:grab;}',
+                /* ⭐ 游標：原本用 grab（Windows 的「五掌」手掌），
+                   手掌中央的落點不明確，點天賦時很難對準。
+                   改成自繪 SVG 十字準心（熱點在正中心 12,12），
+                   中心留空心圓不遮住節點，外圈四條刻度方便對位。 */
+                '#tl-canvas{display:block;width:100%;height:100%;' +
+                'cursor:url("data:image/svg+xml;charset=utf-8,' +
+                encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">' +
+                    '<g fill="none" stroke="#0b0f14" stroke-width="3" stroke-linecap="round">' +
+                    '<circle cx="12" cy="12" r="4.5"/>' +
+                    '<path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>' +
+                    '</g>' +
+                    '<g fill="none" stroke="#f0c674" stroke-width="1.4" stroke-linecap="round">' +
+                    '<circle cx="12" cy="12" r="4.5"/>' +
+                    '<path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>' +
+                    '<circle cx="12" cy="12" r="0.9" fill="#f0c674" stroke="none"/>' +
+                    '</g>' +
+                    '</svg>'
+                ) + '") 12 12, crosshair;}',
                 '#tl-canvas.dragging{cursor:grabbing;}',
                 /* ⭐ 主體：畫布 + 右側屬性面板 */
                 '.tl-body{flex:1 1 auto;display:flex;min-height:0;overflow:hidden;}',
@@ -97249,7 +97288,21 @@ window.HY = window.HY || {};
                 '.atl-btn:hover{background:#1e2a3a;border-color:#4a6a8a;color:#cfe3f5;}',
                 '.atl-btn.danger{border-color:#7f1d1d;background:#2a1214;color:#f87171;}',
                 '.atl-btn.danger:hover{background:#3a1618;}',
-                '.atl-wrap{position:relative;flex:1;overflow:hidden;cursor:grab;}',
+                '.atl-wrap{position:relative;flex:1;overflow:hidden;' +
+                'cursor:url("data:image/svg+xml;charset=utf-8,' +
+                encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">' +
+                    '<g fill="none" stroke="#0b0f14" stroke-width="3" stroke-linecap="round">' +
+                    '<circle cx="12" cy="12" r="4.5"/>' +
+                    '<path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>' +
+                    '</g>' +
+                    '<g fill="none" stroke="#f0c674" stroke-width="1.4" stroke-linecap="round">' +
+                    '<circle cx="12" cy="12" r="4.5"/>' +
+                    '<path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>' +
+                    '<circle cx="12" cy="12" r="0.9" fill="#f0c674" stroke="none"/>' +
+                    '</g>' +
+                    '</svg>'
+                ) + '") 12 12, crosshair;}',
                 '.atl-wrap.dragging{cursor:grabbing;}',
                 '.atl-wrap canvas{display:block;}',
                 '.atl-tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;',
