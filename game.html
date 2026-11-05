@@ -26196,10 +26196,56 @@ window.HY = window.HY || {};
         selectCharacter(index) {
             this.ensureState();
             var root = this.charSys.rootState;
-            if (index < 0 || index >= root.roster.length) return false;
-            root.activeCharIndex = index;
+            if (!root.roster || !Array.isArray(root.roster)) return false;
+
+            /* ⭐ v49：同時支援「索引」與「角色 id」
+               ──────────────────────────────────────────────────
+               uiBagOverhaul 的 switchCharacter() 會用 id 字串呼叫
+               selectCharacter('char_xxx')，但原本這裡只接受數字索引，
+               → 收到字串時 index < 0 判斷為 false、直接失敗，
+                 導致「裝備行囊」的角色切換列點了完全沒反應（點擊 BUG）。
+
+               現在兩種都吃：
+                 selectCharacter(2)            → 第 3 個角色
+                 selectCharacter('char_123')   → 依 id 查找 */
+            var idx = -1;
+            if (typeof index === 'number' && isFinite(index)) {
+                idx = index;
+            } else if (index && typeof index === 'object') {
+                /* 也支援直接傳角色物件 */
+                var oid = String(index.id || '');
+                for (var i = 0; i < root.roster.length; i++) {
+                    if (root.roster[i] === index || (oid && String(root.roster[i].id) === oid)) { idx = i; break; }
+                }
+            } else if (typeof index === 'string') {
+                var sid = String(index);
+                for (var k = 0; k < root.roster.length; k++) {
+                    if (String(root.roster[k].id) === sid) { idx = k; break; }
+                }
+                /* 字串但不像 id → 再試一次數字 */
+                if (idx < 0 && /^\d+$/.test(sid)) idx = parseInt(sid, 10);
+            }
+            if (idx < 0 || idx >= root.roster.length) return false;
+
+            /* 已是當前角色 → 視為成功（避免「點了自己卻沒反應」的困惑） */
+            if (idx === root.activeCharIndex) return true;
+            root.activeCharIndex = idx;
             this.charSys.syncActivePointer();
-            var cur = root.roster[index];
+            var cur = root.roster[idx];
+            if (!cur) return false;
+
+            /* ⭐ v49：切換角色後重置 ATB，避免新角色帶著上一位的集氣條
+               （原本切換後 atb 沿用 → 新角色可能一出場就滿條，或永遠不滿）。 */
+            cur.atb = 0;
+            cur.__inDoubleExtra = false;
+
+            /* ⭐ v49：切換後若正在戰鬥，重新同步敵人指標，
+               否則戰鬥面板會顯示「已倒地的舊目標」。 */
+            var combat = window.HY.game && window.HY.game.combatSys;
+            if (combat && typeof combat.syncCurrentEnemyPointer === 'function') {
+                try { combat.syncCurrentEnemyPointer(); } catch (e) { }
+            }
+
             this.logger.add('👤 已切換主控角色為：【' + cur.name + ' (Lv.' + cur.lv + ')】！', 'system');
             return true;
         }
@@ -62160,8 +62206,38 @@ window.HY = window.HY || {};
                     btn.style.fontSize = '0.78rem';
                     btn.style.borderColor = isSelected ? '#00e5ff' : (inParty ? '#10b981' : '#334155');
                     btn.style.background = isSelected ? 'rgba(0, 229, 255, 0.2)' : '#121822';
-                    btn.innerHTML = (inParty ? '🚩' : '') + (idx + 1) + '.' + c.name + ' <small>(Lv.' + c.lv + ')</small>';
-                    btn.addEventListener('click', () => { if (app.rosterSys.selectCharacter(idx)) app.renderAll(); });
+                    /* ⭐ v49：加上 data-char-id，讓外部程式（uiBagOverhaul 等）
+                       可以用 id 精準定位，不必靠「按鈕文字包含角色名」的脆弱比對
+                       （角色改名或同名時會誤點）。 */
+                    btn.setAttribute('data-char-id', String(c.id || ''));
+                    btn.setAttribute('data-char-index', String(idx));
+                    btn.title = c.name + ' (Lv.' + c.lv + ')' +
+                        (isSelected ? '　·　當前操控中' : '　·　點擊切換操控') +
+                        (inParty ? '　·　已上陣' : '');
+                    btn.innerHTML = (inParty ? '🚩' : '') + (idx + 1) + '.' + c.name +
+                        ' <small>(Lv.' + c.lv + ')</small>';
+                    /* ⭐ v49：點擊處理加上防連點 + 明確回饋
+                       原本只寫 if (selectCharacter(idx)) renderAll();
+                       若 selectCharacter 回 false 就完全沒反應，玩家會以為「點了沒用」。 */
+                    btn.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        if (btn.__switching) return;
+                        btn.__switching = true;
+                        var ok = false;
+                        try {
+                            ok = !!app.rosterSys.selectCharacter(idx);
+                        } catch (e) {
+                            if (window.console) console.warn('[roster switch]', e);
+                            ok = false;
+                        }
+                        btn.__switching = false;
+                        if (!ok) {
+                            if (app.logger) app.logger.add('⚠️ 切換角色失敗，請重新載入頁面。', 'system');
+                            return;
+                        }
+                        if (typeof app.renderAll === 'function') app.renderAll();
+                    });
                     switcherEl.appendChild(btn);
                 });
             }
@@ -88150,9 +88226,20 @@ window.HY = window.HY || {};
       var visible = this._visibleTabs();
       var need = function (tabId) { return forceAll || visible[tabId]; };
 
-      /* 角色面板與隊列切換列在 tab-party */
+      /* ⭐⭐ v49 修正：左側角色面板是「常駐側邊欄」，不在分頁系統內
+         ──────────────────────────────────────────────────────
+         #character-panel 位於 <aside> 而非 <div class="tab-content">，
+         因此永遠可見。但原本把它綁在 need('tab-party') 上，
+         導致切到「時空探索 / 武學心法 / 門派」等分頁時
+         tab-party 為 false → 角色欄切換按鈕完全不渲染（顯示空白）。
+
+         這就是「角色欄切換面板顯示 BUG」的真正原因：
+         不是渲染邏輯錯，而是「該不該渲染」的判斷套錯了範圍。
+
+         修正：角色面板無條件渲染（它成本低，且永遠可見）。
+         右側的隊伍/角色欄分頁內容仍然只在 tab-party 可見時才畫。 */
+      this.uiCharParty.renderCharacterPanel();
       if (need('tab-party')) {
-        this.uiCharParty.renderCharacterPanel();
         this.uiCharParty.renderPartyAndRosterTab();
       }
       /* 自動戰術選單屬於 tab-explore，但它是 fixed 工具列，永遠可見 */
