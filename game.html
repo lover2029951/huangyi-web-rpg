@@ -73967,9 +73967,8 @@ window.HY = window.HY || {};
                     return;
                 }
                 activeChar.atb = 0;
-                /* ⭐ 手動出招 = 一次真正的出手 → 推進一次陰陽/陣門 */
-                if (!activeChar._battle) activeChar._battle = {};
-                activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
+                /* ⭐ 手動出招後清除旗標，下一輪 ATB 滿時才會再推進一次 */
+                if (activeChar._battle) activeChar._battle.yyAtbDone = false;
                 self.executeUnitFullAtbTurn(activeChar, true, leaderSkillId, healTarget || null);
             };
         }
@@ -74099,12 +74098,18 @@ window.HY = window.HY || {};
                 m.atb = Math.min(100, (m.atb || 0) + gain);
                 if (m.atb >= 100 && combat.currentEnemy) {
                     var isLeader = (m.id === activeChar.id);
+                    /* ⭐ 陰陽/陣門的推進必須「不管手動或自動」都算。
+                       原本寫在 if (!isLeader || isAutoBattle || inMapNow) 裡面，
+                       手動模式下主控永遠不進這個分支 → yyHits 永遠 0 → 永遠陽刀。
+                       陰陽是「回合」概念，ATB 一滿就該切換。 */
+                    if (!m._battle) m._battle = {};
+                    if (!m._battle.yyAtbDone) {
+                        m._battle.yyAtbDone = true;
+                        m._battle.yyHits = (m._battle.yyHits || 0) + 1;
+                    }
                     if (!isLeader || combat.isAutoBattle || inMapNow) {
                         m.atb = 0;
-                        /* ⭐ ATB 歸零 = 一次真正的出手 → 推進一次陰陽/陣門。
-                           這是唯一可靠的推進點：每次滿條只會走到這裡一次。 */
-                        if (!m._battle) m._battle = {};
-                        m._battle.yyHits = (m._battle.yyHits || 0) + 1;
+                        m._battle.yyAtbDone = false;
                         /* ⭐ 地圖內走打圖戰術，一般戰鬥走時空內掛 */
                         if (inMapNow && mapTac) {
                             if (!mapTac.cfg.autoSkill) continue;   // 只自動集氣，不自動出招
