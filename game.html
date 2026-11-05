@@ -30542,7 +30542,13 @@ window.HY = window.HY || {};
             var b = this.battle(charObj);
             // ── 絕情谷 陽刀：攻擊 +40% ──
             if (def.key === 'yinyang') {
-                var isYang = ((b.yyTurn || 1) % 2 === 1);
+                /* ⭐ 自癒：確保 yyTurn 至少初始化為 1。
+                   正常流程下 advanceTurn() 已經累加過，
+                   但若某條路徑繞過它（舊快取、ATB 分支），
+                   yyTurn 會是 undefined，而 (undefined || 1) % 2 永遠是陽刀。
+                   這裡只在「完全沒值」時補 1，不干擾正常累加。 */
+                if (!b.yyTurn) b.yyTurn = 1;
+                var isYang = (b.yyTurn % 2 === 1);
                 if (isYang) result.atkMult *= (1 + p.atkUp);
             }
             // ── 峨嵋 自身慈悲雙倍 ──
