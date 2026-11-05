@@ -30314,12 +30314,10 @@ window.HY = window.HY || {};
             GATES: ['景門', '死門', '驚門', '開門'],
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                /* ⭐ 冪等保護：同一回合只輪轉一次陣門（理由同絕情谷） */
-                var key = (core && typeof core._turnCounter === 'number')
-                    ? ('g' + core._turnCounter) : null;
-                if (key && b.gateLastKey === key) return b.gate || 0;
-                if (key) b.gateLastKey = key;
-                b.gate = ((b.gate || 0) + 1) % 4;
+                /* ⭐ 與絕情谷同源：陣門由「出手次數」推導，不再自己累加。
+                   推進點統一在 combatAtbSystem 的 executeUnitFullAtbTurn()，
+                   保證「出手一次 = 陣門輪轉一次」，不會跳號也不會延遲。 */
+                b.gate = ((b.yyHits || 1) - 1) % 4;
                 return b.gate;
             },
             onAttack: function (sys, core, c, target, dealt, p) {
@@ -30361,7 +30359,11 @@ window.HY = window.HY || {};
             ELEMENTS: ['金', '木', '水', '火', '土'],
             onAttack: function (sys, core, c, target, dealt, p) {
                 var b = sys.battle(c);
-                b.elem = ((b.elem || 0) + 1) % 5;
+                /* ⭐ 五行由「出手次數」推導（與絕情谷、鬼谷同源）。
+                   原本每次 onAttack 自行 +1，但 onAttack 在傷害結算之後才跑，
+                   造成「附加傷害吃的還是上一輪的五行」→ 差一回合。
+                   改由 executeUnitFullAtbTurn 統一推進 yyHits，這裡只讀取。 */
+                b.elem = (b.yyHits || 1) % 5;
                 var el = this.ELEMENTS[b.elem];
                 var elemAtk = 0;
                 var elemSys = sys.app.elementSys;
@@ -30571,8 +30573,10 @@ window.HY = window.HY || {};
                 result.atkMult *= (1 + (b.mercy || 0) * p.atkDef * 2);
             }
             // ── 鬼谷 驚門：暴擊 +10% ──
-            if (def.key === 'formation' && (b.gate || 0) === 2) {
-                result.critFlat += 10 * p.power;
+            if (def.key === 'formation') {
+                /* 陣門由出手次數推導，與 onTurnStart/UI 同源 */
+                b.gate = ((b.yyHits || 1) - 1) % 4;
+                if (b.gate === 2) result.critFlat += 10 * p.power;
             }
             // ── 天龍 脈門：命中 + 無視閃避；滿層必中 + 破甲 ──
             if (def.key === 'meridian' && target) {
@@ -30651,12 +30655,12 @@ window.HY = window.HY || {};
             if (k === 'reflect')return '彼力 ' + Math.floor(b.force || 0);
             if (k === 'trap')   return '機關 ' + (b.trap || 0) + '/' + Math.round(p.max);
             if (k === 'fury')   return '血怒 ' + (this.persistent(c, 'fury') || 0) + '/' + Math.round(p.max);
-            if (k === 'formation') return '陣門：' + (def.GATES[(b.gate || 0)] || '景門');
+            if (k === 'formation') { b.gate = ((b.yyHits || 1) - 1) % 4; return '陣門：' + (def.GATES[(b.gate || 0)] || '景門'); }
             if (k === 'yinyang') {
                 var yyOdd = ((b.yyTurn || 1) % 2 === 1);
                 return yyOdd ? '陽刀模式' : '陰劍模式';
             }
-            if (k === 'element')   return '五行：' + (def.ELEMENTS[(b.elem || 0)] || '金');
+            if (k === 'element')   { b.elem = (b.yyHits || 1) % 5; return '五行：' + (def.ELEMENTS[(b.elem || 0)] || '金'); }
             if (k === 'drain')  return '納元吸取 ' + Math.round(p.drain * 100) + '%';
             if (k === 'ignite') return '聖火灼傷 ' + Math.round(p.dot * 100) + '%/層';
             if (k === 'poison') return '劇毒削上限 ' + Math.round(p.cut * 100) + '%/層';
@@ -30769,6 +30773,8 @@ window.HY = window.HY || {};
                     rows.push({ k: '群攻增幅', v: pct(p.aoeBonus) + '/枚' });
                     break;
                 case 'formation':
+                    /* 陣門由出手次數推導，與 getAttackerMods 同源 */
+                    b.gate = ((b.yyHits || 1) - 1) % 4;
                     rows.push({ k: '當前陣門', v: (def.GATES[(b.gate || 0)] || '景門'), hl: true });
                     rows.push({ k: '陣法強度', v: '×' + (Math.round(p.power * 100) / 100).toFixed(2) });
                     rows.push({ k: '景門效果', v: '攻擊 +' + Math.round(12 * p.power) + '%' });
@@ -30777,6 +30783,7 @@ window.HY = window.HY || {};
                     rows.push({ k: '開門效果', v: '雙回 ' + Math.round(6 * p.power) + '%' });
                     break;
                 case 'element':
+                    b.elem = (b.yyHits || 1) % 5;
                     rows.push({ k: '當前五行', v: (def.ELEMENTS[(b.elem || 0)] || '金'), hl: true });
                     rows.push({ k: '額外屬攻', v: '×' + (Math.round(p.extra * 100) / 100).toFixed(2) });
                     break;
@@ -30890,10 +30897,12 @@ window.HY = window.HY || {};
                不是 root.state —— rootState 根本沒有 state 這個屬性
                （實際結構是 { roster, activeCharIndex, party, ... }）。
 
-               ⚠ 重要：yyHits（陰陽出手次數）必須「跨戰鬥保留」。
+               ⚠ 重要：yyHits（出手次數）必須「跨戰鬥保留」。
                  速刷時一場只打 1~2 招，若每場重置，
-                 玩家永遠只看得到陽刀 → 主觀感受就是「完全不會交替」。
-                 保留 yyHits 讓陰陽模式連續累積，才能真正交替。 */
+                 玩家永遠只看得到第一個狀態（陽刀 / 景門 / 金）→
+                 主觀感受就是「完全不會輪轉」。
+                 保留 yyHits 讓三套輪轉機制（絕情谷陰陽、鬼谷陣門、
+                 桃花島五行）都能連續累積。 */
             var keepYY = function (ch) {
                 if (!ch) return;
                 var prev = (ch._battle && typeof ch._battle.yyHits === 'number')
@@ -48374,7 +48383,7 @@ window.HY = window.HY || {};
                     row.className = 'fixed-unit-slot';
                     row.style.borderLeft = isMain ? '3px solid #00e5ff' : '3px solid #10b981';
                     row.innerHTML =
-                        '<div style="font-size:0.8rem; flex-shrink:0;"><strong>' + (idx + 1) + '號：' + m.name + ' (Lv.' + m.lv + ')</strong></div>' +
+                        '<div style="font-size:0.8rem; flex-shrink:0;"><strong>' + m.name + ' (Lv.' + m.lv + ')</strong></div>' +
                         this.buildHpmpBar('hp', m.currentHp, md.maxHp, false) +
                         this.buildHpmpBar('mp', m.currentMp, md.maxMp, false) +
                         '<div class="fixed-affix-line" style="color:#64748b;">等待交鋒中…</div>';
@@ -75059,7 +75068,7 @@ window.HY = window.HY || {};
                                 powerId: showPw ? ('ally-pw-' + i) : null,
                                 powerText: pwTxt,
                                 pct: isDead ? 0 : atbPct, isEnemy: false, empty: false,
-                                nameHtml: (i + 1) + '號：' + m.name + rootBadge +
+                                nameHtml: m.name + rootBadge +
                                     ' <span style="color:#7dd3fc;">[攻速 ' + md.atkSpd + ']</span>'
                             }) +
                             this.buildHpmpBar('hp', 'ally-hp-' + i, m.currentHp, md.maxHp, false) +
@@ -75077,7 +75086,7 @@ window.HY = window.HY || {};
                                 barId: 'ally-atb-bar-' + i,
                                 textId: 'ally-atb-text-' + i,
                                 pct: 0, isEnemy: false, empty: true,
-                                emptyLabel: (i + 1) + '號戰位：(空缺待命)'
+                                emptyLabel: '（空缺待命）'
                             }) +
                             '<div class="hpmp-bar hp"><div class="fi" style="width:0%;"></div><div class="tx">❤ 0 / 0</div></div>' +
                             '<div class="hpmp-bar mp"><div class="fi" style="width:0%;"></div><div class="tx">💧 0 / 0</div></div>' +
@@ -75156,7 +75165,7 @@ window.HY = window.HY || {};
                                 barId: 'enemy-atb-bar-' + j,
                                 textId: 'enemy-atb-text-' + j,
                                 pct: 0, isEnemy: true, empty: true,
-                                emptyLabel: '敵陣 ' + (j + 1) + '號：(無敵人)'
+                                emptyLabel: '（無敵人）'
                             }) +
                             '<div class="hpmp-bar hp enemy-hp"><div class="fi" style="width:0%;"></div><div class="tx">❤ 0 / 0</div></div>' +
                             '<div class="hpmp-bar mp enemy-mp"><div class="fi" style="width:0%;"></div><div class="tx">💧 0 / 0</div></div>' +
@@ -75654,7 +75663,7 @@ window.HY = window.HY || {};
         var idx = num(o.index, 0);
 
         if (!o.unit || o.empty) {
-            var label = o.emptyLabel || ((idx + 1) + '號戰位：(空缺待命)');
+            var label = o.emptyLabel || '（空缺待命）';
             return '<div class="cp-slot empty' + (isEnemy ? ' enemy' : '') + '">' +
                 atbHtml(label, '', 0, isEnemy) +
                 barHtml('hp', 0, 0, isEnemy) +
@@ -83635,8 +83644,8 @@ window.HY = window.HY || {};
                 var m = party[i] || null;
                 if (!m) {
                     ph += CP ? CP.unitHtml({ empty: true, index: i, isEnemy: false,
-                        emptyLabel: (i + 1) + '號戰位：(空缺待命)' })
-                        : '<div class="dv-empty">' + (i + 1) + '號戰位：(空缺待命)</div>';
+                        emptyLabel: '（空缺待命）' })
+                        : '<div class="dv-empty">（空缺待命）</div>';
                     continue;
                 }
                 var md = {};
@@ -83665,7 +83674,7 @@ window.HY = window.HY || {};
                         isEnemy: false,
                         isMain: isMain,
                         mainColor: isMain ? '#00e5ff' : '#10b981',
-                        nameText: (i + 1) + '號：' + String(m.name || '隊員') + rootBadge +
+                        nameText: String(m.name || '隊員') + rootBadge +
                             ' <span style="color:#7dd3fc;font-size:.68rem">[攻速 ' +
                             num(md.atkSpd, 0) + ']</span>',
                         powerText: powerOf(md),
@@ -83694,8 +83703,8 @@ window.HY = window.HY || {};
                 var e = foes[j] || null;
                 if (!e) {
                     fh += CP ? CP.unitHtml({ empty: true, index: j, isEnemy: true,
-                        emptyLabel: '敵陣 ' + (j + 1) + '號：(無敵人)' })
-                        : '<div class="dv-empty">敵陣 ' + (j + 1) + '號：(無敵人)</div>';
+                        emptyLabel: '（無敵人）' })
+                        : '<div class="dv-empty">（無敵人）</div>';
                     continue;
                 }
                 var eMaxMp = (typeof e.maxMp === 'number' && e.maxMp > 0)
@@ -96615,7 +96624,7 @@ window.HY = window.HY || {};
                 var m = members[i] || null;
                 if (!m) {
                     h += '<div class="at-slot-unit empty">' +
-                        '<div class="at-uh"><span class="nm">' + (i + 1) + '號戰位：(空缺待命)</span>' +
+                        '<div class="at-uh"><span class="nm">（空缺待命）</span>' +
                         '<span class="pc">⚡ 0%</span></div>' +
                         '<div class="at-hp"><div class="fi" style="width:0%"></div>' +
                         '<div class="tx">❤ 0 / 0</div></div>' +
@@ -96679,7 +96688,7 @@ window.HY = window.HY || {};
                     '<div class="at-uh' + (atbPct >= 100 ? ' full' : '') + '">' +
                     '<div class="atb-fill" style="width:' + (isDead ? 0 : atbPct).toFixed(1) + '%"></div>' +
                     '<div class="atb-tx">' +
-                    '<span class="nm">' + (i + 1) + '號：' + esc(String(m.name || '隊員')) + rootBadge + '</span>' +
+                    '<span class="nm">' + esc(String(m.name || '隊員')) + rootBadge + '</span>' +
                     '<span class="pw">⚔️' + pwTxt + '</span>' +
                     '<span class="pc">' + (atbPct >= 100 ? '⚡ 滿' : '⚡ ' + Math.floor(atbPct) + '%') + '</span>' +
                     '</div></div>' +
@@ -96955,7 +96964,7 @@ window.HY = window.HY || {};
                 if (!e) {
                     h += '<div class="at-slot-unit enemy empty">' +
                         '<div class="at-uh enemy"><div class="atb-fill" style="width:0%"></div>' +
-                        '<div class="atb-tx"><span class="nm">敵陣 ' + (j + 1) + '號：(無敵人)</span>' +
+                        '<div class="atb-tx"><span class="nm">（無敵人）</span>' +
                         '<span class="pc">⚡ 0%</span></div></div>' +
                         '<div class="at-hp"><div class="fi" style="width:0%"></div>' +
                         '<div class="tx">❤ 0 / 0</div></div>' +
