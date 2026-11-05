@@ -30314,6 +30314,11 @@ window.HY = window.HY || {};
             GATES: ['景門', '死門', '驚門', '開門'],
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
+                /* ⭐ 冪等保護：同一回合只輪轉一次陣門（理由同絕情谷） */
+                var key = (core && typeof core._turnCounter === 'number')
+                    ? ('g' + core._turnCounter) : null;
+                if (key && b.gateLastKey === key) return b.gate || 0;
+                if (key) b.gateLastKey = key;
                 b.gate = ((b.gate || 0) + 1) % 4;
                 return b.gate;
             },
@@ -30375,6 +30380,17 @@ window.HY = window.HY || {};
             base: { atkUp: 0.40, atkDown: 0.20, defUp: 0.40, heal: 0.20 },
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
+                /* ⭐ 冪等保護：同一「回合」只推進一次。
+                   之前若 advanceTurn 被呼叫兩次（例如 performCharAttack 走兩條分支、
+                   或多目標攻擊時重複進入），yyTurn 會 1→3→5→7 永遠是奇數，
+                   結果就是「永遠陽刀、只有敵人死掉重置後才偶爾變陰劍」。
+                   用 core._turnCounter 當回合識別碼，重複呼叫直接回傳上次結果。 */
+                var key = (core && typeof core._turnCounter === 'number')
+                    ? ('t' + core._turnCounter) : null;
+                if (key && b.yyLastKey === key) {
+                    return (b.yyTurn || 1) % 2;
+                }
+                if (key) b.yyLastKey = key;
                 b.yyTurn = (b.yyTurn || 0) + 1;
                 return b.yyTurn % 2;
             },
