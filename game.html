@@ -26852,9 +26852,16 @@ window.HY = window.HY || {};
             }
             return Object.keys(out);
         }
-        /* 節點是否「空節點」（無任何加成，多為職業起點） */
+        /* 節點是否「空節點」（無任何加成，多為職業起點／昇華路口）
+           ⚠ POE 官方樹的數值放在 n.stats（英文字串陣列），
+             bonus 物件是空的。若只檢查 bonus，全部 2429 個節點都會被
+             判定為「空節點」→ 所有天賦都免費，點數永遠不會扣。
+             因此 stats 有內容時一律視為「有加成」。 */
         _isEmptyNode(n) {
-            if (!n || !n.bonus) return true;
+            if (!n) return true;
+            /* POE 官方節點：有 stats 就是有效節點 */
+            if (n.stats && n.stats.length > 0) return false;
+            if (!n.bonus) return true;
             return (Object.keys(n.bonus.attr || {}).length +
                     Object.keys(n.bonus.flat || {}).length +
                     Object.keys(n.bonus.more || {}).length +
