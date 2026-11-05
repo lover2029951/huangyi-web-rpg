@@ -74164,6 +74164,15 @@ window.HY = window.HY || {};
             } else if (member) {
                 member._battle = { yyHits: 1 };
             }
+            /* 🔍 診斷輸出（暫時保留，確認問題後可移除） */
+            if (window.__YY_DEBUG !== false && member) {
+                try {
+                    console.log('[YY] 出手=' + (member.name || '?') +
+                        ' 次數=' + ((member._battle || {}).yyHits) +
+                        ' 模式=' + ((((member._battle || {}).yyHits || 1) % 2 === 1) ? '陽刀' : '陰劍') +
+                        ' 技能=' + skillId);
+                } catch (eD) { }
+            }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
             /* ⭐ 攻擊後「立刻」刷新 UI，讓出手次數與模式馬上反映。
                原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
@@ -75187,6 +75196,23 @@ window.HY = window.HY || {};
             var _atlasS = window.HY.game && window.HY.game.atlasSys;
             var _inMapNow = !!(_atlasS && typeof _atlasS.isInMap === 'function' && _atlasS.isInMap());
             var partyMembers = _inMapNow ? [] : app.partySys.getPartyMembers();
+            /* 🔍 診斷：只在 yyHits 變化時輸出，避免洗版 */
+            if (window.__YY_DEBUG !== false && window.__yyLastLog !== undefined) {
+                try {
+                    var m0 = partyMembers[0];
+                    var h0 = m0 ? ((m0._battle || {}).yyHits || 0) : -1;
+                    if (h0 !== window.__yyLastLog) {
+                        window.__yyLastLog = h0;
+                        console.log('[YY-UI] inMap=' + _inMapNow + ' 成員=' + partyMembers.length +
+                            ' hits=' + h0 + ' 模式=' + ((h0 % 2 === 1) ? '陽刀' : '陰劍'));
+                    }
+                } catch (eD2) { }
+            } else if (window.__YY_DEBUG !== false) {
+                try {
+                    var m1 = partyMembers[0];
+                    window.__yyLastLog = m1 ? ((m1._battle || {}).yyHits || 0) : -1;
+                } catch (eD3) { }
+            }
             function setBar(prefix, cur, max) {
                 var safeMax = (typeof max === 'number' && max > 0) ? max : 0;
                 var safeCur = Math.max(0, Math.min(cur || 0, safeMax));
