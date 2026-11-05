@@ -23429,10 +23429,15 @@ window.HY = window.HY || {};
                    ⚠ 天賦用「完整 ID 串」而非節點數量 ——
                      同樣 10 點但換了節點時，數量簽章會誤判成沒變。 */
                 var _ta = (c.talent && c.talent.allocated) ? Object.keys(c.talent.allocated).join(',') : '';
+                /* ⭐⭐ 昇華天賦必須納入簽章！
+                   原本只檢查主天賦，昇華節點配置變動時快取不會失效
+                   → 玩家點了昇華，屬性卻停在舊值（實測攻速永遠 100）。 */
+                var _ascSig = (c.asc && c.asc.allocated) ? Object.keys(c.asc.allocated).join(',') : '';
                 var _sig = [
                     c.lv, c.sect, c.activeXinfa, c.activeQinggong,
                     c.currentHp, c.currentMp,
                     _ta,
+                    _ascSig,
                     Object.keys(c.equipment || {}).length,
                     Object.keys(c.xinfa || {}).length,
                     Object.keys(c.qinggong || {}).length,
@@ -23453,6 +23458,18 @@ window.HY = window.HY || {};
                     for (var k in src) {
                         if (Object.prototype.hasOwnProperty.call(src, k)) o[k] = src[k];
                     }
+                    /* ⭐⭐ 回傳副本前，依 ext 強制回填「加成型」欄位。
+                       外層有 7 支包裝函式會改寫或誤用舊值，
+                       這裡是最靠近資料的地方，最後一道防線。 */
+                    try {
+                        var _ex2 = src.__ext || {};
+                        if (typeof _ex2.atkSpd === 'number' && _ex2.atkSpd) {
+                            o.atkSpd = 100 + _ex2.atkSpd;
+                        }
+                        if (typeof _ex2.critDmg === 'number' && _ex2.critDmg) {
+                            o.critDmg = 165 + _ex2.critDmg;
+                        }
+                    } catch (e) { }
                     return o;
                 };
                 if (c.__dsCache && c.__dsCache.sig === _sig && (_nowT - c.__dsCache.t) < 50) {
@@ -35343,6 +35360,62 @@ window.HY = window.HY || {};
             return false;
         }
     }
+
+    /* ══════════════════════════════════════════════════════════════════
+       ⭐ 自我修復層：鎖住「加成型」屬性的最終值
+       ──────────────────────────────────────────────────────────────────
+       問題：本專案有 7 支檔案會包裝 charSys.getDerivedStatsForChar
+            （gameConfigApply2 / derivedStatsCache / spiritRootSystem /
+              dexteritySpeedSystem / salvageExpeditionSystem / friendSystem …），
+            它們在取得物件後會改寫或誤用舊版函式，
+            導致 ext 算出的 atkSpd（昇華 +4%）在回傳時被還原成 100。
+            實測：direct=104、cache=104、但 wrapped=100。
+
+       解法：本檔最後載入，掛在最外層，依 __ext 的累積值強制回填。
+            這是唯一能保證「不管中間有幾層包裝」都正確的位置。
+       ══════════════════════════════════════════════════════════════════ */
+    function installDerivedSelfHeal(g) {
+        var cs = g && g.charSys;
+        if (!cs || cs.__ascSelfHeal) return;
+        var core = cs.getDerivedStatsForChar;
+        if (typeof core !== 'function') return;
+        cs.getDerivedStatsForChar = function (charObj) {
+            var d = core.call(this, charObj);
+            try {
+                var ex = d && d.__ext;
+                if (ex) {
+                    if (typeof ex.atkSpd === 'number' && ex.atkSpd) {
+                        d.atkSpd = 100 + ex.atkSpd;
+                    }
+                    if (typeof ex.critDmg === 'number' && ex.critDmg) {
+                        d.critDmg = 165 + ex.critDmg;
+                    }
+                }
+            } catch (e) { }
+            return d;
+        };
+        cs.__ascSelfHeal = true;
+        console.log('[uiAscendancy] ✓ 已安裝 derived stats 自我修復層');
+    }
+
+    /* ⭐ 重要：gameConfigApply2 / derivedStatsCache 等模組可能在「本檔之後」
+       才包裝 getDerivedStatsForChar，那樣我們的修復層就變成「內層」被蓋掉。
+       實測：selfHealInstalled=true，但 atkSpd 仍是 100。
+       解法：延遲到頁面 load 之後再掛一次（並用旗標防止重複）。 */
+    function scheduleSelfHeal() {
+        var g = HY.game;
+        if (!g || !g.charSys) return;
+        // 清掉舊旗標，允許重新包在最外層
+        g.charSys.__ascSelfHeal = false;
+        installDerivedSelfHeal(g);
+    }
+    if (document.readyState === 'complete') {
+        setTimeout(scheduleSelfHeal, 600);
+    } else {
+        window.addEventListener('load', function () { setTimeout(scheduleSelfHeal, 600); });
+    }
+    /* 再補一次，確保跑在所有延遲初始化的模組之後 */
+    setTimeout(scheduleSelfHeal, 2000);
 
     /* ⭐ 在頂部工具列「🌳 天賦樹」旁插入「✧ 昇華」按鈕
        ⚠️ 這顆按鈕原本用 sys-btn 樣式，跟旁邊 12 顆按鈕同色同大小，
