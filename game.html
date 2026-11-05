@@ -1598,21 +1598,40 @@ window.HY = window.HY || {};
         return Math.max(0.01, Math.min(1000, g * t));
     }
     // ── 排程器心跳 ──
+    /* ⭐⭐ 效能保護（關鍵）
+       這個心跳每 20ms 執行一次，會把所有透過 window.setInterval 註冊的任務
+       （全遊戲 57 個定時器）在同一輪裡「補跑」：
+         task.acc += dt * mul
+         while (task.acc >= baseMs && guard < 30) { cb(); }
+
+       dt 是「距離上次 tick 的真實毫秒」，瀏覽器一忙（例如主執行緒被別的
+       長任務卡住 500ms），dt 就會變成 500 → acc 暴增 → 每個任務補跑 25 次。
+       玩家感受到的就是 console 裡那種「setInterval handler 花了 239ms」，
+       而且會連鎖：補跑越久 → dt 越大 → 下一輪補跑更多。
+
+       三個防護：
+         ① 縮短 dt 上限：2000 → 250，避免一次補太多
+         ② 每輪總時間預算 12ms：超過就這輪停手，剩下的讓下一輪處理
+         ③ guard 30 → 8：單一任務單輪最多補 8 次
+       這樣即使卡頓，也不會從「小卡」放大成「大卡」。 */
+    var TICK_BUDGET_MS = 12;
+    var MAX_GUARD = 8;
     function tick() {
         var t = now();
         var dt = t - S.LAST;
         S.LAST = t;
         if (dt <= 0) return;
-        if (dt > 2000) dt = 2000;   // 背景分頁回來時不暴衝
+        if (dt > 250) dt = 250;   // ⭐ 背景分頁回來 / 主執行緒卡住時不暴衝
         var mul = intervalMult();
         var ids = Object.keys(S.tasks);
+        var startedAt = t;
         for (var i = 0; i < ids.length; i++) {
             var id = ids[i];
             var task = S.tasks[id];
             if (!task) continue;
             task.acc += dt * mul;
             var guard = 0;
-            while (task.acc >= task.baseMs && guard < 30) {
+            while (task.acc >= task.baseMs && guard < MAX_GUARD) {
                 task.acc -= task.baseMs;
                 guard++;
                 try {
@@ -1621,7 +1640,13 @@ window.HY = window.HY || {};
                     console.error('[GameConfig interval error]', e);
                 }
                 if (!S.tasks[id]) break;
+                /* ⭐ 時間預算用完 → 這輪停手，剩下的保留在 acc 給下一輪 */
+                if (now() - startedAt > TICK_BUDGET_MS) {
+                    startedAt = -1;
+                    break;
+                }
             }
+            if (startedAt === -1) break;
         }
     }
     S.LAST = now();
