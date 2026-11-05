@@ -30860,15 +30860,27 @@ window.HY = window.HY || {};
             return { odd: r, battle: b, ownTurn: b.ownTurn };
         }
         resetBattleState() {
-            var root = this.app.charSys.rootState;
-            /* ⭐ 主角（root.state）必須一起清空。
-               原本只清 roster，若主角不在 roster 裡，_battle 會殘留上一場的
-               yyTurn / karma / chi 等累積值 → 絕情谷陰陽模式會從錯誤的回合數開始。 */
-            if (root.state) root.state._battle = {};
-            (root.roster || []).forEach(function (c) { c._battle = {}; });
+            var cs = this.app.charSys;
+            var root = cs.rootState;
+            /* ⭐ 主角的戰鬥狀態要清在「charSys.state」上，
+               不是 root.state —— rootState 根本沒有 state 這個屬性
+               （實際結構是 { roster, activeCharIndex, party, ... }）。
+               之前寫 root.state._battle = {} 是無效代碼，
+               導致主角跨戰鬥殘留 yyTurn / karma / chi。
+               ⚠ 另外也一併清 activeCharIndex 指向的角色（有些流程會用它）。 */
+            if (cs.state) cs.state._battle = {};
+            if (root) {
+                var idx = root.activeCharIndex;
+                if (typeof idx === 'number' && root.roster && root.roster[idx]) {
+                    root.roster[idx]._battle = {};
+                }
+                (root.roster || []).forEach(function (c) {
+                    if (c) c._battle = {};
+                });
+            }
             this._paramCache = {};
             this._cacheSig = {};
-            ((this.app.combatSys && this.app.combatSys.enemies) || []).forEach(function (e) { e._sect = {}; });
+            ((this.app.combatSys && this.app.combatSys.enemies) || []).forEach(function (e) { if (e) e._sect = {}; });
         }
         processPlayerAttack(core, payload) {
             if (!payload || !payload.charObj) return;
