@@ -85226,16 +85226,55 @@ window.HY = window.HY || {};
                     : '';
             }
             this._draw();
-            /* 有命中就自動移到第一個命中節點，省去玩家自己找 */
+            /* ⭐ 有命中就自動移動視野：
+               · 只有 1 個 → 置中該節點並放大到可讀
+               · 多個 → 縮放到剛好框住所有命中節點（方便一次看全部） */
             if (n > 0 && this._searchQuery) {
-                var firstId = Object.keys(this._searchHits)[0];
                 var P = this._ensurePositions();
-                var p = P.pos[firstId];
-                if (p && this._vw && this._vh) {
-                    this.offsetX = this._vw / 2 - p.x * this.scale;
-                    this.offsetY = this._vh / 2 - p.y * this.scale;
-                    this._draw();
+                var hitIds = Object.keys(this._searchHits);
+                var pts = [];
+                hitIds.forEach(function (hid) {
+                    var pp = P.pos[hid];
+                    if (pp) pts.push(pp);
+                });
+                if (pts.length === 1) {
+                    var p = pts[0];
+                    if (this._vw && this._vh) {
+                        this.scale = Math.max(this.scale, 0.28);
+                        this.offsetX = this._vw / 2 - p.x * this.scale;
+                        this.offsetY = this._vh / 2 - p.y * this.scale;
+                    }
+                } else if (pts.length > 1) {
+                    var mnX = 1e12, mxX = -1e12, mnY = 1e12, mxY = -1e12;
+                    pts.forEach(function (q2) {
+                        if (q2.x < mnX) mnX = q2.x;
+                        if (q2.x > mxX) mxX = q2.x;
+                        if (q2.y < mnY) mnY = q2.y;
+                        if (q2.y > mxY) mxY = q2.y;
+                    });
+                    var spanX = Math.max(1, mxX - mnX);
+                    var spanY = Math.max(1, mxY - mnY);
+                    var pad = 120;   /* 留邊，避免命中節點貼在畫面邊緣 */
+                    var sc = Math.min((this._vw - pad) / spanX, (this._vh - pad) / spanY);
+                    /* ⭐ 縮放下限 0.18：若命中節點分散太遠（例如搜「爆擊」有 100+ 個），
+                       硬要框住全部會縮到 0.05 → 節點只剩 2px，光環也看不見。
+                       這時改用「保持可讀縮放 + 只置中」，讓玩家自己滾輪瀏覽，
+                       至少每個命中節點的高亮都清楚可見。 */
+                    var MIN_SEARCH_SCALE = 0.18;
+                    if (sc < MIN_SEARCH_SCALE) {
+                        sc = Math.min(this.scale, MIN_SEARCH_SCALE);
+                        /* 置中在命中節點的幾何中心 */
+                        this.scale = sc;
+                        this.offsetX = this._vw / 2 - (mnX + mxX) / 2 * sc;
+                        this.offsetY = this._vh / 2 - (mnY + mxY) / 2 * sc;
+                    } else {
+                        sc = Math.max(0.05, Math.min(0.6, sc));
+                        this.scale = sc;
+                        this.offsetX = this._vw / 2 - (mnX + mxX) / 2 * sc;
+                        this.offsetY = this._vh / 2 - (mnY + mxY) / 2 * sc;
+                    }
                 }
+                this._draw();
             }
             /* 搜尋命中時啟動輕量動畫迴圈（虛線環旋轉） */
             this._startSearchAnim(!!(this._searchQuery && n > 0));
@@ -86275,6 +86314,50 @@ window.HY = window.HY || {};
                 var isAvail = !!available[id];
                 /* ⭐ 搜尋命中：畫一圈金色虛線光環，與 POE 的搜尋高亮一致 */
                 var isHit = !!(self3._searchHits && self3._searchHits[id]);
+                /* ⭐⭐ 搜尋命中的節點加大高亮：
+                   原本只有一圈細虛線，在密密麻麻的樹上幾乎看不到。
+                   改為「大範圍向外擴散的暖金光暈 + 外圈實線」，
+                   讓搜尋結果在第一眼就能被找到（不論節點是何種類型）。 */
+                if (isHit) {
+                    var hitR = Math.max(6, rMinor * (n.isKeystone ? 2.6 : (n.isNotable ? 2.0 : 1.7)));
+                    /* ⭐ 縮到很小（全貌）時，rMinor 只有 2px，光環也只剩 3~5px。
+                       給一個最小可見尺寸 6px，確保任何縮放下都看得到高亮。 */
+                    if (hitR < 6) hitR = 6;
+                    var _pulse = 1 + 0.18 * Math.sin(Date.now() / 200);
+                    ctx.save();
+                    /* ① 外擴柔光（三層漸層，POE 搜尋光暈的強度） */
+                    var g1 = ctx.createRadialGradient(sp.x, sp.y, hitR * 0.3,
+                        sp.x, sp.y, hitR * 2.6 * _pulse);
+                    g1.addColorStop(0, 'rgba(255,245,190,0.85)');
+                    g1.addColorStop(0.35, 'rgba(255,214,110,0.50)');
+                    g1.addColorStop(0.7, 'rgba(255,190,60,0.22)');
+                    g1.addColorStop(1, 'rgba(255,170,30,0)');
+                    ctx.fillStyle = g1;
+                    ctx.beginPath();
+                    ctx.arc(sp.x, sp.y, hitR * 2.6 * _pulse, 0, Math.PI * 2);
+                    ctx.fill();
+                    /* ② 外圈粗實線（白金色，高對比） */
+                    ctx.beginPath();
+                    ctx.arc(sp.x, sp.y, hitR * 1.25 * _pulse, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,248,200,1)';
+                    ctx.lineWidth = Math.max(2, hitR * 0.18);
+                    ctx.stroke();
+                    /* ③ 第二圈（淡金，加大範圍感） */
+                    ctx.beginPath();
+                    ctx.arc(sp.x, sp.y, hitR * 1.75 * _pulse, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,214,110,0.75)';
+                    ctx.lineWidth = Math.max(1.2, hitR * 0.10);
+                    ctx.stroke();
+                    /* ④ 旋轉虛線（動態，一眼看出是搜尋結果） */
+                    ctx.beginPath();
+                    ctx.arc(sp.x, sp.y, hitR * 2.15, 0, Math.PI * 2);
+                    ctx.setLineDash([hitR * 0.55, hitR * 0.4]);
+                    ctx.lineDashOffset = -(Date.now() / 38) % (hitR * 0.95);
+                    ctx.strokeStyle = '#ffe08a';
+                    ctx.lineWidth = Math.max(1.2, hitR * 0.13);
+                    ctx.stroke();
+                    ctx.restore();
+                }
                 var r = rMinor;
                 /* ⭐ 各型節點的放大倍率略微收斂（原本 2.3/1.85/1.4）。
                    基準半徑已放大到 4.8 倍，若倍率不變，關鍵天賦直徑會達
