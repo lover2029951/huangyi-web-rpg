@@ -31960,6 +31960,31 @@ window.HY = window.HY || {};
             });
         }
 
+        /* ──────────────────────────────────────────────────────────
+           ⭐ 預覽分支（不套用）
+           ──────────────────────────────────────────────────────────
+           v3 需求：玩家要能「先看天賦內容」，確認後才決定是否加入。
+           預覽只存在記憶體（不寫 c.asc），所以不會影響角色能力。 */
+        previewBranch(ascId) {
+            this._preview = ascId || null;
+            return this._preview;
+        }
+        getPreview() { return this._preview || null; }
+        clearPreview() { this._preview = null; }
+
+        /** 目前「畫面上要看哪個分支」：已正式選定的優先，否則看預覽 */
+        activeBranch(charObj) {
+            var a = this.ensureState(charObj);
+            if (a && a.branch) return a.branch;
+            return this._preview || null;
+        }
+
+        /** 該角色是否已正式加入某分支 */
+        isJoined(charObj) {
+            var a = this.ensureState(charObj);
+            return !!(a && a.branch);
+        }
+
         /** 選定分支（POE 規則：選了就不能換，除非全部重洗） */
         pickBranch(charObj, ascId) {
             var a = this.ensureState(charObj);
@@ -31973,6 +31998,7 @@ window.HY = window.HY || {};
                 return { ok: false, why: '此分支不存在' };
             }
             a.branch = ascId;
+            this._preview = null;    /* 正式加入後清掉預覽 */
             /* 自動點上起點（免費） */
             var N = this.nodes();
             var startId = null;
@@ -34307,6 +34333,39 @@ window.HY = window.HY || {};
                 '  border-radius:5px;padding:5px 12px;font-size:.8rem;cursor:pointer;transition:.15s;}',
                 '.asc-btn:hover{background:#2a3a52;border-color:#5a7ba6;color:#e2e8f0;}',
                 '.asc-btn.danger:hover{background:#7f1d1d;border-color:#dc2626;color:#fecaca;}',
+                /* ⭐ v3：加入按鈕（金色高亮） */
+                '.asc-btn.join{background:linear-gradient(135deg,#4a3818,#2a1f0c);',
+                '  border:1px solid #f0c674;color:#fbbf24;font-weight:bold;',
+                '  text-shadow:0 0 8px rgba(251,191,36,.5);',
+                '  box-shadow:0 0 12px rgba(240,198,116,.35);}',
+                '.asc-btn.join:hover{background:linear-gradient(135deg,#6b5020,#3d2d12);',
+                '  border-color:#ffd479;color:#ffe9b0;box-shadow:0 0 20px rgba(240,198,116,.7);}',
+                /* ⭐ v3：確認彈窗 */
+                '.asc-mask{position:fixed;inset:0;z-index:9400;background:rgba(2,5,10,.82);',
+                '  display:none;align-items:center;justify-content:center;padding:16px;}',
+                '.asc-confirm{width:min(94vw,420px);background:linear-gradient(160deg,#121b27,#0a0f16);',
+                '  border:2px solid #f0c674;border-radius:12px;padding:24px 24px 18px;',
+                '  box-shadow:0 24px 80px rgba(0,0,0,.9),0 0 40px rgba(240,198,116,.18);}',
+                '.asc-confirm .ac-title{font-size:1.1rem;font-weight:bold;color:#f0c674;',
+                '  text-align:center;margin-bottom:16px;letter-spacing:1px;}',
+                '.asc-confirm .ac-body{text-align:center;margin-bottom:18px;}',
+                '.asc-confirm .ac-name{font-size:1.35rem;font-weight:bold;color:#7dd3fc;',
+                '  margin-bottom:12px;text-shadow:0 0 18px rgba(56,189,248,.55);}',
+                '.asc-confirm .ac-hint{font-size:.8rem;color:#94a3b8;line-height:1.85;}',
+                '.asc-confirm .ac-hint b{color:#fbbf24;}',
+                '.asc-confirm .ac-hint .hl{color:#7dd3fc;font-size:1rem;}',
+                '.asc-confirm .ac-btns{display:flex;gap:10px;}',
+                '.asc-confirm .ac-btn{flex:1;border:none;border-radius:7px;padding:11px;',
+                '  font-size:.9rem;font-weight:bold;cursor:pointer;transition:.15s;',
+                "  font-family:'Microsoft JhengHei','PingFang TC',sans-serif;}",
+                '.asc-confirm .ac-btn.ghost{background:#1e293b;color:#94a3b8;',
+                '  border:1px solid #334155;}',
+                '.asc-confirm .ac-btn.ghost:hover{background:#2a3a52;color:#cbd5e1;}',
+                '.asc-confirm .ac-btn.ok{background:linear-gradient(135deg,#b45309,#f59e0b);',
+                '  color:#0f141c;box-shadow:0 4px 18px rgba(245,158,11,.4);}',
+                '.asc-confirm .ac-btn.ok:hover{background:linear-gradient(135deg,#d97706,#fbbf24);}',
+                /* 已加入分支的樣式 */
+                '.asc-branch.joined{border-color:#f0c674;background:rgba(240,198,116,.10);}',
 
                 /* 主體 */
                 '.asc-body{flex:1;display:flex;min-height:0;}',
@@ -34392,6 +34451,8 @@ window.HY = window.HY || {};
                 '<span class="asc-pill">已配置 <b id="asc-spent">0</b></span>' +
                 '<span class="asc-pill" id="asc-next"></span>' +
                 '<span class="asc-spacer"></span>' +
+                /* ⭐ v3：加入按鈕（預覽分支時才出現） */
+                '<button class="asc-btn join" id="asc-join" style="display:none;">✦ 加入此昇華</button>' +
                 '<button class="asc-btn" id="asc-center">🎯 置中</button>' +
                 '<button class="asc-btn danger" id="asc-reset">🔄 重置</button>' +
                 '<button class="asc-btn" id="asc-close">↩️ 返回</button>' +
@@ -34424,6 +34485,7 @@ window.HY = window.HY || {};
                 next: root.querySelector('#asc-next'),
                 btnCenter: root.querySelector('#asc-center'),
                 btnReset: root.querySelector('#asc-reset'),
+                btnJoin: root.querySelector('#asc-join'),
                 btnClose: root.querySelector('#asc-close')
             };
             this.ctx = this.el.canvas.getContext('2d');
@@ -34432,6 +34494,9 @@ window.HY = window.HY || {};
             this.el.btnClose.addEventListener('click', function () { self.close(); });
             this.el.btnCenter.addEventListener('click', function () { self._layout(); self._draw(); });
             this.el.btnReset.addEventListener('click', function () { self._reset(); });
+            if (this.el.btnJoin) {
+                this.el.btnJoin.addEventListener('click', function () { self._confirmJoin(); });
+            }
             this._bindCanvas();
             window.addEventListener('resize', function () {
                 if (self.isOpen) { self._resize(); self._draw(); }
@@ -34539,6 +34604,11 @@ window.HY = window.HY || {};
         _onClick(e) {
             var n = this._hitTest(e.clientX, e.clientY);
             if (!n) return;
+            /* ⭐ v3：預覽模式不可配置 */
+            if (this._isJoined === false) {
+                this._toast('預覽模式 — 請先按右上角「加入此昇華」才能配置');
+                return;
+            }
             var chk = this.sys.canAllocate(n.id, this.char);
             if (n.allocated) {
                 var r = this.sys.deallocate(n.id, this.char);
@@ -34692,7 +34762,10 @@ window.HY = window.HY || {};
             var a = sys.ensureState(c);
             var D = HY.Data || {};
             var N = D.ASCENDANCY_NODES || {};
-            var br = a.branch;
+            /* ⭐ v3：顯示中的分支 = 已正式加入的，否則 = 預覽中的 */
+            var br = sys.activeBranch(c);
+            this._viewBranch = br;
+            this._isJoined = !!(a && a.branch);
 
             if (!br) {
                 this._nodes = [];
@@ -34725,18 +34798,22 @@ window.HY = window.HY || {};
 
             /* 節點資料（含狀態） */
             var self = this;
+            var previewing = !this._isJoined;   /* ⭐ 預覽模式：全部唯讀 */
             var frontier = {};
             sys.frontierIds(c).forEach(function (id) { frontier[id] = 1; });
 
             this._nodes = list.map(function (id) {
                 var n = N[id];
                 var allocated = !!a.allocated[id];
-                var canAlloc = !allocated && (n.isAscStart || frontier[id]);
+                var canAlloc = !previewing && !allocated && (n.isAscStart || frontier[id]);
                 var lockReason = '';
-                if (!allocated && !canAlloc) lockReason = '需與已點節點相連';
-                if (!allocated && canAlloc && num(a.points, 0) <= 0) {
-                    var nx = sys.nextPointLevel(c);
-                    lockReason = '點數不足' + (nx ? '（Lv.' + nx + ' 取得下一點）' : '');
+                if (previewing) lockReason = '預覽中 — 需先「加入此昇華」才能配置';
+                else {
+                    if (!allocated && !canAlloc) lockReason = '需與已點節點相連';
+                    if (!allocated && canAlloc && num(a.points, 0) <= 0) {
+                        var nx = sys.nextPointLevel(c);
+                        lockReason = '點數不足' + (nx ? '（Lv.' + nx + ' 取得下一點）' : '');
+                    }
                 }
                 var r = n.isAscStart ? 22 : (n.isKeystone ? 20 : (n.isNotable ? 16 : 10));
                 return {
@@ -34747,7 +34824,8 @@ window.HY = window.HY || {};
                     r: r,
                     allocated: allocated,
                     canAlloc: canAlloc && num(a.points, 0) > 0,
-                    lockReason: lockReason
+                    lockReason: lockReason,
+                    preview: previewing
                 };
             });
             this._renderTop();
@@ -34768,8 +34846,12 @@ window.HY = window.HY || {};
             var others = list.filter(function (b) { return !b.isMine; });
 
             function btn(b) {
-                var active = (a.branch === b.id);
-                var locked = !!(a.branch && !active);
+                /* ⭐ v3：點擊 = 預覽（不套用）
+                   active 判斷改看「目前顯示中的分支」（正式選定優先，否則預覽） */
+                var viewing = (sys.activeBranch(c) === b.id);
+                var joined = (a.branch === b.id);
+                var locked = false;   /* 預覽階段不鎖任何分支 */
+
                 /* ⭐ 每個分支配一個「職業插畫圓」
                    D.ASC_CLASS_ART[branchId] → {x,y,w,h}（在 ascendancy-3.webp 裡）
                    用 CSS background-image + background-position 裁切。 */
@@ -34783,14 +34865,15 @@ window.HY = window.HY || {};
                         'background-size:' + (imgW / art.w * 100).toFixed(1) + '% auto;' +
                         'background-position:' + bgX.toFixed(2) + '% ' + bgY.toFixed(2) + '%;';
                 }
-                return '<button class="asc-branch' + (active ? ' active' : '') +
-                    (locked ? ' locked' : '') + '" data-asc="' + b.id + '">' +
+                return '<button class="asc-branch' + (viewing ? ' active' : '') +
+                    (joined ? ' joined' : '') + '" data-asc="' + b.id + '">' +
                     '<span class="asc-art"' + (artStyle ? ' style="' + artStyle + '"' : '') + '>' +
                         '<span class="asc-art-in">' + (b.nameZh || b.id).charAt(0) + '</span>' +
                     '</span>' +
                     '<span class="asc-txt">' +
                         '<span class="bn">' + (b.nameZh || b.id) +
-                        (b.isMine ? ' <i class="asc-tag">本職</i>' : '') + '</span>' +
+                        (joined ? ' <i class="asc-tag">已加入</i>' : '') +
+                        (b.isMine && !joined ? ' <i class="asc-tag">本職</i>' : '') + '</span>' +
                         '<span class="be">' + b.id + '　' + b.nodeCount + ' 節點</span>' +
                     '</span>' +
                     '</button>';
@@ -34798,7 +34881,7 @@ window.HY = window.HY || {};
 
             var html = '';
             if (mine.length) {
-                html += '<div class="asc-bh">' + clsZh + '・本職昇華（三選一）</div>';
+                html += '<div class="asc-bh">' + clsZh + '・本職昇華</div>';
                 mine.forEach(function (b) { html += btn(b); });
             }
             if (others.length) {
@@ -34816,10 +34899,15 @@ window.HY = window.HY || {};
                 btnEl.addEventListener('click', function () {
                     var id = btnEl.getAttribute('data-asc');
                     var cur = self.sys.ensureState(self.char);
-                    if (cur.branch === id) return;
-                    if (cur.branch) { self._toast('已選定分支，需先「重置」才能更換'); return; }
-                    var r = self.sys.pickBranch(self.char, id);
-                    if (!r.ok) { self._toast(r.why); return; }
+                    /* ⭐ v3：點擊只「預覽」，不加入。加入要按右上角的按鈕。 */
+                    if (cur.branch) {
+                        /* 已加入某分支 → 點其他分支只提示，不切換 */
+                        if (cur.branch !== id) {
+                            self._toast('已加入「' + cur.branch + '」，需先重置才能更換');
+                        }
+                        return;
+                    }
+                    self.sys.previewBranch(id);
                     self._layout();
                     self._renderBranchList();
                     self._renderSide();
@@ -34837,7 +34925,6 @@ window.HY = window.HY || {};
             this.el.pts.textContent = remain;
             this.el.spent.textContent = num(sum.spent, 0);
             var nx = sum.nextLevel;
-            var lv = num(c.lv, 1);
             /* ⭐ 讓玩家一眼看懂「為什麼是 0 點」 */
             if (remain === 0 && !nx) {
                 this.el.next.textContent = '已取得全部 8 點';
@@ -34847,9 +34934,76 @@ window.HY = window.HY || {};
                 this.el.next.textContent = '已取得 ' + num(sum.total, 0) + ' 點';
             }
             this.el.next.style.opacity = '1';
-            /* 點數為 0 時把提示變金色，引導玩家去升等 */
             this.el.pts.style.color = remain > 0 ? '#7dd3fc' : '#94a3b8';
             this.el.next.style.color = remain > 0 ? '#94a3b8' : '#fbbf24';
+
+            /* ⭐ v3：加入按鈕只在「預覽分支、尚未加入」時出現 */
+            if (this.el.btnJoin) {
+                var viewing = sys.activeBranch(c);
+                var joined = sys.isJoined(c);
+                if (viewing && !joined) {
+                    this.el.btnJoin.style.display = '';
+                    var ZH = HY.AscendancyZh;
+                    var nm = (ZH && ZH.branch) ? ZH.branch(viewing) : viewing;
+                    this.el.btnJoin.textContent = '✦ 加入「' + nm + '」';
+                } else {
+                    this.el.btnJoin.style.display = 'none';
+                }
+            }
+        }
+
+        /* ──────────────────────────────────────────────────────────
+           ⭐ v3：加入昇華確認彈窗（不直接套用）
+           ────────────────────────────────────────────────────────── */
+        _confirmJoin() {
+            var sys = this.sys;
+            var c = this.char;
+            var br = sys.activeBranch(c);
+            if (!br) { this._toast('請先選擇一個昇華分支'); return; }
+            var ZH = HY.AscendancyZh;
+            var nm = (ZH && ZH.branch) ? ZH.branch(br) : br;
+
+            /* 已有遮罩就重用 */
+            var mask = document.getElementById('asc-confirm-mask');
+            if (!mask) {
+                mask = document.createElement('div');
+                mask.id = 'asc-confirm-mask';
+                mask.className = 'asc-mask';
+                document.body.appendChild(mask);
+            }
+            var self = this;
+            mask.innerHTML =
+                '<div class="asc-confirm">' +
+                '<div class="ac-title">是否加入此昇華？</div>' +
+                '<div class="ac-body">' +
+                '<div class="ac-name">' + nm + '</div>' +
+                '<div class="ac-hint">' +
+                '加入後將<b>無法更換</b>（需重置全部昇華天賦）。<br>' +
+                '目前剩餘昇華點數：<b class="hl">' + num(sys.summary(c).remaining, 0) + '</b> 點' +
+                '</div>' +
+                '</div>' +
+                '<div class="ac-btns">' +
+                '<button class="ac-btn ghost" id="asc-cancel">取消</button>' +
+                '<button class="ac-btn ok" id="asc-do-join">✦ 確認加入</button>' +
+                '</div>' +
+                '</div>';
+            mask.style.display = 'flex';
+
+            document.getElementById('asc-cancel').addEventListener('click', function () {
+                mask.style.display = 'none';
+            });
+            mask.addEventListener('click', function (e) {
+                if (e.target === mask) mask.style.display = 'none';
+            });
+            document.getElementById('asc-do-join').addEventListener('click', function () {
+                var r = sys.pickBranch(self.char, br);
+                mask.style.display = 'none';
+                if (!r.ok) { self._toast(r.why); return; }
+                self._layout();
+                self._renderBranchList();
+                self._renderSide();
+                self._draw();
+            });
         }
 
         _renderSide() {
@@ -34861,11 +35015,30 @@ window.HY = window.HY || {};
             var ZH = HY.AscendancyZh;
 
             var ids = Object.keys(a.allocated).filter(function (id) { return N[id]; });
-            var html = '<div class="asc-sh">已配置的昇華天賦（' + ids.length + '）</div>';
-            if (!ids.length) {
-                html += '<div class="asc-empty">尚未配置任何昇華天賦。<br>' +
-                    '從左側選擇一個分支，<br>再點擊畫布上的節點開始。</div>';
+            var joined = sys.isJoined(c);
+            var viewing = sys.activeBranch(c);
+            var html;
+
+            /* ⭐ v3：預覽模式給明確提示，避免玩家誤以為已生效 */
+            if (!joined && viewing) {
+                var ZH2 = HY.AscendancyZh;
+                var vn = (ZH2 && ZH2.branch) ? ZH2.branch(viewing) : viewing;
+                html = '<div class="asc-sh">👁 預覽中</div>';
+                html += '<div class="asc-empty" style="color:#fbbf24;line-height:1.9;">' +
+                    '正在預覽「<b>' + vn + '</b>」的天賦內容。<br>' +
+                    '尚未加入，<b>不會影響角色能力</b>。<br><br>' +
+                    '確認要玩這個分支，請按上方<br>' +
+                    '<b style="color:#f0c674;">「✦ 加入此昇華」</b>。' +
+                    '</div>';
+                ids = [];   /* 預覽時不顯示已配置（本來就沒有） */
             } else {
+                html = '<div class="asc-sh">已配置的昇華天賦（' + ids.length + '）</div>';
+                if (!ids.length) {
+                    html += '<div class="asc-empty">尚未配置任何昇華天賦。<br>' +
+                        '點擊畫布上的節點開始。</div>';
+                }
+            }
+            if (ids.length) {
                 ids.forEach(function (id) {
                     var n = N[id];
                     var nm = ZH ? ZH.nodeName(n) : n.name;
@@ -34906,50 +35079,20 @@ window.HY = window.HY || {};
             var w = this._vw, h = this._vh;
             ctx.clearRect(0, 0, w, h);
 
-            /* ⭐⭐ POE 官方昇華背景圖
-               選定分支後，背景優先顯示「該職業的插畫」（ClassesXxx）
-               而不是通用底圖 —— 這就是「一個圈一個職業對應昇華背景」。
-               未選分支時才用整張 ascendancy-3.webp。 */
-            var bg = this._bgImg();
-            var art = this._branchArt();
-            if (bg && art) {
-                /* 用分支職業插畫（498×498 一格）鋪滿，cover 模式 */
-                var aw = art.w, ah = art.h;
-                var scA = Math.max(w / aw, h / ah) * 1.02;
-                var dwA = aw * scA, dhA = ah * scA;
-                ctx.save();
-                ctx.globalAlpha = 0.55;   /* 壓暗，避免蓋過節點 */
-                ctx.drawImage(bg, art.x, art.y, aw, ah,
-                              (w - dwA) / 2, (h - dhA) / 2, dwA, dhA);
-                ctx.restore();
-                /* 再蓋一層深色漸層，讓節點與連線清楚 */
-                var vg = ctx.createRadialGradient(w / 2, h / 2, 60, w / 2, h / 2, Math.max(w, h) * 0.72);
-                vg.addColorStop(0, 'rgba(10,16,26,0.72)');
-                vg.addColorStop(1, 'rgba(6,9,14,0.92)');
-                ctx.fillStyle = vg;
-                ctx.fillRect(0, 0, w, h);
-            } else if (bg) {
-                var bw = bg.naturalWidth, bh = bg.naturalHeight;
-                var sc = Math.max(w / bw, h / bh) * 1.05;
-                var dw = bw * sc, dh = bh * sc;
-                ctx.save();
-                ctx.globalAlpha = 1.0;
-                ctx.drawImage(bg, (w - dw) / 2, (h - dh) / 2, dw, dh);
-                ctx.globalCompositeOperation = 'screen';
-                ctx.globalAlpha = 0.12;
-                ctx.fillStyle = '#1a2740';
-                ctx.fillRect(0, 0, w, h);
-                ctx.restore();
-            } else {
-                /* 背景還沒載完 → 120ms 後重試（否則永遠沒背景） */
-                var selfB = this;
-                if (!this._bgRetry) {
-                    this._bgRetry = setTimeout(function () {
-                        selfB._bgRetry = null;
-                        if (selfB.isOpen) selfB._draw();
-                    }, 120);
-                }
-            }
+            /* ⭐ 背景：純深色（v3 改動）
+               原本這裡會鋪 ascendancy-3.webp 整張圖集當背景，
+               但那是「所有職業的插畫拼在一起」的圖集，
+               鋪在主畫面看起來像一堆大頭貼，不像 POE 的昇華介面。
+               → 改成純深色漸層，讓節點與連線成為視覺焦點。
+               （職業插畫仍保留在左側分支列表的小圓與節點圖示裡） */
+            ctx.fillStyle = '#070a10';
+            ctx.fillRect(0, 0, w, h);
+            var _bgGrad = ctx.createRadialGradient(w / 2, h * 0.45, 40, w / 2, h * 0.45, Math.max(w, h) * 0.75);
+            _bgGrad.addColorStop(0, 'rgba(22,34,52,0.85)');
+            _bgGrad.addColorStop(0.55, 'rgba(12,19,30,0.75)');
+            _bgGrad.addColorStop(1, 'rgba(5,7,11,0.95)');
+            ctx.fillStyle = _bgGrad;
+            ctx.fillRect(0, 0, w, h);
 
             var nodes = this._nodes || [];
             if (!nodes.length) {
@@ -34962,6 +35105,18 @@ window.HY = window.HY || {};
                 ctx.fillText('請先從左側選擇一個昇華分支', w / 2, h / 2);
                 ctx.restore();
                 return;
+            }
+
+            /* ⭐ v3：預覽模式的浮水印提示（讓玩家清楚知道還沒套用） */
+            if (this._isJoined === false) {
+                ctx.save();
+                ctx.font = 'bold 13px "Microsoft JhengHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(251,191,36,0.72)';
+                ctx.shadowColor = 'rgba(0,0,0,0.85)';
+                ctx.shadowBlur = 6;
+                ctx.fillText('👁 預覽模式 — 尚未加入，此處配置不會影響角色能力', w / 2, 26);
+                ctx.restore();
             }
 
             var s = this.scale, ox = this.offsetX, oy = this.offsetY;
@@ -35078,9 +35233,11 @@ window.HY = window.HY || {};
                     ctx.shadowBlur = 0;
                     ctx.lineWidth = Math.max(1.6, (n.node.isKeystone ? 2.8 : 2.2) * Math.max(0.7, s));
                     ctx.strokeStyle = ringColor;
+                    if (n.preview) ctx.setLineDash([4, 3]);   /* 預覽：虛線 */
                     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+                    ctx.setLineDash([]);
                     /* 可配置的節點加一圈淡光，提示「這裡能點」 */
-                    if (n.canAlloc) {
+                    if (n.canAlloc && !n.preview) {
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = 'rgba(251,191,36,0.35)';
                         ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke();
@@ -55142,11 +55299,22 @@ window.HY = window.HY || {};
                         '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
                             (inParty ? '⛺ 退下休息' : '🚩 加入上陣') +
                         '</button>' +
+                        /* ⭐ 昇華按鈕：開啟該角色的昇華天賦（預覽模式，不會馬上套用） */
+                        '<button class="action-btn btn-asc-char" style="border-color:#f0c674; color:#fbbf24;" title="昇華天賦（先預覽，確認後才加入）">' +
+                            '✦ 昇華' + (c.sect && app.ascSys && app.ascSys.isJoined(c) ? '（已選）' : '') +
+                        '</button>' +
                         '<button class="action-btn btn-delete-char" style="border-color:#ef4444; color:#fca5a5;" ' +
                         (allChars.length <= 1 ? 'disabled title="至少需保留 1 名角色"' : '') + '>🗑️ 刪除</button>' +
                     '</div>';
                 card.querySelector('.btn-select-char').addEventListener('click', () => {
                     if (app.rosterSys.selectCharacter(idx)) app.renderAll();
+                });
+                /* ⭐ 昇華：直接開啟該角色的昇華面板（預覽，不套用） */
+                card.querySelector('.btn-asc-char').addEventListener('click', () => {
+                    if (!app.uiAsc) return;
+                    /* 先切到該角色，再開面板 */
+                    if (!isSelected) app.rosterSys.selectCharacter(idx);
+                    app.uiAsc.open(c);
                 });
                 /* ⭐ 改名功能 */
                 card.querySelector('.btn-rename-char').addEventListener('click', () => {
