@@ -82069,20 +82069,31 @@ window.HY = window.HY || {};
                用圖形距離會完全點不到節點。 */
             var best = null, bestD = 1e9;
             var s = this.scale, ox = this.offsetX, oy = this.offsetY;
+            /* ⭐ 節點放大一倍後，命中範圍也要跟著放大，
+               否則點在圖示邊緣會點不到（尤其放大視圖時節點半徑可達 52px）。 */
+            var isPoePick = !!(window.HY.Data.TALENT_META &&
+                /^poe-/.test(window.HY.Data.TALENT_META.scheme || ''));
+            var drawR = 11;
+            if (isPoePick) {
+                /* 命中半徑與繪製半徑一致，但保留 7px 下限，
+                   避免縮到全貌時點不到節點。 */
+                drawR = Math.max(7, Math.min(64, 5.2 * s * 5.2));
+            }
+            var coarse = drawR + 10;
             for (var id in P.pos) {
                 var p = P.pos[id];
                 var sx = p.x * s + ox;
                 var sy = p.y * s + oy;
                 /* 粗篩：先看是否在附近，省掉大量 Math.hypot */
                 var ddx = sx - mx, ddy = sy - my;
-                if (ddx > 22 || ddx < -22 || ddy > 22 || ddy < -22) continue;
+                if (ddx > coarse || ddx < -coarse || ddy > coarse || ddy < -coarse) continue;
                 var d = Math.sqrt(ddx * ddx + ddy * ddy);
                 var n = NODES[id];
-                var r = 11;                     /* 螢幕像素基準 */
+                var r = drawR;                  /* 螢幕像素基準（隨縮放變動） */
                 if (n) {
-                    if (n.isJewelSocket) r = 14;
-                    else if (n.isKeystone) r = 15;
-                    else if (n.isNotable) r = 12;
+                    if (n.isJewelSocket) r = drawR * 1.6;
+                    else if (n.isKeystone) r = drawR * 1.9;
+                    else if (n.isNotable) r = drawR * 1.3;
                 }
                 if (d < r && d < bestD) { bestD = d; best = id; }
             }
@@ -82452,7 +82463,12 @@ window.HY = window.HY || {};
                  · 右上角「回到中心」可重新置中，滾輪可自由縮放
                使用者想看全貌時自己縮小即可。 */
             var fitScale = Math.min(w / spanX, h / spanY) * 0.94;
-            var MIN_READABLE = 0.09;
+            /* ⭐ 可讀縮放下限 0.09 → 0.16。
+               0.09 時節點直徑只有 3px（圖示完全看不出來，使用者反映「節點太小」）。
+               0.16 時節點直徑約 12px，與 POE 原版全貌視圖一致，
+               同時還能看到 300+ 個節點（約六分之一的樹），
+               想看更細就滾輪放大，想看全貌就滾輪縮小。 */
+            var MIN_READABLE = 0.16;
             this.scale = Math.max(fitScale, MIN_READABLE);
             this.offsetX = w / 2 - cx * this.scale;
             this.offsetY = h / 2 - cy * this.scale;
@@ -82487,13 +82503,15 @@ window.HY = window.HY || {};
                   舊版依狀態把線從 1px 一路加粗到 4.5px，相鄰的幾條線
                   一起加粗時，視覺上會糊成一塊「扇形／錐形」的漸層色塊。
                   統一寬度後就是乾淨的細直線，結構仍然靠亮度分層。 */
-            /* ⭐ POE 的連線是「暗金銅管」，比一般細線明顯。
-               POE 原版連線在縮小視圖下仍然清楚可見，
-               因此最小寬度從 1.4 提高到 2.0，放大時上限 4.0。 */
-            var edgeW = Math.max(2.0, Math.min(4.0, 900 * s * 0.036));
-            /* ⭐ 但完整視圖（scale≈0.05）時節點間距只有 6~11px，
-               2px 的線已經足夠粗；再粗就會連成一團。 */
-            if (s < 0.12) edgeW = Math.max(1.0, Math.min(1.6, 6 * s + 0.9));
+            /* ⭐ 節點放大一倍後，連線寬度改為「依節點半徑等比」，不再依 scale 分段。
+               線寬 = 節點半徑 × 0.42，這樣任何縮放下線都不會比節點還粗。 */
+            var edgeW = Math.max(2.4, Math.min(5.0, 900 * s * 0.044));
+            if (s < 0.12) edgeW = Math.max(1.2, Math.min(1.9, 7 * s + 1.1));
+            var isPoeTreeW = !!(D.TALENT_META && /^poe-/.test(D.TALENT_META.scheme || ''));
+            if (isPoeTreeW) {
+                var poeRW = Math.max(0.5, Math.min(64, 5.2 * s * 5.2));
+                edgeW = Math.max(1.3, Math.min(4.6, poeRW * 0.30));
+            }
             ctx.lineWidth = edgeW;
             ctx.lineCap = 'butt';
             var drawn = {};
@@ -82524,17 +82542,24 @@ window.HY = window.HY || {};
             /* ⭐ 與節點繪製保持一致（POE 樹放大 2.4 倍，下限 0.9px） */
             var isPoeTreeE = !!(D.TALENT_META && /^poe-/.test(D.TALENT_META.scheme || ''));
             if (isPoeTreeE) {
-                var poeRE = R_WORLD_E * s * 2.4;
-                if (s < 0.12) poeRE = Math.max(0.6, Math.min(2.2, 16 * s));
-                rBase = Math.max(0.6, Math.min(34, poeRE));
+                /* 與節點繪製完全一致（4.8 倍、下限 2.0px），
+                   否則連線端點留白算錯，線會被放大的節點整個蓋住。 */
+                var poeRE = R_WORLD_E * s * 5.2;
+                rBase = Math.max(0.5, Math.min(64, poeRE));
             }
             function nodeR(n) {
                 if (!n) return rBase;
-                if (n.isKeystone) return rBase * 2.3;
-                if (n.isJewelSocket) return rBase * 1.85;
-                if (n.isNotable) return rBase * 1.4;
+                if (n.isKeystone) return rBase * 1.9;
+                if (n.isJewelSocket) return rBase * 1.6;
+                if (n.isNotable) return rBase * 1.3;
                 return rBase;
             }
+            /* ⭐ 連線端點留白係數 = 圖示實際半徑 / r。
+               圖示直徑 = r × 2.84，故視覺半徑為 r × 1.42，線頭要從圖示邊緣開始畫。
+               若留白不足，線會插進圖示裡；留白過多（超過線長上限）線又會變太短，
+               因此仍受下方的 maxTrim（線長 34%）保護。 */
+            var ICON_F = 1.42;
+            function nodeVisR(n) { return nodeR(n) * ICON_F; }
             /* 把 a→b 的線段兩端各縮掉節點半徑，得到真正該畫的那一段 */
             function trimSegment(x1, y1, x2, y2, ra, rb) {
                 var dx = x2 - x1, dy = y2 - y1;
@@ -82548,9 +82573,10 @@ window.HY = window.HY || {};
                    完整視圖時節點半徑 0.9px、線寬 2px，
                    每端削 1.9px → 4.1px 的連線只剩 0.3px，等於沒畫。
                    這正是「連線大量消失」的真正原因。
-                   改成：修剪量最多只佔線長的 40%（兩端合計 80%），
-                   保證任兩節點之間永遠留得下可見的線段。 */
-                var maxTrim = len * 0.4;
+                /* ⭐ 節點（POE 樹）已放大一倍，若仍允許每端削 40%
+                   （合計 80%），完整視圖下 6~11px 的連線只會剩 1~2px。
+                   收斂到每端 34%（合計 68%），至少保留 1/3 線段可見。 */
+                var maxTrim = len * 0.34;
                 if (s0 > maxTrim) s0 = maxTrim;
                 if (s1 > maxTrim) s1 = maxTrim;
 
@@ -82653,7 +82679,7 @@ window.HY = window.HY || {};
                     }
                     ctx.stroke();
                 } else {
-                    var seg = trimSegment(sa.x, sa.y, sb.x, sb.y, nodeR(n), nodeR(NODES[nextId]));
+                    var seg = trimSegment(sa.x, sa.y, sb.x, sb.y, nodeVisR(n), nodeVisR(NODES[nextId]));
                     if (seg) {
                         ctx.beginPath();
                         ctx.moveTo(seg.x1, seg.y1);
@@ -82689,11 +82715,19 @@ window.HY = window.HY || {};
                  看起來就像「連線全部消失」。所以下限降到 0.9px。 */
             var isPoeTreeD = !!(D.TALENT_META && /^poe-/.test(D.TALENT_META.scheme || ''));
             if (isPoeTreeD) {
-                /* 完整視圖（s<0.12）時節點間距僅 6~11px，
-                   節點半徑必須小於間距的一半（3px），否則會把連線整條蓋住。 */
-                var poeR = R_WORLD * s * 2.4;
-                if (s < 0.12) poeR = Math.max(0.6, Math.min(2.2, 16 * s));
-                rMinor = Math.max(0.6, Math.min(34, poeR));
+                /* ⭐ 節點放大（使用者要求「天賦節點放大 1 倍」以上）。
+                   世界座標最短相鄰節點距離 = 124 單位（實測 2429 節點中的最小兩兩距離）。
+                   節點實際視覺直徑 = iconSize = r × 2.84，
+                   取 r = 5.2 × s × 5.2 → s=0.3 時 r=8.1px、直徑 23px
+                   （原本 2.4 倍時只有 10.6px，等於放大 2.17 倍）。
+
+                   ⚠ 下限刻意設得很小（0.5）：節點大小「純比例」跟著 scale 縮放，
+                     與節點間距（世界 124 單位 × s）永遠維持固定比例，
+                     所以任何縮放下都不會互相重疊、連線也一定會露出中段。
+                     一旦下限設大（例如 2.0），縮到全貌時節點就會黏成一團，
+                     連線被完全吃掉 —— 這正是先前「連線消失」的成因。 */
+                var poeR = R_WORLD * s * 5.2;
+                rMinor = Math.max(0.5, Math.min(64, poeR));
             }
             var hoverId = this.hoverId;
             Object.keys(P.pos).forEach(function (id) {
@@ -82707,9 +82741,12 @@ window.HY = window.HY || {};
                 /* ⭐ 搜尋命中：畫一圈金色虛線光環，與 POE 的搜尋高亮一致 */
                 var isHit = !!(self3._searchHits && self3._searchHits[id]);
                 var r = rMinor;
-                if (n.isKeystone) r = rMinor * 2.3;
-                else if (n.isJewelSocket) r = rMinor * 1.85;
-                else if (n.isNotable) r = rMinor * 1.4;
+                /* ⭐ 各型節點的放大倍率略微收斂（原本 2.3/1.85/1.4）。
+                   基準半徑已放大到 4.8 倍，若倍率不變，關鍵天賦直徑會達
+                   115 世界單位，逼近最短間距 124，幾乎要黏在一起。 */
+                if (n.isKeystone) r = rMinor * 1.9;
+                else if (n.isJewelSocket) r = rMinor * 1.6;
+                else if (n.isNotable) r = rMinor * 1.3;
                 var stroke, fill;
                 if (isAlloc) {
                     stroke = COLORS.allocated;
@@ -82748,10 +82785,13 @@ window.HY = window.HY || {};
                 }
                 var iconImg = (!iconInfo ? null : (iconInfo.sprite ? null : self3._iconImg(iconInfo.file)));
                 var iconReady = !!(iconImg && iconImg.complete && iconImg.naturalWidth > 0);
-                /* ⭐ 圖示直徑 = 2.52 × 節點半徑。 */
-                var iconSize = r * 2.52;
+                /* ⭐ 圖示直徑 = 節點「視覺直徑」。
+                   r 是內部的基準半徑，實際畫出來的圓（含外框）是 r × 2.84，
+                   因此節點的真實視覺大小 = 2.84 × 5.2 × 5.2 × s = 76.7 × s。
+                   s=0.3 時直徑 23px（改動前只有 9.4px），約放大 2.45 倍。 */
+                var iconSize = r * 2.84;
                 /* ⭐ 精靈圖優先繪製（真・POE 圖示） */
-                if (sprReady && iconSize >= 6) {
+                if (sprReady && iconSize >= 4) {
                     var irS = iconSize / 2;
                     var s0 = iconInfo.sprite;
                     if (isAlloc || isAvail || id === hoverId) {
