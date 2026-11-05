@@ -80490,24 +80490,70 @@ window.HY = window.HY || {};
       this.jewelSys.ensureState();
       this.martialSys.ensureState();
       this.guildCore.ensureState();
-      this.uiCharParty.renderCharacterPanel();
-      this.uiCharParty.renderPartyAndRosterTab();
+
+      /* ⭐⭐ 效能：只重繪「目前可見」的分頁
+         ──────────────────────────────────────────────────────
+         原本這裡無條件呼叫 12 個 render，其中 renderMartialTab() 單獨就要 18ms，
+         而 renderAll 在戰鬥中被每一 tick 呼叫（一秒數十次）
+         → 每秒上千毫秒的 DOM 重建，這就是玩家感受到的「嚴重延遲」。
+
+         分頁是 <button data-tab> + <div id="tab-xxx" class="active"> 結構，
+         只有帶 .active 的那個才看得到，其餘重建純屬浪費。
+         （保留「強制全繪」開關：renderAll(true)，供存讀檔等必要時機使用） */
+      var forceAll = (arguments.length > 0 && arguments[0] === true);
+      var visible = this._visibleTabs();
+      var need = function (tabId) { return forceAll || visible[tabId]; };
+
+      /* 角色面板與隊列切換列在 tab-party */
+      if (need('tab-party')) {
+        this.uiCharParty.renderCharacterPanel();
+        this.uiCharParty.renderPartyAndRosterTab();
+      }
+      /* 自動戰術選單屬於 tab-explore，但它是 fixed 工具列，永遠可見 */
       this.uiCombatExplore.renderAutoTacticsSelects();
-      this.uiCombatExplore.renderExploreAndCombat();
-      this.uiMartialSect.renderMartialTab();
-      this.uiMartialSect.renderSectTab();
-      this.uiEquipMarket.renderInventoryTab();
-      this.uiEquipMarket.renderBlackMarketTab();
-      this.uiCompPet.renderCompanionTab();
-      this.uiCompPet.renderPetTab();
-      this.uiGuild.renderGuildTab(); // 內部會自行判斷分頁是否可見
-      if (this.uiTown) this.uiTown.renderTownTab();
+      if (need('tab-explore')) this.uiCombatExplore.renderExploreAndCombat();
+      if (need('tab-martial')) this.uiMartialSect.renderMartialTab();
+      if (need('tab-sect')) this.uiMartialSect.renderSectTab();
+      if (need('tab-inventory')) this.uiEquipMarket.renderInventoryTab();
+      if (need('tab-blackmarket')) this.uiEquipMarket.renderBlackMarketTab();
+      if (need('tab-companion')) this.uiCompPet.renderCompanionTab();
+      if (need('tab-pet')) this.uiCompPet.renderPetTab();
+      if (need('tab-guild')) this.uiGuild.renderGuildTab();
+      if (need('tab-town') && this.uiTown) this.uiTown.renderTownTab();
       /* ⭐ 礦坑面板若開著，同步刷新它的內嵌戰鬥區，
          否則 ATB 每 tick 只更新主畫面，礦坑裡的戰況會停住。 */
       if (window.HY.uiDelve && window.HY.uiDelve.isOpen &&
           typeof window.HY.uiDelve.render === 'function') {
         try { window.HY.uiDelve.render(); } catch (e) { }
       }
+    }
+    /** 目前哪些分頁是可見的（快取 DOM 查詢，分頁切換時才重算） */
+    _visibleTabs() {
+      var map = {};
+      var list = document.querySelectorAll('.tab-content');
+      for (var i = 0; i < list.length; i++) {
+        var el = list[i];
+        if (!el.id) continue;
+        /* 用 className 判斷比 getComputedStyle 快很多 */
+        map[el.id] = (el.className || '').indexOf('active') !== -1;
+      }
+      /* 若頁面結構不同（沒有 .tab-content），保守起見全部視為可見 */
+      if (!list.length) return { 'tab-party': 1, 'tab-explore': 1, 'tab-martial': 1, 'tab-sect': 1,
+                                 'tab-inventory': 1, 'tab-blackmarket': 1, 'tab-companion': 1,
+                                 'tab-pet': 1, 'tab-guild': 1, 'tab-town': 1 };
+      return map;
+    }
+    /** ⭐ 節流版重繪：同一幀內多次請求只執行一次（戰鬥 tick 專用） */
+    renderAllThrottled() {
+      var self = this;
+      if (this._renderPending) return;
+      this._renderPending = true;
+      var run = function () {
+        self._renderPending = false;
+        try { self.renderAll(); } catch (e) { if (window.console) console.warn('[renderAll] ', e); }
+      };
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+      else setTimeout(run, 16);
     }
     bindStaticEvents() {
       const cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
@@ -105517,12 +105563,38 @@ window.HY = window.HY || {};
         img.onload = function () {
             SPRITE_READY[key] = true;
             /* 載入完成後請 UI 重繪一次 */
-            if (HY.uiAtlasTree && HY.uiAtlasTree.isOpen) HY.uiAtlasTree._draw();
+            var u = HY.uiAtlasTree || (HY.game && HY.game.uiAtlasTree);
+            if (u && u.isOpen && typeof u._draw === 'function') {
+                try { u._draw(); } catch (e) { }
+            }
         };
-        img.onerror = function () { SPRITE_READY[key] = false; };
+        img.onerror = function () {
+            /* ⭐ 失敗時把快取清掉，下次呼叫會重新嘗試，
+               否則一次網路抖動就永遠沒有背景圖。 */
+            SPRITE_READY[key] = false;
+            delete SPRITE_CACHE[key];
+        };
         img.src = spritePath() + fn;
         SPRITE_CACHE[key] = img;
         return img;
+    }
+
+    /** ⭐ 主動預載所有圖集（含背景圖）
+        原本只在 _draw 時才 lazy 載入，若那一刻圖片尚未完成，
+        該幀就畫不到背景；而 onload 觸發時若 UI 正好沒開，
+        重繪也不會發生 → 玩家看到的是永遠沒有背景的輿圖。 */
+    function preloadSprites() {
+        var files = spriteFiles();
+        Object.keys(files).forEach(function (k) {
+            try { atlasImg(k); } catch (e) { }
+        });
+    }
+    HY.atlasPreloadSprites = preloadSprites;
+    /* 載入後立刻預載（DOM 就緒即可，不需等玩家打開面板） */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', preloadSprites);
+    } else {
+        setTimeout(preloadSprites, 0);
     }
 
     /** 依「圖示路徑 + 節點類型 + 是否已配置」找出圖集座標 */
@@ -106125,23 +106197,49 @@ window.HY = window.HY || {};
                載入失敗才退回純色 + 徑向光暈。 */
             var bgImg = atlasImg('background');
             var bgReady = !!(bgImg && bgImg.complete && bgImg.naturalWidth > 0);
+            /* ⭐ 背景還沒好 → 安排下一幀重試，避免「打開時剛好沒載完就永遠沒有背景」 */
+            if (!bgReady && !this._bgRetry) {
+                var self0 = this;
+                this._bgRetry = setTimeout(function () {
+                    self0._bgRetry = null;
+                    if (self0.isOpen) self0._draw();
+                }, 120);
+            } else if (bgReady) {
+                this._bgRetry = null;
+            }
+            /* ⭐⭐ 背景「放大鋪滿整個輿圖」
+               官方底圖 2048×1974（近正方形），畫布 1920×1019（寬螢幕），
+               直接等比放大会在左右兩側留黑邊。所以：
+                 ① 用 cover（寬或高至少一邊撐滿）→ 完全無黑邊
+                 ② 稍微再放大 8%（OVERFILL），把邊緣最暗的部分裁掉，
+                    讓有內容的區域更集中、更有「星圖鋪滿」的感覺
+                 ③ 亮度提升：官方圖偏暗（中心 RGB 只有 3,1,2），
+                    globalAlpha 提到 1.0 並加一層輕微提亮，避免整片黑 */
             ctx.fillStyle = '#05070c';
             ctx.fillRect(0, 0, w, h);
             if (bgReady) {
-                /* 背景圖跟著樹一起縮放平移，讓節點與背景對齊。
-                   POE 的底圖本身偏暗，alpha 太低會整片黑 → 提到 0.8，
-                   再疊一層中心光暈，才有「星圖」的層次感。 */
                 var bw = bgImg.naturalWidth, bh = bgImg.naturalHeight;
+                var OVERFILL = 1.08;
+                var scaleC = Math.max(w / bw, h / bh) * OVERFILL;
+                var dw = bw * scaleC, dh = bh * scaleC;
+                var dx = (w - dw) / 2, dy = (h - dh) / 2;
                 ctx.save();
-                ctx.globalAlpha = 0.80;
-                ctx.drawImage(bgImg, ox - (bw * s) / 2, oy - (bh * s) / 2, bw * s, bh * s);
+                ctx.globalAlpha = 1.0;
+                ctx.drawImage(bgImg, dx, dy, dw, dh);
+                /* ⭐ 提亮層：官方圖太暗，用 screen 混合模式提一階，
+                   保留星雲細節又不會像加白霧。 */
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.16;
+                ctx.fillStyle = '#1a2740';
+                ctx.fillRect(0, 0, w, h);
                 ctx.restore();
             }
-            /* 中心徑向光暈（強化叢集中心的亮度） */
+            /* 中心徑向光暈（強化叢集中心的亮度）——已調弱，
+               避免蓋掉剛放大的背景圖細節 */
             var gcx = 0 * s + ox, gcy = 0 * s + oy;
             var grad = ctx.createRadialGradient(gcx, gcy, 10, gcx, gcy, Math.max(w, h) * 0.65);
-            grad.addColorStop(0, 'rgba(40,60,95,0.20)');
-            grad.addColorStop(0.5, 'rgba(20,30,50,0.08)');
+            grad.addColorStop(0, 'rgba(40,60,95,0.10)');
+            grad.addColorStop(0.5, 'rgba(20,30,50,0.04)');
             grad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, h);
