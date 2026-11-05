@@ -73968,14 +73968,7 @@ window.HY = window.HY || {};
                     return;
                 }
                 activeChar.atb = 0;
-                /* ⭐ 手動出招：若這一輪已被 tick 推進過（yyArmed=true），不再重複加；
-                   若還沒（玩家在 ATB 未滿時手動點），則補推進一次。 */
-                if (!activeChar._battle) activeChar._battle = {};
-                if (!activeChar._battle.yyArmed) {
-                    activeChar._battle.yyArmed = true;
-                    activeChar._battle.yyHits = (activeChar._battle.yyHits || 0) + 1;
-                }
-                activeChar._battle.yyArmed = false;   /* 歸零 → 下一輪可再推進 */
+                /* ⚠ 陰陽推進已移到 executeUnitFullAtbTurn()，這裡不再累加 */
                 self.executeUnitFullAtbTurn(activeChar, true, leaderSkillId, healTarget || null);
             };
         }
@@ -74105,19 +74098,10 @@ window.HY = window.HY || {};
                 m.atb = Math.min(100, (m.atb || 0) + gain);
                 if (m.atb >= 100 && combat.currentEnemy) {
                     var isLeader = (m.id === activeChar.id);
-                    /* ⭐ 陰陽/陣門推進：ATB 從「未滿」變成「滿」的那一刻推進一次。
-                       用 b.yyArmed 旗標：ATB 未滿時 armed=false，滿了就 +1 並設 true，
-                       ATB 歸零後再設回 false。這樣同一輪絕不會重複 +1，
-                       也不會像時間戳那樣在快速點擊時誤擋。 */
-                    if (!m._battle) m._battle = { yyArmed: false };
-                    if (m._battle.yyArmed === undefined) m._battle.yyArmed = false;
-                    if (!m._battle.yyArmed) {
-                        m._battle.yyArmed = true;
-                        m._battle.yyHits = (m._battle.yyHits || 0) + 1;
-                    }
+                    /* ⚠ 陰陽推進已移到 executeUnitFullAtbTurn()（真正出手點），
+                       這裡不再累加，否則會造成「出招一次跳 2」。 */
                     if (!isLeader || combat.isAutoBattle || inMapNow) {
                         m.atb = 0;
-                        m._battle.yyArmed = false;
                         /* ⭐ 地圖內走打圖戰術，一般戰鬥走時空內掛 */
                         if (inMapNow && mapTac) {
                             if (!mapTac.cfg.autoSkill) continue;   // 只自動集氣，不自動出招
@@ -74171,7 +74155,22 @@ window.HY = window.HY || {};
             var combat = this.combat;
             var partyMembers = this.app.partySys.getPartyMembers();
             combat._turnCounter = (combat._turnCounter || 0) + 1;
+            /* ⭐ 陰陽/陣門推進：放在「真正出手」的這一刻。
+               這是唯一能保證「出手一次 = 次數 +1」的位置，
+               因為不管是手動點技能、ATB 自動、打圖戰術、支援模式，
+               全部都會經過 executeUnitFullAtbTurn()。 */
+            if (member && member._battle) {
+                member._battle.yyHits = (member._battle.yyHits || 0) + 1;
+            } else if (member) {
+                member._battle = { yyHits: 1 };
+            }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
+            /* ⭐ 攻擊後「立刻」刷新 UI，讓出手次數與模式馬上反映。
+               原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
+               會直接跳過 → 打死怪物的那一招，畫面還停在舊次數。 */
+            if (window.HY.uiDexAtb) {
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI) { }
+            }
             combat.syncCurrentEnemyPointer();
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
             if (isLeader) {
