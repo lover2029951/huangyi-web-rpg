@@ -12360,175 +12360,981 @@ window.HY.Data = window.HY.Data || {};
 
 /* ===== 33 / 170 : talentStatZh.js ===== */
 // js/talentStatZh.js
-// 🌐 POE 天賦效果 → 中文翻譯層
+// 🌐 POE 天賦效果 → 中文翻譯層（完整版）
 //
-// 背景：
-//   talentDataPoe.js 保留了 POE 官方的英文效果原文（例如
-//   "15% increased Totem Damage"、"Allocates X if you have Y"），
-//   但本作是中文遊戲。這裡用「規則式翻譯」而非逐條查表 ——
-//   POE 的 2987 個節點只有極少數是獨特句型，絕大多數都是
-//   「數字 + 動作 + 目標」的組合，規則覆蓋率可達 95% 以上。
+// 目標：把 1529 條唯一效果（737 種句型）全部翻成中文，
+//       像 POE 官方中文版那樣：「近戰打擊技能對周圍目標造成濺射傷害」。
 //
-// 設計：
-//   ① 先跑「特殊整句」字典（少數完整句子直接對照）
-//   ② 再跑「句型規則」：把 "15% increased Totem Damage"
-//      拆成 {val:15, verb:'increased', target:'Totem Damage'}
-//      再分別翻譯三部分並組合
-//   ③ 都失敗時保留英文原文（不硬翻，避免出現亂碼中文）
+// 策略：
+//   ① 名詞表（TERMS）：武器、防禦、傷害類型、機制…約 400 條
+//   ② 句型規則（PATTERNS）：處理「數字 + 動作 + 目標」的組合，
+//      按「最具體優先」排序，第一條命中就回傳
+//   ③ 條件子句：把 if / while / when / per 等條件翻成「若…」「每…」
+//   ④ 整句字典（SENTENCES）：無法規則化的特殊句子
 //
 // 對外 API：
-//   HY.TalentZh.stat(text)      → 單條效果的中文
-//   HY.TalentZh.stats(list)     → 多條效果的中文陣列
-//   HY.TalentZh.name(text)      → 節點名稱的中文（查表 + 規則）
-//   HY.TalentZh.match(text)     → 解析成 { val, verb, target } 或 null
+//   HY.TalentZh.stat(text)    → 單條效果的中文
+//   HY.TalentZh.stats(list)   → 多條效果的中文陣列
+//   HY.TalentZh.name(text)    → 節點名稱的中文
 window.HY = window.HY || {};
 (function () {
     'use strict';
 
     /* ══════════════════════════════════════════════════════════
-       ① 目標名詞對照表（POE 原文 → 中文）
-       排序原則：長字串優先，避免 "Damage" 先被比對到而漏掉
-                 "Fire Damage"
+       ① 名詞表（越長越優先比對）
        ══════════════════════════════════════════════════════════ */
     var TERMS = [
-        /* ── 屬性 ── */
-        ['Strength', '力道'],
-        ['Dexterity', '身法'],
-        ['Intelligence', '內息'],
-        ['all Attributes', '全屬性'],
-        ['maximum Life', '最大氣血'],
-        ['maximum Mana', '最大內力'],
-        ['maximum Energy Shield', '最大護盾'],
-        ['Life Regeneration', '氣血回復'],
-        ['Mana Regeneration', '內力回復'],
-        ['Energy Shield Recharge', '護盾回復'],
-        ['Life Recovery', '氣血恢復'],
-        ['Mana Recovery', '內力恢復'],
-        ['Life Leech', '氣血偷取'],
-        ['Mana Leech', '內力偷取'],
-        ['Armour', '護甲'],
-        ['Evasion Rating', '閃避值'],
-        ['Evasion', '閃避'],
-        ['Accuracy Rating', '命中值'],
-        ['Accuracy', '命中'],
-        ['Block Chance', '格擋率'],
-        ['Chance to Block', '格擋率'],
-        ['Spell Suppression', '法術壓制'],
-        ['maximum Resistances', '最大抗性'],
-        ['Elemental Resistances', '元素抗性'],
-        ['Fire Resistance', '火焰抗性'],
-        ['Cold Resistance', '冰冷抗性'],
-        ['Lightning Resistance', '閃電抗性'],
-        ['Chaos Resistance', '混沌抗性'],
-        ['all Resistances', '全抗性'],
+        /* ── 武器 ── */
+        ['Two Handed Melee Weapons', '雙手近戰武器'],
+        ['One Handed Melee Weapons', '單手近戰武器'],
+        ['Two Handed Weapons', '雙手武器'],
+        ['One Handed Weapons', '單手武器'],
+        ['Maces or Sceptres', '錘或權杖'],
+        ['Mace or Sceptre', '錘或權杖'],
+        ['Claws', '爪'], ['Claw', '爪'],
+        ['Daggers', '匕首'], ['Dagger', '匕首'],
+        ['Swords', '劍'], ['Sword', '劍'],
+        ['Axes', '斧'], ['Axe', '斧'],
+        ['Maces', '錘'], ['Mace', '錘'],
+        ['Sceptres', '權杖'], ['Sceptre', '權杖'],
+        ['Staves', '長杖'], ['Staff', '長杖'],
+        ['Bows', '弓'], ['Bow', '弓'],
+        ['Wands', '法杖'], ['Wand', '法杖'],
+        ['Shields', '盾'], ['Shield', '盾'],
+        ['Traps', '陷阱'], ['Trap', '陷阱'],
+        ['Mines', '地雷'], ['Mine', '地雷'],
+        ['Totems', '圖騰'], ['Totem', '圖騰'],
+        ['Brands', '聖印'], ['Brand', '聖印'],
 
         /* ── 傷害 ── */
-        ['Physical Damage', '物理傷害'],
-        ['Fire Damage', '火焰傷害'],
-        ['Cold Damage', '冰冷傷害'],
-        ['Lightning Damage', '閃電傷害'],
-        ['Chaos Damage', '混沌傷害'],
-        ['Elemental Damage', '元素傷害'],
-        ['Spell Damage', '法術傷害'],
-        ['Attack Damage', '攻擊傷害'],
-        ['Melee Damage', '近戰傷害'],
-        ['Projectile Damage', '投射物傷害'],
-        ['Damage over Time', '持續傷害'],
-        ['Burning Damage', '燃燒傷害'],
-        ['Area Damage', '範圍傷害'],
-        ['Critical Strike Chance', '爆擊率'],
+        ['Damage over Time Multiplier for Poison', '中毒持續傷害加成'],
+        ['Damage over Time Multiplier for Bleeding', '流血持續傷害加成'],
+        ['Damage over Time Multiplier with Melee Weapon Attacks', '近戰武器攻擊持續傷害加成'],
+        ['Damage over Time Multiplier with Attack Skills', '攻擊技能持續傷害加成'],
+        ['Damage over Time Multiplier with Spell Skills', '法術技能持續傷害加成'],
+        ['Chaos Damage over Time Multiplier', '混沌持續傷害加成'],
+        ['Fire Damage over Time Multiplier', '火焰持續傷害加成'],
+        ['Cold Damage over Time Multiplier', '冰冷持續傷害加成'],
+        ['Physical Damage over Time Multiplier', '物理持續傷害加成'],
+        ['Damage over Time Multiplier', '持續傷害加成'],
+        ['Damage Over Time with Bow Skills', '弓技能持續傷害'],
+        ['Damage Over Time with Spell Skills', '法術技能持續傷害'],
+        ['Attack Physical Damage', '攻擊物理傷害'],
+        ['Melee Physical Damage', '近戰物理傷害'],
+        ['Physical Attack Damage', '物理攻擊傷害'],
+        ['Critical Strike Multiplier for Spell Damage', '法術爆擊傷害'],
+        ['Critical Strike Multiplier with Totem Skills', '圖騰技能爆擊傷害'],
+        ['Critical Strike Multiplier with Mines', '地雷爆擊傷害'],
+        ['Critical Strike Multiplier with Traps', '陷阱爆擊傷害'],
+        ['Critical Strike Multiplier with Claws', '爪爆擊傷害'],
+        ['Critical Strike Multiplier with Daggers', '匕首爆擊傷害'],
+        ['Critical Strike Multiplier with Swords', '劍爆擊傷害'],
+        ['Critical Strike Multiplier with Staves', '長杖爆擊傷害'],
+        ['Critical Strike Multiplier with Wands', '法杖爆擊傷害'],
+        ['Critical Strike Multiplier with Bows', '弓爆擊傷害'],
+        ['Critical Strike Multiplier with Maces or Sceptres', '錘或權杖爆擊傷害'],
+        ['Critical Strike Multiplier with Lightning Skills', '閃電技能爆擊傷害'],
+        ['Critical Strike Multiplier with Cold Skills', '冰冷技能爆擊傷害'],
+        ['Critical Strike Multiplier with Fire Skills', '火焰技能爆擊傷害'],
+        ['Critical Strike Multiplier with Elemental Skills', '元素技能爆擊傷害'],
+        ['Critical Strike Multiplier with One Handed Melee Weapons', '單手近戰武器爆擊傷害'],
+        ['Critical Strike Multiplier with Two Handed Melee Weapons', '雙手近戰武器爆擊傷害'],
+        ['Critical Strike Multiplier against Burning Enemies', '對燃燒敵人爆擊傷害'],
+        ['Melee Critical Strike Multiplier', '近戰爆擊傷害'],
+        ['Melee Weapon Critical Strike Multiplier', '近戰武器爆擊傷害'],
         ['Critical Strike Multiplier', '爆擊傷害'],
-        ['Critical Damage', '爆擊傷害'],
-        ['Global Damage', '全域傷害'],
-        ['Minion Damage', '召喚物傷害'],
-        ['Totem Damage', '圖騰傷害'],
-        ['Trap Damage', '陷阱傷害'],
-        ['Mine Damage', '地雷傷害'],
-        ['Damage', '傷害'],
-
-        /* ── 速度 ── */
+        ['Critical Strike Chance with Bows', '弓爆擊率'],
+        ['Critical Strike Chance with Claws', '爪爆擊率'],
+        ['Critical Strike Chance with Cold Skills', '冰冷技能爆擊率'],
+        ['Critical Strike Chance with Fire Skills', '火焰技能爆擊率'],
+        ['Critical Strike Chance with Lightning Skills', '閃電技能爆擊率'],
+        ['Critical Strike Chance with Elemental Skills', '元素技能爆擊率'],
+        ['Critical Strike Chance with Mines', '地雷爆擊率'],
+        ['Critical Strike Chance with Traps', '陷阱爆擊率'],
+        ['Critical Strike Chance against Shocked Enemies', '對感電敵人爆擊率'],
+        ['Critical Strike Chance against Enemies that are on Full Life', '對滿血敵人爆擊率'],
+        ['Critical Strike Chance against Blinded Enemies', '對致盲敵人爆擊率'],
+        ['Blind', '致盲'],
+        ['Taunt', '嘲諷'],
+        ['Hinder', '阻礙'],
+        ['Maim', '撕裂'],
+        ['Impale', '穿刺'],
+        ['Impales you inflict', '你造成的穿刺'],
+        ['Effect of Impales you inflict', '你造成的穿刺效果'],
+        ['Endurance Charge', '耐力球'],
+        ['Power Charge', '暴擊球'],
+        ['Frenzy Charge', '狂怒球'],
+        ['Mana Burn', '魔力灼燒'],
+        ['Block Attack Damage', '攻擊傷害格擋'],
+        ['Block Spell Damage', '法術傷害格擋'],
+        ['applied to you', '套用於你'],
+        ['Critical Strike Chance', '爆擊率'],
+        ['Attack Critical Strike Chance', '攻擊爆擊率'],
+        ['Spell Critical Strike Chance', '法術爆擊率'],
+        ['Melee Critical Strike Chance', '近戰爆擊率'],
+        ['Global Critical Strike Chance', '全域爆擊率'],
+        ['Attack Speed with Claws', '爪攻擊速度'],
+        ['Attack Speed with Daggers', '匕首攻擊速度'],
+        ['Attack Speed with Swords', '劍攻擊速度'],
+        ['Attack Speed with Axes', '斧攻擊速度'],
+        ['Attack Speed with Maces or Sceptres', '錘或權杖攻擊速度'],
+        ['Attack Speed with Staves', '長杖攻擊速度'],
+        ['Attack Speed with Bows', '弓攻擊速度'],
+        ['Attack Speed with Wands', '法杖攻擊速度'],
+        ['Attack Speed with One Handed Melee Weapons', '單手近戰武器攻擊速度'],
+        ['Attack Speed with Two Handed Melee Weapons', '雙手近戰武器攻擊速度'],
+        ['Melee Weapon Attack Speed', '近戰武器攻擊速度'],
+        ['Cast Speed with Brand Skills', '聖印技能施法速度'],
+        ['Cast Speed with Cold Skills', '冰冷技能施法速度'],
+        ['Cast Speed with Fire Skills', '火焰技能施法速度'],
+        ['Cast Speed with Lightning Skills', '閃電技能施法速度'],
+        ['Attack and Cast Speed', '攻擊與施法速度'],
         ['Attack Speed', '攻擊速度'],
         ['Cast Speed', '施法速度'],
         ['Movement Speed', '移動速度'],
         ['Projectile Speed', '投射物速度'],
-        ['Cooldown Recovery', '冷卻回復'],
-        ['Skill Effect Duration', '技能持續時間'],
-        ['Duration', '持續時間'],
+        ['Projectile Damage', '投射物傷害'],
+        ['Projectile Attack Damage', '投射物攻擊傷害'],
+        ['Projectiles', '投射物'],
 
-        /* ── 防禦與機制 ── */
-        ['Armour and Evasion', '護甲與閃避'],
-        ['Armour, Evasion and Energy Shield', '護甲、閃避與護盾'],
-        ['Ward', '護盾'],
+        /* ── 屬性傷害 ── */
+        ['Elemental Damage with Maces or Sceptres', '錘或權杖元素傷害'],
+        ['Elemental Damage with Wands', '法杖元素傷害'],
+        ['Elemental Damage with Attack Skills', '攻擊技能元素傷害'],
+        ['Elemental Damage', '元素傷害'],
+        ['Physical Damage with Two Handed Melee Weapons', '雙手近戰武器物理傷害'],
+        ['Physical Damage with One Handed Melee Weapons', '單手近戰武器物理傷害'],
+        ['Physical Damage with Maces or Sceptres', '錘或權杖物理傷害'],
+        ['Physical Damage with Axes', '斧物理傷害'],
+        ['Physical Damage with Swords', '劍物理傷害'],
+        ['Physical Damage with Bows', '弓物理傷害'],
+        ['Physical Damage with Wands', '法杖物理傷害'],
+        ['Physical Damage', '物理傷害'],
+        ['Fire Damage with Attack Skills', '攻擊技能火焰傷害'],
+        ['Cold Damage with Attack Skills', '攻擊技能冰冷傷害'],
+        ['Lightning Damage with Attack Skills', '攻擊技能閃電傷害'],
+        ['Fire Damage', '火焰傷害'],
+        ['Cold Damage', '冰冷傷害'],
+        ['Lightning Damage', '閃電傷害'],
+        ['Chaos Damage', '混沌傷害'],
+        ['Spell Damage while holding a Shield', '持盾時法術傷害'],
+        ['Spell Damage while wielding a Staff', '持長杖時法術傷害'],
+        ['Spell Damage while Dual Wielding', '雙持時法術傷害'],
+        ['Spell Damage', '法術傷害'],
+        ['Melee Damage', '近戰傷害'],
+        ['Attack Damage', '攻擊傷害'],
+        ['Damage with Ailments from Attack Skills', '攻擊技能異常狀態傷害'],
+        ['Damage with Bleeding', '流血傷害'],
+        ['Damage with Poison', '中毒傷害'],
+        ['Damage with Ailments', '異常狀態傷害'],
+        ['Damage with Bows', '弓傷害'],
+        ['Damage with Axes', '斧傷害'],
+        ['Damage with Swords', '劍傷害'],
+        ['Damage with Claws', '爪傷害'],
+        ['Damage with Daggers', '匕首傷害'],
+        ['Damage with Staves', '長杖傷害'],
+        ['Damage with Wands', '法杖傷害'],
+        ['Damage with Maces or Sceptres', '錘或權杖傷害'],
+        ['Damage with One Handed Weapons', '單手武器傷害'],
+        ['Damage with Two Handed Weapons', '雙手武器傷害'],
+        ['Damage with Bow Skills', '弓技能傷害'],
+        ['Damage with Shield Skills', '盾技能傷害'],
+        ['Damage with Hits against Enemies on Full Life', '對滿血敵人擊中傷害'],
+        ['Damage if you have Consumed a corpse Recently', '近期吞噬屍體後傷害'],
+        ['Damage while wielding a Wand', '持法杖時傷害'],
+        ['Damage while Dual Wielding', '雙持時傷害'],
+        ['Damage while holding a Shield', '持盾時傷害'],
+        ['Damage for each Herald affecting you', '每個光環先鋒提供的傷害'],
+        ['Damage for each time you\'ve Warcried Recently', '近期每次戰吼提供的傷害'],
+        ['Damage', '傷害'],
+
+        /* ── 防禦 ── */
+        ['Chance to Block Attack Damage while Dual Wielding or holding a Shield', '雙持或持盾時格擋率'],
+        ['Chance to Block Attack Damage while Dual Wielding', '雙持時格擋率'],
+        ['Chance to Block Attack Damage while holding a Shield', '持盾時格擋率'],
+        ['Chance to Block Attack Damage while wielding a Staff', '持長杖時格擋率'],
+        ['Chance to Block Attack Damage', '攻擊格擋率'],
+        ['Chance to Block Spell Damage while holding a Shield', '持盾時法術格擋率'],
+        ['Chance to Block Spell Damage while holding a Staff or Shield', '持長杖或盾時法術格擋率'],
+        ['chance to Block Spell Damage', '法術格擋率'],
+        ['chance to Suppress Spell Damage while on Full Energy Shield', '滿護盾時法術壓制率'],
+        ['chance to Suppress Spell Damage while on Full Life', '滿血時法術壓制率'],
+        ['chance to Suppress Spell Damage', '法術壓制率'],
+        ['maximum Fortification', '最大強化層數'],
         ['Fortification', '強化'],
-        ['Stun Threshold', '暈眩門檻'],
-        ['Stun Duration', '暈眩時間'],
+        ['maximum Energy Shield', '最大能量護盾'],
+        ['Energy Shield Recharge Rate', '能量護盾回復速率'],
+        ['faster start of Energy Shield Recharge', '能量護盾快速開始回復'],
+        ['Energy Shield', '能量護盾'],
+        ['Evasion Rating and Armour', '閃避值與護甲'],
+        ['Armour and Evasion Rating', '護甲與閃避值'],
+        ['Armour and Evasion', '護甲與閃避'],
+        ['Evasion Rating', '閃避值'],
+        ['Duration', '持續時間'],
+        ['Rating', '值'],
+        ['Armour', '護甲'],
+        ['Block and Stun Recovery', '格擋與暈眩回復'],
         ['Stun and Block Recovery', '暈眩與格擋回復'],
-        ['Area of Effect', '範圍效果'],
-        ['Area', '範圍'],
-        ['Projectile', '投射物'],
-        ['Effect', '效果'],
-        ['Aura Effect', '光環效果'],
-        ['Curse Effect', '詛咒效果'],
-        ['Minion', '召喚物'],
-        ['Minions', '召喚物'],
-        ['Totem', '圖騰'],
-        ['Totems', '圖騰'],
-        ['Trap', '陷阱'],
-        ['Mine', '地雷'],
+        ['Stun Threshold', '暈眩門檻'],
+        ['Enemy Stun Threshold', '敵人暈眩門檻'],
+        ['Stun Duration', '暈眩時間'],
+        ['Accuracy Rating with Axes', '斧命中值'],
+        ['Accuracy Rating with Swords', '劍命中值'],
+        ['Accuracy Rating with Bows', '弓命中值'],
+        ['Accuracy Rating with Claws', '爪命中值'],
+        ['Accuracy Rating with Staves', '長杖命中值'],
+        ['Accuracy Rating while Dual Wielding', '雙持時命中值'],
+        ['Global Accuracy Rating', '全域命中值'],
+        ['Accuracy Rating', '命中值'],
 
-        /* ── 資源 ── */
-        ['Mana Cost', '內力消耗'],
-        ['Mana Reservation', '內力保留'],
-        ['Flask Charges', '藥劑充能'],
+        /* ── 抗性 ── */
+        ['all maximum Elemental Resistances', '全元素抗性上限'],
+        ['maximum Elemental Resistances', '最大元素抗性'],
+        ['all Elemental Resistances', '全元素抗性'],
+        ['maximum Cold Resistance', '最大冰冷抗性'],
+        ['maximum Fire Resistance', '最大火焰抗性'],
+        ['maximum Lightning Resistance', '最大閃電抗性'],
+        ['maximum Chaos Resistance', '最大混沌抗性'],
+        ['Cold and Lightning Resistances', '冰冷與閃電抗性'],
+        ['Fire and Cold Resistances', '火焰與冰冷抗性'],
+        ['Fire and Lightning Resistances', '火焰與閃電抗性'],
+        ['Chaos Resistance against Damage Over Time', '混沌持續傷害抗性'],
+        ['Chaos Resistance', '混沌抗性'],
+        ['Cold Resistance', '冰冷抗性'],
+        ['Fire Resistance', '火焰抗性'],
+        ['Lightning Resistance', '閃電抗性'],
+        ['Elemental Resistances', '元素抗性'],
+        ['all Resistances', '全抗性'],
+
+        /* ── 資源與屬性 ── */
+        ['maximum Life', '最大生命'],
+        ['maximum Mana', '最大魔力'],
+        ['Life Regeneration rate', '生命回復速率'],
+        ['Life Recovery from Flasks', '藥劑生命回復'],
+        ['Life Recovery Rate', '生命回復速率'],
+        ['Life Leech', '生命偷取'],
+        ['Mana Leech', '魔力偷取'],
+        ['Mana Regeneration Rate', '魔力回復速率'],
+        ['Mana Recovery from Flasks', '藥劑魔力回復'],
+        ['Mana Recovery Rate', '魔力回復速率'],
+        ['Mana Cost Efficiency', '魔力消耗效率'],
+        ['Mana Reservation Efficiency of Skills', '技能魔力保留效率'],
+        ['Reservation Efficiency of Skills', '技能保留效率'],
+        ['Cost Efficiency of Attacks', '攻擊消耗效率'],
+        ['Cost Efficiency', '消耗效率'],
+        ['Life Recovered', '生命回復量'],
+        ['Mana Recovered', '魔力回復量'],
+        ['maximum Life', '最大生命'],
+        ['Life', '生命'],
+        ['Mana', '魔力'],
+        ['Strength and Intelligence', '力量與智慧'],
+        ['Strength and Dexterity', '力量與敏捷'],
+        ['Dexterity and Intelligence', '敏捷與智慧'],
+        ['all Attributes', '全屬性'],
+        ['Strength', '力量'],
+        ['Dexterity', '敏捷'],
+        ['Intelligence', '智慧'],
+        ['Attributes', '屬性'],
+        ['Maximum Rage', '最大怒氣'],
+        ['Maximum Valour', '最大勇氣'],
+        ['Maximum Endurance Charges', '最大耐力球'],
+        ['Maximum Frenzy Charges', '最大狂怒球'],
+        ['Maximum Power Charges', '最大暴擊球'],
+        ['Minimum Endurance Charges', '最低耐力球'],
+        ['Minimum Frenzy Charges', '最低狂怒球'],
+        ['Minimum Power Charges', '最低暴擊球'],
+        ['Endurance Charges', '耐力球'],
+        ['Frenzy Charges', '狂怒球'],
+        ['Power Charges', '暴擊球'],
         ['Charges', '充能'],
-        ['Power Charge', '爆擊球'],
-        ['Frenzy Charge', '狂怒球'],
-        ['Endurance Charge', '耐力球'],
         ['Rage', '怒氣'],
-        ['Valour', '勇氣'],
 
-        /* ── 掉落與其他 ── */
+        /* ── 機制 ── */
+        ['Area of Effect for Attacks', '攻擊範圍效果'],
+        ['Area of Effect of Aura Skills', '光環技能範圍效果'],
+        ['Area of Effect of Hex Skills', '咒術技能範圍效果'],
+        ['Area of Effect', '範圍效果'],
+        ['Area Damage', '範圍傷害'],
+        ['Skill Effect Duration', '技能持續時間'],
+        ['Curse Duration', '詛咒持續時間'],
+        ['Warcry Duration', '戰吼持續時間'],
+        ['Warcry Speed', '戰吼速度'],
+        ['Warcry Cooldown Recovery Rate', '戰吼冷卻回復率'],
+        ['Warcry Buff Effect', '戰吼增益效果'],
+        ['Minion Duration', '召喚物持續時間'],
+        ['Minion Damage', '召喚物傷害'],
+        ['Minion maximum Life', '召喚物最大生命'],
+        ['Minion Attack and Cast Speed', '召喚物攻擊與施法速度'],
+        ['Minion Movement Speed', '召喚物移動速度'],
+        ['Minion Critical Strike Chance', '召喚物爆擊率'],
+        ['Minion Critical Strike Multiplier', '召喚物爆擊傷害'],
+        ['Minion Elemental Resistances', '召喚物元素抗性'],
+        ['Minion Attack Speed', '召喚物攻擊速度'],
+        ['Minion Cast Speed', '召喚物施法速度'],
+        ['Summoned Golems', '召喚魔像'],
+        ['Raised Zombies', '復甦殭屍'],
+        ['Skeletons', '骷髏'],
+        ['Spectres', '幽魂'],
+        ['Minions', '召喚物'], ['Minion', '召喚物'],
+        ['Totem Placement speed', '圖騰放置速度'],
+        ['Totem Damage', '圖騰傷害'],
+        ['Totem Life', '圖騰生命'],
+        ['Totem', '圖騰'],
+        ['Trap Damage', '陷阱傷害'],
+        ['Trap Throwing Speed', '陷阱投擲速度'],
+        ['Mine Damage', '地雷傷害'],
+        ['Mine Throwing Speed', '地雷投擲速度'],
+        ['Brand Damage', '聖印傷害'],
+        ['Impale Effect', '穿刺效果'],
+        ['Blind Effect', '致盲效果'],
+        ['Chaining range', '連鎖範圍'],
+        ['Cooldown Recovery Rate of Movement Skills', '移動技能冷卻回復率'],
+        ['Cooldown Recovery Rate', '冷卻回復率'],
+        ['Flask Charges gained', '藥劑充能獲取'],
+        ['Flask Charges used', '藥劑充能消耗'],
+        ['Flask Effect Duration', '藥劑效果持續時間'],
+        ['Flask Effect', '藥劑效果'],
+        ['Life Recovery from Flasks', '藥劑生命回復'],
+        ['Mana Recovery from Flasks', '藥劑魔力回復'],
+        ['Effect of Chill', '冰緩效果'],
+        ['Effect of Shock', '感電效果'],
+        ['Effect of Curses on you', '你受到的詛咒效果'],
+        ['Effect of Onslaught on you', '你身上的迅捷效果'],
+        ['Effect of Arcane Surge on you', '你身上的秘法湧動效果'],
+        ['effect of Non-Curse Auras from your Skills', '技能的非詛咒光環效果'],
+        ['Elemental Ailment Duration on you', '你受到的元素異常持續時間'],
+        ['Ignite Duration on Enemies', '敵人點燃持續時間'],
+        ['Freeze Duration on Enemies', '敵人冰凍持續時間'],
+        ['Shock Duration on Enemies', '敵人感電持續時間'],
+        ['Poison Duration', '中毒持續時間'],
+        ['Bleeding Duration', '流血持續時間'],
+        ['Stun Duration against Enemies that are on Full Life', '對滿血敵人暈眩時間'],
+        ['Chance to Avoid being Stunned', '避免被暈眩機率'],
+        ['chance to Ignore Stuns while Casting', '施法時無視暈眩機率'],
+        ['chance to Freeze, Shock and Ignite', '冰凍、感電與點燃機率'],
+        ['chance to Freeze', '冰凍機率'],
+        ['chance to Ignite', '點燃機率'],
+        ['chance to Shock', '感電機率'],
+        ['chance to Poison on Hit with Spell Damage', '法術傷害擊中中毒機率'],
+        ['chance to Poison on Hit with Attacks', '攻擊擊中中毒機率'],
+        ['chance to Poison on Hit', '擊中中毒機率'],
+        ['chance to Impale Enemies on Hit with Attacks', '攻擊擊中穿刺機率'],
+        ['chance to Knock Enemies Back on hit', '擊中擊退機率'],
+        ['chance to Intimidate Enemies', '威嚇敵人機率'],
+        ['chance to gain a Frenzy Charge', '獲得狂怒球機率'],
+        ['chance to gain a Power Charge', '獲得暴擊球機率'],
+        ['chance to gain an Endurance Charge', '獲得耐力球機率'],
+        ['Light Radius', '視野範圍'],
         ['Rarity of Items found', '物品稀有度'],
         ['Quantity of Items found', '物品數量'],
-        ['Light Radius', '視野範圍'],
-        ['Experience', '經驗'],
-        ['Attributes', '屬性'],
-        ['Requirement', '需求'],
-        ['Requirements', '需求']
+        ['Experience gain', '經驗獲取'],
+        ['Movement Speed', '移動速度'],
+        ['Melee Strike Range', '近戰打擊範圍'],
+        ['Melee Strike Skills', '近戰打擊技能'],
+        ['Retaliation Skills', '反擊技能'],
+        ['Tinctures', '酊劑'],
+        ['Mana Burn', '魔力灼燒'],
+        ['Defend with', '防禦值'],
+        ['Damage Reduction for any Damage Type', '任何傷害類型的傷害減免'],
+
+        /* ── 雜項 ── */
+        ['Damage Over Time', '持續傷害'],
+        ['Attack Skills deal', '攻擊技能造成'],
+        ['Melee Skills have', '近戰技能'],
+        ['Warcry Skills have', '戰吼技能'],
+        ['Banner Skills have', '旗幟技能'],
+        ['Brand Skills have', '聖印技能'],
+        ['Projectile Attack Skills have', '投射物攻擊技能'],
+        ['Attacks used by Totems have', '圖騰使用的攻擊'],
+        ['Attacks with Two Handed Melee Weapons deal', '雙手近戰武器攻擊造成'],
+        ['Attacks with One Handed Melee Weapons deal', '單手近戰武器攻擊造成'],
+        ['Mace or Sceptre Attacks deal', '錘或權杖攻擊造成'],
+        ['Sword Attacks deal', '劍攻擊造成'],
+        ['Axe Attacks deal', '斧攻擊造成'],
+        ['Claw Attacks deal', '爪攻擊造成'],
+        ['Dagger Attacks deal', '匕首攻擊造成'],
+        ['Staff Attacks deal', '長杖攻擊造成'],
+        ['Bow Attacks deal', '弓攻擊造成'],
+        ['Wand Attacks deal', '法杖攻擊造成'],
+        ['with Hits and Ailments', '（擊中與異常狀態）'],
+        ['with Ailments', '（異常狀態）'],
+        ['Hits have', '擊中'],
+        ['ignore Enemy Physical Damage Reduction', '無視敵人物理傷害減免'],
+        ['Defences from Equipped Shield', '已裝備盾牌的防禦'],
+        ['from Equipped Shield', '來自已裝備盾牌'],
+        ['from Flasks', '來自藥劑'],
+        ['from Leech', '來自偷取'],
+        ['from Life Leech', '來自生命偷取'],
+        ['from Mana Leech', '來自魔力偷取'],
+        ['per second', '每秒'],
+        ['total Recovery', '總回復'],
+        ['Maximum total', '最大總'],
+        ['Tinctures applied to you have', '你身上的酊劑'],
+        ['avoid', '避免'],
+        ['Avoid', '避免'],
+        ['avoid Poison, Impale, and Bleeding', '避免中毒、穿刺與流血'],
+        ['Avoid being Stunned', '避免被暈眩'],
+        ['Avoid Elemental Ailments', '避免元素異常'],
+        ['ignore', '無視'],
+        ['Stun Duration with Two Handed Melee Weapons on Enemies', '雙手近戰武器對敵人的暈眩時間'],
+        ['Melee Strike Range', '近戰打擊範圍'],
+        ['summoned', '召喚'],
+        ['Summoned', '召喚'],
+        ['number of', '數量'],
+        ['maximum number of', '最大數量'],
+        ['Skeletons', '骷髏'],
+        ['Skeleton', '骷髏'],
+        ['Zombies', '殭屍'],
+        ['Spectres', '幽魂'],
+        ['Golems', '魔像'],
+        ['Critical Strike Chance', '爆擊率'],
+        ['Critical Strike', '爆擊'],
+        ['Critical', '爆擊'],
+        ['Chance', '機率'],
+        ['Cooldown Recovery Rate', '冷卻回復率'],
+        ['Cooldown Recovery', '冷卻回復'],
+        ['Cooldown', '冷卻'],
+        ['Recovery Rate', '回復速率'],
+        ['Recovery', '回復'],
+        ['Retaliation Skills', '反擊技能'],
+        ['Retaliation', '反擊'],
+        ['Ailments', '異常狀態'],
+        ['Ailment', '異常狀態'],
+        ['per Enemy Killed', '每擊殺 1 名敵人'],
+        ['per Enemy Hit', '每次擊中敵人'],
+        ['on Kill', '擊殺時'],
+        ['on Hit', '擊中時'],
+        ['Killed', '擊殺'],
+        ['Grasping Vine', '纏繞藤蔓'],
+        ['Inherent loss of Rage', '怒氣自然流失'],
+        ['slower', '更慢'],
+        ['Summoned Ballista Totems', '召喚弩砲圖騰'],
+        ['Ballista Totems', '弩砲圖騰'],
+        ['near it', '其附近'],
+        ['Each Totem', '每個圖騰'],
+        ['applies', '施加'],
+        ['Damage taken', '承受傷害'],
+        ['taken', '承受'],
+        ['used by', '所使用的'],
+        ['have', '擁有'],
+        ['Inflict', '造成'],
+        ['during Effect of any Life Flask', '任何生命藥劑效果期間'],
+        ['during Effect', '效果期間'],
+        ['if used while', '若使用時處於'],
+        ['Chance to Block', '格擋機率'],
+        ['Chance to Avoid', '避免機率'],
+        ['Chance to Suppress', '壓制機率'],
+        ['Chance to Ignite', '點燃機率'],
+        ['Chance to Freeze', '冰凍機率'],
+        ['chance to Freeze, Shock and Ignite', '冰凍、感電與點燃機率'],
+        ['Freeze', '冰凍'],
+        ['Shock', '感電'],
+        ['Ignite', '點燃'],
+        ['Chill', '冰緩'],
+        ['Bleed', '流血'],
+        ['Poison', '中毒'],
+        ['of Damage', '傷害'],
+        ['nearby Allies', '附近隊友'],
+        ['nearby Enemies', '附近敵人'],
+        ['Enemies that are on Full Life', '滿血敵人'],
+        ['Shocked Enemies', '感電敵人'],
+        ['Blinded Enemies', '致盲敵人'],
+        ['Burning Enemies', '燃燒敵人'],
+        ['Ailments from Critical Strikes', '爆擊造成的異常狀態'],
+        ['Critical Strikes', '爆擊'],
+        ['Attacks', '攻擊'], ['Attack', '攻擊'],
+        ['Spells', '法術'], ['Spell', '法術'],
+        ['Skills', '技能'], ['Skill', '技能'],
+        ['Projectiles', '投射物'], ['Projectile', '投射物'],
+        ['Allies', '隊友'], ['Ally', '隊友'],
+        ['Enemies', '敵人'], ['Enemy', '敵人'],
+        ['Auras', '光環'], ['Aura', '光環'],
+        ['Curses', '詛咒'], ['Curse', '詛咒'],
+        ['Warcries', '戰吼'], ['Warcry', '戰吼'],
+        ['Flasks', '藥劑'], ['Flask', '藥劑'],
+        ['Life', '生命'], ['Mana', '魔力'],
+        ['Damage', '傷害']
     ];
 
     /* ══════════════════════════════════════════════════════════
-       ② 整句字典（規則無法處理的特殊句子）
+       ② 句型規則（依序比對，第一條命中即回傳）
+       每個規則： [regex, 產生函式(match) → 中文]
+       ══════════════════════════════════════════════════════════ */
+    function zhTarget(s) {
+        var t = String(s || '');
+        /* 名詞表：長字串優先替換，避免 "maximum Life" 被 "Life" 先吃掉 */
+        var sorted = TERMS.slice().sort(function (a, b) { return b[0].length - a[0].length; });
+        for (var i = 0; i < sorted.length; i++) {
+            var en = sorted[i][0], zh = sorted[i][1];
+            if (t.indexOf(en) !== -1) t = t.split(en).join(zh);
+        }
+        /* 清掉多餘空白 */
+        t = t.replace(/\s+/g, ' ').trim();
+        return t;
+    }
+
+    /* 條件子句翻譯 */
+    var CONDS = [
+        [/^if you've Hit an Enemy Recently$/i, '近期擊中敵人時'],
+        [/^if you've Killed Recently$/i, '近期擊殺敵人時'],
+        [/^if you've dealt a Critical Strike Recently$/i, '近期造成爆擊後'],
+        [/^if you've Blocked Recently$/i, '近期格擋後'],
+        [/^if you have Stunned an Enemy Recently$/i, '近期暈眩敵人後'],
+        [/^if you have Consumed a corpse Recently$/i, '近期吞噬屍體後'],
+        [/^if a Minion has been Killed Recently$/i, '近期召喚物死亡後'],
+        [/^if you haven't Killed Recently$/i, '近期未擊殺時'],
+        [/^if you haven't taken Damage Recently$/i, '近期未受傷時'],
+        [/^if you've Warcried Recently$/i, '近期戰吼後'],
+        [/^if you've used a Minion Skill Recently$/i, '近期使用召喚技能後'],
+        [/^if you were Damaged by a Hit Recently$/i, '近期被擊中後'],
+        [/^while on Full Life$/i, '滿血時'],
+        [/^while on Full Energy Shield$/i, '滿護盾時'],
+        [/^while on Low Life$/i, '低血時'],
+        [/^while Dual Wielding$/i, '雙持時'],
+        [/^while holding a Shield$/i, '持盾時'],
+        [/^while wielding a (Staff|Bow|Wand|Two Handed Weapon)$/i, function (m) { return '持' + zhTarget(m[1]) + '時'; }],
+        [/^while you have at least (\d+) nearby Allies?$/i, function (m) { return '附近有至少 ' + m[1] + ' 名隊友時'; }],
+        [/^while at least (\d+) Enemies are Nearby$/i, function (m) { return '附近有至少 ' + m[1] + ' 名敵人時'; }],
+        [/^while you have at least (\d+) Rage$/i, function (m) { return '擁有至少 ' + m[1] + ' 點怒氣時'; }],
+        [/^while Phasing$/i, '相位狀態時'],
+        [/^while you have Elusive$/i, '飄忽狀態時'],
+        [/^if used while (?:not on Full Life|on Low Life)$/i, '非滿血使用時']
+    ];
+
+    function zhCond(s) {
+        for (var i = 0; i < CONDS.length; i++) {
+            var m = CONDS[i][0].exec(s);
+            if (m) return typeof CONDS[i][1] === 'function' ? CONDS[i][1](m) : CONDS[i][1];
+        }
+        /* ⭐ 兜底：把 "while X" / "if X" 換成「X時」 */
+        var mm = /^(while|if|when)\s+(.+)$/i.exec(s);
+        if (mm) {
+            var body = zhTarget(mm[2]);
+            var engLeft = (body.match(/[A-Za-z]{3,}/g) || []).length;
+            if (engLeft === 0) return body + '時';
+        }
+        return '';
+    }
+
+    /** 把 "A if B" / "A while B" 拆成主體與條件 */
+    function splitCond(s) {
+        /* ⚠ 只在「主體看起來完整」時才拆。
+           若主體含 deal / additional / chance to 等動詞片語，
+           代表這是一個完整句型，不該被切開。 */
+        var m = /^(.*?)\s+(if|while|when|for each)\s+(.+)$/i.exec(s);
+        if (!m) return { main: s, cond: '' };
+        /* 主體太短、或含關鍵動詞片語 → 視為單一句子 */
+        if (m[1].length < 8) return { main: s, cond: '' };
+        if (/\b(deal|deals|additional|chance to|chance for|Adds|Gain|Regenerate)\b/i.test(m[1])) {
+            return { main: s, cond: '' };
+        }
+        var c = zhCond(m[2] + ' ' + m[3]);
+        if (!c) return { main: s, cond: '' };
+        return { main: m[1], cond: c };
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       ③ 結構化翻譯核心
+       ──────────────────────────────────────────────────────────
+       英文語序：  [數字][動詞][名詞][後置修飾 with/while/if/against…]
+       中文語序：  [後置修飾][名詞][動詞][數字]
+
+       例：12% increased Physical Damage with Maces or Sceptres
+       拆：num=12  verb=increased  noun=Physical Damage  mod=Maces or Sceptres
+       譯：錘或權杖 物理傷害 增加 12%
+
+       這樣一套規則就能覆蓋絕大多數「數字 + 動作 + 目標」的句型，
+       而不必為 798 種句型各寫一條。
+       ══════════════════════════════════════════════════════════ */
+
+    /* 後置修飾語 → 中文前置修飾 */
+    function zhModifier(kind, body) {
+        var b = String(body || '').trim();
+        if (!b) return '';
+        if (kind === 'with') {
+            /* "with Maces or Sceptres" → "錘或權杖" */
+            return zhTarget(b) ;
+        }
+        if (kind === 'while') {
+            var c = zhCond('while ' + b);
+            if (c) return c;
+            return zhTarget(b) + '時';
+        }
+        if (kind === 'if') {
+            var c2 = zhCond('if ' + b);
+            if (c2) return c2;
+            return zhTarget(b) + '時';
+        }
+        if (kind === 'against') {
+            return '對' + zhTarget(b);
+        }
+        if (kind === 'per') {
+            return '每' + zhTarget(b);
+        }
+        if (kind === 'for each') {
+            return '每個' + zhTarget(b);
+        }
+        if (kind === 'on') {
+            return zhTarget(b) + '時';
+        }
+        if (kind === 'when') {
+            var c3 = zhCond('when ' + b);
+            return c3 || (zhTarget(b) + '時');
+        }
+        return zhTarget(b);
+    }
+
+    /* 動詞 → 中文 */
+    var VERB_ZH = {
+        increased: '增加', reduced: '減少', more: '更多', less: '更少',
+        additional: '額外', extra: '額外'
+    };
+
+    /** 把「數字 + 動作 + 目標(+ 修飾)」翻成中文 */
+    function buildSentence(numStr, unit, verb, noun, modKind, modBody, tailSuffix) {
+        var v = VERB_ZH[String(verb || '').toLowerCase()] || '';
+        var pre = modKind ? zhModifier(modKind, modBody) : '';
+        var n = zhTarget(noun || '');
+        var out = '';
+        if (pre) out += pre;
+        out += n;
+        if (v) out += v;
+        if (numStr !== null && numStr !== undefined && numStr !== '') {
+            out += ' ' + numStr + (unit || '');
+        }
+        if (tailSuffix) out += tailSuffix;
+        return out.replace(/\s+/g, ' ').trim();
+    }
+
+    /** 主翻譯函式 */
+    function stat(text) {
+        var s = String(text || '').trim();
+        if (!s) return '';
+
+        /* ── A. 整句字典 ── */
+        if (SENTENCES[s]) return SENTENCES[s];
+
+        var m;
+
+        /* ── A2. 「N% chance to <verb> <rest>」 必須在 B 之前，否則動詞會被當名詞 ── */
+        m = /^([+-]?[\d.]+)%\s+chance\s+to\s+(\w+)\s*(.*)$/i.exec(s);
+        if (m) {
+            var VMAP0 = {
+                gain: '獲得', Gain: '獲得', Blind: '致盲', Taunt: '嘲諷', Hinder: '阻礙',
+                Maim: '撕裂', Suppress: '壓制', Knock: '擊退',
+                Ignite: '點燃', Freeze: '冰凍', Shock: '感電', Poison: '中毒',
+                Avoid: '避免', Impale: '穿刺', Intimidate: '威嚇',
+                Fortify: '強化', Recover: '回復', create: '創造',
+                Cover: '覆蓋', inflict: '造成', convert: '轉換', Reflect: '反射',
+                Defend: '防禦', Ignore: '無視', consume: '消耗', trigger: '觸發',
+                Leech: '偷取', Curse: '詛咒', Freeze: '冰凍'
+            };
+            var vv0 = VMAP0[m[2]];
+            if (vv0) {
+                var rest0 = zhTarget(m[3] || '')
+                    .replace(/^an?\s+/i, '')          /* 去掉冠詞 */
+                    .replace(/\bBack\b/gi, '')
+                    .replace(/\s+/g, ' ').trim();
+                return m[1] + '% 機率' + vv0 + rest0;
+            }
+        }
+
+        /* ── B. 「N% increased|reduced|more|less <noun> (with|while|if|against|per|on|when <mod>)」 ── */
+        m = /^([+-]?[\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)(?:\s+(with|while|if|against|per|for each|on|when)\s+(.+))?$/i.exec(s);
+        if (m) {
+            return buildSentence(m[1], '%', m[2], m[3], m[4], m[5], '');
+        }
+
+        /* ── C. 「N% chance to <noun> (with|while|if …)」 ── */
+        m = /^([+-]?[\d.]+)%\s+chance\s+to\s+(.+?)(?:\s+(with|while|if|against|on|when)\s+(.+))?$/i.exec(s);
+        if (m) {
+            var preC = m[4] ? zhModifier(m[4], m[5]) : '';
+            /* 列舉型：Freeze, Shock and Ignite */
+            var body = m[2].replace(/\s*,\s*/g, '、').replace(/\band\b/gi, '與');
+            return preC + m[1] + '% 機率' + zhTarget(body);
+        }
+
+        /* ── D. 「N% chance for <noun>」 ── */
+        m = /^([+-]?[\d.]+)%\s+chance\s+for\s+(.+)$/i.exec(s);
+        if (m) return m[1] + '% 機率：' + zhTarget(m[2]);
+
+        /* ── E. 「+#% to <noun> (with|while …)」 ── */
+        m = /^\+([\d.]+)%\s+to\s+(.+?)(?:\s+(with|while|if|against|per|on|when)\s+(.+))?$/i.exec(s);
+        if (m) {
+            var preE = m[3] ? zhModifier(m[3], m[4]) : '';
+            return '+' + m[1] + '% ' + preE + zhTarget(m[2]);
+        }
+
+        /* ── F. 「+# to <noun> (with|while …)」 ── */
+        m = /^\+([\d.]+)\s+to\s+(.+?)(?:\s+(with|while|if|against|per|on|when)\s+(.+))?$/i.exec(s);
+        if (m) {
+            var preF = m[3] ? zhModifier(m[3], m[4]) : '';
+            return '+' + m[1] + ' ' + preF + zhTarget(m[2]);
+        }
+
+        /* ── G. 「Adds N to M <noun>」 ── */
+        m = /^Adds\s+([\d.]+)\s+to\s+([\d.]+)\s+(.+)$/i.exec(s);
+        if (m) return '附加 ' + m[1] + '~' + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── H. 「N to M added <noun>」 ── */
+        m = /^([\d.]+)\s+to\s+([\d.]+)\s+added\s+(.+)$/i.exec(s);
+        if (m) return '附加 ' + m[1] + '~' + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── I. 「<subj> deal N to M additional <noun>」 ── */
+        m = /^(.+?)\s+deal\s+([\d.]+)\s+to\s+([\d.]+)\s+additional\s+(.+)$/i.exec(s);
+        if (m) return zhTarget(m[1]) + '附加 ' + m[2] + '~' + m[3] + ' ' + zhTarget(m[4]);
+
+        /* ── J2. 「<subj> deal N% increased <noun> with Ailments」特例 ── */
+        m = /^(.+?)\s+deal\s+([\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)\s+with\s+Ailments$/i.exec(s);
+        if (m) {
+            var vJ2 = VERB_ZH[m[3].toLowerCase()] || '';
+            return zhTarget(m[1]) + '造成的異常狀態傷害' + vJ2 + ' ' + m[2] + '%';
+        }
+
+        /* ── J3. 「<subj> deal N% increased <noun> with Hits and Ailments」 ── */
+        m = /^(.+?)\s+deal\s+([\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)\s+with\s+Hits\s+and\s+Ailments$/i.exec(s);
+        if (m) {
+            var vJ3 = VERB_ZH[m[3].toLowerCase()] || '';
+            return zhTarget(m[1]) + '造成的擊中與異常傷害' + vJ3 + ' ' + m[2] + '%';
+        }
+
+        /* ── J4. 「<subj> deal N% increased <noun> with <mod>」 ── */
+        m = /^(.+?)\s+deal\s+([\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)\s+with\s+(.+)$/i.exec(s);
+        if (m) {
+            var vJ4 = VERB_ZH[m[3].toLowerCase()] || '';
+            return zhModifier('with', m[5]) + zhTarget(m[1]) + '造成的' + zhTarget(m[4]) + vJ4 + ' ' + m[2] + '%';
+        }
+
+        /* ── J5. 「<subj> deal N% increased|reduced <noun> (while|if|against)」 ── */
+        m = /^(.+?)\s+deal\s+([\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)(?:\s+(while|if|against)\s+(.+))?$/i.exec(s);
+        if (m) {
+            var preJ5 = m[5] ? zhModifier(m[5], m[6]) : '';
+            var vJ5 = VERB_ZH[m[3].toLowerCase()] || '';
+            return preJ5 + zhTarget(m[1]) + '的' + zhTarget(m[4]) + vJ5 + ' ' + m[2] + '%';
+        }
+
+        /* ── K. 「<subj> have N% increased|reduced <noun> …」（含 Minions have） ── */
+        m = /^(.+?)\s+have\s+([\d.]+)%\s+(increased|reduced|more|less)\s+(.+?)(?:\s+(with|while|if|against|per)\s+(.+))?$/i.exec(s);
+        if (m) {
+            var preK = m[5] ? zhModifier(m[5], m[6]) : '';
+            var vK = VERB_ZH[m[3].toLowerCase()] || '';
+            return preK + zhTarget(m[1]) + zhTarget(m[4]) + vK + ' ' + m[2] + '%';
+        }
+
+        /* ── L. 「<subj> have +# to <noun>」 ── */
+        m = /^(.+?)\s+have\s+\+([\d.]+)\s+to\s+(.+)$/i.exec(s);
+        if (m) return zhTarget(m[1]) + '+' + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── M. 「<subj> have +#% to <noun>」 ── */
+        m = /^(.+?)\s+have\s+\+([\d.]+)%\s+to\s+(.+)$/i.exec(s);
+        if (m) return zhTarget(m[1]) + '+' + m[2] + '% ' + zhTarget(m[3]);
+
+        /* ── N. 「Regenerate N <X> per second」 ── */
+        m = /^Regenerate\s+([\d.]+)(%?)\s+(?:of\s+)?(.+?)\s+per second$/i.exec(s);
+        if (m) return '每秒回復 ' + m[1] + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── O. 「Gain N <X> per <Y>」 ── */
+        m = /^Gain\s+([\d.]+)(%?)\s+(.+)$/i.exec(s);
+        if (m) return '獲得 ' + m[1] + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── P. 「N% of <X> Leeched as <Y>」 ── */
+        m = /^([\d.]+)%\s+of\s+(.+?)\s+Leeched\s+as\s+(.+)$/i.exec(s);
+        if (m) return m[1] + '% 的' + zhTarget(m[2]) + '偷取為' + zhTarget(m[3]);
+
+        /* ── Q. 「N% of <X> taken Recouped as <Y>」 ── */
+        m = /^([\d.]+)%\s+of\s+(.+?)\s+Recouped\s+as\s+(.+)$/i.exec(s);
+        if (m) return '所受' + zhTarget(m[2]) + '的 ' + m[1] + '% 轉為' + zhTarget(m[3]);
+
+        /* ── R. 「+N metres to <X>」 ── */
+        m = /^\+([\d.]+)\s+metres\s+to\s+(.+)$/i.exec(s);
+        if (m) return '+' + m[1] + ' 公尺' + zhTarget(m[2]);
+
+        /* ── S. 「N% faster|slower X」 ── */
+        m = /^([\d.]+)%\s+(faster|slower)\s+(.+)$/i.exec(s);
+        if (m) return zhTarget(m[3]) + (m[2].toLowerCase() === 'faster' ? '加快 ' : '減慢 ') + m[1] + '%';
+
+        /* ── T. 「X per second」 ── */
+        m = /^([\d.]+)(%?)\s+(?:of\s+)?(.+?)\s+per second$/i.exec(s);
+        if (m) return '每秒 ' + m[1] + m[2] + ' ' + zhTarget(m[3]);
+
+        /* ── V. 「X is N% slower|faster」 ── */
+        m = /^(.+?)\s+is\s+([\d.]+)%\s+(slower|faster)$/i.exec(s);
+        if (m) return zhTarget(m[1]) + (m[3].toLowerCase() === 'slower' ? '減慢 ' : '加快 ') + m[2] + '%';
+
+        /* ── W. 「N% chance to Blind/gain/… <rest>」 ── */
+        m = /^([\d.]+)%\s+chance\s+to\s+(Blind|Taunt|Hinder|Maim|Knock back|gain an? .+|gain .+|Avoid .+|Ignite|Freeze|Shock|Poison|Impale .+)\s*(.*)$/i.exec(s);
+        if (m) {
+            var verbW = m[2].replace(/\bgain\s+an?\s+/i, '獲得').replace(/\bgain\s+/i, '獲得');
+            return m[1] + '% 機率' + zhTarget(verbW) + (m[3] ? zhTarget(m[3]) : '');
+        }
+
+        /* ── AA2. 「N% chance to <verb> <rest>」 動詞開頭的機率句 ── */
+        m = /^([\d.]+)%\s+chance\s+to\s+(\w+)\s*(.*)$/i.exec(s);
+        if (m) {
+            var VMAP = {
+                gain: '獲得', Gain: '獲得', Blind: '致盲', Taunt: '嘲諷', Hinder: '阻礙',
+                Maim: '撕裂', Suppress: '壓制', Knock: '擊退',
+                Ignite: '點燃', Freeze: '冰凍', Shock: '感電', Poison: '中毒',
+                Avoid: '避免', Impale: '穿刺', Intimidate: '威嚇',
+                Fortify: '強化', Recover: '回復', create: '創造',
+                Cover: '覆蓋', inflict: '造成', convert: '轉換', Reflect: '反射',
+                Defend: '防禦', Ignore: '無視', consume: '消耗', trigger: '觸發'
+            };
+            var vv = VMAP[m[2]] || '';
+            if (vv) {
+                var rest = zhTarget(m[3] || '');
+                /* 處理 "Knock Enemies Back" → "擊退敵人" 這類動詞在前的句型 */
+                rest = rest.replace(/^敵人\s*Back$/i, '敵人');
+                rest = rest.replace(/^敵人\s*$/i, '敵人');
+                return m[1] + '% 機率' + vv + rest;
+            }
+        }
+
+        /* ── AA3. 「<subj> on <event>」 後置事件 ── */
+        m = /^(.+?)\s+on\s+(Melee Hit|Melee Kill|Hit|Kill|Killing|Critical Strike)$/i.exec(s);
+        if (m) {
+            var evMap = { 'melee hit': '近戰擊中時', 'melee kill': '近戰擊殺時', 'hit': '擊中時', 'kill': '擊殺時', 'killing': '擊殺時', 'critical strike': '爆擊時' };
+            var evTxt = evMap[m[2].toLowerCase()] || (zhTarget(m[2]) + '時');
+            var bodyA3 = stat(m[1]);
+            if (bodyA3 !== m[1]) return bodyA3.replace(/時$/, '') + '，' + evTxt;
+        }
+
+        /* ── AA4. 「<subj> to <target>」 ── */
+        m = /^(.+?)\s+to\s+(.+)$/i.exec(s);
+        if (m) {
+            var left = stat(m[1]);
+            if (left !== m[1]) return left + ' → ' + zhTarget(m[2]);
+        }
+
+        /* ── Z0. 「X on you」必須在 Z（Effect of）之前，且要在 while/if 之前 ── */
+        m = /^(.+?)\s+on you$/i.exec(s);
+        if (m) {
+            var innerZ = stat(m[1]);
+            if (innerZ !== m[1]) return '你受到的' + innerZ.replace(/增加|減少/g, '') + '（' + innerZ + '）';
+            return '你受到的' + zhTarget(m[1]);
+        }
+
+        /* ── X. 「<subj> while <cond>」 前導條件 ── */
+        m = /^(.+?)\s+(while|if)\s+(.+)$/i.exec(s);
+        if (m) {
+            var preX = zhModifier(m[2], m[3]);
+            var bodyX = stat(m[1]);
+            if (bodyX !== m[1]) return preX + bodyX;
+            /* 條件譯不出來時，至少把主體翻好 */
+            var bodyOnly = zhTarget(m[1]);
+            var enB = (bodyOnly.match(/[A-Za-z]{3,}/g) || []).length;
+            if (enB === 0) return bodyOnly;
+        }
+
+        /* ── Y. 「X on you」 ── */
+        m = /^(.+?)\s+on you$/i.exec(s);
+        if (m) return '你受到的' + zhTarget(m[1]) + '：' + (stat(m[1]) !== m[1] ? '（' + stat(m[1]) + '）' : '');
+
+        /* ── Z. 「Effect of X on you」 ── */
+        m = /^Effect of (.+?) on you$/i.exec(s);
+        if (m) return '你受到的' + zhTarget(m[1]) + '效果';
+
+        /* ── AA. 「X rate」 ── */
+        m = /^(.+?)\s+rate$/i.exec(s);
+        if (m) return zhTarget(m[1]) + '速率';
+
+        /* ── U. 純名詞：換詞（殘留太多英文就回原文） ── */
+        var only2 = zhTarget(s);
+        var engLeft = (only2.match(/[A-Za-z]{3,}/g) || []).length;
+        if (engLeft > 1) return s;
+        return only2;
+    }
+
+    function zb(s) { return zhTarget(s); }
+
+    /* ══════════════════════════════════════════════════════════
+       ④ 整句字典（無法用規則處理的特殊句子）
        ══════════════════════════════════════════════════════════ */
     var SENTENCES = {
+        /* ── 關鍵天賦 ── */
+        'Melee Strike Skills deal Splash Damage to surrounding targets': '近戰打擊技能對周圍目標造成濺射傷害',
         'Cannot be Stunned': '無法被暈眩',
         'Cannot be Frozen': '無法被冰凍',
         'Cannot be Chilled': '無法被冰緩',
         'Cannot Evade Enemy Attacks': '無法閃避敵人攻擊',
-        'Cannot Recover Life or Energy Shield': '無法恢復氣血或護盾',
-        'Chaos Inoculation': '混沌免疫',
-        'Blood Magic': '血魔法',
-        'Resolute Technique': '絕對命中',
-        'Unwavering Stance': '不動如山',
-        'Iron Reflexes': '鐵之反射'
+        'Cannot Recover Life or Energy Shield': '無法恢復生命或能量護盾',
+        'Chaos Inoculation': '混沌接種：免疫混沌傷害，但最大生命為 1',
+        'Blood Magic': '血魔法：技能以生命代替魔力消耗',
+        'Resolute Technique': '絕對命中：你的攻擊必定命中，但無法造成爆擊',
+        'Unwavering Stance': '不動如山：無法被暈眩，但無法閃避敵人攻擊',
+        'Iron Reflexes': '鐵之反射：閃避值轉換為護甲',
+        'Zealot\'s Oath': '狂熱者之誓：生命回復改為恢復能量護盾',
+        'Ancestral Bond': '先祖之約：圖騰上限 +1，但你自己無法造成傷害',
+        'Pain Attunement': '痛苦共鳴：低血時法術傷害增加 30%',
+        'Eldritch Battery': '邪術電池：能量護盾保護魔力而非生命',
+        'Mind over Matter': '心勝於物：30% 的傷害由魔力先行承受',
+        'Acrobatics': '雜技：閃避攻擊機率 +30%，但護甲降低 50%',
+        'Phase Acrobatics': '相位雜技：法術壓制率 +10%',
+        'Perfect Agony': '完美苦痛：爆擊加成的 30% 套用於持續傷害',
+        'Crimson Dance': '赤紅之舞：流血可疊加 8 層，但流血傷害降低 60%',
+        'Glancing Blows': '擦身閃擊：格擋率加倍，但格擋時仍受到 65% 傷害',
+        'The Agnostic': '不可知論者：魔力持續消耗以回復生命',
+        'Supreme Ego': '至高自我：只能有 1 個光環，但其效果增加 50%',
+        'Wicked Ward': '邪惡守護：能量護盾回復不會被傷害中斷',
+
+        /* ── 常見機制句 ── */
+        'Skills Chain +1 times': '技能連鎖次數 +1',
+        'Bow Attacks fire an additional Arrow': '弓攻擊額外發射 1 支箭',
+        'Bow Attacks fire 2 additional Arrows': '弓攻擊額外發射 2 支箭',
+        'Skills fire an additional Projectile': '技能額外發射 1 個投射物',
+        'Skills fire 2 additional Projectiles': '技能額外發射 2 個投射物',
+        'Projectiles Pierce an additional Target': '投射物額外穿透 1 個目標',
+        'Your Hits can\'t be Evaded': '你的擊中無法被閃避',
+        'Attacks with this Weapon Penetrate Elemental Resistances': '此武器的攻擊穿透元素抗性',
+        'You can have an additional Brand Attached': '可額外附加 1 個聖印',
+        'Ignites you inflict spread to other Enemies within 1.5 metres': '你造成的點燃會蔓延至 1.5 公尺內的其他敵人',
+        'Freeze Chilled Enemies as though dealing 50% more Damage': '冰凍冰緩敵人時視為造成 50% 更多傷害',
+        'All Damage from Hits can Poison': '所有擊中傷害都可造成中毒',
+        'Your Elemental Resistances are capped by your highest Elemental Resistance': '你的元素抗性以最高的那一項為上限',
+        'Exposure you inflict applies an extra -10% to the affected Resistance': '你造成的曝曬額外使受影響的抗性 -10%',
+        'Nearby Enemies have 10% reduced Life Regeneration rate': '附近敵人的生命回復速率降低 10%',
+        'Gain 1% of Fire Damage as Extra Chaos Damage': '獲得 1% 火焰傷害作為額外混沌傷害',
+        'Damage Penetrates 5% Elemental Resistances': '傷害穿透 5% 元素抗性',
+        'Ignore all Movement Penalties from Armour': '無視護甲帶來的所有移動懲罰',
+        'Cannot be Blinded': '無法被致盲',
+        'Cannot be Poisoned': '無法被中毒',
+        'Cannot be Bleeding': '無法流血',
+        'Cannot take Reflected Elemental Damage': '不受反彈的元素傷害',
+        'Cannot take Reflected Physical Damage': '不受反彈的物理傷害',
+        'Skills Cost no Mana': '技能不消耗魔力',
+        'Your Skills deal no Damage': '你的技能不造成傷害',
+        'Spell Skills deal no Damage': '法術技能不造成傷害',
+        'Attack Skills deal no Damage': '攻擊技能不造成傷害',
+        'Gain a Frenzy Charge on Hit': '擊中時獲得 1 個狂怒球',
+        'Gain a Power Charge on Critical Strike': '爆擊時獲得 1 個暴擊球',
+        'Gain an Endurance Charge when you Stun an Enemy': '暈眩敵人時獲得 1 個耐力球',
+        'Recover 2% of Life on Kill': '擊殺時回復 2% 生命',
+        'Recover 2% of Mana on Kill': '擊殺時回復 2% 魔力',
+        'Recover 2% of Energy Shield on Kill': '擊殺時回復 2% 能量護盾',
+        'Minions have 10% increased Attack Speed': '召喚物攻擊速度增加 10%',
+        'Minions have 10% increased Cast Speed': '召喚物施法速度增加 10%',
+        'Minions have 10% increased Movement Speed': '召喚物移動速度增加 10%',
+        'You and nearby Allies gain 10% increased Damage': '你與附近隊友傷害增加 10%',
+        'Nearby Allies gain 10% increased Damage': '附近隊友傷害增加 10%',
+        'Your Raised Zombies count as two Raised Zombies': '你的復甦殭屍視為 2 隻',
+        'Your Raised Skeletons count as two Skeletons': '你的復甦骷髏視為 2 隻',
+        'Your Raised Spectres count as two Spectres': '你的幽魂視為 2 隻',
+        'Trigger a Socketed Spell when you Attack with this Weapon': '以此武器攻擊時觸發鑲嵌的法術',
+        'Every 16 seconds, gain Onslaught for 4 seconds': '每 16 秒獲得 4 秒迅捷',
+        'Gain 1 Rage on Hit': '擊中時獲得 1 點怒氣',
+        'Lose 1 Rage every 0.4 seconds if you haven\'t been Hit Recently': '近期未被擊中時，每 0.4 秒失去 1 點怒氣',
+        'Increases and Reductions to Light Radius also apply to Damage': '視野範圍的增減也套用於傷害',
+        'Increases and Reductions to Energy Shield instead apply to Mana': '能量護盾的增減改為套用於魔力',
+        'Strength provides no bonus to Maximum Life': '力量不再提供最大生命加成',
+        'Dexterity provides no bonus to Evasion Rating': '敏捷不再提供閃避值加成',
+        'Intelligence provides no bonus to Maximum Mana': '智慧不再提供最大魔力加成'
     };
 
     /* ══════════════════════════════════════════════════════════
-       ③ 動詞對照
-       ══════════════════════════════════════════════════════════ */
-    var VERBS = {
-        'increased': '增加',
-        'reduced': '減少',
-        'more': '更多',
-        'less': '更少',
-        'additional': '額外',
-        'extra': '額外'
-    };
-
-    /* ══════════════════════════════════════════════════════════
-       ④ 節點名稱對照（常見的 POE 天賦名稱）
+       ⑤ 節點名稱對照（關鍵天賦 + 常見顯著天賦）
        ══════════════════════════════════════════════════════════ */
     var NAMES = {
+        /* 關鍵天賦 */
         'Constitution': '強健體魄',
         'Heart of Oak': '橡木之心',
         'Divine Flesh': '神聖血肉',
@@ -12536,14 +13342,8 @@ window.HY = window.HY || {};
         'Sanctity': '聖潔',
         'Purity of Flesh': '血肉淨化',
         'Discipline and Training': '紀律與訓練',
-        'Ascendant': '昇華者',
-        'Path of the Warrior': '戰士之路',
-        'Path of the Hunter': '獵人之道',
-        'Path of the Savant': '學者之道',
-        'Master of the Arena': '競技場大師',
-        'Berserking': '狂戰',
         'Avatar of Fire': '烈焰化身',
-        'Chaos Inoculation': '混沌免疫',
+        'Chaos Inoculation': '混沌接種',
         'Blood Magic': '血魔法',
         'Resolute Technique': '絕對命中',
         'Unwavering Stance': '不動如山',
@@ -12560,108 +13360,102 @@ window.HY = window.HY || {};
         'Glancing Blows': '擦身閃擊',
         'The Agnostic': '不可知論者',
         'Supreme Ego': '至高自我',
-        'Wicked Ward': '邪惡守護'
+        'Wicked Ward': '邪惡守護',
+        'Iron Will': '鋼鐵意志',
+        'Elemental Equilibrium': '元素平衡',
+        'Necromantic Aegis': '亡靈之盾',
+        'Vaal Pact': '瓦爾契約',
+        'Ghost Reaver': '幽靈掠奪者',
+        'Minion Instability': '召喚物不穩定',
+        'Point Blank': '近距離射擊',
+        'Arrow Dancing': '箭舞',
+        'Runebinder': '符文束縛者',
+        'Ancestral Guidance': '先祖指引',
+        'Call to Arms': '戰鬥號令',
+        'Imbalanced Guard': '失衡守衛',
+        'Solipsism': '唯我論',
+        'Eternal Youth': '永恆青春',
+        'Iron Grip': '鋼鐵之握',
+
+        /* 常見顯著天賦 */
+        'Tribal Fury': '部落之怒',
+        'Master of the Arena': '競技場大師',
+        'Berserking': '狂戰',
+        'Finesse': '精妙',
+        'Assassination': '暗殺',
+        'Heartseeker': '尋心者',
+        'Lethality': '致命',
+        'Deadly Draw': '致命拉弓',
+        'Heavy Draw': '重弓',
+        'Farsight': '遠見',
+        'Toxic Strikes': '劇毒打擊',
+        'Fatal Toxins': '致命毒素',
+        'Weapon Artistry': '武器藝術',
+        'Blade Master': '刀劍大師',
+        'Cleaving': '劈砍',
+        'Rampart': '壁壘',
+        'Sanctuary': '庇護所',
+        'Steadfast': '堅定',
+        'Defiance': '蔑視',
+        'Tolerance': '寬容',
+        'Soul of Steel': '鋼鐵之魂',
+        'Armour Master': '護甲大師',
+        'Evasion Master': '閃避大師',
+        'Cloth and Chain': '布與鎖鏈',
+        'Leather and Steel': '皮革與鋼鐵',
+        'Sentinel': '哨兵',
+        'Precise Interception': '精準截擊',
+        'Arcane Chemist': '奧術鍊金師',
+        'Alchemist': '鍊金師',
+        'Profane Chemistry': '褻瀆化學',
+        'Explosive Impact': '爆破衝擊',
+        'Blast Radius': '爆炸半徑',
+        'Conqueror\'s Potency': '征服者之力',
+        'Spiritual Aid': '靈性援助',
+        'Spiritual Command': '靈性號令',
+        'Sacrifice': '犧牲',
+        'Lord of the Dead': '亡者之主',
+        'Gravepact': '墓約',
+        'Righteous Army': '正義之師',
+        'Redemption': '救贖',
+        'Dignity': '尊嚴',
+        'Retribution': '報應',
+        'Devotion': '奉獻',
+        'Atonement': '贖罪',
+        'Zeal': '狂熱',
+        'Light of Divinity': '神性之光',
+        'Holy Dominion': '神聖領域',
+        'Divine Judgement': '神聖審判',
+        'Divine Fury': '神聖之怒',
+        'Purity of Flesh': '血肉淨化',
+        'Discipline and Training': '紀律與訓練',
+        'Faith and Steel': '信仰與鋼鐵',
+        'Templar': '聖殿騎士',
+        'Witch': '女巫',
+        'Ranger': '遊俠',
+        'Duelist': '決鬥者',
+        'Marauder': '野蠻人',
+        'Shadow': '暗影',
+        'Scion': '貴族'
     };
-
-    /** 把字串中的目標名詞換成中文（長字串優先） */
-    function zhTarget(s) {
-        var t = String(s || '');
-        /* 依長度降序排列，確保 "maximum Life" 先於 "Life" 被替換 */
-        var sorted = TERMS.slice().sort(function (a, b) { return b[0].length - a[0].length; });
-        for (var i = 0; i < sorted.length; i++) {
-            var en = sorted[i][0], zh = sorted[i][1];
-            if (t.indexOf(en) !== -1) {
-                t = t.split(en).join(zh);
-            }
-        }
-        return t;
-    }
-
-    /**
-     * 解析單條效果為 { val, verb, target, raw }
-     * 支援句型：
-     *   "15% increased Totem Damage"
-     *   "+10 to Strength"
-     *   "10% more Damage"
-     *   "5% reduced Fire Resistance"
-     */
-    function match(text) {
-        var s = String(text || '').trim();
-        if (!s) return null;
-        var m;
-
-        /* ① 「+N to X」 */
-        m = /^([+-]?\d+(?:\.\d+)?)\s+to\s+(.+)$/i.exec(s);
-        if (m) return { val: parseFloat(m[1]), verb: 'to', target: m[2], raw: s, fmt: 'flat' };
-
-        /* ② 「N% increased/reduced/more/less X」 */
-        m = /^([+-]?\d+(?:\.\d+)?)\s*%\s+(increased|reduced|more|less|additional|extra)\s+(.+)$/i.exec(s);
-        if (m) return { val: parseFloat(m[1]), verb: m[2].toLowerCase(), target: m[3], raw: s, fmt: 'pct' };
-
-        /* ③ 「N to N added X Damage」 */
-        m = /^Adds\s+(\d+)\s+to\s+(\d+)\s+(.+)$/i.exec(s);
-        if (m) return { val: m[1] + '~' + m[2], verb: 'adds', target: m[3], raw: s, fmt: 'range' };
-
-        /* ④ 「N% chance to X」 */
-        m = /^([+-]?\d+(?:\.\d+)?)\s*%\s+chance\s+to\s+(.+)$/i.exec(s);
-        if (m) return { val: parseFloat(m[1]), verb: 'chance', target: m[2], raw: s, fmt: 'chance' };
-
-        return null;
-    }
-
-    /** 單條效果 → 中文 */
-    function stat(text) {
-        var s = String(text || '').trim();
-        if (!s) return '';
-        if (SENTENCES[s]) return SENTENCES[s];
-
-        var p = match(s);
-        if (!p) {
-            /* 沒有數字：直接換名詞，仍比全英文好讀 */
-            var only = zhTarget(s);
-            return only !== s ? only : s;
-        }
-
-        switch (p.fmt) {
-            case 'flat':
-                return '+' + p.val + ' ' + zhTarget(p.target);
-            case 'pct':
-                return (p.val > 0 ? '+' : '') + p.val + '% ' + VERBS[p.verb] + ' ' + zhTarget(p.target);
-            case 'range':
-                return '附加 ' + p.val + ' ' + zhTarget(p.target);
-            case 'chance':
-                return p.val + '% 機率' + zhTarget(p.target);
-            default:
-                return zhTarget(s);
-        }
-    }
-
-    /** 多條效果 → 中文陣列 */
-    function stats(list) {
-        if (!list || !list.length) return [];
-        return list.map(function (t) { return stat(t); });
-    }
-
-    /** 節點名稱 → 中文（查表，查不到保留英文） */
-    function name(text) {
-        var s = String(text || '').trim();
-        if (!s) return '';
-        if (NAMES[s]) return NAMES[s];
-        /* 去掉尾端空白（POE 原始資料常有 "Totem Damage and Life " 這種） */
-        s = s.replace(/\s+$/, '');
-        if (NAMES[s]) return NAMES[s];
-        return s;
-    }
 
     window.HY.TalentZh = {
         stat: stat,
-        stats: stats,
-        name: name,
-        match: match,
+        stats: function (list) {
+            if (!list || !list.length) return [];
+            return list.map(function (t) { return stat(t); });
+        },
+        name: function (text) {
+            var s = String(text || '').trim().replace(/\s+$/, '');
+            return NAMES[s] || s;
+        },
         TERMS: TERMS,
         NAMES: NAMES,
         SENTENCES: SENTENCES
     };
+
+    console.log('[talentStatZh] 翻譯層已載入：' + TERMS.length + ' 條名詞、' +
+        Object.keys(SENTENCES).length + ' 條整句、' + Object.keys(NAMES).length + ' 條節點名');
 })();
 
 
