@@ -30166,38 +30166,62 @@ window.HY = window.HY || {};
         tianlong: {
             key: 'meridian',
             base: { max: 6, hit: 0.08, pen: 0.50 },
-            onAttack: function (sys, core, c, target, dealt, p) {
+            /* ⭐ 加層必須在「查詢 getAttackerMods 之前」，
+               否則本次攻擊吃不到自己剛加的那層（舊版差一回合）。 */
+            preAttack: function (sys, core, c, target, isAoe, p) {
                 if (!target) return '';
                 var es = sys.enemyState(target);
                 var before = es.meridian || 0;
-                // v36：若攻擊前已滿層，表示本次已由 getAttackerMods 套用「必中 + 破甲」，
-                //      現在收掉層數（下一輪重新累積）。
                 if (before >= p.max) {
-                    es.meridian = 0;
-                    return ' [👁️脈門滿層→必殺貫通已於本次攻擊生效]';
+                    es.meridian = p.max;      /* 滿層保持，本次由 getAttackerMods 套用必中+破甲 */
+                    return '';
                 }
                 es.meridian = Math.min(p.max, before + 1);
-                return ' [👁️脈門 ' + es.meridian + '層（命中+' + Math.round(es.meridian * p.hit * 100) + '% / 無視閃避 ' + (es.meridian * 5) + '%）]';
+                return '';
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                if (!target) return '';
+                var es = sys.enemyState(target);
+                var st = es.meridian || 0;
+                if (st >= p.max) {
+                    /* 本次已套用必中 + 破甲，打完收層 */
+                    es.meridian = 0;
+                    return ' [👁️脈門滿層→必殺貫通生效，層數重置]';
+                }
+                return ' [👁️脈門 ' + st + '層（命中+' + Math.round(st * p.hit * 100) +
+                    '% / 無視閃避 ' + (st * 5) + '%）]';
             }
         },
         // ❄️ 天山 — 冰魄凍結
         tianshan: {
             key: 'frost',
             base: { max: 8, slow: 0.04, critBonus: 0.30, freezeTurns: 2 },
-            onAttack: function (sys, core, c, target, dealt, p) {
+            /* ⭐ 加層移到攻擊前，讓「本次攻擊」就吃到凍結的暴擊加成；
+               減速係數也會立刻反映到敵人 ATB（下一輪集氣就會變慢）。 */
+            preAttack: function (sys, core, c, target, isAoe, p) {
                 if (!target) return '';
                 var es = sys.enemyState(target);
                 var before = es.frost || 0;
-                es.frost = Math.min(p.max, before + 1);
-                // v36：把減速係數存在敵人身上，供 getEnemySpeedMult 讀取
                 es.frostSlow = p.slow;
+                if (before >= p.max) return '';
+                es.frost = Math.min(p.max, before + 1);
                 if (es.frost >= p.max) {
                     es.frozen = (es.frozen || 0) + p.freezeTurns;
                     es.frost = 0;
                     es.frostSlow = 0;
-                    return ' [❄️寒冰滿層→凍結 ' + p.freezeTurns + ' 回合（凍結期間自身暴擊+' + Math.round(p.critBonus * 100) + '%）]';
                 }
-                return ' [❄️寒冰 ' + es.frost + '層（減速' + Math.round(es.frost * p.slow * 100) + '%）]';
+                return '';
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                if (!target) return '';
+                var es = sys.enemyState(target);
+                if ((es.frozen || 0) > 0) {
+                    return ' [❄️冰魄凍結中→自身暴擊+' + Math.round(p.critBonus * 100) +
+                        '%（剩 ' + es.frozen + ' 回合）]';
+                }
+                var st = es.frost || 0;
+                return ' [❄️寒冰 ' + st + '/' + Math.round(p.max) + ' 層（減速' +
+                    Math.round(st * p.slow * 100) + '%）]';
             },
             onTurnEnd: function (sys, core, enemy, p) {
                 var es = sys.enemyState(enemy);
@@ -30256,10 +30280,19 @@ window.HY = window.HY || {};
         tangmen: {
             key: 'trap',
             base: { max: 10, dmg: 0.20, aoeBonus: 0.05 },
-            onAttack: function (sys, core, c, target, dealt, p) {
+            /* ⭐ 機關層數在「攻擊前」就要加，群攻的 aoeBonus 才吃得到 */
+            preAttack: function (sys, core, c, target, isAoe, p) {
                 var b = sys.battle(c);
                 b.trap = Math.min(p.max, (b.trap || 0) + 1);
                 return '';
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                /* 層數已在 preAttack 累加，這裡只負責輸出狀態 */
+                var b = sys.battle(c);
+                var traps = b.trap || 0;
+                if (traps <= 0) return '';
+                return ' [🕸️機關 ' + traps + '/' + Math.round(p.max) + '（群攻+' +
+                    Math.round(traps * p.aoeBonus * 100) + '%）]';
             },
             onAoeAttack: function (sys, core, c, targets, p) {
                 var b = sys.battle(c);
@@ -30772,6 +30805,31 @@ window.HY = window.HY || {};
                     origDeath(enemy, partyMembers);
                     self.processEnemyDeath(combat, enemy);
                 };
+            }
+        }
+        /**
+         * ⭐ 攻擊前處理（在 getAttackerMods 之前呼叫）
+         * ──────────────────────────────────────────────────
+         * 問題：有 5 個門派的「累積層數」寫在 onAttack 裡，
+         *       但 getAttackerMods() 早在算傷害時就讀過了
+         *       → 本次攻擊吃不到自己剛加的那一層，永遠差一回合。
+         *
+         * 受影響：天龍脈門、天山寒冰、唐門機關、鬼谷陣門、峨嵋慈悲
+         *
+         * 解法：把「加層／推進狀態」抽成 preAttack()，
+         *       在 combatPlayerTurn 查詢 getAttackerMods 之前先跑。
+         */
+        preAttack(core, charObj, target, isAoe) {
+            if (!charObj) return '';
+            var def = this.getDef(charObj.sect);
+            if (!def || typeof def.preAttack !== 'function') return '';
+            var p = this.getParams(charObj);
+            if (!p) return '';
+            try {
+                return def.preAttack(this, core, charObj, target, isAoe ? true : false, p) || '';
+            } catch (e) {
+                console.warn('[sectFeature] preAttack error', e);
+                return '';
             }
         }
         /**
@@ -45292,6 +45350,17 @@ window.HY = window.HY || {};
             var missCount = 0;
             var elemLogTotal = '';
             var elemDmgTotal = 0;
+            /* ⭐ 門派「攻擊前加層」必須在逐目標查詢 getAttackerMods 之前執行一次。
+               天龍脈門、天山寒冰、唐門機關都靠這裡累積，
+               原本寫在 onAttack（攻擊結算後）→ 本次攻擊永遠吃不到自己剛加的層。 */
+            var preAtkLog = '';
+            if (!isSupportMode && setFeatSys && typeof setFeatSys.preAttack === 'function') {
+                try {
+                    preAtkLog = setFeatSys.preAttack(core, charObj,
+                        (core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0],
+                        art.isAoe) || '';
+                } catch (e) { preAtkLog = ''; }
+            }
             targetList.forEach(function (target) {
                 // ⭐ v51：逐目標查詢門派特色修正
                 var mods = (setFeatSys && typeof setFeatSys.getAttackerMods === 'function' && !isSupportMode)
