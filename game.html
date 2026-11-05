@@ -109438,6 +109438,11 @@ window.HY = window.HY || {};
                 'white-space:nowrap;}',
                 '.at-mgrow .rl{font-size:.66rem;color:#64748b;flex:0 0 auto;}',
                 '.at-mgrow .rm{font-size:.64rem;color:#c084fc;flex:0 0 auto;}',
+                /* ⭐ v46：堆疊數量徽章（同階同樣式的多張地圖合併成一行） */
+                '.at-mgrow .rc{flex:0 0 auto;font-size:.66rem;font-weight:bold;color:#0b1220;',
+                'background:linear-gradient(180deg,#fbbf24,#d97706);border-radius:3px;',
+                'padding:0 5px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.5);}',
+                '.at-mgrow[data-stack]:hover .rc{background:linear-gradient(180deg,#fde68a,#f59e0b);}',
                 /* ⭐ 地圖石徽縮圖 */
                 '.at-mgrow .mi{flex:0 0 auto;width:22px;height:22px;display:flex;align-items:center;',
                 'justify-content:center;}',
@@ -110555,8 +110560,22 @@ window.HY = window.HY || {};
             var maps = sys.listMaps(c);
             var inMap = sys.isInMap();
 
+            /* ⭐ v46：先算出「堆疊後會有幾組」，標題同時顯示張數與組數 */
+            var _grpCount = 0;
+            (function () {
+                var seen = {};
+                maps.forEach(function (m) {
+                    var rar = sys.mapRarity(m);
+                    var mods = (m.mods || []).slice().sort().join(',');
+                    var k = [num(m.tier, 1), rar, mods, String(m.name || '')].join('|');
+                    if (!seen[k]) { seen[k] = 1; _grpCount += 1; }
+                });
+            })();
+
             var h = '<div class="at-tierttl">🗺️ 地圖管理' +
-                '<span class="cnt">' + maps.length + ' 張</span></div>';
+                '<span class="cnt">' + maps.length + ' 張' +
+                (_grpCount < maps.length ? '（' + _grpCount + ' 組）' : '') +
+                '</span></div>';
             h += '<div style="font-size:.72rem;color:#64748b;line-height:1.7;margin-bottom:9px">' +
                 '點擊地圖直接開戰　·　改造請至「裝備行囊 → 地圖倉庫」</div>';
 
@@ -110590,19 +110609,69 @@ window.HY = window.HY || {};
                     '</div>';
                 if (open) {
                     h += '<div class="at-mgb">';
+
+                    /* ⭐ v46：同階級 + 同樣式 + 同詞綴 → 堆疊成一行
+                       ──────────────────────────────────────────────────
+                       原本 48 張 T1 白圖會展開成 48 行，列表極度冗長。
+                       這裡把「可堆疊」的條件定為：
+                         tier 相同、rarity 相同、mods 組合相同、name 相同
+                       （name 相同才不會把「幽暗林道」和「枯骨墓園」併成一筆）
+                       有詞綴的圖（藍/黃）因為詞綴各異，仍會各自獨立成行。 */
+                    var groups = [];
+                    var groupIdx = {};
                     list.forEach(function (m) {
                         var rarity = sys.mapRarity(m);
+                        var mods = (m.mods || []).slice().sort().join(',');
+                        var key = [num(m.tier, 1), rarity, mods, String(m.name || '')].join('|');
+                        if (groupIdx[key] === undefined) {
+                            groupIdx[key] = groups.length;
+                            groups.push({
+                                key: key,
+                                rarity: rarity,
+                                name: m.name,
+                                level: m.level,
+                                mods: (m.mods || []),
+                                items: [m]
+                            });
+                        } else {
+                            groups[groupIdx[key]].items.push(m);
+                        }
+                    });
+
+                    /* 堆疊後排序：先依樣式（白→藍→黃），再依名稱，
+                       讓同名的堆疊行聚在一起，視覺更整齊。 */
+                    var rarOrder = { normal: 0, magic: 1, rare: 2 };
+                    groups.sort(function (a, b) {
+                        var ra = rarOrder[a.rarity] === undefined ? 9 : rarOrder[a.rarity];
+                        var rb = rarOrder[b.rarity] === undefined ? 9 : rarOrder[b.rarity];
+                        if (ra !== rb) return ra - rb;
+                        var na = String(a.name || ''), nb = String(b.name || '');
+                        if (na !== nb) return na.localeCompare(nb, 'zh-Hant');
+                        return (b.items.length) - (a.items.length);
+                    });
+
+                    groups.forEach(function (gp) {
+                        var m = gp.items[0];
+                        var rarity = gp.rarity;
                         var rarTxt = { normal: '白', magic: '藍', rare: '黃' }[rarity] || '';
                         var rarCls = 'r-' + rarity;
-                        var mine = (m.uid === self._selMapUid);
+                        var cnt = gp.items.length;
+                        /* 該堆疊中是否有「目前放上地圖儀」的那張 */
+                        var mine = gp.items.some(function (x) { return x.uid === self._selMapUid; });
+                        /* 點擊時：預設取第一張；若堆疊內有已選中的，則取該張 */
+                        var clickUid = mine
+                            ? self._selMapUid
+                            : gp.items[0].uid;
                         h += '<div class="at-mgrow' + (mine ? ' sel' : '') + '"' +
-                            ' data-mapsel="' + esc(m.uid) + '">' +
+                            ' data-mapsel="' + esc(clickUid) + '"' +
+                            (cnt > 1 ? ' data-stack="' + cnt + '"' : '') + '>' +
                             '<span class="mi"><img src="' + mapIcon(m.tier) + '" alt="" ' +
                             'onerror="this.style.display=\'none\'"></span>' +
                             '<span class="rt ' + rarCls + '">' + rarTxt + '</span>' +
-                            '<span class="rn">' + esc(String(m.name || '地圖').slice(0, 7)) + '</span>' +
-                            '<span class="rl">Lv.' + m.level + '</span>' +
-                            '<span class="rm">' + ((m.mods || []).length) + '詞</span>' +
+                            '<span class="rn">' + esc(String(gp.name || '地圖').slice(0, 7)) + '</span>' +
+                            (cnt > 1 ? '<span class="rc">×' + cnt + '</span>' : '') +
+                            '<span class="rl">Lv.' + gp.level + '</span>' +
+                            '<span class="rm">' + gp.mods.length + '詞</span>' +
                             '</div>';
                     });
                     h += '</div>';
@@ -110635,9 +110704,10 @@ window.HY = window.HY || {};
                     self._toast('已放上地圖儀，按「開啟地圖戰鬥」開始');
                 });
 
-                /* ⭐ 滑鼠移入 → 顯示地圖內容小視窗 */
+                /* ⭐ 滑鼠移入 → 顯示地圖內容小視窗（v46：帶入堆疊數量） */
                 el.addEventListener('mouseenter', function (ev) {
-                    self._showMapTip(uid, ev);
+                    var stackN = parseInt(el.getAttribute('data-stack'), 10) || 1;
+                    self._showMapTip(uid, ev, stackN);
                 });
                 el.addEventListener('mousemove', function (ev) {
                     self._moveMapTip(ev);
@@ -110648,8 +110718,9 @@ window.HY = window.HY || {};
             });
         }
 
-        /** ⭐ 地圖內容小視窗（滑鼠移入顯示） */
-        _showMapTip(uid, ev) {
+        /** ⭐ 地圖內容小視窗（滑鼠移入顯示）
+            stackN > 1 時額外顯示「倉庫共 N 張」的堆疊提示 */
+        _showMapTip(uid, ev, stackN) {
             var sys = this.sys;
             var c = this.app.charSys.state;
             var m = sys.listMaps(c).filter(function (x) { return x.uid === uid; })[0];
@@ -110694,6 +110765,11 @@ window.HY = window.HY || {};
                 'T' + m.tier + ' ' + esc(m.name) + '</div>' +
                 '<div style="font-size:.72rem;color:' + rarMap.color + '">' +
                 rarMap.txt + '　·　Lv.' + m.level + '</div>' +
+                /* ⭐ v46：堆疊張數提示 */
+                (stackN > 1
+                    ? '<div style="font-size:.72rem;color:#fbbf24;margin-top:2px">' +
+                      '🗂️ 倉庫共有 ' + stackN + ' 張（同階同樣式同詞綴）</div>'
+                    : '') +
                 '</div></div>' +
                 '<div style="border-top:1px solid #253244;padding-top:6px;margin-bottom:6px">' +
                 '<div style="display:flex;justify-content:space-between;font-size:.74rem;padding:1px 0">' +
