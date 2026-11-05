@@ -12238,7 +12238,15 @@ window.HY = window.HY || {};
                 };
                 Object.keys(ext).forEach(function (k) {
                     if (out[k] !== undefined) {
-                        /* 擴充屬性與核心同名時，核心優先，避免覆蓋 clamp 後的結果 */
+                        /* ⭐ 核心變數優先，但「累加型」屬性必須相加，不能直接丟棄。
+                           dmgReduce / atkSpd / critDmg 這些在回傳物件裡已有初始值，
+                           舊寫法直接 return，導致裝備詞綴寫進 ext 的數值全部落空
+                           （例如 dmgReduce 永遠是 0、atkSpd 永遠是 100）。
+                           這裡針對「加成型」屬性改成相加。 */
+                        var ADDITIVE = { dmgReduce: 1, atkSpd: 1, critDmg: 1 };
+                        if (ADDITIVE[k] && typeof out[k] === 'number') {
+                            out[k] += ext[k];
+                        }
                         return;
                     }
                     out[k] = ext[k];
@@ -34258,9 +34266,20 @@ window.HY = window.HY || {};
                 var netCritChance = Math.min(88, Math.max(1, (effCrit + extraCrit) - (target.critRes || 0)));
                 var isCrit = Math.random() * 100 < netCritChance;
                 if (isCrit) critCount += 1;
-                var effectiveDef = target.def * (1 - effPen);
+                /* ⭐ 護甲穿透（PoE 詞綴 armorPen）：把敵方護甲按百分比削掉。
+                   effPen 是「技能 + 天賦」的穿透，這裡再加上裝備詞綴的。 */
+                var poePen = Math.min(0.85, (num(stats.armorPen, 0) / 100));
+                var effTotalPen = Math.min(0.95, effPen + poePen);
+                var effectiveDef = target.def * (1 - effTotalPen);
                 var rawDmg = effAtk * skillMult - effectiveDef * 0.6;
                 rawDmg = Math.max(5, rawDmg);
+                /* ⭐ 總傷害加成（PoE 的 atkPct / physDmg / elemDmg 等）
+                   這些詞綴加起來是「增加 X% 傷害」，直接乘在最外層。
+                   上限 400%，避免疊到失控。 */
+                var poeDmgPct = Math.min(400,
+                    num(stats.atkPct, 0) + num(stats.physDmg, 0) +
+                    num(stats.elemDmg, 0) + num(stats.dotDmg, 0));
+                if (poeDmgPct > 0) rawDmg *= (1 + poeDmgPct / 100);
                 if (bloodDemonLv > 0) rawDmg *= (1 + 0.05 + bloodDemonLv * 0.015);
                 if (usedBloodSpirit) rawDmg *= (1 + 0.125 + bloodSpiritLv * 0.025);
                 if (martialGodLv > 0 && charObj.currentHp < stats.maxHp * 0.8) {
@@ -34279,9 +34298,14 @@ window.HY = window.HY || {};
                 if (elemSys && target.currentHp > 0) {
                     var eRes = elemSys.calcElementDamage(charObj, target);
                     if (eRes && eRes.total > 0) {
-                        target.currentHp = Math.max(0, target.currentHp - eRes.total);
-                        totalDealt += eRes.total;
-                        elemDmgTotal += eRes.total;
+                        /* ⭐ 元素傷害也要吃「增加傷害 %」詞綴。
+                           原本 atkPct 只乘主傷害，但實測主傷害往往只佔總傷害的
+                           兩成（元素傷害才是主力），導致 +100% 總傷害實際只有 +16%。
+                           這裡把同一個 poeDmgPct 套到元素傷害上，才是玩家預期的效果。 */
+                        var elemFinal = Math.floor(eRes.total * (1 + poeDmgPct / 100));
+                        target.currentHp = Math.max(0, target.currentHp - elemFinal);
+                        totalDealt += elemFinal;
+                        elemDmgTotal += elemFinal;
                         if (eRes.log) elemLogTotal = eRes.log;
                     }
                 }
@@ -34344,11 +34368,33 @@ window.HY = window.HY || {};
                 }
             }
             var totalLeechRatio = (vaalPactLv > 0 ? 0.025 + vaalPactLv * 0.0075 : 0) + (bloodDemonLv > 0 ? 0.04 + bloodDemonLv * 0.01 : 0);
+            /* ⭐ PoE 裝備的偷取 / 擊中回血 / 擊殺回血
+               這些詞綴原本只顯示在裝備說明上，戰鬥完全不讀。
+               lifeLeech 是「% 攻擊傷害偷取生命」，與上面幫會祝福的係數相加。
+               lifeOnHit 是固定值，每次命中回一次。
+               lifeOnKill 在敵人死亡時才結算（見下方 killBonus）。 */
+            var poeLeechPct = num(stats.lifeLeech, 0) / 100;
+            totalLeechRatio += poeLeechPct;
             var leechText = '';
             if (totalLeechRatio > 0 && totalDealt > 0) {
                 var leechHp = Math.max(2, Math.floor(totalDealt * totalLeechRatio));
                 this.applyHeal(charObj, leechHp, 0);
                 leechText = ' [🩸吸血+' + leechHp + ']';
+            }
+            /* 擊中回血（固定值，每命中一次回一次，上限 totalDealt 的 25% 避免過強） */
+            var onHitHp = Math.floor(num(stats.lifeOnHit, 0)) * Math.max(1, targetList.length - missCount);
+            if (onHitHp > 0) {
+                onHitHp = Math.min(onHitHp, Math.max(1, Math.floor(totalDealt * 0.25)));
+                this.applyHeal(charObj, onHitHp, 0);
+                leechText += ' [💚擊中+' + onHitHp + ']';
+            }
+            /* 擊殺回血（本次攻擊有敵人死亡才觸發） */
+            var killedNow = 0;
+            targetList.forEach(function (t) { if (t.currentHp <= 0) killedNow += 1; });
+            var onKillHp = Math.floor(num(stats.lifeOnKill, 0)) * killedNow;
+            if (onKillHp > 0) {
+                this.applyHeal(charObj, onKillHp, 0);
+                leechText += ' [💀擊殺+' + onKillHp + ']';
             }
             if (woodLongLv > 0) {
                 var woodHp = Math.max(2, Math.floor(stats.maxHp * (0.04 + woodLongLv * 0.0075)));
@@ -34483,6 +34529,12 @@ window.HY = window.HY || {};
 (function () {
     var ENEMY_MP_REGEN = 0.04;
     var IDENTITY_DEFENDER = { defMult: 1 };
+    /* 數值安全化（本檔專用，避免依賴外部 num） */
+    function nz(v, d) {
+        var n = Number(v);
+        if (isFinite(n)) return n;
+        return (typeof d === 'number') ? d : 0;
+    }
     class CombatEnemyTurn {
         constructor(combatCore) { this.core = combatCore; }
         getSkillMpCost(enemy, skill) {
@@ -34526,6 +34578,15 @@ window.HY = window.HY || {};
                     manaText = ' [耗內 ' + mpCost + ']';
                 }
             }
+            /* ⭐ 格擋（PoE 詞綴 blockChance）：完全擋住這次攻擊，不扣血。
+               與閃避不同的是——格擋成功仍然算「被打到」，會觸發受擊相關效果。 */
+            var blockChance = Math.min(75, nz(targetStats.blockChance, 0));
+            if (blockChance > 0 && Math.random() * 100 < blockChance) {
+                var blkSkill = chosenSkill ? '絕技《' + chosenSkill.name + '》' : '攻勢';
+                core.log('🛡️ 【' + targetMember.name + '】以兵器格擋了【' + enemy.name + '】的' + blkSkill + manaText + '！', 'combat');
+                this.regenMp(enemy, extraActionAffix);
+                return;
+            }
             var enemyHitChance = Math.min(95, Math.max(20, (enemy.hit || 95) - targetStats.eva));
             if (Math.random() * 100 > enemyHitChance) {
                 var skillLabel = chosenSkill ? '絕技《' + chosenSkill.name + '》' : '攻勢';
@@ -34554,7 +34615,15 @@ window.HY = window.HY || {};
                 enemyDmg *= (1 + (execAf.executeBonus || 0.40));
             }
             if (isEnemyCrit) enemyDmg *= 1.55;
-            if (targetStats.dmgReduce > 0) enemyDmg *= (1 - targetStats.dmgReduce / 100);
+            /* ⭐ 受傷減免（dmgReduce）：PoE 的「#% 額外物理傷害減免」等詞綴。
+               上限 75%，避免疊到免疫。 */
+            var totalReduce = Math.min(75, nz(targetStats.dmgReduce, 0));
+            if (totalReduce > 0) enemyDmg *= (1 - totalReduce / 100);
+            /* ⭐ 近戰反傷（thornsDmg）：被近戰打中時反彈傷害給敵人 */
+            var thorns = Math.floor(nz(targetStats.thornsDmg, 0));
+            if (thorns > 0 && enemy.currentHp > 0) {
+                enemy.currentHp = Math.max(0, enemy.currentHp - thorns);
+            }
             var cwdtTriggered = false;
             if (cwdtLv > 0 && targetMember.currentHp <= targetStats.maxHp * 0.65) {
                 var cwdtRed = Math.min(0.30, 0.075 + cwdtLv * 0.01);
@@ -61957,7 +62026,10 @@ window.HY = window.HY || {};
                 if (m.currentHp <= 0) { m.atb = 0; continue; }
                 var d = self.app.charSys.getDerivedStatsForChar(m);
                 m.atkSpd = d.atkSpd || 100;
-                var gain = m.atkSpd * self.PLAYER_GAIN_COEF;
+                /* ⭐ atbGain：集氣速度百分比加成（PoE 詞綴「集氣速度」）
+                   沒有的話，這條詞綴算了但完全沒作用。 */
+                var atbMul = 1 + (_num(d.atbGain, 0) / 100);
+                var gain = m.atkSpd * self.PLAYER_GAIN_COEF * atbMul;
                 m.atb = Math.min(100, (m.atb || 0) + gain);
                 if (m.atb >= 100 && combat.currentEnemy) {
                     var isLeader = (m.id === activeChar.id);
@@ -66029,6 +66101,14 @@ window.HY = window.HY || {};
 //   ⭐ 建立後補一次 renderAll
 window.HY = window.HY || {};
 (function () {
+    /* ⭐ 檔案層級數值安全化工具。
+       原本 num 只定義在 _flatElementBase 內部，其他方法取用不到。
+       這裡提到 IIFE 頂層，全檔共用。 */
+    function _num(v, d) {
+        var n = (typeof v === 'number' && !isNaN(v)) ? v : null;
+        if (n !== null) return n;
+        return (typeof d === 'number') ? d : 0;
+    }
     function emptyMap() {
         var m = {};
         var D = window.HY.Data;
@@ -66305,6 +66385,53 @@ window.HY = window.HY || {};
                         if (pd) def[k] = Math.floor(def[k] * (1 + pd));
                     });
                 }
+            }
+            // 11.7 ⭐ PoE 抗性 → 八元素防禦（橋接層）
+            //      PoE 只有火／冰／電／混沌四種抗性，本作是金木水火土冰風雷八種。
+            //      裝備上的 fireRes / coldRes / lightningRes / chaosRes / allRes
+            //      若不橋接過來，玩家看到的「火焰抗性 +46%」就只是個裝飾數字，
+            //      實際受到的火焰傷害完全沒減少。
+            //
+            //      映射策略（依元素語意對應，不硬湊）：
+            //        火 fireRes      → fire
+            //        冰 coldRes      → ice、water（水與冰同源）
+            //        雷 lightningRes → lightning、wind（風雷同屬）
+            //        混 chaosRes     → 全部八種各吃一半（混沌本就無所不在）
+            //        全 allRes       → 八種都吃
+            //      抗性本身是百分比，換算成元素「防禦值」需要一個基準量，
+            //      否則 +46% 抗性直接變成 +46 防禦，對 Lv.80 的敵人毫無意義。
+            //      基準取該元素目前防禦值的 2.2 倍（約等於「抗性 × 現有防禦強度」）。
+            var dr = c.__poeDerived || null;
+            if (!dr) {
+                try {
+                    var charSysRef = this.app.charSys;
+                    if (charSysRef && typeof charSysRef.getDerivedStatsForChar === 'function') {
+                        dr = charSysRef.getDerivedStatsForChar(c);
+                    }
+                } catch (e) { dr = null; }
+            }
+            if (dr) {
+                var RES_MAP = {
+                    fire:      ['fireRes'],
+                    ice:       ['coldRes'],
+                    water:     ['coldRes'],
+                    lightning: ['lightningRes'],
+                    wind:      ['lightningRes'],
+                    earth:     ['chaosRes'],
+                    metal:     ['chaosRes'],
+                    wood:      ['chaosRes']
+                };
+                var allResV = _num(dr.allRes, 0);
+                var RES_BASE = 2.2;
+                keys.forEach(function (k) {
+                    var pct = allResV;
+                    var srcs = RES_MAP[k] || [];
+                    for (var ri = 0; ri < srcs.length; ri++) pct += _num(dr[srcs[ri]], 0);
+                    if (pct <= 0) return;
+                    /* 混沌抗性當來源時減半（它是「全元素」的替代品，不該同強度） */
+                    if (srcs.length === 1 && srcs[0] === 'chaosRes') pct *= 0.5;
+                    def[k] += Math.floor((def[k] > 0 ? def[k] : 60) * (pct / 100) * RES_BASE);
+                });
             }
             // 12. 下限保護
             keys.forEach(function (k) {
