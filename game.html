@@ -91690,7 +91690,56 @@ window.HY.Data = window.HY.Data || {};
         'Corrupted Map Modifiers': '腐化地圖詞綴',
         'Wandering Spirits': '遊蕩之靈',
         'Kirac Mission Chance': '基拉克任務機率',
-        'Commissioned Officer': '委任軍官'
+        'Commissioned Officer': '委任軍官',
+
+        /* ── 補漏：常見節點名（詞表替換會翻壞的那些）── */
+        'Lucky Blight Chests': '幸運凋落寶箱',
+        'Blight Encounter Chance': '凋落遭遇機率',
+        'Mighty Hunter': '強力獵人',
+        'Vivid Memories': '鮮明記憶',
+        'Conquer The Stones': '征服基石',
+        'Blight Chest Rewards': '凋落寶箱獎勵',
+        'Blight Chest Chance': '凋落寶箱機率',
+        'Essence Chance': '精隨機率',
+        'Ritual Chance': '儀式機率',
+        'Harvest Chance': '收成機率',
+        'Breach Chance': '裂痕機率',
+        'Legion Chance': '軍團機率',
+        'Delirium Chance': '譫妄機率',
+        'Expedition Chance': '探險機率',
+        'Incursion Chance': '神廟機率',
+        'Betrayal Chance': '背叛機率',
+        'Heist Chance': '掠奪機率',
+        'Abyss Chance': '深淵機率',
+        'Ultimatum Chance': '最後通牒機率',
+        'Bestiary Chance': '野獸機率',
+        'Shrine Chance': '聖壇機率',
+        'Strongbox Chance': '保險箱機率',
+        'Torment Chance': '折磨機率',
+        'Rogue Exile Chance': '流亡盜賊機率',
+        'Mercenary Chance': '傭兵機率',
+        'Sulphite Quantity': '硫磺數量',
+        'Ore Deposits Chance': '礦脈機率',
+        'Wombgift Quantity': '育巢之禮數量',
+        'Maps found': '掉落的地圖',
+        'Map Drop Chance': '地圖掉落機率',
+        'Higher Tier Map Chance': '高階地圖機率',
+        'Map Tier Upgrade': '地圖階級提升',
+        'Shaping the Skies': '塑造天際',
+        'Shaping the World': '塑造世界',
+        'Map Sustenance': '地圖維持',
+        'Atlas Progression': '輿圖進度',
+        'Scarab Drop Chance': '聖甲蟲掉落機率',
+        'Beyond Portal Merging Radius': '超越傳送門融合半徑',
+        'Duplicated Maps': '地圖複製',
+        'Corrupted Map Modifiers': '腐化地圖詞綴',
+        'Explicit Modifier Effect': '明確詞綴效果',
+        'Pack Size': '怪物群規模',
+        'Item Quantity': '物品數量',
+        'Item Rarity': '物品稀有度',
+        'Monster Effectiveness': '怪物強度',
+        'Increased Monster Life': '怪物生命增加',
+        'Reduced Monster Damage': '怪物傷害降低'
     };
 
     /* ══════════════════════════════════════════════════════════
@@ -91741,6 +91790,9 @@ window.HY.Data = window.HY.Data || {};
              .replace(/\bat\b/gi, '')
              .replace(/\bis\b/gi, '為')
              .replace(/\bare\b/gi, '為');
+        /* ⭐ 中文之間不要留空格（原本詞表替換會留下「站入 石陣」「包含 額外 獎勵」） */
+        t = t.replace(/([\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])/g, '$1');
+        /* 英文與中文之間保留一個空格，方便閱讀 */
         return t.replace(/\s+/g, ' ').trim();
     }
 
