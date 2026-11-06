@@ -26860,6 +26860,11 @@ window.HY = window.HY || {};
             this.charSys.clampVitals();
             var featTag = xf.featBoost ? '（' + xf.activeEffectDesc + '）' : '';
             this.logger.add('🔥 【' + this.charSys.state.name + '】消耗 ' + cost.toLocaleString() + ' 武點，內功《' + xf.name + '》突破至第 ' + (curLv + 1) + ' 層！' + featTag, 'gain');
+            /* ⭐ v50：強制面板重建（心法也有同樣的簽章快取問題） */
+            try {
+                var uix = window.HY.game && window.HY.game.uiMartialSect;
+                if (uix && typeof uix.invalidate === 'function') uix.invalidate();
+            } catch (ex) { }
             return true;
         }
         setActiveXinfa(xinfaId) {
@@ -26871,6 +26876,11 @@ window.HY = window.HY || {};
             this.charSys.state.activeXinfa = xinfaId;
             this.charSys.clampVitals();
             this.logger.add('☯️ 【' + this.charSys.state.name + '】已將《' + xf.name + '》設為當前主運心法！', 'system');
+            /* ⭐ v50：主運變動也要強制重建 */
+            try {
+                var uix2 = window.HY.game && window.HY.game.uiMartialSect;
+                if (uix2 && typeof uix2.invalidate === 'function') uix2.invalidate();
+            } catch (ex2) { }
             return true;
         }
         getActiveXinfaInfo() {
@@ -26934,6 +26944,12 @@ window.HY = window.HY || {};
             }
             this.charSys.clampVitals();
             this.logger.add('🍃 【' + this.charSys.state.name + '】輕功《' + qg.name + '》修煉至第 ' + lv + ' 境！', 'gain');
+            /* ⭐ v50：強制面板重建（原本只靠 renderAll 的簽章比對，
+               但簽章漏了 qinggong → 快取命中 → 按鈕不會變成「已學習」） */
+            try {
+                var uim = window.HY.game && window.HY.game.uiMartialSect;
+                if (uim && typeof uim.invalidate === 'function') uim.invalidate();
+            } catch (e) { }
             return true;
         }
         setActiveQinggong(qgId) {
@@ -26945,6 +26961,11 @@ window.HY = window.HY || {};
             this.charSys.state.activeQinggong = qgId;
             this.charSys.clampVitals();
             this.logger.add('🍃 【' + this.charSys.state.name + '】已將《' + qg.name + '》設為當前常駐身法！（每人限常駐 1 門）', 'system');
+            /* ⭐ v50：常駐變動也要強制重建（同樣是簽章快取問題） */
+            try {
+                var uim2 = window.HY.game && window.HY.game.uiMartialSect;
+                if (uim2 && typeof uim2.invalidate === 'function') uim2.invalidate();
+            } catch (e2) { }
             return true;
         }
         getActiveQinggongInfo() {
@@ -63187,11 +63208,23 @@ window.HY = window.HY || {};
                每次重建要 107ms（實測），是切換分頁卡頓的主因。
                但絕大多數 renderAll 呼叫時，這些狀態根本沒變
                （例如戰鬥 tick、其他分頁的操作）。
-               簽章不變就直接跳過重建。 */
+               簽章不變就直接跳過重建。
+
+               ⚠ v50 修正：原本簽章只包含 skills，漏了 qinggong / xinfa
+                  → 學習身法或心法後，簽章不變、快取命中、完全不重繪，
+                    按鈕還停在「修習身法」而不是「已學習 / 精進」
+                    （使用者回報的「學習沒有即時更新」BUG）。
+                 現在把 qinggong / xinfa / activeQinggong / activeXinfa
+                  全部納入，任何修習或常駐變動都會強制重繪。 */
             var _mState = app.charSys.state;
             var _sig = [
                 charLv, charSect, artFilter, xfFilter, qgFilter,
                 JSON.stringify(_mState.skills || {}),
+                JSON.stringify(_mState.qinggong || {}),
+                JSON.stringify(_mState.xinfa || {}),
+                _mState.activeQinggong || '',
+                _mState.activeXinfa || '',
+                JSON.stringify(app.charSys.rootState.sp || 0),
                 app.martialSys.categoryFilter || '',
                 this._forceRedraw ? 'F' + (this._forceRedraw = 0) : ''
             ].join('|');
