@@ -99320,6 +99320,7 @@ window.HY = window.HY || {};
                 '</div>' +
                 '<div class="dv-foot">' +
                 '<span>⛽ 每次移動都會消耗硫磺　·　擊敗怪物或採集「硫磺礦脈」可回復　·　硫磺為 0 時無法移動</span>' +
+                '<span style="margin-left:14px;color:#7dd3fc">⌨️ 方向鍵 / WASD 移動</span>' +
                 '<span style="margin-left:auto">Esc 關閉</span>' +
                 '</div>';
             document.body.appendChild(root);
@@ -99389,7 +99390,26 @@ window.HY = window.HY || {};
                 });
             }
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && self.isOpen) self.close();
+                if (!self.isOpen) return;
+                if (e.key === 'Escape') { self.close(); return; }
+                /* ⭐ v59：方向鍵移動（↑↓←→ 或 WASD）
+                   ⚠️ 必須先排除「正在輸入文字」的情況，
+                      否則在搜尋框打字會變成移動。 */
+                var t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
+                    t.isContentEditable)) return;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+                var DIRS = {
+                    ArrowUp: [0, -1], ArrowDown: [0, 1],
+                    ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+                    w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0],
+                    W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0]
+                };
+                var dv = DIRS[e.key];
+                if (!dv) return;
+                e.preventDefault();       /* 避免方向鍵捲動整個頁面 */
+                self._moveByDir(dv[0], dv[1]);
             });
             this._built = true;
         }
@@ -99674,6 +99694,88 @@ window.HY = window.HY || {};
         // ──────────────────────────────────────────────────────────
         //  動作
         // ──────────────────────────────────────────────────────────
+        /**
+         * ⭐ v59：方向鍵移動
+         * ──────────────────────────────────────────────────────────
+         * 邏輯：
+         *   1. 從目前位置往指定方向找「相鄰且有一條礦道」的節點
+         *   2. 找不到 → 提示（可能是牆壁，或該方向沒有礦道）
+         *   3. 找到 → 直接進入該節點（戰鬥/獎勵/通道都照正常規則處理）
+         *
+         * 為什麼不自動「連續走」到方向盡頭：
+         *   礦道常常一格的距離就是戰鬥節點，自動連走會變成一按鍵連打，
+         *   玩家來不及看清發生什麼事。一次一格最符合 POE 的操作手感
+         *   （POE 也是點一下走一步）。
+         *
+         * @param {number} dc  欄位移（-1 左、+1 右、0 不動）
+         * @param {number} dr  列位移（-1 上、+1 下、0 不動）
+         */
+        _moveByDir(dc, dr) {
+            if (!this.isOpen) return false;
+            var d = this.delve;
+            if (!d) return false;
+
+            /* 戰鬥中不能移動 */
+            if (d.inBattle) {
+                this._toast('戰鬥中無法移動', true);
+                return false;
+            }
+
+            var m = d.ensureState();
+            if (!m) return false;
+            var map = d.map();
+            if (!map) return false;
+
+            var curCol = num(m.curCol, 0);
+            var curRow = num(m.curRow, 0);
+            var nc = curCol + dc;
+            var nr = curRow + dr;
+
+            /* 邊界檢查（col 有左右界，row 不可為負） */
+            if (nr < 0 || Math.abs(nc) > map.half) {
+                this._toast('已經到礦坑邊緣了', true);
+                return false;
+            }
+
+            var here = map.nodes[map.key(curCol, curRow)];
+            var target = map.nodes[map.key(nc, nr)];
+
+            if (!target) {
+                this._toast('這個方向沒有礦道', true);
+                return false;
+            }
+
+            /* 必須真的有一條礦道連過去 */
+            var linked = !!(here && (here.links || []).indexOf(map.key(nc, nr)) >= 0);
+            if (!linked) {
+                this._toast('這個方向沒有礦道', true);
+                return false;
+            }
+
+            /* 目標是否可進入（已清理=折返免費；未清理=正常付費） */
+            if (!target.done) {
+                var can = window.HY.DelveMapGenerator.canEnter(map, target, curCol, curRow);
+                if (!can) {
+                    this._toast('必須從已清理的節點沿礦道前進', true);
+                    return false;
+                }
+                var D2 = window.HY.Data;
+                var stepCost = D2.delveFuelCostAt(Math.max(1, target.row));
+                var isFuel = (target.type === 'azurite' || target.type === 'fuel');
+                var fuelNow = num(m.fuel, 0);
+                /* 硫磺不足（且不是「沒硫磺時的礦脈保底」）→ 先擋下來，
+                   避免呼叫 enterNode 只為了拿一句錯誤訊息 */
+                if (fuelNow < stepCost && !(fuelNow <= 0 && isFuel)) {
+                    this._toast('硫磺不足（需要 ' + stepCost + '，現有 ' + fuelNow + '）', true);
+                    return false;
+                }
+            }
+
+            /* 交給正常流程處理（戰鬥/獎勵/折返都在那裡） */
+            this._enter(target.col + ',' + target.row);
+            return true;
+        }
+
         _enter(nodeId) {
             var r = this.delve.enterNode(nodeId);
             if (!r.ok) { this._toast(r.why, true); return; }
@@ -100424,11 +100526,41 @@ window.HY = window.HY || {};
             p.push('</g>');
         });
 
-        /* ── ③ 當前位置：金色旋轉虛線環 ＋ 向下箭頭 ── */
+        /* ── ③ 當前位置：金色旋轉虛線環 ＋ 可用方向提示 ── */
         var cur = map.nodes[map.key(curCol, curRow)];
         if (cur) {
             var cp = posOf(map, cur);
             var rr = (cur.isMainPath || cur.isPassage) ? DOT_R + 8 : ICON_R + 7;
+
+            /* ⭐ v59：四方向提示箭頭
+               有礦道可走 → 高亮箭頭；沒礦道 → 不畫。
+               讓玩家一眼看出「哪個方向按了有反應」，
+               否則只看到一圈虛線環，按鍵沒反應會以為壞了。 */
+            var DIRS = [
+                { dc: 0, dr: -1, g: 'M -5 3 L 0 -4 L 5 3' },   /* 上 */
+                { dc: 0, dr: 1, g: 'M -5 -3 L 0 4 L 5 -3' },   /* 下 */
+                { dc: -1, dr: 0, g: 'M 3 -5 L -4 0 L 3 5' },   /* 左 */
+                { dc: 1, dr: 0, g: 'M -3 -5 L 4 0 L -3 5' }    /* 右 */
+            ];
+            var dist = rr + 9;
+            DIRS.forEach(function (dd) {
+                var nk = map.key(curCol + dd.dc, curRow + dd.dr);
+                if ((cur.links || []).indexOf(nk) < 0) return;
+                var tn = map.nodes[nk];
+                if (!tn) return;
+                /* 已清理 or 可進入 → 亮；其他 → 暗 */
+                var okDir = tn.done ? true
+                    : (G ? G.canEnter(map, tn, curCol, curRow) : false);
+                var ax = cp.x + dd.dc * dist;
+                var ay = cp.y + dd.dr * dist;
+                p.push('<path d="' + dd.g + '" transform="translate(' + ax + ',' + ay + ')" ' +
+                    'fill="none" stroke="' + (okDir ? '#fbbf24' : '#475569') + '" ' +
+                    'stroke-width="' + (okDir ? '2.6' : '1.6') + '" ' +
+                    'stroke-opacity="' + (okDir ? '0.95' : '0.4') + '" ' +
+                    'stroke-linecap="round" stroke-linejoin="round" ' +
+                    'style="pointer-events:none"/>');
+            });
+
             p.push('<g class="dvm-here">' +
                 '<circle cx="' + cp.x + '" cy="' + cp.y + '" r="' + rr + '" fill="none" ' +
                 'stroke="#fbbf24" stroke-width="2" stroke-dasharray="5 5" opacity="0.95">' +
