@@ -30531,7 +30531,7 @@ window.HY = window.HY || {};
                 nodes: [],
                 currentNodeId: null,
                 log: [],
-                stats: { runs: 0, battles: 0, wins: 0, deaths: 0, fossils: 0, jewels: 0, treasures: 0, deepest: 0 }
+                stats: { runs: 0, battles: 0, wins: 0, deaths: 0, fossils: 0, jewels: 0, treasures: 0, deepest: 1 }
             };
         }
         ensureState() {
@@ -30697,7 +30697,6 @@ window.HY = window.HY || {};
             m.depth = nextDepth;
             if (nextDepth > m.maxDepth) m.maxDepth = nextDepth;
             if (nextDepth > num(m.stats.deepest, 0)) m.stats.deepest = nextDepth;
-
             this.map();
             this._refreshRowView();
             this._log('⛏️ 深入至第 ' + nextDepth + ' 層【' + D.delveBiomeAt(nextDepth).name + '】' +
