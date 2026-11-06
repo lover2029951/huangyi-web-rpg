@@ -65238,6 +65238,8 @@ window.HY = window.HY || {};
   var _page = 'bag';                 // 'bag' | 'stash' | 'essence' | 'mapstash' | 'fossil' | 'rune' | 'jewel' | 'kmcraft'
   var _mapSelUid = null;             // 地圖倉庫頁：目前選取的地圖 uid
   var _mapTierFilter = 'all';        // 地圖倉庫頁：T 階篩選（'all' 或 1~16）
+  var _mapTierCollapsed = {};        // 地圖倉庫頁：T 階開合狀態 { "1": true = 收合 }
+  var _mapHidePooled = true;         // ⭐ 已投入營地倉庫的地圖不在地圖倉庫顯示
   var _mapStashVer = -1;             // 地圖倉庫頁：上次渲染時的資料版本（供外部變動偵測）
   var _selUid = null;
   var _checked = {};
@@ -65704,6 +65706,19 @@ window.HY = window.HY || {};
  color:#94a3b8;font-weight:bold;margin-bottom:5px;}
 .bagov-mgrid .mg-ttl span{color:#64748b;font-weight:normal;}
 .bagov-mgrid .mg-ttl .mg-ok{color:#6ee7b7;margin-left:auto;font-weight:bold;}
+/* ⭐ T 階標題可點擊開合 */
+.bagov-mgrid .mg-ttl.mg-click{cursor:pointer;user-select:none;
+ background:#0d141b;border:1px solid #253244;border-radius:5px;padding:4px 8px;
+ transition:border-color .12s,background .12s;}
+.bagov-mgrid .mg-ttl.mg-click:hover{border-color:#38bdf8;background:#122030;}
+.bagov-mgrid .mg-ttl .mg-car{color:#7dd3fc;font-size:.72rem;width:12px;
+ display:inline-block;text-align:center;flex:0 0 auto;}
+.bagov-mgrid .mg-ttl .mg-cntbar{margin-left:auto;display:flex;align-items:center;gap:6px;}
+/* 已投入營地倉庫的地圖不在地圖倉庫顯示，這裡給個提示條 */
+.bagov-mgrid .mg-poolhint{display:flex;align-items:center;gap:6px;font-size:.7rem;
+ color:#64748b;background:#0d141b;border:1px dashed #253244;border-radius:5px;
+ padding:4px 8px;margin-bottom:9px;}
+.bagov-mgrid .mg-poolhint b{color:#7dd3fc;}
 
 /* 地圖改造通貨（左欄） */
 .mc-target{background:#121822;border:1px solid #2e3b4e;border-radius:6px;padding:8px 10px;
@@ -68399,10 +68414,25 @@ window.HY = window.HY || {};
       h += '<div class="bagov-empty" style="grid-column:1/-1">輿圖系統未載入。</div></div>';
       return h;
     }
-    var allMaps = sys.listMaps(c);
+    /* ⭐ 全部地圖（含已投入營地倉庫的） */
+    var rawMaps = sys.listMaps(c);
     var a = sys.ensureState(c);
     var left = sys.talentLeft(c);
     var picked = Object.keys(a.talents || {}).length;
+
+    /* ⭐ 排除「已投入刷圖營地倉庫」的地圖 —— 它們只存在於金司馬區的刷圖分頁。
+       使用者要求：「放進刷圖營地倉庫的地圖 不再顯示在地圖倉庫頁」
+       判定一律問 kmRunners.isInPool()，不在 UI 自己猜。 */
+    var pooledN = 0;
+    var allMaps = rawMaps.filter(function (m) {
+      var inPool = false;
+      try {
+        var R = window.HY.game && window.HY.game.kmRunners;
+        if (R && _mapHidePooled && typeof R.isInPool === 'function') inPool = R.isInPool(m.uid);
+      } catch (e) { }
+      if (inPool) { pooledN += 1; return false; }
+      return true;
+    });
 
     h += '<div class="sg-label">🌌 地圖倉庫' +
       '<span style="margin-left:auto;color:#64748b">共 ' + allMaps.length + ' 張' +
@@ -68415,6 +68445,12 @@ window.HY = window.HY || {};
       '<span class="fg-num">已點選 <b>' + picked + '</b></span>' +
       '<span class="fg-num">右鍵地圖可快速合成（3→1）</span>' +
       '</div>';
+
+    /* ⭐ 有地圖在營地倉庫時顯示提示（數量已從本頁扣除） */
+    if (pooledN > 0) {
+      h += '<div class="mg-poolhint">🏕️ 另有 <b>' + pooledN + '</b> 張已投入「刷圖營地倉庫」，' +
+        '不在本頁顯示（請到金司馬區 → 🗺️ 刷圖 查看）</div>';
+    }
 
     /* ⭐ T1~T16 篩選列 */
     var cntByTier = {};
@@ -68439,9 +68475,16 @@ window.HY = window.HY || {};
       ? allMaps
       : allMaps.filter(function (m) { return num(m.tier, 1) === Number(_mapTierFilter); });
 
-    if (!allMaps.length) {
+    if (!rawMaps.length) {
       h += '<div class="bagov-empty" style="grid-column:1/-1">倉庫是空的。<br>' +
         '擊敗一般怪物有機率掉落 T1 地圖，<br>或通關地圖後霸主必定掉落高一階。</div></div>';
+      return h;
+    }
+    if (!allMaps.length) {
+      /* ⭐ 全部都在營地倉庫 → 給明確指引，不要顯示「此階級沒有地圖」 */
+      h += '<div class="bagov-empty" style="grid-column:1/-1">' +
+        '所有地圖都已投入「刷圖營地倉庫」。<br>' +
+        '請到金司馬區 → 🗺️ 刷圖 查看，或連點營地倉庫內的圖撤回。</div></div>';
       return h;
     }
     if (!maps.length) {
@@ -68460,23 +68503,32 @@ window.HY = window.HY || {};
 
     tiers.forEach(function (t) {
       var list = byTier[t];
-      /* ⭐ 同一階內先把白圖壓成堆疊，再算「可合成」——
-         白圖堆疊後仍以「張數」計算合成材料 */
+      /* ⭐ 同品質 + 同名稱 + 同詞綴 → 堆疊（規則在 atlasSystem.mapStackKey） */
       var groups = groupMaps(list);
       var canCmb = list.length >= need;
+      /* ⭐ T 階可點擊開合（預設展開） */
+      var open = !_mapTierCollapsed[t];
       h += '<div class="mg-tier">' +
-        '<div class="mg-ttl">T' + t + '<span>(' + list.length + ')</span>' +
+        '<div class="mg-ttl mg-click" data-mgtier="' + t + '">' +
+        '<span class="mg-car">' + (open ? '▾' : '▸') + '</span>' +
+        'T' + t + '<span>(' + list.length + ')</span>' +
+        '<span class="mg-cntbar">' +
+        (groups.length < list.length ? '<span>' + groups.length + ' 組</span>' : '') +
         (canCmb ? '<span class="mg-ok">✔ 可合成 T' + (t + 1) + '</span>' : '') +
-        '</div><div class="fg-cells" style="grid-template-columns:repeat(6,minmax(0,1fr))">';
-      groups.forEach(function (g) {
-        h += mapOrbHtml(g.map, {
-          selected: (g.uids.indexOf(_mapSelUid) !== -1),
-          count: g.count
+        '</span></div>';
+      if (open) {
+        h += '<div class="fg-cells" style="grid-template-columns:repeat(6,minmax(0,1fr))">';
+        groups.forEach(function (g) {
+          h += mapOrbHtml(g.map, {
+            selected: (g.uids.indexOf(_mapSelUid) !== -1),
+            count: g.count
+          });
         });
-      });
-      var rem = groups.length % 6;
-      if (rem !== 0) for (var k = 0; k < 6 - rem; k++) h += '<div class="bagov-morb empty"></div>';
-      h += '</div></div>';
+        var rem = groups.length % 6;
+        if (rem !== 0) for (var k = 0; k < 6 - rem; k++) h += '<div class="bagov-morb empty"></div>';
+        h += '</div>';
+      }
+      h += '</div>';
     });
 
     h += '</div>';
@@ -68533,6 +68585,15 @@ window.HY = window.HY || {};
       el.addEventListener('click', function () {
         var v = el.getAttribute('data-tierf');
         _mapTierFilter = (v === 'all') ? 'all' : Number(v);
+        renderMapStash();
+      });
+    });
+
+    /* ⭐ T 階標題點擊 → 開合該階級的地圖格 */
+    _els.body.querySelectorAll('[data-mgtier]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var t = el.getAttribute('data-mgtier');
+        _mapTierCollapsed[t] = !_mapTierCollapsed[t];
         renderMapStash();
       });
     });
@@ -106718,6 +106779,65 @@ window.HY = window.HY || {};
             return { ok: true, map: found };
         }
 
+        /** ⭐ 一次投入一整疊（同品質／同名稱／同詞綴）
+            @param {Array<string>} uids
+            @returns {ok, count, map} */
+        putStackToPool(uids) {
+            var k = this.ensureState();
+            var atlas = this.atlas();
+            if (!k || !atlas) return { ok: false, why: '狀態未初始化' };
+            if (this.campLevel() <= 0) return { ok: false, why: '尚未建造刷圖營地' };
+            if (!uids || !uids.length) return { ok: false, why: '沒有可投入的地圖' };
+
+            var c = this.app.charSys.state;
+            var byUid = {};
+            atlas.listMaps(c).forEach(function (m) { byUid[m.uid] = m; });
+
+            var n = 0, sample = null;
+            uids.forEach(function (uid) {
+                var m = byUid[uid];
+                if (!m) return;
+                if (k.runnerPool.indexOf(uid) >= 0) return;
+                k.runnerPool.push(uid);
+                n++;
+                if (!sample) sample = m;
+            });
+            if (!n) return { ok: false, why: '這些地圖已在營地倉庫' };
+
+            if (sample) {
+                this.log('📥 已投入 ' + n + ' 張 T' + num(sample.tier, 1) +
+                    '【' + (sample.name || '地圖') + '】到刷圖營地');
+            }
+            this.requestRender();
+            this._kickAll();
+            return { ok: true, count: n, map: sample };
+        }
+
+        /** ⭐ 一次撤回一整疊（跳過正在跑的那張）
+            @returns {ok, count, skipped} */
+        takeStackFromPool(uids) {
+            var k = this.ensureState();
+            if (!k) return { ok: false, why: '狀態未初始化' };
+            if (!uids || !uids.length) return { ok: false, why: '沒有可撤回的地圖' };
+
+            var runningUids = {};
+            k.runners.forEach(function (r) {
+                if (r.mode === 'run' && r.currentUid) runningUids[r.currentUid] = 1;
+            });
+
+            var n = 0, skipped = 0;
+            uids.forEach(function (uid) {
+                if (runningUids[uid]) { skipped++; return; }
+                var i = k.runnerPool.indexOf(uid);
+                if (i < 0) return;
+                k.runnerPool.splice(i, 1);
+                n++;
+            });
+            if (!n) return { ok: false, why: skipped ? '這一疊正在跑圖，無法撤回' : '該地圖不在營地倉庫', skipped: skipped };
+            this.requestRender();
+            return { ok: true, count: n, skipped: skipped };
+        }
+
         /** 從營地倉庫撤回一張（回到一般地圖倉庫，實際上只是從 pool 移除） */
         takeFromPool(uid) {
             var k = this.ensureState();
@@ -107189,6 +107309,7 @@ window.HY = window.HY || {};
             this._tab = 'mine';       /* mine | worker | ship | rune | craft | log */
             this._pickSlot = null;    /* 建造時選中的格子 */
             this._pickBuilding = null;
+            this._runnerCollapsed = {};  /* ⭐ 刷圖分頁：T 階開合狀態 { "1": true = 收合 } */
             this._timer = null;
         }
         // ══════════════════════════════════════════════════════
@@ -107242,7 +107363,21 @@ window.HY = window.HY || {};
                 '.km-poolm.rare .r{color:#fbbf24;}',
                 '.km-poolm .t{position:absolute;top:1px;left:3px;font-size:.54rem;color:#c084fc;font-weight:bold;}',
                 '.km-poolm .m{position:absolute;bottom:1px;right:3px;font-size:.52rem;color:#a78bfa;}',
-                '.km-poolm .b{position:absolute;bottom:1px;left:2px;font-size:.5rem;color:#38bdf8;}',
+                '.km-poolm .b{position:absolute;bottom:0;left:0;right:0;text-align:center;',
+                'font-size:.5rem;color:#38bdf8;background:rgba(8,20,32,.9);border-radius:0 0 4px 4px;}',
+                /* ⭐ 堆疊數量（同品質同名稱同詞綴）→ 左下角，避開右上的稀有度 */
+                '.km-poolm .q{position:absolute;bottom:1px;left:2px;font-size:.6rem;font-weight:bold;',
+                'color:#fbbf24;text-shadow:0 0 4px rgba(0,0,0,.95);}',
+                /* ⭐ T 階標題（可點擊開合） */
+                '.km-pooltier{display:flex;align-items:center;gap:6px;font-size:.72rem;',
+                'background:#0d141b;border:1px solid #253244;border-radius:5px;padding:3px 7px;',
+                'margin:6px 0 5px;}',
+                '.km-pooltier .lbl{color:#c084fc;font-weight:bold;}',
+                '.km-pooltier .cnt{color:#64748b;font-size:.66rem;}',
+                '.km-pooltier .car{color:#7dd3fc;font-size:.7rem;width:11px;display:inline-block;',
+                'text-align:center;}',
+                '.km-pooltier.km-click{cursor:pointer;user-select:none;transition:border-color .12s,background .12s;}',
+                '.km-pooltier.km-click:hover{border-color:#38bdf8;background:#122030;}',
                 '.km-card h4{margin:0 0 7px;font-size:.84rem;color:#f0c674;font-weight:bold;',
                 'display:flex;align-items:center;gap:5px;}',
                 '.km-card h4 .n{margin-left:auto;font-size:.72rem;color:#64748b;font-weight:normal;}',
@@ -107800,39 +107935,88 @@ window.HY = window.HY || {};
                ──────────────────────────────────────────────────
                使用者要求：「下方新增一個獨立倉庫頁」
                             「連點 2 次地圖 會放進刷圖營地」
+                            「同品質同名稱同詞墜地圖 堆疊起來」
                ══════════════════════════════════════════════════ */
             var pool = R.poolMaps();
+
+            /* 堆疊：交給 atlasSys.groupMaps（全 UI 唯一規則來源） */
+            function groupsOf(list) {
+                if (atlas && typeof atlas.groupMaps === 'function') return atlas.groupMaps(list);
+                return (list || []).map(function (m) { return { key: null, map: m, uids: [m.uid], count: 1 }; });
+            }
+            function rarOf(m) {
+                return atlas ? atlas.mapRarity(m) : ((m.mods || []).length ? 'magic' : 'normal');
+            }
+            function rarClsOf(rar) { return rar === 'rare' ? 'rare' : (rar === 'magic' ? 'magic' : 'normal'); }
+            function rarTxtOf(rar) { return { normal: '白', magic: '藍', rare: '黃' }[rar] || ''; }
+            /* ⭐ 卡片的完整提示：名稱 + 品質 + 詞綴清單 + 堆疊數
+               （同名但詞綴不同的堆疊必須能分辨，否則玩家不知道差在哪） */
+            function cardTitle(m, count, action) {
+                var D = window.HY.Data || {};
+                var lines = [String(m.name || '地圖') + '　T' + num(m.tier, 1) +
+                    '　' + rarTxtOf(rarOf(m))];
+                var modNames = (m.mods || []).map(function (mid) {
+                    var mm = D.atlasModById ? D.atlasModById(mid) : null;
+                    return mm ? mm.name : mid;
+                });
+                if (modNames.length) lines.push('詞綴：' + modNames.join('、'));
+                else lines.push('詞綴：無（白圖）');
+                if (count > 1) lines.push('堆疊：' + count + ' 張');
+                lines.push(action);
+                return lines.join('\n');
+            }
+
             h += '<div class="km-card" id="km-runner-pool"><h4>📥 刷圖營地倉庫 ' +
                 '<span class="n">' + pool.length + ' 張</span></h4>' +
                 '<div style="font-size:.72rem;color:#94a3b8;line-height:1.7;margin-bottom:8px">' +
                 '把地圖投入這裡，常駐工人會自動拿去跑。<br>' +
                 '<span style="color:#7dd3fc">在下方「可投入地圖」連點 2 次即可投入</span>；' +
-                '在倉庫內連點 2 次可撤回。' +
+                '在倉庫內連點 2 次可撤回。<br>' +
+                '<span style="color:#64748b">已投入的圖只會顯示在這裡，不會出現在「地圖倉庫」頁。</span>' +
                 '</div>';
 
-            /* 倉庫內容 */
+            /* 倉庫內容（依 T 階分組 + 堆疊） */
             if (pool.length) {
-                h += '<div class="km-pool">';
+                var poolByTier = {};
                 pool.forEach(function (m) {
-                    var tier = num(m.tier, 1);
-                    var mods = (m.mods || []).length;
-                    var rar = (window.HY.game.atlasSys) ? window.HY.game.atlasSys.mapRarity(m) : 'normal';
-                    var rarCls = rar === 'rare' ? 'rare' : (rar === 'magic' ? 'magic' : 'normal');
-                    var rarTxt = { normal: '白', magic: '藍', rare: '黃' }[rar] || '';
-                    var busy = R.runners().some(function (r) {
-                        return r.currentUid === m.uid && r.mode === 'run';
-                    });
-                    h += '<div class="km-poolm ' + rarCls + (busy ? ' busy' : '') + '" ' +
-                        'data-poolmap="' + esc(m.uid) + '" ' +
-                        'title="' + esc(String(m.name || '地圖')) + '（連點 2 次撤回）">' +
-                        '<span class="t">T' + tier + '</span>' +
-                        '<span class="n">' + esc(String(m.name || '地圖').slice(0, 4)) + '</span>' +
-                        '<span class="r">' + rarTxt + '</span>' +
-                        (mods ? '<span class="m">' + mods + '詞</span>' : '') +
-                        (busy ? '<span class="b">跑圖中</span>' : '') +
-                        '</div>';
+                    var t = num(m.tier, 1);
+                    (poolByTier[t] = poolByTier[t] || []).push(m);
                 });
-                h += '</div>';
+                var ptks = Object.keys(poolByTier).map(Number).sort(function (a, b) { return a - b; });
+                ptks.forEach(function (t) {
+                    var listT = poolByTier[t];
+                    var pgs = groupsOf(listT);
+                    h += '<div class="km-pooltier">' +
+                        '<span class="lbl">T' + t + '</span>' +
+                        '<span class="cnt">' + listT.length + ' 張' +
+                        (pgs.length < listT.length ? '（' + pgs.length + ' 組）' : '') + '</span>' +
+                        '</div><div class="km-pool">';
+                    pgs.forEach(function (g) {
+                        var m = g.map;
+                        var rar = rarOf(m);
+                        var mods = (m.mods || []).length;
+                        /* 該堆疊中是否有正在跑的那張 */
+                        var busy = false;
+                        g.uids.forEach(function (u) {
+                            if (busy) return;
+                            busy = R.runners().some(function (r) {
+                                return r.currentUid === u && r.mode === 'run';
+                            });
+                        });
+                        h += '<div class="km-poolm ' + rarClsOf(rar) + (busy ? ' busy' : '') + '" ' +
+                            'data-poolmap="' + esc(m.uid) + '" ' +
+                            'data-stackuids="' + esc(g.uids.join(',')) + '" ' +
+                            'title="' + esc(cardTitle(m, g.count, '連點 2 次撤回')) + '">' +
+                            '<span class="t">T' + num(m.tier, 1) + '</span>' +
+                            '<span class="n">' + esc(String(m.name || '地圖').slice(0, 4)) + '</span>' +
+                            '<span class="r">' + rarTxtOf(rar) + '</span>' +
+                            (mods ? '<span class="m">' + mods + '詞</span>' : '') +
+                            (g.count > 1 ? '<span class="q">×' + g.count + '</span>' : '') +
+                            (busy ? '<span class="b">跑圖中</span>' : '') +
+                            '</div>';
+                    });
+                    h += '</div>';
+                });
                 h += '<button class="km-btn r" data-poolclear="1" style="margin-top:7px;font-size:.7rem">' +
                     '↩️ 全部撤回</button>';
             } else {
@@ -107850,7 +108034,7 @@ window.HY = window.HY || {};
                 h += '<div style="font-size:.76rem;color:#64748b;padding:8px 0">' +
                     '（沒有可投入的地圖。去刷圖或等掉落。）</div>';
             } else {
-                /* 依 T 階分組顯示 */
+                /* 依 T 階分組顯示（標題可點擊開合，卡片堆疊） */
                 var byTier = {};
                 availMaps.forEach(function (m) {
                     var t = num(m.tier, 1);
@@ -107859,29 +108043,33 @@ window.HY = window.HY || {};
                 var tks = Object.keys(byTier).map(Number).sort(function (a, b) { return a - b; });
                 tks.forEach(function (t) {
                     var listT = byTier[t];
-                    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">' +
-                        '<span style="font-size:.74rem;color:#c084fc;min-width:38px">T' + t + '</span>' +
-                        '<span style="font-size:.68rem;color:#64748b;min-width:52px">' + listT.length + ' 張</span>' +
-                        '<button class="km-btn" style="font-size:.66rem;padding:2px 8px" ' +
+                    var gs = groupsOf(listT);
+                    var open = !self._runnerCollapsed[t];
+                    h += '<div class="km-pooltier km-click" data-runnerfold="' + t + '">' +
+                        '<span class="car">' + (open ? '▾' : '▸') + '</span>' +
+                        '<span class="lbl">T' + t + '</span>' +
+                        '<span class="cnt">' + listT.length + ' 張' +
+                        (gs.length < listT.length ? '（' + gs.length + ' 組）' : '') + '</span>' +
+                        '<button class="km-btn" style="font-size:.66rem;padding:2px 8px;margin-left:auto" ' +
                         'data-poolall="' + t + '">全投 T' + t + '</button>' +
-                        '<div class="km-pool" style="flex:1 1 auto">';
-                    listT.slice(0, 30).forEach(function (m) {
+                        '</div>';
+                    if (!open) return;
+                    h += '<div class="km-pool">';
+                    gs.forEach(function (g) {
+                        var m = g.map;
+                        var rar = rarOf(m);
                         var mods = (m.mods || []).length;
-                        var rar = atlas.mapRarity(m);
-                        var rarCls = rar === 'rare' ? 'rare' : (rar === 'magic' ? 'magic' : 'normal');
-                        var rarTxt = { normal: '白', magic: '藍', rare: '黃' }[rar] || '';
-                        h += '<div class="km-poolm ' + rarCls + '" data-putmap="' + esc(m.uid) + '" ' +
-                            'title="' + esc(String(m.name || '地圖')) + '（連點 2 次投入營地）">' +
+                        h += '<div class="km-poolm ' + rarClsOf(rar) + '" data-putmap="' + esc(m.uid) + '" ' +
+                            'data-stackuids="' + esc(g.uids.join(',')) + '" ' +
+                            'title="' + esc(cardTitle(m, g.count, '連點 2 次投入營地')) + '">' +
+                            '<span class="t">T' + num(m.tier, 1) + '</span>' +
                             '<span class="n">' + esc(String(m.name || '地圖').slice(0, 4)) + '</span>' +
-                            '<span class="r">' + rarTxt + '</span>' +
+                            '<span class="r">' + rarTxtOf(rar) + '</span>' +
                             (mods ? '<span class="m">' + mods + '詞</span>' : '') +
+                            (g.count > 1 ? '<span class="q">×' + g.count + '</span>' : '') +
                             '</div>';
                     });
-                    if (listT.length > 30) {
-                        h += '<span style="font-size:.68rem;color:#64748b;align-self:center">…另 ' +
-                            (listT.length - 30) + ' 張</span>';
-                    }
-                    h += '</div></div>';
+                    h += '</div>';
                 });
             }
             h += '</div>';
@@ -108476,15 +108664,20 @@ window.HY = window.HY || {};
                 });
             });
 
-            /* ⭐ 刷圖：連點 2 次地圖 → 投入營地倉庫 */
+            /* ⭐ 刷圖：連點 2 次地圖 → 投入營地倉庫（一次投入整疊） */
             p.querySelectorAll('[data-putmap]').forEach(function (el) {
                 el.addEventListener('dblclick', function () {
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (!R) return;
-                    var uid = el.getAttribute('data-putmap');
-                    var r = R.putToPool(uid);
+                    var raw = el.getAttribute('data-stackuids') || el.getAttribute('data-putmap');
+                    var uids = String(raw).split(',').filter(function (x) { return !!x; });
+                    var r = (uids.length > 1 && typeof R.putStackToPool === 'function')
+                        ? R.putStackToPool(uids)
+                        : R.putToPool(el.getAttribute('data-putmap'));
                     if (r.ok) {
-                        self._toast('📥 已投入：T' + r.map.tier + '【' + r.map.name + '】');
+                        var tip = '📥 已投入 ' + (r.count || 1) + ' 張 T' + (r.map ? r.map.tier : '?') +
+                            (r.map ? '【' + r.map.name + '】' : '');
+                        self._toast(tip);
                         self.renderPanel();
                     } else {
                         self._toast(r.why || '投入失敗', true);
@@ -108492,19 +108685,36 @@ window.HY = window.HY || {};
                 });
             });
 
-            /* ⭐ 刷圖：連點 2 次倉庫內的地圖 → 撤回 */
+            /* ⭐ 刷圖：連點 2 次倉庫內的地圖 → 撤回（一次撤回整疊） */
             p.querySelectorAll('[data-poolmap]').forEach(function (el) {
                 el.addEventListener('dblclick', function () {
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (!R) return;
-                    var uid = el.getAttribute('data-poolmap');
-                    var r = R.takeFromPool(uid);
+                    var raw = el.getAttribute('data-stackuids') || el.getAttribute('data-poolmap');
+                    var uids = String(raw).split(',').filter(function (x) { return !!x; });
+                    var r = (uids.length > 1 && typeof R.takeStackFromPool === 'function')
+                        ? R.takeStackFromPool(uids)
+                        : R.takeFromPool(el.getAttribute('data-poolmap'));
                     if (r.ok) {
-                        self._toast('↩️ 已撤回地圖');
+                        var tip = '↩️ 已撤回 ' + (r.count || 1) + ' 張地圖';
+                        if (r.skipped) tip += '（' + r.skipped + ' 張跑圖中，保留）';
+                        self._toast(tip);
                         self.renderPanel();
                     } else {
                         self._toast(r.why || '撤回失敗', true);
                     }
+                });
+            });
+
+            /* ⭐ 刷圖：「可投入地圖」的 T 階標題點擊 → 開合 */
+            p.querySelectorAll('[data-runnerfold]').forEach(function (el) {
+                el.addEventListener('click', function (ev) {
+                    /* 點到「全投」按鈕時不要觸發開合 */
+                    if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-poolall') !== null) return;
+                    if (ev.target && ev.target.closest && ev.target.closest('[data-poolall]')) return;
+                    var t = el.getAttribute('data-runnerfold');
+                    self._runnerCollapsed[t] = !self._runnerCollapsed[t];
+                    self.renderPanel();
                 });
             });
 
@@ -112796,14 +113006,29 @@ window.HY = window.HY || {};
             var t = Math.max(1, Math.floor(tier || 1));
             var need = num(this.config().COMBINE_NEED, 3);
 
-            var same = a.maps.filter(function (m) { return num(m.tier, 1) === t; });
+            /* ⭐ 已投入「刷圖營地倉庫」的地圖不參與合成：
+               它們已被營地佔用（uid 記在 runnerPool），若在這裡被吃掉，
+               營地倉庫就會出現指向不存在地圖的孤兒 uid。 */
+            var inPool = {};
+            try {
+                var R = window.HY.game && window.HY.game.kmRunners;
+                var ks = window.HY.game && window.HY.game.kmSys && window.HY.game.kmSys.ensureState
+                    ? window.HY.game.kmSys.ensureState() : null;
+                if (R && ks && Array.isArray(ks.runnerPool)) {
+                    ks.runnerPool.forEach(function (u) { inPool[u] = 1; });
+                }
+            } catch (e) { }
+
+            var same = a.maps.filter(function (m) {
+                return num(m.tier, 1) === t && !inPool[m.uid];
+            });
             if (same.length < need) {
                 return { ok: false, why: '需要 ' + need + ' 張 T' + t + ' 地圖（現有 ' + same.length + ' 張）' };
             }
             /* 移除前 need 張 */
             var removed = 0;
             for (var i = a.maps.length - 1; i >= 0 && removed < need; i--) {
-                if (num(a.maps[i].tier, 1) === t) {
+                if (num(a.maps[i].tier, 1) === t && !inPool[a.maps[i].uid]) {
                     a.maps.splice(i, 1);
                     removed++;
                 }
@@ -112952,17 +113177,23 @@ window.HY = window.HY || {};
 
         /**
          * 地圖的堆疊鍵
-         * ⭐ 白圖（無詞綴）只按 tier 併 —— 因為 atlasRollMap() 每張都會重新抽名字，
-         *    若把 name 納入判定，50 張 T1 白圖會散成 4~6 堆，反而更雜亂。
-         *    對玩家而言同階白圖功能完全等價（地形/怪物/掉落都一樣），
-         *    POE 也是如此：同階白圖就是一疊。
-         * ⭐ 藍圖／黃圖有詞綴，各自獨立一格（不參與堆疊）。
-         * @returns {string|null} 可堆疊時回傳鍵，否則 null
+         * ⭐ v4（使用者指定）：同品質 + 同名稱 + 同詞綴 → 堆疊成一格。
+         *    · 判定四要素：T 階、稀有度（白/藍/黃）、地圖名稱、詞綴集合
+         *    · 詞綴先排序再串接 → 詞綴順序不同但內容相同視為同一疊
+         *    · 全部地圖都可堆疊（含藍圖／黃圖），只要四要素一致
+         *
+         *   舊版（v3）白圖只按 T 階併，理由是 atlasRollMap() 每張都重抽名字；
+         *   但使用者要的是「同名同詞綴才併」，因此改為把 name 納入判定。
+         *   同階白圖會依地形名稱分成數疊，這正是需求描述的預期結果。
+         * @returns {string} 堆疊鍵（永不為 null）
          */
         mapStackKey(map) {
-            if (!map) return null;
-            if (this.mapRarity(map) !== 'normal') return null;
-            return 'T' + num(map.tier, 1);
+            if (!map) return '__none__';
+            var t = num(map.tier, 1);
+            var rar = this.mapRarity(map);
+            var name = String(map.name || '');
+            var mods = (map.mods || []).slice().sort().join(',');
+            return 'T' + t + '|' + rar + '|' + name + '|' + mods;
         }
 
         /**
@@ -115854,8 +116085,23 @@ window.HY = window.HY || {};
         _renderRight() {
             var sys = this.sys;
             var c = this.app.charSys.state;
-            var maps = sys.listMaps(c);
+            var rawMaps = sys.listMaps(c);
             var inMap = sys.isInMap();
+
+            /* ⭐ 排除「已投入刷圖營地倉庫」的地圖：
+               那些圖已被常駐工人排定要跑，若還能在這裡手動出圖，
+               玩家一點就會把它從倉庫移走，營地裡的 uid 變成孤兒。
+               統一由 kmRunners.isInPool() 判定。 */
+            var pooledN = 0;
+            var maps = rawMaps.filter(function (m) {
+                var inPool = false;
+                try {
+                    var R = window.HY.game && window.HY.game.kmRunners;
+                    if (R && typeof R.isInPool === 'function') inPool = R.isInPool(m.uid);
+                } catch (e) { }
+                if (inPool) pooledN += 1;
+                return !inPool;
+            });
 
             /* ⭐ 先算出「堆疊後會有幾組」—— 直接問系統，不要在 UI 重算
                （UI 自己算一套是「地圖沒有同步」的元凶） */
@@ -115869,10 +116115,22 @@ window.HY = window.HY || {};
                 '</span></div>';
             h += '<div style="font-size:.72rem;color:#64748b;line-height:1.7;margin-bottom:9px">' +
                 '點擊地圖直接開戰　·　改造請至「裝備行囊 → 地圖倉庫」</div>';
+            if (pooledN > 0) {
+                h += '<div style="font-size:.7rem;color:#64748b;background:#0d141b;' +
+                    'border:1px dashed #253244;border-radius:5px;padding:4px 8px;margin-bottom:9px">' +
+                    '🏕️ 另有 <b style="color:#7dd3fc">' + pooledN + '</b> 張已投入「刷圖營地倉庫」，' +
+                    '不在這裡顯示</div>';
+            }
 
-            if (!maps.length) {
+            if (!rawMaps.length) {
                 h += '<div class="at-empty">倉庫是空的。<br>' +
                     '擊敗一般怪物有機率掉落 T1 地圖。</div>';
+                this.el.right.innerHTML = h;
+                return;
+            }
+            if (!maps.length) {
+                h += '<div class="at-empty">所有地圖都已投入「刷圖營地倉庫」。<br>' +
+                    '請到金司馬區 → 🗺️ 刷圖 查看。</div>';
                 this.el.right.innerHTML = h;
                 return;
             }
