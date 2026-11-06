@@ -106678,11 +106678,14 @@ window.HY = window.HY || {};
         }
 
         requestRender() {
+            /* ⚠️ UI 實例掛在 game.uiKingsmarch（不是 HY.uiKingsmarch），
+               而且面板物件名是 _tab / el.panel。之前全部寫錯 → 不會自動刷新。 */
             try {
-                if (window.HY.uiKingsmarch && typeof window.HY.uiKingsmarch.renderPanel === 'function'
-                    && window.HY.uiKingsmarch.isOpen) {
-                    window.HY.uiKingsmarch.renderPanel();
-                }
+                var ui = (this.app && this.app.uiKingsmarch)
+                    || (window.HY.game && window.HY.game.uiKingsmarch);
+                if (!ui) return;
+                if (typeof ui.isOpen === 'boolean' && !ui.isOpen) return;
+                if (typeof ui.renderPanel === 'function') ui.renderPanel();
             } catch (e) { }
         }
 
@@ -107217,6 +107220,9 @@ window.HY = window.HY || {};
             }
 
             h += '<div class="km-card"><h4>🏕️ 刷圖營地 Lv.' + sum.camp + '</h4>' +
+                /* ⭐ 說明它不在「礦冶」分頁，避免玩家跑到礦冶找營地 */
+                '<div style="font-size:.7rem;color:#64748b;margin-bottom:7px">' +
+                '（營地不佔用礦冶的建築格子，只在這個分頁管理）</div>' +
                 '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.76rem;color:#94a3b8;margin-bottom:8px">' +
                 '<span>可同時出勤 <b style="color:#f0c674">' + sum.running + ' / ' + sum.max + '</b></span>' +
                 '<span>待領取 <b style="color:#6ee7b7">' + sum.done + '</b></span>' +
