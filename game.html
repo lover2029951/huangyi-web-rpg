@@ -25531,9 +25531,13 @@ window.HY = window.HY || {};
                     _ta,
                     _ascSig,
                     Object.keys(c.equipment || {}).length,
-                    Object.keys(c.xinfa || {}).length,
-                    Object.keys(c.qinggong || {}).length,
-                    Object.keys(c.meridians || {}).length
+                    /* ⚠⚠ v51 修正：原本用 Object.keys().length（只算「有幾門」），
+                       導致心法/身法「升 1 級 → 5 級」時簽章完全不變
+                       → 快取命中 → 等級加成永不生效（實測 Lv.1 與 Lv.5 結果相同）。
+                       必須用「id:等級」完整字串，與天賦的修法一致。 */
+                    Object.keys(c.xinfa || {}).sort().map(function (k) { return k + ':' + c.xinfa[k]; }).join(','),
+                    Object.keys(c.qinggong || {}).sort().map(function (k) { return k + ':' + c.qinggong[k]; }).join(','),
+                    Object.keys(c.meridians || {}).sort().map(function (k) { return k + ':' + c.meridians[k]; }).join(',')
                 ].join('|');
                 var _nowT = Date.now();
                 /* ⭐⭐ 快取必須回傳「副本」！
@@ -25930,22 +25934,28 @@ window.HY = window.HY || {};
                 if (typeof ext.critDmg === 'number' && ext.critDmg) {
                     out.critDmg = 165 + ext.critDmg;
                 }
-                /* ⭐⭐ v43：能量護盾（Energy Shield）
+                /* ⭐⭐ v43/v51：能量護盾（Energy Shield）
                    ──────────────────────────────────────────────────
-                   poeStatEngine 會把「maximum energy shield」解析成 esShield，
-                   但原本沒有任何地方把它搬進 derived stats，
-                   導致天賦樹 119 條護盾詞綴全部是裝飾。
-                   這裡搬進 out.energyShield，並在戰鬥層（combatEnemyTurn）
-                   作為「先於氣血吸收傷害」的防護層。
+                   poeStatEngine 會把「maximum energy shield」解析成 esShield。
+                   這裡把它搬進 out.energyShield，供戰鬥層作為「先於氣血吸收傷害」的防護層。
 
-                   ⚠ 兩個來源要一起收：
-                     ext.esShield     ← POE 詞綴引擎（天賦／裝備）
-                     ext.energyShield ← 門派 bonus / 心法 / 身法的泛用通道 */
-                var _esSum = 0;
-                if (typeof ext.esShield === 'number' && ext.esShield > 0) _esSum += ext.esShield;
-                if (typeof ext.energyShield === 'number' && ext.energyShield > 0) _esSum += ext.energyShield;
-                if (_esSum > 0) {
-                    out.energyShield = num2(out.energyShield, 0) + _esSum;
+                   ⚠⚠ v51 修正重複計算 BUG：
+                     原本寫成
+                        if (ext.esShield > 0) _esSum += ext.esShield;
+                        if (ext.energyShield > 0) _esSum += ext.energyShield;
+                        out.energyShield = num2(out.energyShield, 0) + _esSum;
+                     但 addBonus() 在上方已透過 addExt() 把門派/心法/身法的
+                     energyShield 寫進 ext.energyShield，且 out 也會經由
+                     「擴充屬性合併」帶入 ext 的值
+                     → 等於同一個來源被算了兩次（實測慈航靜齋 120 變成 240）。
+
+                   現在改為：只在「POE 詞綴引擎的 esShield」尚未被合併時補上，
+                   並避免與 out 既有的值重複累加。 */
+                var _esFromPoe = (typeof ext.esShield === 'number' && ext.esShield > 0) ? ext.esShield : 0;
+                if (_esFromPoe > 0) {
+                    /* ext.energyShield 是門派/心法/身法通道，已由 addExt 累加，
+                       這裡只補 POE 引擎那一路，且確認沒有被算過 */
+                    out.energyShield = num2(out.energyShield, 0) + _esFromPoe;
                 }
                 /* ⭐⭐ POE 引擎的機制資料（旗標／觸發／轉換／上限）
                    提升到 out 頂層，戰鬥層用 stats.__poeFlags / __poeProcs 直接讀，
@@ -57043,6 +57053,10 @@ window.HY = window.HY || {};
 
             /* ⭐ v45：劍意推進（用不同招式才累積，重複同招斷鏈） */
             var _PRO = window.HY && window.HY.CombatMechanicsPro;
+            /* ⭐ v51 修正：_TURN 原本宣告在 targetList.forEach 的回呼內，
+               但下方（第 590 行之後）在回呼「外面」使用 → ReferenceError。
+               必須提升到與 _PRO 同一層，整個 performCharAttack 才看得到。 */
+            var _TURN = window.HY && window.HY.CombatMechanicsTurn;
             var _featSys2 = window.HY.game && window.HY.game.sectFeatSys;
             function _sectP(ch, sectId) {
                 if (!_featSys2 || typeof _featSys2.getParams !== 'function') return null;
@@ -57286,8 +57300,8 @@ window.HY = window.HY || {};
                 }
 
                 /* ⭐ v47：回合機制 — 望月樓月相、幻月宗虛實、長生觀越戰越強
-                   這些都在 mods/defMods 處理，此處只補「虛相位不能攻擊」的攔截 */
-                var _TURN = window.HY && window.HY.CombatMechanicsTurn;
+                   這些都在 mods/defMods 處理，此處只補「虛相位不能攻擊」的攔截
+                   ⚠ v51：_TURN 已提升到函式頂部宣告，這裡直接使用 */
                 if (_TURN && charObj.sect === 'huanyue' && _TURN.isVoidPhase && _TURN.isVoidPhase(charObj)) {
                     /* 虛相位：不造成傷害，但仍消耗一回合（這是機制的代價） */
                     var _voidTgt = targetList[0];
@@ -57848,7 +57862,22 @@ window.HY = window.HY || {};
             if (elemSys && targetMember.currentHp > 0) {
                 var eRes = elemSys.calcEnemyElementDamage(enemy, targetMember);
                 if (eRes && eRes.total > 0) {
-                    targetMember.currentHp = Math.max(0, targetMember.currentHp - eRes.total);
+                    /* ⭐ v51：元素傷害也要先扣護盾（原本直接扣血，繞過 ES → 護盾形同無效） */
+                    var _elemDmg = eRes.total;
+                    try {
+                        var _ESX2 = window.HY && window.HY.CombatMechanicsExtra;
+                        if (_ESX2 && typeof _ESX2.esAbsorb === 'function' && _elemDmg > 0) {
+                            var _esR2 = _ESX2.esAbsorb(targetMember, _elemDmg);
+                            if (_esR2.absorbed > 0) {
+                                _elemDmg = _esR2.remaining;
+                                esTag += ' [🔵護盾吸收元素 ' + _esR2.absorbed + '（餘 ' + _esR2.current + '/' + _esR2.max + '）]';
+                                if (_esR2.broke) esTag += ' [💔護盾破裂]';
+                            }
+                        }
+                    } catch (eES2) { }
+                    if (_elemDmg > 0) {
+                        targetMember.currentHp = Math.max(0, targetMember.currentHp - _elemDmg);
+                    }
                     if (eRes.log) elemTag = ' [' + eRes.log + ']';
                 }
             }
@@ -59514,6 +59543,17 @@ window.HY = window.HY || {};
                     syncFromTalents(c);
                     /* 清空上一場的穿刺記錄（穿刺不跨戰鬥累積） */
                     if (c.mech && c.mech.impale) c.mech.impale = {};
+                    /* ⭐ v51：能量護盾開場補滿
+                       原本只在 sectFeatureSystem 的 preAttack 才初始化，
+                       導致第一次被攻擊前 esCurrent 是 undefined（護盾形同不存在）。
+                       這裡在戰鬥開始時就把護盾拉滿，符合 POE「開場滿盾」的行為。 */
+                    try {
+                        var _ESB = window.HY && window.HY.CombatMechanicsExtra;
+                        if (_ESB && typeof _ESB.esInit === 'function') {
+                            var _esMax = _ESB.esInit(c);
+                            if (_esMax > 0) c.esCurrent = _esMax;
+                        }
+                    } catch (eESB) { }
                     /* 開場自動啟動戰吼／酊劑／姿態／旗幟／聖化地面／印記 */
                     autoTrigger(c).log.forEach(function (t) { core.log(t, 'combat'); });
                 });
