@@ -750,6 +750,12 @@ details > summary::marker {
 
                     <div class="bar-label"><span>💧 內力 (MP)</span><span id="mp-text">100/100</span></div>
                     <div class="progress-bg"><div id="mp-bar" class="progress-fill mp"></div></div>
+
+                    <!-- ⭐ v53：能量護盾條（只有實際有護盾的角色才顯示） -->
+                    <div id="es-bar-row" style="display:none;">
+                        <div class="bar-label"><span>🔵 護盾 (ES)</span><span id="es-text">0/0</span></div>
+                        <div class="progress-bg"><div id="es-bar" class="progress-fill" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#38bdf8);"></div></div>
+                    </div>
                 </div>
 
                 <h3>🧬 先天四維根骨 (點擊加點)</h3>
@@ -25597,6 +25603,9 @@ window.HY = window.HY || {};
                 var s = c.stats;
                 /* ⭐ 天賦樹的四維加成（含珠寶）*/
                 var _tb = null;
+                /* ⭐ v53：天賦的「increased maximum Energy Shield」比例
+                   宣告在 _tb 區塊外，因為要在後面 ext 合併完才套用。 */
+                var _tmMaxEsBonus = 0;
                 try {
                     var _ts = window.HY.game && window.HY.game.talentSys;
                     if (_ts && typeof _ts.getBonusFor === 'function') _tb = _ts.getBonusFor(c);
@@ -25759,10 +25768,35 @@ window.HY = window.HY || {};
                     eva     = _mul(eva,     _tm.eva);
                     crit    = _mul(crit,    _tm.crit);
                     critRes = _mul(critRes, _tm.critRes);
+                    /* ⭐⭐ v53 修正：能量護盾的乘法通道原本完全沒有處理！
+                       天賦樹 119 條「increased maximum Energy Shield」被
+                       poeStatEngine 正確解析成 _tm.maxEs，但這裡只列了 8 個欄位，
+                       maxEs 根本沒被取用 → 護盾天賦點了毫無效果。
+
+                       由於 energyShield 不是 `out` 的頂層核心欄位
+                       （它走 ext 泛用通道，最後才合併成 out.energyShield），
+                       這裡先算出加成比例存到 _tmMaxEsBonus（已在 _tb 外宣告），
+                       待 ext 合併完成後再套用到 out.energyShield。 */
+                    if (typeof _tm.maxEs === 'number' && _tm.maxEs) {
+                        _tmMaxEsBonus = _tm.maxEs;
+                    }
                     /* ⭐ 獨立欄位通道 */
                     var _te = _tb.extra || {};
                     if (_te.critDmg)   critDmg   += Math.floor(_te.critDmg);
                     if (_te.dmgReduce) dmgReduce += Math.floor(_te.dmgReduce);
+                    /* ⭐⭐ v53：生命／魔力回復
+                       「Regenerate 1.8% of Life per second」這類詞條被
+                       talentStatsParser 解析成 extra.lifeRegenPct，
+                       但原本沒有任何地方把它轉成可用的 lifeRegen 屬性
+                       → 生命回復天賦完全無效（實測 hpGained = 0）。
+
+                       這裡轉成百分比形式存進 ext，供戰鬥層每回合結算。 */
+                    if (typeof _te.lifeRegenPct === 'number' && _te.lifeRegenPct > 0) {
+                        addExt('lifeRegen', _te.lifeRegenPct);
+                    }
+                    if (typeof _te.manaRegenPct === 'number' && _te.manaRegenPct > 0) {
+                        addExt('manaRegen', _te.manaRegenPct);
+                    }
                 }
                 /* ⭐ 金司馬區符文：鑲在裝備上的符文加成。
                    格式與天賦相同（attr/flat/more/extra），走同一套結算。
@@ -25871,8 +25905,17 @@ window.HY = window.HY || {};
                         /* 機制資料（旗標／觸發／轉換／上限）掛到 ext 供後續使用 */
                         ext.__poe = _poeOut.__poe || null;
                         /* ⭐ 引擎算出的 critDmg 是「加成值」，本作的 critDmg 是「倍率基準 165」
-                           → 要在基本值上累加，不能直接覆蓋 */
-                        critDmg = 165 + Math.floor(num2((_poeOut.__poe && _poeOut.__poe.inc.critMulti), 0));
+                           → 要在基本值上累加，不能直接覆蓋
+
+                           ⚠⚠ v53 修正：原本寫成
+                              critDmg = 165 + inc.critMulti
+                           這會「覆蓋」掉天賦樹 _te.critDmg 早已加上的部分
+                           （第 491 行），導致暴傷天賦完全失效。
+                           改為 += 保留既有累加值。 */
+                        var _poeCritMulti = Math.floor(num2((_poeOut.__poe && _poeOut.__poe.inc.critMulti), 0));
+                        if (_poeCritMulti > 0) {
+                            critDmg += _poeCritMulti;
+                        }
                         /* atkSpd 同理（本作基準 100） */
                         var _poeAtkSpd = num2((_poeOut.__poe && _poeOut.__poe.flat.attackSpeed), 0);
                         var _poeAtkSpdInc = num2((_poeOut.__poe && _poeOut.__poe.inc.attackSpeed), 0);
@@ -25956,6 +25999,17 @@ window.HY = window.HY || {};
                     /* ext.energyShield 是門派/心法/身法通道，已由 addExt 累加，
                        這裡只補 POE 引擎那一路，且確認沒有被算過 */
                     out.energyShield = num2(out.energyShield, 0) + _esFromPoe;
+                }
+                /* ⭐⭐ v53：套用天賦樹的「increased maximum Energy Shield」
+                   ──────────────────────────────────────────────────
+                   天賦 more 通道算出的 maxEs 比例（例如 0.11 = +11%）
+                   要乘在「最終護盾值」上。必須放在所有護盾來源合併之後，
+                   這樣門派基礎 + 心法 + 身法 + 詞綴都會一起被放大。 */
+                if (typeof _tmMaxEsBonus === 'number' && _tmMaxEsBonus > 0) {
+                    var _esBase = num2(out.energyShield, 0);
+                    if (_esBase > 0) {
+                        out.energyShield = Math.floor(_esBase * (1 + _tmMaxEsBonus));
+                    }
                 }
                 /* ⭐⭐ POE 引擎的機制資料（旗標／觸發／轉換／上限）
                    提升到 out 頂層，戰鬥層用 stats.__poeFlags / __poeProcs 直接讀，
@@ -31188,6 +31242,14 @@ window.HY = window.HY || {};
             if (/^all elemental resistances$/.test(t2)) return { kind: 'flat', key: 'elemResAll', val: pv };
             if (/^maximum life$/.test(t2)) return { kind: 'more', key: 'maxHp', val: pv / 100 };
             if (/^maximum mana$/.test(t2)) return { kind: 'more', key: 'maxMp', val: pv / 100 };
+            /* ⭐⭐ v53：「+N% to Critical Strike Multiplier」原本漏了！
+               這個格式（帶 + 號、沒有 increased）在 POE 天賦樹很常見
+               （例如「+12% to Critical Strike Multiplier」），
+               但這裡只列了抗性與生命/魔力 → 暴傷天賦點了完全沒效果
+               （實測 critDmg 永遠停在 165）。 */
+            if (/^critical strike multiplier$/.test(t2)) return { kind: 'extra', key: 'critDmg', val: pv };
+            /* 帶武器限定後綴（with Swords / with Daggers …）也一併收 */
+            if (/^critical strike multiplier with /.test(t2)) return { kind: 'extra', key: 'critDmg', val: pv };
             return null;
         }
 
@@ -59692,6 +59754,50 @@ window.HY = window.HY || {};
                     } catch (eES) { }
                 }
 
+                /* ⭐⭐ v53：被動回復魔力／氣血（天賦「Mana Regeneration」「Life Regeneration」）
+                   ──────────────────────────────────────────────────
+                   原本玩家完全沒有被動回復機制 —— 只能靠招式的 mpRestore。
+                   導致天賦樹 27 條「Mana Regeneration」、數十條「Life Regeneration」
+                   全部是裝飾（poeStatEngine 算出了 manaRegen / lifeRegen，
+                   但沒有任何地方讀取）。
+
+                   這裡每個我方回合結算一次：
+                     魔力回復 = maxMp × (manaRegen% / 100) × 0.15 + manaRegenFlat × 0.3
+                     生命回復 = maxHp × (lifeRegen% / 100) × 0.08
+                   （係數調低，避免變成永動機；POE 的每秒回復在本作轉為「每回合」） */
+                try {
+                    var _psR = g.partySys;
+                    var _memR = _psR && _psR.getPartyMembers ? _psR.getPartyMembers() : [];
+                    _memR.push(g.charSys.state);
+                    var _seen = {};
+                    _memR.forEach(function (mm) {
+                        if (!mm || mm.currentHp <= 0) return;
+                        var _mid = mm.id || mm.name;
+                        if (_seen[_mid]) return;
+                        _seen[_mid] = 1;
+                        var _d = g.charSys.getDerivedStatsForChar(mm);
+                        if (!_d) return;
+                        var _mpGain = 0, _hpGain = 0;
+                        /* 魔力回復 */
+                        var _mpRate = num(_d.manaRegen, 0);
+                        var _mpFlat = num(_d.manaRegenFlat, 0);
+                        if (_mpRate > 0 || _mpFlat > 0) {
+                            _mpGain = Math.floor(num(_d.maxMp, 0) * (_mpRate / 100) * 0.15 + _mpFlat * 0.3);
+                        }
+                        /* 生命回復 */
+                        var _hpRate = num(_d.lifeRegen, 0);
+                        if (_hpRate > 0) {
+                            _hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
+                        }
+                        if (_mpGain > 0 && mm.currentMp < num(_d.maxMp, 0)) {
+                            mm.currentMp = Math.min(num(_d.maxMp, 0), mm.currentMp + _mpGain);
+                        }
+                        if (_hpGain > 0 && mm.currentHp < num(_d.maxHp, 0)) {
+                            mm.currentHp = Math.min(num(_d.maxHp, 0), mm.currentHp + _hpGain);
+                        }
+                    });
+                } catch (eRegen) { }
+
                 /* ⭐ v44：⑪ 疾影推進（迅捷／相位／迷蹤倒數、回朔返還） */
                 try {
                     if (_ALX2 && typeof _ALX2.shadowTick === 'function') {
@@ -62321,6 +62427,26 @@ window.HY = window.HY || {};
             if (hpBar) hpBar.style.width = Math.min(100, (st.currentHp / d.maxHp) * 100) + '%';
             const mpBar = document.getElementById('mp-bar');
             if (mpBar) mpBar.style.width = Math.min(100, (st.currentMp / d.maxMp) * 100) + '%';
+
+            /* ⭐ v53：能量護盾條（有護盾上限才顯示，否則隱藏讓面板保持精簡） */
+            const esRow = document.getElementById('es-bar-row');
+            const esBar = document.getElementById('es-bar');
+            const esMax = Math.round(Number(d.energyShield) || 0);
+            if (esRow) {
+                if (esMax > 0) {
+                    esRow.style.display = '';
+                    const esCur = (typeof st.esCurrent === 'number')
+                        ? Math.max(0, Math.min(esMax, Math.round(st.esCurrent)))
+                        : esMax;
+                    const esText = document.getElementById('es-text');
+                    if (esText) esText.textContent = esCur + ' / ' + esMax;
+                    if (esBar) {
+                        esBar.style.width = Math.min(100, (esCur / esMax) * 100) + '%';
+                    }
+                } else {
+                    esRow.style.display = 'none';
+                }
+            }
             setText('stat-con', st.stats.con);
             setText('stat-str', st.stats.str);
             setText('stat-agi', st.stats.agi);
