@@ -10583,14 +10583,56 @@ window.HY = window.HY || {};
             return map.nodes[map.key(col, row)] || null;
         },
         /** 節點是否可進入（需與已清理節點相鄰，或為起點） */
-        canEnter: function (map, node) {
+        /**
+         * ⭐ 節點是否可進入
+         * ──────────────────────────────────────────────────────────
+         * ⚠️ v58 修正：原本只檢查「與任一已清理節點相鄰」，
+         *    沒有考慮玩家實際站在哪裡 → 玩家可以站在 A 點，
+         *    卻點到遠處 B 點旁邊的節點，等於「越級前進」跳過未清理的礦道。
+         *
+         * 正確規則（與 POE 一致）：只能移動到「與目前所在節點相鄰」的節點，
+         * 且該節點必須是已清理節點的延伸（起點除外）。
+         *
+         * @param map    地圖
+         * @param node   目標節點
+         * @param curCol 玩家目前所在欄（省略時退回舊行為，僅用於相容）
+         * @param curRow 玩家目前所在列
+         */
+        canEnter: function (map, node, curCol, curRow) {
             if (!map || !node || node.done) return false;
+
+            var hasPos = (typeof curCol === 'number' && typeof curRow === 'number' &&
+                isFinite(curCol) && isFinite(curRow));
+
+            /* 起點永遠可進入 */
             if (node.row === 0 && node.col === 0) return true;
+
+            /* ── 有玩家座標 → 嚴格「站在旁邊才能走」 ── */
+            if (hasPos) {
+                var d = Math.abs(node.col - curCol) + Math.abs(node.row - curRow);
+                if (d !== 1) return false;
+
+                var cur = map.nodes[map.key(curCol, curRow)];
+                if (!cur) return false;
+                /* 必須真的有一條礦道連過去 */
+                var linked = (cur.links || []).indexOf(map.key(node.col, node.row)) >= 0;
+                if (!linked) return false;
+
+                /* 目前位置必須已清理（否則站在未清理節點上不能亂走） */
+                return !!cur.done;
+            }
+
+            /* ── 沒有玩家座標（舊呼叫）→ 退回寬鬆判定 ── */
             for (var i = 0; i < node.links.length; i++) {
                 var nb = map.nodes[node.links[i]];
                 if (nb && nb.done) return true;
             }
             return false;
+        },
+
+        /** ⭐ 節點是否「已走過」→ 可自由折返（不再收費、不重複結算） */
+        isRevisit: function (map, node) {
+            return !!(map && node && node.done);
         },
         summary: function (map) {
             var s = { total: 0, cleared: 0, visible: 0, hidden: 0, boss: 0, reward: 0, combat: 0 };
@@ -30796,9 +30838,44 @@ window.HY = window.HY || {};
                 }
             }
             if (!node) return { ok: false, why: '找不到該節點' };
-            if (node.done) return { ok: false, why: '此節點已清理' };
 
-            if (!window.HY.DelveMapGenerator.canEnter(map, node)) {
+            /* ⭐⭐ v58：已經清理過的節點可以「走回去」（不重複結算、不再收費）
+               ──────────────────────────────────────────────────
+               Bug：原本這裡直接 return「此節點已清理」，
+               結果玩家一走進分支就永遠回不到主幹 ——
+               分支盡頭沒有路，只能卡死在那裡（這正是「礦坑規則有問題」）。
+               POE 的做法是：已走過的通道可以自由通行，只是不會再給獎勵。
+
+               規則：
+                 · 節點已 done 且與目前位置相鄰 → 允許移動，cost = 0
+                 · 不重新結算獎勵、不重新開戰、不改 done 狀態
+                 · 這樣玩家能自由折返探索分支 */
+            if (node.done) {
+                var cur = map.nodes[map.key(m.curCol, m.curRow)];
+                var adjacent = false;
+                if (cur) {
+                    adjacent = (cur.links || []).some(function (lk) {
+                        return lk === map.key(node.col, node.row);
+                    });
+                }
+                /* 起點永遠可以回去 */
+                if (!adjacent && node.col === 0 && node.row === 0) adjacent = true;
+
+                if (!adjacent) {
+                    return { ok: false, why: '只能移動到相鄰的礦道節點' };
+                }
+                m.curCol = node.col;
+                m.curRow = node.row;
+                m.currentNodeId = node.id;
+                this._refreshRowView();
+                if (this.app.renderAll) this.app.renderAll();
+                return {
+                    ok: true, battle: false, node: node,
+                    rewards: null, cost: 0, revisit: true
+                };
+            }
+
+            if (!window.HY.DelveMapGenerator.canEnter(map, node, m.curCol, m.curRow)) {
                 return { ok: false, why: '必須從已清理的節點沿礦道前進' };
             }
 
@@ -113022,6 +113099,20 @@ window.HY = window.HY || {};
                 'justify-content:center;font-size:.68rem;font-weight:bold;color:#fff;',
                 'text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.85);letter-spacing:.2px;',
                 'pointer-events:none;white-space:nowrap;line-height:1;}',
+                /* ⭐ v58：能量護盾條（輿圖戰鬥面板）
+                   原本這裡只有 HP / MP → 有護盾的角色（慈航護體、天賦護盾）
+                   左側面板看得到、戰鬥面板卻沒有，玩家會以為護盾失效。 */
+                '.at-es{position:relative;height:18px;border-radius:3px;overflow:hidden;',
+                'border:1px solid #0369a1;background:#090d14;flex-shrink:0;box-sizing:border-box;',
+                'box-shadow:0 0 5px rgba(56,189,248,.35);}',
+                '.at-es .fi{position:absolute;top:0;left:0;bottom:0;transition:width .18s linear;',
+                'background:linear-gradient(90deg,#075985,#0ea5e9 45%,#7dd3fc);}',
+                '.at-es.enemy .fi{background:linear-gradient(90deg,#164e63,#0891b2 45%,#67e8f9);}',
+                '.at-es .tx{position:absolute;inset:0;display:flex;align-items:center;',
+                'justify-content:center;font-size:.68rem;font-weight:bold;color:#fff;',
+                'text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.85);letter-spacing:.2px;',
+                'pointer-events:none;white-space:nowrap;line-height:1;}',
+                '.at-es.enemy .tx{font-size:.66rem;}',
                 /* 資訊行（仿 fixed-affix-line） */
                 '.at-line{height:16px;line-height:16px;background:rgba(0,0,0,.45);padding:0 5px;',
                 'font-size:.69rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
@@ -113498,6 +113589,7 @@ window.HY = window.HY || {};
             for (var i = 0; i < 5; i++) {
                 var m = members[i] || null;
                 if (!m) {
+                    /* ⭐ 空白戰位不顯示護盾條（沒有角色就沒有護盾） */
                     h += '<div class="at-slot-unit empty">' +
                         '<div class="at-uh"><span class="nm">（空缺待命）</span>' +
                         '<span class="pc">⚡ 0%</span></div>' +
@@ -113521,6 +113613,21 @@ window.HY = window.HY || {};
                 var isDead = hp <= 0;
                 var isMain = (leader && m.id === leader.id);
                 var atbPct = inBattle ? Math.min(100, Math.floor(num(m.atb, 0))) : 0;
+
+                /* ⭐ v58：能量護盾條
+                   上限取 derived stats 的 energyShield（慈航護體／天賦護盾共用同一個值），
+                   目前值優先讀 esCurrent（戰鬥中會被扣），沒有就視為滿檔。 */
+                var esMax = Math.round(num(d.energyShield, 0));
+                var esHtml = '';
+                if (esMax > 0) {
+                    var esCur = (typeof m.esCurrent === 'number' && isFinite(m.esCurrent))
+                        ? Math.max(0, Math.min(m.esCurrent, esMax))
+                        : esMax;
+                    var esPct = (esCur / esMax) * 100;
+                    esHtml = '<div class="at-es">' +
+                        '<div class="fi" style="width:' + esPct.toFixed(1) + '%"></div>' +
+                        '<div class="tx">🔵 ' + fmt(esCur) + ' / ' + fmt(esMax) + '</div></div>';
+                }
 
                 var sectName = (m.sect && Data.SECTS && Data.SECTS[m.sect]) ? Data.SECTS[m.sect].name : '無門無派';
                 var xfName = (m.activeXinfa && Data.XINFA && Data.XINFA[m.activeXinfa]) ? Data.XINFA[m.activeXinfa].name : '未運功';
@@ -113572,6 +113679,8 @@ window.HY = window.HY || {};
                     '<div class="tx">❤ ' + fmt(hp) + ' / ' + fmt(maxHp) + '</div></div>' +
                     '<div class="at-mp"><div class="fi" style="width:' + mpPct.toFixed(1) + '%"></div>' +
                     '<div class="tx">💧 ' + fmt(mp) + ' / ' + fmt(maxMp) + '</div></div>' +
+                    /* ⭐ v58：能量護盾（有上限才顯示；慈航護體與天賦護盾都在這裡） */
+                    esHtml +
                     /* ⭐ 原本的「門派 ｜ 心法」改為「下一招預告」 */
                     this._nextActHtml(m, false) +
                     /* 門派特色表 */
@@ -113860,6 +113969,19 @@ window.HY = window.HY || {};
                 var eCurMp = (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp;
                 var mpPct = Math.min(100, (eCurMp / Math.max(1, eMaxMp)) * 100);
 
+                /* ⭐ v58：敵方能量護盾（怪物有護盾詞綴才有） */
+                var eEsMax = Math.round(num(e.energyShield, num(e.maxEs, 0)));
+                var eEsHtml = '';
+                if (eEsMax > 0) {
+                    var eEsCur = (typeof e.currentEs === 'number') ? e.currentEs
+                        : (typeof e.esCurrent === 'number') ? e.esCurrent : eEsMax;
+                    eEsCur = Math.max(0, Math.min(eEsCur, eEsMax));
+                    var eEsPct = (eEsCur / eEsMax) * 100;
+                    eEsHtml = '<div class="at-es enemy">' +
+                        '<div class="fi" style="width:' + eEsPct.toFixed(1) + '%"></div>' +
+                        '<div class="tx">🔵 ' + fmt(eEsCur) + ' / ' + fmt(eEsMax) + '</div></div>';
+                }
+
                 /* 稀有度標籤 */
                 var rarName = e.rarityName || '普通';
                 var rarColor = e.rarityColor || '#e2e8f0';
@@ -113925,6 +114047,8 @@ window.HY = window.HY || {};
                     '<div class="tx">❤ ' + fmt(hp) + ' / ' + fmt(maxHp) + '</div></div>' +
                     '<div class="at-mp enemy"><div class="fi" style="width:' + mpPct.toFixed(1) + '%"></div>' +
                     '<div class="tx">💧 ' + fmt(eCurMp) + ' / ' + fmt(eMaxMp) + '</div></div>' +
+                    /* ⭐ v58：敵方護盾條 */
+                    eEsHtml +
                     /* ⭐ 敵方「下一招預告」 */
                     this._nextActHtml(e, true) +
                     /* 絕技 */
