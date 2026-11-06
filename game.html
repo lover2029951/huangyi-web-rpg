@@ -56170,9 +56170,21 @@ window.HY = window.HY || {};
   function startHeartbeat() {
     if (_hbTimer) return;
     _hbTimer = setInterval(writeHeartbeat, num(CFG.HEARTBEAT_MS, 15000));
+    /* ⭐ v54：分頁隱藏時寫心跳，切回前景時只恢復心跳、不結算。
+       ──────────────────────────────────────────────────────
+       原本切回前景會呼叫 runOnce(false)，若離開超過 MIN_AWAY_MS(60s)
+       就補算好友行動。但背景分頁的計時器會被瀏覽器降頻，
+       使用者只是切去別的程式就會觸發 → 與「離線」定義衝突。
+
+       好友離線行動只認「網頁關閉」：pagehide / beforeunload 寫心跳，
+       下次開啟網頁時（boot → runOnce）才結算。 */
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'hidden') writeHeartbeat();
-      else setTimeout(function () { runOnce(false); }, 300);
+      if (document.visibilityState === 'hidden') {
+        writeHeartbeat();
+      } else {
+        /* 回到前景：直接把心跳刷新到現在，避免把背景時間算成離線 */
+        writeHeartbeat();
+      }
     });
     window.addEventListener('pagehide', writeHeartbeat);
     window.addEventListener('beforeunload', writeHeartbeat);
@@ -92636,16 +92648,30 @@ window.HY = window.HY || {};
                 saveSys.__offIdleWrapped = true;
             }
             // 背景檢查（不再直接寫原始 rootState）
+            /* ⭐⭐ v54 修正：移除「背景分頁掛機補償」
+               ──────────────────────────────────────────────────────
+               原本每 10 秒檢查一次，若距上次 tick 超過 60 秒就當成
+               「離線」並補發收益。
+
+               問題：這跟真正的「離線掛機」定義衝突。
+                 使用者只要開著網頁、切到別的程式（或只是讓分頁進背景），
+                 Chrome/Edge 會把背景分頁的 setInterval 降頻到每分鐘 1 次，
+                 於是 deltaSec 輕鬆超過 60 秒 → 被誤判成離線 → 補發收益。
+
+                 結果：切個視窗回來就多一堆獎勵，看起來像「掛自動戰鬥」，
+                 完全不是「沒開網頁」的離線補償。
+
+               正確的離線定義：
+                 · 網頁關閉（pagehide / beforeunload 寫入時間戳）
+                 · 重新開網頁時（checkOfflineGainsOnLoad）比對時間差
+               這才是「角色沒上線」的情況。
+
+               所以這裡只做「維持時間戳新鮮」，不再補發任何收益。
+               ────────────────────────────────────────────────────── */
             if (!this._timer) {
                 this._timer = setInterval(function () {
                     var now = Date.now();
-                    var deltaSec = Math.floor((now - self.lastTickTime) / 1000);
                     self.lastTickTime = now;
-                    if (deltaSec >= self.MIN_TRIGGER_SECONDS) {
-                        log('背景掛機補償：' + deltaSec + ' 秒');
-                        try { self.processOfflineRewards(deltaSec, '背景分頁掛機補償'); }
-                        catch (e) { console.error('[OfflineIdle] 背景補償失敗：', e); }
-                    }
                     try {
                         writeTs(now);
                         if (self.app && self.app.charSys && self.app.charSys.rootState) {
@@ -92678,21 +92704,30 @@ window.HY = window.HY || {};
                     } catch (e) { /* 忽略 */ }
                 });
             }
-            // 切回前景：立刻檢查一次
+            // 切回前景：只更新時間戳，不補發收益
+            /* ⭐⭐ v54 修正：移除「切回前景掛機補償」
+               原本切回視窗時，若距上次 tick 超過 60 秒就補發收益。
+               但分頁在背景時計時器會被降頻，切回來很容易就超過 60 秒
+               → 使用者只是切個 Excel 回來就多一堆獎勵，這不是離線掛機。
+
+               離線掛機只認「網頁關閉」：由 pagehide / beforeunload 寫入
+               時間戳，下次開啟網頁時（checkOfflineGainsOnLoad）才結算。 */
             if (!window.__offIdleVisibleBound) {
                 window.__offIdleVisibleBound = true;
                 document.addEventListener('visibilitychange', function () {
                     if (document.visibilityState !== 'visible') return;
                     var sys = window.HY.offlineSys;
                     if (!sys) return;
+                    /* 只把時間戳刷新到現在，避免下次載入時把「背景時間」誤算成離線 */
                     var now = Date.now();
-                    var d = Math.floor((now - sys.lastTickTime) / 1000);
                     sys.lastTickTime = now;
-                    if (d >= sys.MIN_TRIGGER_SECONDS) {
-                        log('切回前景補償：' + d + ' 秒');
-                        try { sys.processOfflineRewards(d, '切回前景掛機補償'); }
-                        catch (e) { /* 忽略 */ }
-                    }
+                    try {
+                        writeTs(now);
+                        var g2 = window.HY.game;
+                        if (g2 && g2.charSys && g2.charSys.rootState) {
+                            g2.charSys.rootState.lastOnlineTimestamp = now;
+                        }
+                    } catch (e) { /* 忽略 */ }
                 });
             }
         }
