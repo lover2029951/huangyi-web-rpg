@@ -104224,8 +104224,9 @@ window.HY.Data = window.HY.Data || {};
       id: 'runnerCamp', name: '刷圖營地', icon: '🏕️', cat: 'craft',
       cost: { gold: 2500, silver: 20 }, maxLv: 5,
       costScale: 2.2,
-      workers: 0,                     /* 不需派駐工人，改由 runner 直接抽調 */
-      desc: '派工人自動跑地圖。每級可多 1 位同時出勤（Lv.1 可 2 位）。'
+      /* ⭐ v2：工人必須常駐（佔用 buildingSlot），與礦場互斥 */
+      workers: 1,                      /* 每級容納 1 名常駐工人 */
+      desc: '派工人常駐於此，指定地圖 T 階後自動連刷。常駐工人無法同時在礦場工作。'
     }
   };
   /* ══════════════════════════════════════════════════════════
@@ -104505,7 +104506,9 @@ window.HY.Data = window.HY.Data || {};
       'ironMine', 'copperMine', 'silverMine', 'crystalMine', 'goldMine',
       'furnace', 'bloomery',
       'dock', 'lighthouse',
-      'runeForge', 'recombiner', 'disenchanter'
+      'runeForge', 'recombiner', 'disenchanter',
+      /* ⭐ 刷圖營地（工人常駐 + 自動連刷） */
+      'runnerCamp'
     ],
     ORES: ORES,
     ORE_ORDER: ['iron', 'copper', 'silver', 'crystal', 'goldOre'],
@@ -106231,30 +106234,37 @@ window.HY = window.HY || {};
 })();
 
 /* ===== 193 / 206 : kingsmarchMapRunners.js ===== */
-// js/kingsmarchMapRunners.js  (v1)
-// ⭐ 金司馬區：雇工人自動刷圖（1:1 復刻 POE 3.24 Settlers 的 Map Runners）
+// js/kingsmarchMapRunners.js  (v2)
+// ⭐ 金司馬區：工人常駐刷圖營地，自動連刷地圖
 //
 // ══════════════════════════════════════════════════════════════
-// 【POE 原版機制】
-//   Settlers of Kalguur 賽季中，玩家可以在 Kingsmarch 雇「Map Runners」，
-//   派他們消耗地圖倉庫的地圖自動跑圖，一段時間後帶回戰利品。
-//   工人階級越高 → 跑得越快、掉落越好。
+// 【v2 重大改版（依使用者回饋）】
 //
-// 【本作實作】
-//   · 每個 runner 佔用一名工人（從金司馬區的工人池抽調）
-//   · 每個 runner 需要時間跑圖（依 T 階與工人效率計算）
-//   · 完成後產出：通貨、地圖、稀有裝備、化石（機率）
-//   · 與金司馬區的 tick 同步結算（每 60 秒一次）
-//   · 離線同樣結算（受 OFFLINE_CAP_TICKS 限制）
+// 使用者指出兩個問題：
+//   ① 「有工作的人還能邊工作邊刷圖」→ 明顯不合理
+//   ② 應該改成「工人常駐 → 點選地圖 → 自動連刷」
 //
-// 【為什麼不直接呼叫 atlasSystem.openMap()】
-//   那會進入真實戰鬥流程（要建怪物隊列、跑 ATB、處理復活…），
-//   而 runner 是「背景自動執行」，不該干擾玩家目前的操作。
-//   所以改用「模擬結算」：直接依 T 階與工人效率算出掉落，
-//   獎勵量對齊實際打一張地圖的期望值，避免變成無風險暴富。
+// v1 的做法（已廢棄）：
+//   · 任何工人（即使已被派到礦場）都能被臨時叫去跑單張圖
+//   · 跑完就得手動再點一次，不會連刷
+//   · 結果：一個工人同時在礦場與跑圖，邏輯矛盾
+//
+// v2 的做法：
+//   · 工人必須「常駐」在刷圖營地（佔用 buildingSlot，與礦場互斥）
+//   · 常駐後指派一個「目標 T 階」，之後自動連刷：
+//       跑完一張 → 從地圖倉庫取下一張同階 → 繼續跑
+//       地圖沒有了就停下（reserve 狀態），等補貨
+//   · 戰利品自動累積，玩家手動領取（避免背包爆掉）
+//   · 被派去礦場時，會自動從營地「卸載」，停止連刷
+//
+// 【營地作為一座建築】
+//   刷圖營地現在是真正的建築（BUILDINGS.runnerCamp），
+//   佔用一個礦冶格子，可容納 workerSlots 名工人常駐。
+//   這樣與礦場、熔爐的工人配置完全一致，不會出現「一人兩用」。
 //
 // 【存檔位置】
-//   rootState.kingsmarch.runners = [...]   （與金司馬區同一個存檔節點）
+//   rootState.kingsmarch.runners   = [{ uid, workerId, mode, targetTier, ... }]
+//   （workerId 對應 worker.uid；worker.buildingSlot = 營地格子 = 常駐證明）
 // ══════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
 (function () {
@@ -106271,33 +106281,51 @@ window.HY = window.HY || {};
        設定
        ══════════════════════════════════════════════════════════ */
     var CFG = {
-        /* 跑一張圖的基準秒數（T1）。實際 = BASE / 工人效率 * (1 + (tier-1)*0.12) */
+        /* 跑一張圖的基準秒數（T1）。實際 = BASE / 工人效率 × (1 + (T-1)×0.12) */
         BASE_SECONDS: 90,
-        /* 同時最多幾名 runner（受建築「刷圖營地」等級提升） */
-        MAX_RUNNERS_BASE: 0,
         /* 每位工人每小時的期望收益倍率（對照手動打圖，略低以示公平） */
         YIELD_RATE: 0.85,
         /* 每張圖的基礎掉落（依 T 階放大） */
         LOOT: {
-            goldPerTier: 180,          /* 銀兩 */
-            mapDropChance: 0.28,       /* 掉地圖機率 */
-            equipChance: 0.22,         /* 掉裝備機率 */
-            currencyChance: 0.35,      /* 掉通貨機率 */
-            fossilChance: 0.06         /* 掉化石機率 */
-        }
+            goldPerTier: 180,
+            mapDropChance: 0.28,
+            equipChance: 0.22,
+            currencyChance: 0.35,
+            fossilChance: 0.06
+        },
+        /* 戰利品堆疊上限（避免無限累積造成存檔膨脹） */
+        MAX_PENDING: 40
     };
 
-    /* runner 狀態 */
+    /* ══════════════════════════════════════════════════════════
+       runner 結構（每位常駐工人一個）
+       ──────────────────────────────────────────────────────────
+       {
+         uid         : 'runner_...'
+         workerId    : 對應 worker.uid（常駐證明）
+         mode        : 'idle' | 'run' | 'reserve'
+                       idle    = 常駐但沒指派地圖
+                       run     = 正在跑
+                       reserve = 沒圖了，等玩家補貨或改設定
+         targetTier  : 指定的 T 階（0 = 不指定）
+         startedAt   : 本輪開始時間
+         finishAt    : 本輪結束時間
+         currentMap  : 本輪的圖名
+         pending     : [{ tier, name, loot }]  待領取戰利品
+         totalRuns   : 累計跑了幾張
+       }
+       ══════════════════════════════════════════════════════════ */
     function makeRunner(workerId, uid) {
         return {
             uid: uid,
-            workerId: workerId,      /* 對應金司馬區 worker.uid */
-            status: 'idle',          /* idle | running | done */
+            workerId: workerId,
+            mode: 'idle',
+            targetTier: 0,
             startedAt: 0,
             finishAt: 0,
-            mapTier: 0,
-            mapName: '',
-            loot: null               /* 完成後的戰利品（等玩家領取） */
+            currentMap: '',
+            pending: [],
+            totalRuns: 0
         };
     }
 
@@ -106309,8 +106337,7 @@ window.HY = window.HY || {};
         }
 
         km() {
-            /* ⚠️ main.js 把金司馬區系統存成 app.kmSys（不是 app.kingsmarch），
-               之前誤用後者 → ensureState 永遠回 null，整個功能失效。 */
+            /* main.js 存成 app.kmSys（不是 app.kingsmarch） */
             return this.app.kmSys || (window.HY.game && window.HY.game.kmSys) || null;
         }
         kmState() {
@@ -106322,102 +106349,263 @@ window.HY = window.HY || {};
         }
         log(msg, type) {
             try {
-                if (this.logger && typeof this.logger.add === 'function') {
-                    this.logger.add(msg, type || 'system');
-                }
+                if (this.logger && typeof this.logger.add === 'function') this.logger.add(msg, type || 'system');
                 var km = this.km();
                 if (km && typeof km._pushLog === 'function') km._pushLog(msg);
             } catch (e) { }
         }
 
-        /* ── 狀態 ── */
-        getDefaultState() {
-            return { runners: [], camp: null, stats: { runs: 0, gold: 0, maps: 0, equips: 0, currency: 0, fossils: 0 } };
-        }
+        /* ══════════════════════════════════════════════════════
+           狀態
+           ══════════════════════════════════════════════════════ */
         ensureState() {
             var k = this.kmState();
             if (!k) return null;
-            /* ⚠️ 金司馬區的狀態物件叫 rootState.kingsmarch，
-               刷圖資料直接掛在上面（與 ore / bars / ships 同層）。 */
             if (!Array.isArray(k.runners)) k.runners = [];
-            if (k.runnerCamp === undefined) k.runnerCamp = null;
             if (!k.runnerStats || typeof k.runnerStats !== 'object') {
                 k.runnerStats = { runs: 0, gold: 0, maps: 0, equips: 0, currency: 0, fossils: 0 };
             }
-            var d = this.getDefaultState().stats, key;
-            for (key in d) {
-                if (k.runnerStats[key] === undefined) k.runnerStats[key] = 0;
-            }
+            var d = { runs: 0, gold: 0, maps: 0, equips: 0, currency: 0, fossils: 0 }, key;
+            for (key in d) { if (k.runnerStats[key] === undefined) k.runnerStats[key] = 0; }
+
+            /* ⭐ v1 → v2 遷移：
+               v1 把營地存成 k.runnerCamp = { lv }（不是建築）。
+               v2 改成真正的建築（佔用礦冶格子）。
+               若偵測到舊欄位且尚未有 runnerCamp 建築 → 自動轉換，
+               避免玩家花錢建的營地憑空消失。 */
+            this._migrateOldCamp(k);
+
+            /* ⭐ 清理孤兒 runner：工人已被解雇或已調離營地 → 移除 runner */
+            var campSlot = this.campSlot();
+            var workerMap = {};
+            (k.workers || []).forEach(function (w) { workerMap[w.uid] = w; });
+            k.runners = k.runners.filter(function (r) {
+                var w = workerMap[r.workerId];
+                if (!w) return false;                            /* 工人不存在 */
+                if (campSlot !== null && num(w.buildingSlot, -999) !== campSlot) {
+                    /* 工人被調離營地 → 停止常駐（保留 pending 戰利品，移到全域暫存） */
+                    if (r.pending && r.pending.length) {
+                        k.runnerPending = (k.runnerPending || []).concat(r.pending);
+                    }
+                    return false;
+                }
+                return true;
+            });
+            /* 舊資料相容：pending 欄位 */
+            if (!Array.isArray(k.runnerPending)) k.runnerPending = [];
             return k;
+        }
+
+        /** ⭐ 舊版 runnerCamp 欄位 → 轉成真正的建築（只做一次） */
+        _migrateOldCamp(k) {
+            var legacy = k.runnerCamp;
+            if (!legacy || typeof legacy !== 'object') return;
+            /* 已經有建築就不需要遷移，直接清掉舊欄位 */
+            var hasBuilding = (k.buildings || []).some(function (b) { return b.id === 'runnerCamp'; });
+            if (hasBuilding) {
+                k.runnerCamp = null;
+                return;
+            }
+            var lv = Math.max(1, Math.min(5, num(legacy.lv, 1)));
+            /* 找一個空格（16 格，與礦冶面板一致） */
+            var used = {};
+            (k.buildings || []).forEach(function (b) { used[num(b.slot, -1)] = 1; });
+            var slot = -1;
+            for (var i = 0; i < 16; i++) {
+                if (!used[i]) { slot = i; break; }
+            }
+            if (slot < 0) {
+                /* 客滿 → 保留舊欄位，等玩家清出格子（不會損失等級） */
+                return;
+            }
+            k.buildings.push({ slot: slot, id: 'runnerCamp', lv: lv });
+            k.runnerCamp = null;      /* 遷移完成，清掉舊欄位 */
+            this.log('🏕️ 已將舊版刷圖營地（Lv.' + lv + '）遷移為正式建築（第 ' + (slot + 1) + ' 格）。');
         }
         runners() {
             var k = this.ensureState();
             return k ? k.runners : [];
         }
-
-        /** 營地等級（0 = 未建造） */
-        campLevel() {
+        /** 全域待領取（工人離職後留下的） */
+        orphanPending() {
             var k = this.ensureState();
-            if (!k || !k.runnerCamp) return 0;
-            return num(k.runnerCamp.lv, 0);
+            return k ? (k.runnerPending || []) : [];
         }
-        /** 可同時容納的 runner 數量 */
-        maxRunners() {
+
+        /* ══════════════════════════════════════════════════════
+           營地（作為一座建築）
+           ══════════════════════════════════════════════════════ */
+        /** 營地所在的 buildingSlot（沒有則 null） */
+        campSlot() {
+            var k = this.kmState();
+            if (!k) return null;
+            for (var i = 0; i < (k.buildings || []).length; i++) {
+                var b = k.buildings[i];
+                if (b && b.id === 'runnerCamp') {
+                    /* ⚠️ 不能用 num(b.slot, null)：num() 對 null 會回 0，
+                       讓 slot 0 與「沒有營地」混淆。這裡明確判斷型別。 */
+                    var s = b.slot;
+                    return (typeof s === 'number' && isFinite(s)) ? s : 0;
+                }
+            }
+            return null;
+        }
+        campLevel() {
+            var k = this.kmState();
+            if (!k) return 0;
+            for (var i = 0; i < (k.buildings || []).length; i++) {
+                if (k.buildings[i].id === 'runnerCamp') return num(k.buildings[i].lv, 0);
+            }
+            return 0;
+        }
+        /** 營地可容納幾位常駐工人 */
+        campWorkerSlots() {
             var lv = this.campLevel();
             if (lv <= 0) return 0;
-            return 1 + lv;      /* Lv.1 → 2 位，Lv.5 → 6 位 */
+            var km = this.km();
+            var B = km && km.def && km.def.BUILDINGS ? km.def.BUILDINGS.runnerCamp : null;
+            var per = B ? num(B.workers, 1) : 1;
+            return per * lv;
         }
-        /** 建造 / 升級刷圖營地 */
-        campCost(targetLv) {
-            var lv = Math.max(1, num(targetLv, 1));
-            /* 指數成長：Lv1 = 2500 金，每級 ×2.2 */
-            var gold = Math.round(2500 * Math.pow(2.2, lv - 1));
-            var silver = Math.round(20 * Math.pow(1.8, lv - 1));
-            return { gold: gold, silver: silver };
-        }
-        buildCamp() {
-            var k = this.ensureState();
-            if (!k) return { ok: false, why: '狀態未初始化' };
-            var cur = this.campLevel();
-            if (cur >= 5) return { ok: false, why: '刷圖營地已達最高等級（Lv.5）' };
-            var next = cur + 1;
-            var cost = this.campCost(next);
-            var root = this.app.charSys.rootState;
-            var gold = num(root.gold, 0);
-            if (gold < cost.gold) {
-                return { ok: false, why: '金幣不足（需要 ' + cost.gold.toLocaleString() + '，現有 ' + gold.toLocaleString() + '）' };
-            }
-            root.gold -= cost.gold;
-            k.runnerCamp = { lv: next };
-            k.stats.built = num(k.stats.built, 0) + 1;
-            this.log('🏕️ 刷圖營地已' + (cur === 0 ? '建造' : '升級') + '至 Lv.' + next +
-                '（金幣 -' + cost.gold.toLocaleString() + '）');
-            return { ok: true, lv: next };
+        /** 已常駐幾人 */
+        stationedCount() {
+            return this.runners().length;
         }
 
-        /** 可派遣的工人（未被礦場占用、且未在跑圖） */
-        availableWorkers() {
+        /* ══════════════════════════════════════════════════════
+           工人管理
+           ══════════════════════════════════════════════════════ */
+        /** 可派駐到營地的工人（目前在礦場等建築、且未常駐營地） */
+        assignableWorkers() {
             var k = this.ensureState();
             var km = this.km();
             if (!k || !km) return [];
-            var busied = {};
-            k.runners.forEach(function (r) {
-                if (r.status === 'running') busied[r.workerId] = 1;
-            });
+            var campSlot = this.campSlot();
             var TIERS = (km.def && km.def.TIERS) || {};
-            return k.workers.filter(function (w) {
-                return w && !busied[w.uid];
-            }).map(function (w) {
+            var used = {};
+            k.runners.forEach(function (r) { used[r.workerId] = 1; });
+
+            return (k.workers || []).map(function (w) {
                 var T = TIERS[w.tier] || { name: '工人', eff: 1, icon: '🧑' };
+                var bSlot = (w.buildingSlot === null || w.buildingSlot === undefined) ? null : num(w.buildingSlot);
+                var atCamp = (campSlot !== null && bSlot === campSlot);
+                var bName = '待命';
+                if (bSlot !== null) {
+                    var b = km.getBuildingAt(bSlot);
+                    bName = b ? ((km.def.BUILDINGS[b.id] || {}).name || b.id) + ' Lv.' + b.lv : '未知';
+                }
                 return {
                     uid: w.uid,
                     name: w.name,
                     tier: w.tier,
                     tierName: T.name,
                     icon: T.icon || '🧑',
-                    eff: num(T.eff, 1)
+                    eff: num(T.eff, 1),
+                    atCamp: atCamp,
+                    stationed: !!used[w.uid],
+                    buildingSlot: bSlot,
+                    buildingName: bName
                 };
             });
+        }
+
+        /** 把工人派駐到營地（會自動從原本的建築卸下 → 不會一人兩用） */
+        station(workerId) {
+            var k = this.ensureState();
+            var km = this.km();
+            if (!k || !km) return { ok: false, why: '狀態未初始化' };
+            var campSlot = this.campSlot();
+            if (campSlot === null) return { ok: false, why: '尚未建造「刷圖營地」' };
+            if (this.stationedCount() >= this.campWorkerSlots()) {
+                return { ok: false, why: '營地已滿（' + this.stationedCount() + '/' + this.campWorkerSlots() + '）' };
+            }
+
+            var w = null;
+            (k.workers || []).forEach(function (x) { if (x.uid === workerId) w = x; });
+            if (!w) return { ok: false, why: '找不到該工人' };
+            if (k.runners.some(function (r) { return r.workerId === workerId; })) {
+                return { ok: false, why: '該工人已在營地' };
+            }
+
+            /* ⭐ 關鍵：佔用 buildingSlot（與礦場/熔爐互斥） */
+            w.buildingSlot = campSlot;
+
+            this._seq += 1;
+            var runner = makeRunner(workerId, 'runner_' + Date.now() + '_' + this._seq);
+            k.runners.push(runner);
+
+            this.log('🏕️【' + (w.name || '工人') + '】常駐刷圖營地。');
+            this.requestRender();
+            return { ok: true, runner: runner };
+        }
+
+        /** 解除常駐（工人回到待命，pending 戰利品轉全域） */
+        unstation(runnerUid) {
+            var k = this.ensureState();
+            var km = this.km();
+            if (!k || !km) return { ok: false, why: '狀態未初始化' };
+            var r = null;
+            for (var i = 0; i < k.runners.length; i++) {
+                if (k.runners[i].uid === runnerUid) { r = k.runners[i]; break; }
+            }
+            if (!r) return { ok: false, why: '找不到該常駐紀錄' };
+
+            /* 保留戰利品，不讓玩家損失 */
+            if (r.pending && r.pending.length) {
+                k.runnerPending = (k.runnerPending || []).concat(r.pending);
+            }
+            /* 工人解除佔位 */
+            (k.workers || []).forEach(function (w) {
+                if (w.uid === r.workerId) w.buildingSlot = null;
+            });
+            k.runners = k.runners.filter(function (x) { return x.uid !== runnerUid; });
+
+            this.log('👋 工人已離開刷圖營地（未領取的戰利品已保留）。');
+            this.requestRender();
+            return { ok: true };
+        }
+
+        /* ══════════════════════════════════════════════════════
+           指派目標 T 階 → 自動連刷
+           ══════════════════════════════════════════════════════ */
+        /** 設定該常駐工人的目標 T 階（0 = 停止連刷） */
+        setTarget(runnerUid, tier) {
+            var k = this.ensureState();
+            if (!k) return { ok: false, why: '狀態未初始化' };
+            var r = null;
+            for (var i = 0; i < k.runners.length; i++) {
+                if (k.runners[i].uid === runnerUid) { r = k.runners[i]; break; }
+            }
+            if (!r) return { ok: false, why: '找不到該常駐紀錄' };
+
+            var t = Math.max(0, num(tier, 0));
+            r.targetTier = t;
+            if (t === 0) {
+                r.mode = 'idle';
+                r.startedAt = 0;
+                r.finishAt = 0;
+                r.currentMap = '';
+                this.requestRender();
+                return { ok: true, stopped: true };
+            }
+            /* 立刻開始下一輪 */
+            r.mode = 'idle';
+            var started = this._startNext(r, k);
+            this.requestRender();
+            return { ok: true, started: started };
+        }
+
+        /** 工人效率 */
+        _effOf(workerId, k) {
+            var km = this.km();
+            var eff = 1;
+            (k.workers || []).forEach(function (w) {
+                if (w.uid === workerId) {
+                    var T = (km.def && km.def.TIERS) ? km.def.TIERS[w.tier] : null;
+                    eff = T ? num(T.eff, 1) : 1;
+                }
+            });
+            return eff;
         }
 
         /** 跑一張圖的秒數 */
@@ -106428,118 +106616,91 @@ window.HY = window.HY || {};
             return Math.round(clamp(sec, 20, 1800));
         }
 
-        /** 派工人去跑圖（消耗地圖倉庫的一張地圖） */
-        dispatch(workerId, tier) {
-            var k = this.ensureState();
-            if (!k) return { ok: false, why: '狀態未初始化' };
-            if (this.campLevel() <= 0) return { ok: false, why: '尚未建造「刷圖營地」' };
-            if (k.runners.filter(function (r) { return r.status === 'running'; }).length >= this.maxRunners()) {
-                return { ok: false, why: '刷圖營地已滿（' + this.maxRunners() + ' 位同時出勤）' };
+        /** ⭐ 內部：從地圖倉庫取下一張 → 開始跑
+            @returns {boolean} 是否成功開始 */
+        _startNext(r, k) {
+            var atlas = this.atlas();
+            if (!atlas) return false;
+            var c = this.app.charSys.state;
+            var tier = num(r.targetTier, 0);
+            if (tier <= 0) return false;
+
+            /* 戰利品太多先暫停，避免無限累積 */
+            if ((r.pending || []).length >= CFG.MAX_PENDING) {
+                r.mode = 'reserve';
+                return false;
             }
 
-            var atlas = this.atlas();
-            if (!atlas) return { ok: false, why: '輿圖系統未載入' };
-            var c = this.app.charSys.state;
-
-            /* 挑一張該 T 階的地圖 */
-            var maps = atlas.listMaps(c).filter(function (m) { return num(m.tier, 1) === num(tier, 1); });
-            if (!maps.length) return { ok: false, why: 'T' + tier + ' 地圖不足' };
+            /* 找該 T 階的圖 */
+            var maps = atlas.listMaps(c).filter(function (m) { return num(m.tier, 1) === tier; });
+            if (!maps.length) {
+                r.mode = 'reserve';       /* 沒圖了 → 等待補貨 */
+                r.currentMap = '';
+                return false;
+            }
             var target = maps[0];
 
-            /* 找出工人 */
-            var w = null;
-            k.workers.forEach(function (x) { if (x.uid === workerId) w = x; });
-            if (!w) return { ok: false, why: '找不到該工人' };
-            var already = k.runners.filter(function (r) { return r.workerId === workerId && r.status === 'running'; });
-            if (already.length) return { ok: false, why: '該工人已在跑圖中' };
+            /* 消耗 */
+            if (typeof atlas.removeMap === 'function') {
+                atlas.removeMap(target.uid, c);
+            }
 
-            /* 消耗地圖 */
-            atlas.removeMap(target.uid, c);
-
-            var km = this.km();
-            var T = (km.def && km.def.TIERS) ? km.def.TIERS[w.tier] : null;
-            var eff = T ? num(T.eff, 1) : 1;
+            var eff = this._effOf(r.workerId, k);
             var sec = this.runSeconds(tier, eff);
             var now = Date.now();
 
-            this._seq += 1;
-            var runner = makeRunner(workerId, 'runner_' + now + '_' + this._seq);
-            runner.status = 'running';
-            runner.startedAt = now;
-            runner.finishAt = now + sec * 1000;
-            runner.mapTier = num(tier, 1);
-            runner.mapName = target.name;
-            k.runners.push(runner);
-
-            this.log('🗺️ 【' + (w.name || '工人') + '】出發跑圖：T' + tier + '【' + target.name +
-                '】（預計 ' + Math.ceil(sec / 60) + ' 分鐘）');
-            return { ok: true, runner: runner, seconds: sec };
+            r.mode = 'run';
+            r.startedAt = now;
+            r.finishAt = now + sec * 1000;
+            r.currentMap = target.name || ('T' + tier);
+            return true;
         }
 
-        /** 計算戰利品（在 finish 時呼叫一次） */
-        _rollLoot(tier, eff, runnerName) {
-            var t = Math.max(1, num(tier, 1));
-            var e = Math.max(0.5, num(eff, 1));
-            var L = CFG.LOOT;
-            var tierMul = 1 + (t - 1) * 0.55;
-            var loot = { gold: 0, maps: [], equips: 0, currency: [], fossils: [] };
-
-            /* 銀兩 */
-            loot.gold = Math.round(L.goldPerTier * tierMul * e * CFG.YIELD_RATE * (0.85 + Math.random() * 0.3));
-
-            /* 地圖：掉高一階或同階 */
-            if (Math.random() < L.mapDropChance * e) {
-                loot.maps.push(Math.random() < 0.25 ? t + 1 : t);
-            }
-
-            /* 裝備 */
-            if (Math.random() < L.equipChance * e) {
-                loot.equips = 1 + (Math.random() < 0.18 ? 1 : 0);
-            }
-
-            /* 通貨 */
-            if (Math.random() < L.currencyChance * e) {
-                var pool = ['orb_transmute', 'orb_alt', 'orb_aug', 'orb_alch'];
-                var id = pool[Math.floor(Math.random() * pool.length)];
-                loot.currency.push({ id: id, n: rnd(1, 3) });
-            }
-
-            /* 化石（深層才有價值，這裡低機率） */
-            if (Math.random() < L.fossilChance * e) {
-                loot.fossils.push(1);
-            }
-            return loot;
-        }
-
-        /** 結算完成的 runner（由金司馬區 tick 或 UI 輪詢呼叫）
-            @returns {number} 本次結算的數量 */
+        /* ══════════════════════════════════════════════════════
+           結算（自動連刷的核心）
+           ══════════════════════════════════════════════════════ */
+        /**
+         * 由金司馬區 tick 或 UI 輪詢呼叫。
+         * 會把所有「時間到」的 runner 結算，並立刻開始下一張（連刷）。
+         * @returns {number} 本次完成的地圖數
+         */
         settle(now) {
             var k = this.ensureState();
             if (!k) return 0;
             var t = num(now, Date.now());
             var self = this;
             var done = 0;
-            var atlas = this.atlas();
-            var c = this.app.charSys.state;
 
             k.runners.forEach(function (r) {
-                if (r.status !== 'running') return;
-                if (t < num(r.finishAt, 0)) return;
+                var guard = 0;
+                /* ⭐ 用 while：確保一次 tick（60 秒）內能補跑多輪，
+                   例如高階工人 24 秒一張，60 秒可跑 2 張。
+                   guard 防止異常時無限迴圈。 */
+                while (guard++ < 8) {
+                    if (r.mode !== 'run') break;
+                    if (t < num(r.finishAt, 0)) break;
 
-                /* 找出該工人的階級效率 */
-                var eff = 1;
-                k.workers.forEach(function (w) {
-                    if (w.uid === r.workerId) {
-                        var km = self.km();
-                        var T = (km.def && km.def.TIERS) ? km.def.TIERS[w.tier] : null;
-                        eff = T ? num(T.eff, 1) : 1;
-                    }
-                });
+                    /* 這一張完成了 */
+                    var eff = self._effOf(r.workerId, k);
+                    var loot = self._rollLoot(num(r.targetTier, 1), eff);
+                    r.pending = r.pending || [];
+                    r.pending.push({
+                        tier: num(r.targetTier, 1),
+                        name: r.currentMap,
+                        loot: loot
+                    });
+                    r.totalRuns = num(r.totalRuns, 0) + 1;
+                    k.runnerStats.runs = num(k.runnerStats.runs, 0) + 1;
+                    done++;
 
-                r.status = 'done';
-                r.loot = self._rollLoot(r.mapTier, eff, '');
-                done++;
-                self.log('✅ 【' + (r.mapName || '地圖') + '】跑圖完成，戰利品待領取。');
+                    /* 立刻開始下一張（連刷） */
+                    r.mode = 'idle';
+                    var ok = self._startNext(r, k);
+                    if (!ok) break;
+
+                    /* 若下一張又瞬間完成（極短時間），continue 迴圈 */
+                    if (t < num(r.finishAt, 0)) break;
+                }
             });
 
             if (done > 0) {
@@ -106548,48 +106709,59 @@ window.HY = window.HY || {};
             return done;
         }
 
-        /** 領取戰利品 */
-        claim(runnerUid) {
-            var k = this.ensureState();
-            if (!k) return { ok: false, why: '狀態未初始化' };
-            var r = null;
-            for (var i = 0; i < k.runners.length; i++) {
-                if (k.runners[i].uid === runnerUid) { r = k.runners[i]; break; }
-            }
-            if (!r) return { ok: false, why: '找不到該紀錄' };
-            if (r.status !== 'done') return { ok: false, why: '尚未完成' };
-            if (!r.loot) return { ok: false, why: '沒有戰利品' };
+        /** 計算戰利品 */
+        _rollLoot(tier, eff) {
+            var t = Math.max(1, num(tier, 1));
+            var e = Math.max(0.5, num(eff, 1));
+            var L = CFG.LOOT;
+            var tierMul = 1 + (t - 1) * 0.55;
+            var loot = { gold: 0, maps: [], equips: 0, currency: [], fossils: [] };
 
-            var loot = r.loot;
+            loot.gold = Math.round(L.goldPerTier * tierMul * e * CFG.YIELD_RATE * (0.85 + Math.random() * 0.3));
+            if (Math.random() < L.mapDropChance * e) {
+                loot.maps.push(Math.random() < 0.25 ? t + 1 : t);
+            }
+            if (Math.random() < L.equipChance * e) {
+                loot.equips = 1 + (Math.random() < 0.18 ? 1 : 0);
+            }
+            if (Math.random() < L.currencyChance * e) {
+                var pool = ['orb_transmute', 'orb_alt', 'orb_aug', 'orb_alch'];
+                loot.currency.push({ id: pool[Math.floor(Math.random() * pool.length)], n: rnd(1, 3) });
+            }
+            if (Math.random() < L.fossilChance * e) {
+                loot.fossils.push(1);
+            }
+            return loot;
+        }
+
+        /* ══════════════════════════════════════════════════════
+           領取
+           ══════════════════════════════════════════════════════ */
+        /** 把一份 loot 實際發給玩家 */
+        _grantLoot(loot, tier) {
             var root = this.app.charSys.rootState;
             var c = this.app.charSys.state;
             var atlas = this.atlas();
+            var k = this.ensureState();
             var msg = [];
 
-            /* 銀兩 */
             if (loot.gold > 0) {
                 root.gold = num(root.gold, 0) + loot.gold;
                 k.runnerStats.gold = num(k.runnerStats.gold, 0) + loot.gold;
                 msg.push('銀兩 +' + loot.gold.toLocaleString());
             }
-
-            /* 地圖 */
-            (loot.maps || []).forEach(function (tier) {
-                if (atlas) {
-                    try { atlas.addMap(tier, c); } catch (e) { }
-                }
+            (loot.maps || []).forEach(function (t) {
+                if (atlas) { try { atlas.addMap(t, c); } catch (e) { } }
                 k.runnerStats.maps = num(k.runnerStats.maps, 0) + 1;
-                msg.push('T' + tier + ' 地圖 ×1');
+                msg.push('T' + t + ' 地圖 ×1');
             });
-
-            /* 裝備 */
             if (loot.equips > 0) {
                 var poe = this.app.poeSys;
                 var D = window.HY.Data;
                 var added = 0;
                 for (var e = 0; e < loot.equips; e++) {
                     if (!poe || typeof poe.generateItemInstanceByBaseId !== 'function') break;
-                    var lv = 20 + (r.mapTier - 1) * 40;
+                    var lv = 20 + (num(tier, 1) - 1) * 40;
                     var bases = (D.POE_BASES || []).filter(function (b) {
                         return b && b.id && b.reqLv <= lv + 20;
                     });
@@ -106609,8 +106781,6 @@ window.HY = window.HY || {};
                     msg.push('裝備 ×' + added);
                 }
             }
-
-            /* 通貨 */
             (loot.currency || []).forEach(function (cu) {
                 root.currencies = root.currencies || {};
                 root.currencies[cu.id] = num(root.currencies[cu.id], 0) + cu.n;
@@ -106619,8 +106789,6 @@ window.HY = window.HY || {};
                 k.runnerStats.currency = num(k.runnerStats.currency, 0) + cu.n;
                 msg.push(nm + ' ×' + cu.n);
             });
-
-            /* 化石 */
             (loot.fossils || []).forEach(function () {
                 var fs = this.app.fossilSys;
                 if (fs) {
@@ -106637,49 +106805,82 @@ window.HY = window.HY || {};
                 }
                 k.runnerStats.fossils = num(k.runnerStats.fossils, 0) + 1;
             }, this);
-
-            k.runnerStats.runs = num(k.runnerStats.runs, 0) + 1;
-
-            /* 移除紀錄，工人回到可用池 */
-            k.runners = k.runners.filter(function (x) { return x.uid !== runnerUid; });
-
-            this.log('🎁 跑圖收穫：' + (msg.length ? msg.join('、') : '空手而歸'));
-            this.requestRender();
-            return { ok: true, loot: loot, summary: msg };
+            return msg;
         }
 
-        /** 一鍵領取全部 */
-        claimAll() {
-            var list = this.runners().filter(function (r) { return r.status === 'done'; });
-            var total = 0;
-            for (var i = 0; i < list.length; i++) {
-                var r = this.claim(list[i].uid);
-                if (r.ok) total++;
-            }
-            return total;
-        }
-
-        /** 召回（放棄跑圖，地圖不退還） */
-        recall(runnerUid) {
+        /** 領取某位常駐工人的全部戰利品 */
+        claim(runnerUid) {
             var k = this.ensureState();
             if (!k) return { ok: false, why: '狀態未初始化' };
-            var before = k.runners.length;
-            k.runners = k.runners.filter(function (r) { return r.uid !== runnerUid; });
-            if (k.runners.length === before) return { ok: false, why: '找不到該紀錄' };
-            this.log('🛑 已召回跑圖工人（地圖不退回）');
+            var r = null;
+            for (var i = 0; i < k.runners.length; i++) {
+                if (k.runners[i].uid === runnerUid) { r = k.runners[i]; break; }
+            }
+            if (!r) return { ok: false, why: '找不到該常駐紀錄' };
+            var list = r.pending || [];
+            if (!list.length) return { ok: false, why: '沒有可領取的戰利品' };
+
+            var allMsg = [];
+            list.forEach(function (p) {
+                var msg = this._grantLoot(p.loot, p.tier);
+                allMsg = allMsg.concat(msg);
+            }, this);
+            r.pending = [];
+            this.log('🎁 跑圖收穫（' + list.length + ' 張）：' + (allMsg.length ? allMsg.join('、') : '空手而歸'));
             this.requestRender();
-            return { ok: true };
+            return { ok: true, count: list.length, summary: allMsg };
         }
 
-        /** 剩餘秒數 */
+        /** 領取全部（含離職工人留下的） */
+        claimAll() {
+            var k = this.ensureState();
+            if (!k) return 0;
+            var n = 0;
+            var allMsg = [];
+
+            /* 常駐工人的 */
+            this.runners().forEach(function (r) {
+                if ((r.pending || []).length) {
+                    var res = this.claim(r.uid);
+                    if (res.ok) { n += res.count; allMsg = allMsg.concat(res.summary); }
+                }
+            }, this);
+
+            /* 離職留下的 */
+            var orphan = k.runnerPending || [];
+            if (orphan.length) {
+                orphan.forEach(function (p) {
+                    var msg = this._grantLoot(p.loot, p.tier);
+                    allMsg = allMsg.concat(msg);
+                }, this);
+                n += orphan.length;
+                k.runnerPending = [];
+                this.log('🎁 補發離職工人的戰利品（' + orphan.length + ' 張）。');
+            }
+            if (n > 0) this.requestRender();
+            return n;
+        }
+
+        /* ══════════════════════════════════════════════════════
+           輔助
+           ══════════════════════════════════════════════════════ */
         remainSeconds(runner) {
-            if (!runner || runner.status !== 'running') return 0;
+            if (!runner || runner.mode !== 'run') return 0;
             return Math.max(0, Math.ceil((num(runner.finishAt, 0) - Date.now()) / 1000));
+        }
+        progressPct(runner) {
+            if (!runner || runner.mode !== 'run') return 0;
+            var total = Math.max(1, num(runner.finishAt, 0) - num(runner.startedAt, 0));
+            var left = Math.max(0, num(runner.finishAt, 0) - Date.now());
+            return clamp(Math.round((1 - left / total) * 100), 0, 100);
+        }
+        /** 該 runner 待領取的總張數 */
+        pendingCount(r) {
+            return (r && r.pending) ? r.pending.length : 0;
         }
 
         requestRender() {
-            /* ⚠️ UI 實例掛在 game.uiKingsmarch（不是 HY.uiKingsmarch），
-               而且面板物件名是 _tab / el.panel。之前全部寫錯 → 不會自動刷新。 */
+            /* ⚠️ UI 實例是 game.uiKingsmarch（不是 HY.uiKingsmarch） */
             try {
                 var ui = (this.app && this.app.uiKingsmarch)
                     || (window.HY.game && window.HY.game.uiKingsmarch);
@@ -106689,15 +106890,25 @@ window.HY = window.HY || {};
             } catch (e) { }
         }
 
-        /** 給 UI 用的摘要 */
+        /** 給 UI 的摘要 */
         summary() {
             var k = this.ensureState();
-            if (!k) return { camp: 0, max: 0, running: 0, done: 0, stats: {} };
+            if (!k) {
+                return { camp: 0, slots: 0, stationed: 0, running: 0, pending: 0, orphan: 0, stats: {} };
+            }
+            var running = 0, pending = 0;
+            k.runners.forEach(function (r) {
+                if (r.mode === 'run') running++;
+                pending += (r.pending ? r.pending.length : 0);
+            });
             return {
                 camp: this.campLevel(),
-                max: this.maxRunners(),
-                running: k.runners.filter(function (r) { return r.status === 'running'; }).length,
-                done: k.runners.filter(function (r) { return r.status === 'done'; }).length,
+                campSlot: this.campSlot(),
+                slots: this.campWorkerSlots(),
+                stationed: k.runners.length,
+                running: running,
+                pending: pending,
+                orphan: (k.runnerPending || []).length,
                 stats: k.runnerStats
             };
         }
@@ -106707,7 +106918,7 @@ window.HY = window.HY || {};
     window.HY.KM_RUNNER_CFG = CFG;
 
     if (window.console && window.console.log) {
-        console.log('[kingsmarchMapRunners] ✓ 已載入（金司馬區自動刷圖）');
+        console.log('[kingsmarchMapRunners] ✓ v2 已載入（工人常駐 + 自動連刷）');
     }
 })();
 
@@ -107187,7 +107398,7 @@ window.HY = window.HY || {};
             });
         }
         // ──────────────────────────────────────────────────────
-        //  分頁：刷圖（雇工人自動跑地圖）
+        //  分頁：刷圖（工人常駐 + 自動連刷）
         // ──────────────────────────────────────────────────────
         renderRunner() {
             var self = this;
@@ -107196,49 +107407,39 @@ window.HY = window.HY || {};
             if (!R) {
                 return '<div class="km-empty">刷圖系統未載入（kingsmarchMapRunners.js）。</div>';
             }
-            var k = R.ensureState();
+            R.ensureState();
             var sum = R.summary();
-            var def = km.def;
-            var TIERS = def.TIERS || {};
             var atlas = window.HY.game.atlasSys;
             var c = this.app.charSys.state;
             var h = '';
 
-            /* ── ① 營地狀態 ── */
+            /* ── ① 營地未建造 ── */
             if (sum.camp <= 0) {
-                var cost0 = R.campCost(1);
                 h += '<div class="km-card"><h4>🏕️ 刷圖營地（未建造）</h4>' +
                     '<div style="font-size:.76rem;color:#94a3b8;line-height:1.8;margin-bottom:9px">' +
-                    '雇傭工人自動跑地圖，不需親自操作。<br>' +
-                    '工人會消耗地圖倉庫的地圖，完成後帶回銀兩、裝備、通貨與地圖。<br>' +
+                    '建造後可派工人【常駐】於此，指定 T 階後自動連刷地圖。<br>' +
+                    '常駐的工人會佔用礦冶的建築位置，<b style="color:#fca5a5">不能同時在礦場工作</b>。<br>' +
                     '<span style="color:#7dd3fc">（1:1 復刻 POE Settlers 的 Map Runners）</span></div>' +
-                    '<div style="font-size:.78rem;color:#fca5a5;margin-bottom:7px">' +
-                    '建造費用：金幣 ' + cost0.gold.toLocaleString() + '</div>' +
-                    '<button class="km-btn gold" data-runnertcamp="1">🏗️ 建造刷圖營地</button>' +
+                    '<div style="font-size:.74rem;color:#64748b;margin-bottom:7px">' +
+                    '請到「⛏️ 礦冶」分頁選一個空地建造「刷圖營地」。</div>' +
                     '</div>';
                 return h;
             }
 
+            /* ── ② 營地狀態 ── */
             h += '<div class="km-card"><h4>🏕️ 刷圖營地 Lv.' + sum.camp + '</h4>' +
-                /* ⭐ 說明它不在「礦冶」分頁，避免玩家跑到礦冶找營地 */
-                '<div style="font-size:.7rem;color:#64748b;margin-bottom:7px">' +
-                '（營地不佔用礦冶的建築格子，只在這個分頁管理）</div>' +
                 '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.76rem;color:#94a3b8;margin-bottom:8px">' +
-                '<span>可同時出勤 <b style="color:#f0c674">' + sum.running + ' / ' + sum.max + '</b></span>' +
-                '<span>待領取 <b style="color:#6ee7b7">' + sum.done + '</b></span>' +
-                '<span>累計跑圖 <b style="color:#7dd3fc">' + sum.stats.runs + '</b> 次</span>' +
+                '<span>常駐工人 <b style="color:#f0c674">' + sum.stationed + ' / ' + sum.slots + '</b></span>' +
+                '<span>連刷中 <b style="color:#38bdf8">' + sum.running + '</b></span>' +
+                '<span>待領取 <b style="color:#6ee7b7">' + sum.pending + '</b> 張</span>' +
+                '<span>累計 <b style="color:#7dd3fc">' + sum.stats.runs + '</b> 張</span>' +
+                '</div>' +
+                '<div style="font-size:.7rem;color:#64748b;margin-bottom:6px">' +
+                '💡 工人常駐後會自動連刷指定的 T 階，直到地圖用完為止。</div>' +
                 '</div>';
-            if (sum.camp < 5) {
-                var costN = R.campCost(sum.camp + 1);
-                h += '<button class="km-btn" data-runnertcamp="' + (sum.camp + 1) + '">' +
-                    '⬆ 升級至 Lv.' + (sum.camp + 1) + '（' + costN.gold.toLocaleString() + ' 金）</button>';
-            } else {
-                h += '<span style="font-size:.74rem;color:#6ee7b7">已達最高等級</span>';
-            }
-            h += '</div>';
 
-            /* ── ② 派工出去跑圖 ── */
-            var workers = R.availableWorkers();
+            /* ── ③ 常駐工人清單 ── */
+            var list = R.runners();
             var mapCounts = {};
             if (atlas) {
                 atlas.listMaps(c).forEach(function (m) {
@@ -107248,77 +107449,118 @@ window.HY = window.HY || {};
             }
             var tiers = Object.keys(mapCounts).map(Number).sort(function (a, b) { return a - b; });
 
-            h += '<div class="km-card"><h4>🗺️ 派工人跑圖</h4>';
-            if (!workers.length) {
-                h += '<div style="font-size:.76rem;color:#fca5a5">沒有可派遣的工人。請先在「👷 工人」分頁雇傭。</div>';
-            } else if (!tiers.length) {
-                h += '<div style="font-size:.76rem;color:#fca5a5">地圖倉庫是空的。先去打圖或等掉落。</div>';
-            } else if (sum.running >= sum.max) {
-                h += '<div style="font-size:.76rem;color:#fca5a5">營地已滿（' + sum.max + ' 位同時出勤），等現有的跑完。</div>';
+            if (list.length) {
+                h += '<div class="km-card"><h4>👷 常駐工人（' + list.length + '）</h4>' +
+                    '<table class="km-tbl"><tr><th>工人</th><th>狀態</th><th>目標</th><th class="r">操作</th></tr>';
+
+                list.forEach(function (r) {
+                    /* 找工人資訊 */
+                    var w = null;
+                    (R.kmState().workers || []).forEach(function (x) { if (x.uid === r.workerId) w = x; });
+                    var wName = w ? w.name : '(已離職)';
+                    var eff = R._effOf(r.workerId, R.kmState());
+
+                    /* 狀態文字 */
+                    var stTxt = '', stColor = '#94a3b8';
+                    if (r.mode === 'run') {
+                        var sec = R.remainSeconds(r);
+                        var mm = Math.floor(sec / 60), ss = sec % 60;
+                        stTxt = '⏳ 跑圖中 ' + mm + '分' + (ss < 10 ? '0' : '') + ss + '秒';
+                        stColor = '#38bdf8';
+                    } else if (r.mode === 'reserve') {
+                        stTxt = '⏸️ 地圖不足（等待補貨）';
+                        stColor = '#fca5a5';
+                    } else {
+                        stTxt = '⏹️ 未指派';
+                        stColor = '#64748b';
+                    }
+
+                    /* 進度條 */
+                    var pct = R.progressPct(r);
+                    var progHtml = r.mode === 'run'
+                        ? '<div style="height:4px;background:#0a0f16;border-radius:2px;margin-top:3px">' +
+                          '<div style="height:4px;width:' + pct + '%;background:#38bdf8;border-radius:2px"></div></div>'
+                        : '';
+
+                    /* 目標 T 階按鈕 */
+                    var tgtHtml = '';
+                    if (!tiers.length) {
+                        tgtHtml = '<span style="color:#fca5a5;font-size:.7rem">無地圖</span>';
+                    } else {
+                        tiers.forEach(function (t) {
+                            var on = (num(r.targetTier, 0) === t);
+                            var secs = R.runSeconds(t, eff);
+                            tgtHtml += '<button class="km-btn' + (on ? ' gold' : '') +
+                                '" style="font-size:.66rem;padding:2px 6px;margin:1px" ' +
+                                'data-runnertarget="' + esc(r.uid) + '" data-runnertier="' + t + '">' +
+                                'T' + t + '(' + Math.ceil(secs / 60) + '分/庫' + mapCounts[t] + ')</button>';
+                        });
+                        if (num(r.targetTier, 0) > 0) {
+                            tgtHtml += '<button class="km-btn r" style="font-size:.66rem;padding:2px 6px;margin:1px" ' +
+                                'data-runnertarget="' + esc(r.uid) + '" data-runnertier="0">■ 停</button>';
+                        }
+                    }
+
+                    var pend = R.pendingCount(r);
+                    var claimBtn = pend > 0
+                        ? '<button class="km-btn gold" style="font-size:.68rem;padding:2px 8px" data-runnerclaim="' +
+                          esc(r.uid) + '">🎁 領取(' + pend + ')</button> '
+                        : '';
+
+                    h += '<tr>' +
+                        '<td>' + esc(wName) +
+                        ' <span style="color:#6ee7b7;font-size:.7rem">×' + eff.toFixed(1) + '</span>' +
+                        '<div style="color:#64748b;font-size:.68rem">累計 ' + num(r.totalRuns, 0) + ' 張</div></td>' +
+                        '<td style="color:' + stColor + '">' + stTxt + progHtml + '</td>' +
+                        '<td>' + tgtHtml + '</td>' +
+                        '<td class="r">' + claimBtn +
+                        '<button class="km-btn r" style="font-size:.68rem;padding:2px 8px" data-runnerunstation="' +
+                        esc(r.uid) + '">解除</button></td>' +
+                        '</tr>';
+                });
+                h += '</table></div>';
             } else {
-                h += '<table class="km-tbl"><tr><th>工人</th><th>階級</th><th>效率</th><th>可跑地圖</th></tr>';
-                workers.forEach(function (w) {
+                h += '<div class="km-card"><h4>👷 常駐工人（0）</h4>' +
+                    '<div style="font-size:.76rem;color:#fca5a5">尚未派駐任何工人。</div></div>';
+            }
+
+            /* ── ④ 派遣工人常駐 ── */
+            var assignable = R.assignableWorkers().filter(function (w) { return !w.stationed; });
+            h += '<div class="km-card"><h4>➕ 派駐工人到營地</h4>';
+            if (sum.stationed >= sum.slots) {
+                h += '<div style="font-size:.76rem;color:#fca5a5">營地已滿（' + sum.stationed + '/' + sum.slots +
+                    '）。升級營地或解除現有工人。</div>';
+            } else if (!assignable.length) {
+                h += '<div style="font-size:.76rem;color:#fca5a5">沒有可派駐的工人。請先到「👷 工人」分頁雇傭。</div>';
+            } else {
+                h += '<div style="font-size:.72rem;color:#94a3b8;margin-bottom:7px">' +
+                    '⚠️ 派駐後會離開原本的工作崗位（不能在礦場與營地同時任職）。</div>' +
+                    '<table class="km-tbl"><tr><th>工人</th><th>階級</th><th>效率</th><th>目前崗位</th><th class="r">操作</th></tr>';
+                assignable.forEach(function (w) {
                     h += '<tr><td>' + w.icon + ' ' + esc(w.name) + '</td>' +
                         '<td>' + esc(w.tierName) + '</td>' +
                         '<td style="color:#6ee7b7">×' + w.eff.toFixed(1) + '</td>' +
-                        '<td class="r">';
-                    tiers.forEach(function (t) {
-                        var sec = R.runSeconds(t, w.eff);
-                        h += '<button class="km-btn" style="font-size:.68rem;padding:2px 7px;margin:1px" ' +
-                            'data-runnerdispatch="' + esc(w.uid) + '" data-runnertier="' + t + '">' +
-                            'T' + t + '（' + Math.ceil(sec / 60) + '分，庫存' + mapCounts[t] + '）</button>';
-                    });
-                    h += '</td></tr>';
+                        '<td style="color:' + (w.buildingSlot === null ? '#64748b' : '#fbbf24') + '">' +
+                        esc(w.buildingName) + '</td>' +
+                        '<td class="r"><button class="km-btn" data-runnerstation="' + esc(w.uid) + '">派駐</button></td></tr>';
                 });
                 h += '</table>';
             }
             h += '</div>';
 
-            /* ── ③ 進行中 / 待領取 ── */
-            var list = k.runners || [];
-            if (list.length) {
-                var doneList = list.filter(function (r) { return r.status === 'done'; });
-                var runList = list.filter(function (r) { return r.status === 'running'; });
-
-                if (doneList.length) {
-                    h += '<div class="km-card"><h4>🎁 戰利品待領取</h4>' +
-                        '<table class="km-tbl"><tr><th>地圖</th><th>狀態</th><th class="r">操作</th></tr>';
-                    doneList.forEach(function (r) {
-                        h += '<tr><td>T' + r.mapTier + ' 【' + esc(r.mapName) + '】</td>' +
-                            '<td style="color:#6ee7b7">✅ 完成</td>' +
-                            '<td class="r"><button class="km-btn gold" data-runnerclaim="' + esc(r.uid) + '">領取</button></td></tr>';
-                    });
-                    h += '</table>';
-                    if (doneList.length > 1) {
-                        h += '<button class="km-btn gold" data-runnerclaimall="1" style="margin-top:7px">' +
-                            '🎁 全部領取（' + doneList.length + ' 筆）</button>';
-                    }
-                    h += '</div>';
-                }
-
-                if (runList.length) {
-                    h += '<div class="km-card"><h4>⏳ 進行中（' + runList.length + '）</h4>' +
-                        '<table class="km-tbl"><tr><th>地圖</th><th>剩餘</th><th class="r">操作</th></tr>';
-                    runList.forEach(function (r) {
-                        var sec = R.remainSeconds(r);
-                        var mm = Math.floor(sec / 60), ss = sec % 60;
-                        var total = Math.max(1, Math.round((r.finishAt - r.startedAt) / 1000));
-                        var pct = Math.min(100, Math.round((1 - sec / total) * 100));
-                        h += '<tr><td>T' + r.mapTier + ' 【' + esc(r.mapName) + '】' +
-                            '<div style="height:4px;background:#0a0f16;border-radius:2px;margin-top:3px">' +
-                            '<div style="height:4px;width:' + pct + '%;background:#38bdf8;border-radius:2px"></div></div></td>' +
-                            '<td style="color:#7dd3fc">' + mm + '分' + (ss < 10 ? '0' : '') + ss + '秒</td>' +
-                            '<td class="r"><button class="km-btn r" data-runnerrecall="' + esc(r.uid) + '">召回</button></td></tr>';
-                    });
-                    h += '</table></div>';
-                }
+            /* ── ⑤ 離職工人留下的戰利品 ── */
+            if (sum.orphan > 0) {
+                h += '<div class="km-card"><h4>📦 未領取的戰利品（' + sum.orphan + ' 張）</h4>' +
+                    '<div style="font-size:.74rem;color:#94a3b8;margin-bottom:7px">' +
+                    '工人離開營地時留下的收穫。</div>' +
+                    '<button class="km-btn gold" data-runnerclaimall="1">🎁 全部領取</button></div>';
             }
 
-            /* ── ④ 累計統計 ── */
+            /* ── ⑥ 累計統計 ── */
             if (sum.stats.runs > 0) {
                 h += '<div class="km-card"><h4>📊 累計收益</h4>' +
                     '<div style="font-size:.76rem;color:#94a3b8;line-height:1.9">' +
-                    '跑圖次數 <b style="color:#f0c674">' + sum.stats.runs + '</b>　·　' +
+                    '跑圖 <b style="color:#f0c674">' + sum.stats.runs + '</b> 張　·　' +
                     '銀兩 <b style="color:#f0c674">' + sum.stats.gold.toLocaleString() + '</b>　·　' +
                     '地圖 <b style="color:#7dd3fc">' + sum.stats.maps + '</b>　·　' +
                     '裝備 <b style="color:#c084fc">' + sum.stats.equips + '</b>　·　' +
@@ -107889,35 +108131,47 @@ window.HY = window.HY || {};
             var self = this;
             var p = this.el.panel;
 
-            /* ⭐ 刷圖營地：建造 / 升級 */
-            p.querySelectorAll('[data-runnertcamp]').forEach(function (el) {
+            /* ⭐ 刷圖：派駐工人常駐 */
+            p.querySelectorAll('[data-runnerstation]').forEach(function (el) {
                 el.addEventListener('click', function () {
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (!R) return;
-                    var r = R.buildCamp();
+                    var r = R.station(el.getAttribute('data-runnerstation'));
                     if (r.ok) {
-                        self._toast('🏕️ 刷圖營地 Lv.' + r.lv);
+                        self._toast('🏕️ 工人已常駐營地');
                         self.renderPanel();
                     } else {
-                        self._toast(r.why || '建造失敗', true);
+                        self._toast(r.why || '派駐失敗', true);
                     }
                 });
             });
 
-            /* 派工人跑圖 */
-            p.querySelectorAll('[data-runnerdispatch]').forEach(function (el) {
+            /* ⭐ 刷圖：設定目標 T 階（自動連刷） */
+            p.querySelectorAll('[data-runnertarget]').forEach(function (el) {
                 el.addEventListener('click', function () {
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (!R) return;
-                    var wid = el.getAttribute('data-runnerdispatch');
-                    var tier = toInt(el.getAttribute('data-runnertier'), 1);
-                    var r = R.dispatch(wid, tier);
+                    var uid = el.getAttribute('data-runnertarget');
+                    var tier = toInt(el.getAttribute('data-runnertier'), 0);
+                    var r = R.setTarget(uid, tier);
                     if (r.ok) {
-                        self._toast('🗺️ 工人已出發（' + Math.ceil(r.seconds / 60) + ' 分鐘）');
+                        self._toast(tier > 0 ? ('🗺️ 開始連刷 T' + tier) : '⏹️ 已停止連刷');
                         self.renderPanel();
                     } else {
-                        self._toast(r.why || '派遣失敗', true);
+                        self._toast(r.why || '設定失敗', true);
                     }
+                });
+            });
+
+            /* 解除常駐 */
+            p.querySelectorAll('[data-runnerunstation]').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    var R = window.HY.game && window.HY.game.kmRunners;
+                    if (!R) return;
+                    if (!confirm('解除後工人會回到待命（未領取的戰利品會保留），確定嗎？')) return;
+                    var r = R.unstation(el.getAttribute('data-runnerunstation'));
+                    if (r.ok) { self._toast('👋 已解除常駐'); self.renderPanel(); }
+                    else self._toast(r.why || '解除失敗', true);
                 });
             });
 
@@ -107928,7 +108182,7 @@ window.HY = window.HY || {};
                     if (!R) return;
                     var r = R.claim(el.getAttribute('data-runnerclaim'));
                     if (r.ok) {
-                        self._toast('🎁 ' + (r.summary.length ? r.summary.join('、') : '空手而歸'));
+                        self._toast('🎁 ' + r.count + ' 張：' + (r.summary.length ? r.summary.join('、') : '空手'));
                         self.renderPanel();
                     } else {
                         self._toast(r.why || '領取失敗', true);
@@ -107942,20 +108196,8 @@ window.HY = window.HY || {};
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (!R) return;
                     var n = R.claimAll();
-                    self._toast('🎁 已領取 ' + n + ' 筆戰利品');
+                    self._toast('🎁 已領取 ' + n + ' 張戰利品');
                     self.renderPanel();
-                });
-            });
-
-            /* 召回 */
-            p.querySelectorAll('[data-runnerrecall]').forEach(function (el) {
-                el.addEventListener('click', function () {
-                    var R = window.HY.game && window.HY.game.kmRunners;
-                    if (!R) return;
-                    if (!confirm('召回會放棄這張地圖（不退還），確定嗎？')) return;
-                    var r = R.recall(el.getAttribute('data-runnerrecall'));
-                    if (r.ok) { self._toast('🛑 已召回'); self.renderPanel(); }
-                    else self._toast(r.why || '召回失敗', true);
                 });
             });
 
