@@ -104738,10 +104738,34 @@ window.HY = window.HY || {};
       for (key in k.bars) t += num(k.bars[key], 0);
       return t;
     }
-    /** 總薪資（每週期） */
+    /** 總薪資（每週期）
+        ⭐ 常駐「刷圖營地」的工人不計薪
+        ──────────────────────────────────────────────────────────
+        原因：自動刷圖的收益刻意壓低到「手動打圖的 6%」（使用者指定），
+              這個數字遠低於工人薪資（見習工 80、大宗師 1,300）。
+              若照常發薪，玩家會變成「越刷越虧」，功能形同廢棄。
+
+        設計上把刷圖工人視為「分紅制」：
+          收入 = 跑圖戰利品，不另支固定薪資。
+          這樣 6% 的收益就是純收益，但絕對值很低 ——
+          玩家願意掛著是因為「零操作」，而不是因為賺得多。
+
+        ⚠️ 只排除「runnerCamp」這一座建築上的工人，
+           礦場、熔爐等其他建築的工人照常計薪。 */
     getTotalWage() {
       var TIERS = this.def.TIERS;
-      return this.ensureState().workers.reduce(function (sum, w) {
+      var k = this.ensureState();
+      /* 找出所有刷圖營地的 slot */
+      var campSlots = {};
+      (k.buildings || []).forEach(function (b) {
+        if (b && b.id === 'runnerCamp') campSlots[num(b.slot, -1)] = 1;
+      });
+      return (k.workers || []).reduce(function (sum, w) {
+        /* 常駐刷圖營地 → 不計薪（分紅制） */
+        if (w && w.buildingSlot !== null && w.buildingSlot !== undefined &&
+            campSlots[num(w.buildingSlot, -1)]) {
+          return sum;
+        }
         var T = TIERS[w.tier];
         return sum + (T ? T.wage : 0);
       }, 0);
@@ -106281,17 +106305,32 @@ window.HY = window.HY || {};
        設定
        ══════════════════════════════════════════════════════════ */
     var CFG = {
-        /* 跑一張圖的基準秒數（T1）。實際 = BASE / 工人效率 × (1 + (T-1)×0.12) */
-        BASE_SECONDS: 90,
-        /* 每位工人每小時的期望收益倍率（對照手動打圖，略低以示公平） */
-        YIELD_RATE: 0.85,
-        /* 每張圖的基礎掉落（依 T 階放大） */
+        /* ⭐ 跑一張圖的基準秒數（T1，見習工）
+           ──────────────────────────────────────────────────────
+           使用者要求：回到原本 6% 的收益水準，並降低掉圖機率。
+
+           實測手動 T1：2,400 兩 / 180 秒
+             → 自動每張 × 6% ≈ 144 兩（見下方 YIELD_RATE 說明）
+
+           為什麼只給 6%：
+             自動刷圖是「完全被動、零操作、零風險」的收益來源。
+             給太高會讓手動打圖失去意義（手動才有經驗、武點、
+             地圖詞綴獎勵與霸主掉落）。
+             6% 的定位是「加減貼補水電費」，不是主要收入。
+           ────────────────────────────────────────────────────── */
+        BASE_SECONDS: 240,
+        /* ⭐ 使用者指定：維持原本 6% 的收益 */
+        YIELD_RATE: 0.06,
+        /* 每張圖的基礎掉落（依 T 階放大）
+           ⭐ 使用者要求降低掉圖機率 → 從 0.50 降到 0.12
+              理由：掉圖等於「免費再跑一張」，是複利來源。
+                    壓低後自動刷圖會緩慢消耗地圖庫存，
+                    玩家仍需自己打圖補充，維持手動打圖的價值。 */
         LOOT: {
-            goldPerTier: 180,
-            mapDropChance: 0.28,
-            equipChance: 0.22,
-            currencyChance: 0.35,
-            fossilChance: 0.06
+            mapDropChance: 0.12,
+            equipChance: 0.40,
+            currencyChance: 0.55,
+            fossilChance: 0.08
         },
         /* 戰利品堆疊上限（避免無限累積造成存檔膨脹） */
         MAX_PENDING: 40
@@ -106709,7 +106748,17 @@ window.HY = window.HY || {};
             return done;
         }
 
-        /** 計算戰利品 */
+        /** ⭐ 計算戰利品
+            ──────────────────────────────────────────────────────
+            實測手動打一張 T1（150 隻怪 + 霸主）：
+              銀兩 2,400 / 武點 2,850 / 經驗 3,750 / 地圖 0.7 張
+
+            自動的設計（使用者指定 6% 收益）：
+              · 銀兩 = 手動 × YIELD_RATE(0.06) ≈ 每張 144 兩
+              · 地圖掉落 12%（原本 50%，壓低避免無限自循環）
+              · 不給經驗與武點（那是親自出戰的專屬回報）
+              · 仍需付薪資（每分鐘 80~1,300 兩／人）
+            ────────────────────────────────────────────────────── */
         _rollLoot(tier, eff) {
             var t = Math.max(1, num(tier, 1));
             var e = Math.max(0.5, num(eff, 1));
@@ -106717,17 +106766,30 @@ window.HY = window.HY || {};
             var tierMul = 1 + (t - 1) * 0.55;
             var loot = { gold: 0, maps: [], equips: 0, currency: [], fossils: [] };
 
-            loot.gold = Math.round(L.goldPerTier * tierMul * e * CFG.YIELD_RATE * (0.85 + Math.random() * 0.3));
+            /* ── 銀兩：以「手動一張的期望值 × 6%」為基準 ──
+               手動 T1 = 2,400 兩 → 自動約 144 兩。
+               ±15% 隨機浮動，避免完全固定。 */
+            var MANUAL_GOLD_PER_MAP = 2400;
+            var baseGold = MANUAL_GOLD_PER_MAP * tierMul;
+            loot.gold = Math.round(baseGold * CFG.YIELD_RATE * (0.85 + Math.random() * 0.3));
+
+            /* ── 地圖掉落：12%（大幅壓低，避免無限自循環）── */
             if (Math.random() < L.mapDropChance * e) {
                 loot.maps.push(Math.random() < 0.25 ? t + 1 : t);
             }
+
+            /* ── 裝備 ── */
             if (Math.random() < L.equipChance * e) {
                 loot.equips = 1 + (Math.random() < 0.18 ? 1 : 0);
             }
+
+            /* ── 通貨 ── */
             if (Math.random() < L.currencyChance * e) {
                 var pool = ['orb_transmute', 'orb_alt', 'orb_aug', 'orb_alch'];
                 loot.currency.push({ id: pool[Math.floor(Math.random() * pool.length)], n: rnd(1, 3) });
             }
+
+            /* ── 化石 ── */
             if (Math.random() < L.fossilChance * e) {
                 loot.fossils.push(1);
             }
@@ -107434,8 +107496,12 @@ window.HY = window.HY || {};
                 '<span>待領取 <b style="color:#6ee7b7">' + sum.pending + '</b> 張</span>' +
                 '<span>累計 <b style="color:#7dd3fc">' + sum.stats.runs + '</b> 張</span>' +
                 '</div>' +
-                '<div style="font-size:.7rem;color:#64748b;margin-bottom:6px">' +
-                '💡 工人常駐後會自動連刷指定的 T 階，直到地圖用完為止。</div>' +
+                '<div style="font-size:.7rem;color:#64748b;line-height:1.7;margin-bottom:4px">' +
+                '💡 工人常駐後自動連刷指定 T 階，地圖用完為止。<br>' +
+                '<span style="color:#6ee7b7">常駐期間免薪資</span>（收益偏低，屬分紅制）；' +
+                '產出約為手動打圖的 <span style="color:#fbbf24">6%</span>。<br>' +
+                '掉圖率 12% → 需不時自己打圖補充庫存。' +
+                '</div>' +
                 '</div>';
 
             /* ── ③ 常駐工人清單 ── */
