@@ -751,10 +751,16 @@ details > summary::marker {
                     <div class="bar-label"><span>💧 內力 (MP)</span><span id="mp-text">100/100</span></div>
                     <div class="progress-bg"><div id="mp-bar" class="progress-fill mp"></div></div>
 
-                    <!-- ⭐ v53：能量護盾條（只有實際有護盾的角色才顯示） -->
+                    <!-- ⭐ v53：能量護盾條（只有實際有護盾的角色才顯示）
+                         v55：加大高度與亮度，否則深色背景下幾乎看不出來 -->
                     <div id="es-bar-row" style="display:none;">
                         <div class="bar-label"><span>🔵 護盾 (ES)</span><span id="es-text">0/0</span></div>
-                        <div class="progress-bg"><div id="es-bar" class="progress-fill" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#38bdf8);"></div></div>
+                        <div class="progress-bg" style="height:14px;border-color:#0369a1;
+                            box-shadow:0 0 6px rgba(56,189,248,.35);">
+                            <div id="es-bar" class="progress-fill" style="width:0%;height:100%;
+                                background:linear-gradient(90deg,#0369a1,#0ea5e9,#7dd3fc);
+                                box-shadow:0 0 8px rgba(56,189,248,.8) inset;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -9920,8 +9926,11 @@ window.HY.Data = window.HY.Data || {};
         FUEL_COST_EVERY_DEPTHS: 5,
         /* ⭐ 取消硫磺上限（改為 0 = 不限制） */
         MAX_FUEL: 0,
-        /* 起始硫磺 */
-        START_FUEL: 8,
+        /* 起始硫磺
+           ⭐ 因為「每一步移動都要硫磺」，起始值太低會讓玩家在第 2~3 層就卡住。
+              8 → 25：足以探索約 10~12 步（含分支），
+              之後必須靠打怪或硫磺礦脈補給。 */
+        START_FUEL: 25,
         /* 擊敗怪物節點回復硫磺（基礎值，會隨深度提高） */
         FUEL_PER_MONSTER: 1,
         FUEL_PER_MONSTER_PER_5_DEPTH: 1,
@@ -9955,14 +9964,19 @@ window.HY.Data = window.HY.Data || {};
         var extra = Math.floor((d - 1) / Math.max(1, C.FUEL_COST_EVERY_DEPTHS));
         return C.FUEL_BASE_COST + extra;
     };
-    /* ⭐ 指定深度擊敗怪物可回復的硫磺 */
+    /* ⭐ 指定深度擊敗怪物可回復的硫磺
+       ⚠️ v2：因為「每一步移動都要硫磺」，而一層的完整推進是
+              「進入節點（-C）」＋「深入下一層（-C）」＝ 2C。
+              若打怪只回 C，玩家會越打越窮 → 一定卡死。
+              所以回復量改為「2 × 當前每步成本」，打怪趕路才可持續；
+              只探索分支（不深入）時仍是淨虧，保留風險取捨。 */
     Data.delveFuelGainAt = function (depth, isBoss) {
         var C = Data.DELVE_CONFIG;
         var d = Math.max(1, Math.floor(depth || 1));
-        var gain = C.FUEL_PER_MONSTER +
-            Math.floor(d / Math.max(1, C.FUEL_COST_EVERY_DEPTHS)) * C.FUEL_PER_MONSTER_PER_5_DEPTH;
+        var step = Data.delveFuelCostAt(d);
+        var gain = step * 2;
         if (isBoss) gain += 2 + Math.floor(d / 10);
-        return gain;
+        return Math.max(1, Math.round(gain));
     };
     // ═══════════════════════════════════════════════════════════════
     //  2. 生物群系（每 4 層循環一次，深度決定可掉化石池）
@@ -26348,26 +26362,44 @@ window.HY = window.HY || {};
                 }
                 /* ⭐⭐ v43/v51：能量護盾（Energy Shield）
                    ──────────────────────────────────────────────────
-                   poeStatEngine 會把「maximum energy shield」解析成 esShield。
-                   這裡把它搬進 out.energyShield，供戰鬥層作為「先於氣血吸收傷害」的防護層。
+                   ⚠⚠⚠ v54 修正：天賦的「+N to maximum Energy Shield」被忽略
+                     talentStatsParser 把「+10 to maximum Energy Shield」解析成
+                       { kind: 'flat', key: 'maxEs' }
+                     經 addBonus() 放進 ext.maxEs。
+                     但這裡原本只讀 ext.esShield / ext.energyShield ——
+                     完全沒有讀 ext.maxEs → 所有「+N 最大護盾」天賦點了都是 0，
+                     面板上明明列了 +70 護盾，護盾條卻永遠不出現。
 
-                   ⚠⚠ v51 修正重複計算 BUG：
-                     原本寫成
-                        if (ext.esShield > 0) _esSum += ext.esShield;
-                        if (ext.energyShield > 0) _esSum += ext.energyShield;
-                        out.energyShield = num2(out.energyShield, 0) + _esSum;
-                     但 addBonus() 在上方已透過 addExt() 把門派/心法/身法的
-                     energyShield 寫進 ext.energyShield，且 out 也會經由
-                     「擴充屬性合併」帶入 ext 的值
-                     → 等於同一個來源被算了兩次（實測慈航靜齋 120 變成 240）。
+                   現在三個來源全部納入：
+                     · ext.maxEs        ← talentStatsParser 的 flat 通道（天賦/珠寶）
+                     · ext.esShield     ← poeStatEngine（POE 詞綴引擎）
+                     · ext.energyShield ← 門派／心法／身法（addExt 累加）
+                   三者互不重疊（不同來源寫不同 key），所以直接相加安全。 */
+                var _esFromMaxEs    = (typeof ext.maxEs === 'number' && ext.maxEs > 0) ? ext.maxEs : 0;
+                var _esFromPoe      = (typeof ext.esShield === 'number' && ext.esShield > 0) ? ext.esShield : 0;
+                var _esFromSect     = (typeof ext.energyShield === 'number' && ext.energyShield > 0) ? ext.energyShield : 0;
+                var _esTotal        = _esFromMaxEs + _esFromPoe + _esFromSect;
 
-                   現在改為：只在「POE 詞綴引擎的 esShield」尚未被合併時補上，
-                   並避免與 out 既有的值重複累加。 */
-                var _esFromPoe = (typeof ext.esShield === 'number' && ext.esShield > 0) ? ext.esShield : 0;
-                if (_esFromPoe > 0) {
-                    /* ext.energyShield 是門派/心法/身法通道，已由 addExt 累加，
-                       這裡只補 POE 引擎那一路，且確認沒有被算過 */
-                    out.energyShield = num2(out.energyShield, 0) + _esFromPoe;
+                /* ⭐⭐ v55：護盾基底（關鍵修正）
+                   ──────────────────────────────────────────────────
+                   問題：天賦樹 119 條護盾詞條中，107 條是「N% increased
+                         maximum Energy Shield」，只有 12 條是「+N to
+                         maximum Energy Shield」。
+                   玩家若只點到 % 節點（非常常見，尤其沿路走），
+                   flat 基底 = 0 → 0 × (1 + 11%) 還是 0 → 護盾條永遠不出現，
+                   但面板卻列出「最大能量護盾增加 11%」，看起來就像壞了。
+
+                   解法：給每個角色一個隨等級成長的「基礎護盾」，
+                   讓 % 加成有東西可以放大（等同 POE 的護盾型裝備基底）。
+                   只有當「天賦確實有護盾相關加成」時才給，
+                   避免沒點護盾天賦的角色也冒出護盾條。 */
+                var _hasEsTalent = (_tmMaxEsBonus > 0) || (_esTotal > 0);
+                if (_hasEsTalent) {
+                    var _esBaseFloor = Math.round(8 + lv * 2.2);   /* Lv.1≈10、Lv.100≈228 */
+                    if (_esTotal < _esBaseFloor) _esTotal = _esBaseFloor;
+                }
+                if (_esTotal > 0) {
+                    out.energyShield = num2(out.energyShield, 0) + _esTotal;
                 }
                 /* ⭐⭐ v53：套用天賦樹的「increased maximum Energy Shield」
                    ──────────────────────────────────────────────────
@@ -26380,6 +26412,11 @@ window.HY = window.HY || {};
                         out.energyShield = Math.floor(_esBase * (1 + _tmMaxEsBonus));
                     }
                 }
+                /* ⭐ maxEs 別名：讓「天賦面板列出 +70 護盾」與「實際護盾值」對得上。
+                   有些 UI / 戰鬥層讀 out.maxEs，有些讀 out.energyShield，
+                   兩個都指向同一個數字，避免其中一邊永遠是 undefined。
+                   ⚠ 必須放在乘法加成「之後」，否則 maxEs 會是未放大的舊值。 */
+                out.maxEs = num2(out.energyShield, 0);
                 /* ⭐⭐ POE 引擎的機制資料（旗標／觸發／轉換／上限）
                    提升到 out 頂層，戰鬥層用 stats.__poeFlags / __poeProcs 直接讀，
                    不必每次挖 out.__ext.__poe。 */
@@ -30697,6 +30734,15 @@ window.HY = window.HY || {};
             m.depth = nextDepth;
             if (nextDepth > m.maxDepth) m.maxDepth = nextDepth;
             if (nextDepth > num(m.stats.deepest, 0)) m.stats.deepest = nextDepth;
+
+            /* ⭐ 落腳的主幹節點要一併標記為已清理。
+               否則會出現死結：位置站在 (0,nextRow) 但該節點還是「未清理」，
+               於是 canEnter 判定「必須從已清理的節點沿礦道前進」→
+               整列都點不進去，玩家會以為地圖壞了。
+               （這正是「移動後就卡住」的根因） */
+            var landing = map.nodes[map.key(0, nextRow)];
+            if (landing) this._markDone(landing);
+
             this.map();
             this._refreshRowView();
             this._log('⛏️ 深入至第 ' + nextDepth + ' 層【' + D.delveBiomeAt(nextDepth).name + '】' +
@@ -30739,13 +30785,29 @@ window.HY = window.HY || {};
                 return { ok: false, why: '必須從已清理的節點沿礦道前進' };
             }
 
-            /* ⭐ 進入節點要付硫磺；硫磺礦脈免費（否則會卡死） */
+            /* ⭐ 每次移動都要付硫磺，沒有任何免費節點。
+               （原本硫磺礦脈／通道／主幹是免費的，使用者要求改為一律收費，
+                 硫磺見底就完全不能動 → 必須回頭打怪或找硫磺礦脈補給）
+
+               ⚠️ 但必須避免「永久卡死」：
+                  如果硫磺歸零又剛好站在離硫磺礦脈一步的地方，
+                  嚴格收費會讓玩家永遠動不了（連補給點都進不去）。
+                  所以唯一的例外是「硫磺為 0 且該節點是硫磺礦脈」→ 允許賒帳進入，
+                  進去後採到的硫磺足以讓遊戲繼續。 */
             var cost = D.delveFuelCostAt(Math.max(1, node.row));
-            var free = (node.type === 'azurite' || node.isPassage || node.isMain);
-            if (!free && m.fuel < cost) {
-                return { ok: false, why: '硫磺不足（第 ' + node.row + ' 層每次移動需 ' + cost + '，現有 ' + m.fuel + '）' };
+            var isFuelNode = (node.type === 'azurite' || node.type === 'fuel');
+            var brokeException = (m.fuel <= 0 && isFuelNode);
+            if (!brokeException && m.fuel < cost) {
+                return {
+                    ok: false,
+                    why: '硫磺不足（第 ' + node.row + ' 層每步需 ' + cost + '，現有 ' + m.fuel +
+                         '）　請先找「硫磺礦脈」節點補給'
+                };
             }
-            if (!free) m.fuel -= cost;
+            /* 賒帳時不扣（本來就沒得扣），正常情況照扣 */
+            if (!brokeException) m.fuel -= cost;
+
+            var charged = brokeException ? 0 : cost;
 
             m.currentNodeId = node.id;
             m.curCol = node.col;
@@ -30754,25 +30816,35 @@ window.HY = window.HY || {};
             var nodeDepth = node.row + 1;
             if (nodeDepth > m.depth) m.depth = nodeDepth;
 
-            /* 通道節點：直接通過，不開戰不給獎勵 */
+            /* 通道節點：直接通過，不開戰不給獎勵
+               ⚠️ 不做硫磺回本 —— 使用者要求「只要移動都扣硫磺」。 */
             if (node.category === 'path') {
                 this._markDone(node);
                 this._refreshRowView();
                 if (this.app.renderAll) this.app.renderAll();
-                return { ok: true, battle: false, node: node, rewards: null, cost: free ? 0 : cost };
+                return { ok: true, battle: false, node: node, rewards: null, cost: charged };
             }
 
             if (node.needBattle || node.category === 'combat') {
                 var tpl = this.spawnDelveEnemy(node.row, !!node.isBoss, node);
                 if (!tpl) return { ok: false, why: '開戰失敗' };
-                return { ok: true, battle: true, node: node, cost: free ? 0 : cost };
+                return { ok: true, battle: true, node: node, cost: charged };
             }
 
-            /* 非戰鬥節點：立即結算 */
+            /* 非戰鬥節點：立即結算（同樣照扣，不回本） */
             var res = this.resolveIdleNode(node.row, node);
             this._markDone(node);
             this._refreshRowView();
-            return { ok: true, battle: false, node: node, rewards: res, cost: free ? 0 : cost };
+            return { ok: true, battle: false, node: node, rewards: res, cost: charged };
+        }
+        /**
+         * ⚠️ 已停用：原本用來讓非戰鬥節點「回本」。
+         * 但使用者明確要求「只要移動都扣硫磺」，
+         * 自動回本會讓通道／寶箱變成淨額 0＝實質免費，
+         * 違背需求，因此保留函式但不再呼叫（僅供除錯參考）。
+         */
+        _refundTravelFuel(node, charged) {
+            return 0;
         }
         // ──────────────────────────────────────────────────────────
         //  非戰鬥節點結算
@@ -30804,9 +30876,11 @@ window.HY = window.HY || {};
             /* ── 硫磺礦脈 ── */
             if (type === 'azurite' || type === 'fuel') {
                 var cost = D.delveFuelCostAt(depth);
-                var baseGot = 3 + Math.floor(Math.random() * 4) + Math.floor(depth / 6);
-                var ceil = cost * 4 + D.delveFuelCostAt(depth + 1);
-                var got = Math.max(1, Math.min(ceil, baseGot));
+                /* ⭐ 每步都要硫磺 → 礦脈必須給得夠，否則玩家進來採完還是動不了。
+                   給 5~8 步的量（隨深度略增），足夠走一小段路找下一口礦脈。 */
+                var baseGot = 5 + Math.floor(Math.random() * 4) + Math.floor(depth / 6);
+                var ceil = cost * 10 + D.delveFuelCostAt(depth + 1) * 3;
+                var got = Math.max(3, Math.min(ceil, baseGot));
                 this.addFuel(got);
                 rewards.fuel = got;
                 this._log('⛽ 硫磺礦脈：採集 ' + got + ' 單位硫磺。', 'loot');
@@ -65051,6 +65125,7 @@ window.HY = window.HY || {};
   var _page = 'bag';                 // 'bag' | 'stash' | 'essence' | 'mapstash' | 'fossil' | 'rune' | 'jewel' | 'kmcraft'
   var _mapSelUid = null;             // 地圖倉庫頁：目前選取的地圖 uid
   var _mapTierFilter = 'all';        // 地圖倉庫頁：T 階篩選（'all' 或 1~16）
+  var _mapStashVer = -1;             // 地圖倉庫頁：上次渲染時的資料版本（供外部變動偵測）
   var _selUid = null;
   var _checked = {};
   var _iwEl = { a: null, b: null, badge: null };   // 雙視窗對比
@@ -68007,7 +68082,10 @@ window.HY = window.HY || {};
   window.HY.mapIconSrc = mapIconSrc;
 
   /** 地圖格子（單一 map 卡片，做成珠寶 orb 樣式）
-      ⭐ 支援堆疊：opts.count > 1 時顯示數量角標，並帶 data-map-stack 屬性 */
+      ⭐ 支援堆疊：opts.count > 1 時顯示 ×N 角標，並帶 data-map-stack 屬性
+      ⚠️ 右下角是「詞綴數」不是「張數」—— 張數在左下角藍色角標（×N）。
+         原本只顯示「0」很容易被誤讀成「這格有 0 張地圖」，
+         所以改成「N詞」，沒有詞綴時不顯示（白圖本來就 0 詞，不需佔位）。 */
   function mapOrbHtml(m, opts) {
     var o = opts || {};
     var rarity = mapSys() ? mapSys().mapRarity(m) : 'normal';
@@ -68021,13 +68099,14 @@ window.HY = window.HY || {};
     return '<button class="bagov-morb ' + rarCls + selCls + stackCls + '"' +
       ' data-map="' + esc(m.uid) + '"' +
       (cnt > 1 ? ' data-map-stack="' + cnt + '"' : '') +
-      (cnt > 1 ? ' title="' + esc(String(m.name || '地圖')) + ' ×' + cnt + '（點擊取出 1 張）"' : '') + '>' +
+      (cnt > 1 ? ' title="' + esc(String(m.name || '地圖')) + ' ×' + cnt + '（點擊選取，右鍵合成）"' : '') + '>' +
       '<span class="mt">T' + m.tier + '</span>' +
       '<span class="mi"><img src="' + esc(icon) + '" alt="" ' +
         'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">' +
         '<i class="mi-fb" style="display:none">⚪</i></span>' +
       '<span class="mn">' + esc(String(m.name || '地圖').slice(0, 5)) + '</span>' +
-      '<span class="mc">' + modN + '</span>' +
+      /* 詞綴數：只在有詞綴時顯示，避免白圖的「0」被誤讀 */
+      (modN > 0 ? '<span class="mc">' + modN + '詞</span>' : '') +
       '<span class="ml">Lv.' + m.level + '</span>' +
       (cnt > 1 ? '<span class="mq">×' + cnt + '</span>' : '') +
       '</button>';
@@ -68036,44 +68115,37 @@ window.HY = window.HY || {};
   /* ══════════════════════════════════════════════════════════════
      ⭐ 地圖堆疊
      ──────────────────────────────────────────────────────────────
-     問題：白圖（mods.length === 0）每次掉落都是一個獨立 uid，
-     同一個 T 階可能會累積十幾二十張，全部鋪在網格上非常雜亂，
-     而且根本分不出哪張是哪張（白圖除了 mobCount 之外完全一樣）。
+     ⚠️ 規則已集中到 atlasSystem.mapStackKey / groupMaps。
+        這裡只做「轉呼叫」，不要再自己寫一套判定 ——
+        否則「地圖管理」與「地圖倉庫」又會算出不同的組數
+        （這正是玩家回報「地圖沒有同步」的原因）。
 
-     解法：把「相同」的白圖合成一格並顯示 ×N。
-     判定「相同」的條件：
-       · 稀有度都是 normal（沒有詞綴）
-       · tier 相同
-
-     ⚠️ 為什麼連 name 都不比：
-       atlasRollMap() 每產一張圖就用 atlasMapName(t) 重新隨機抽名字，
-       所以同一張 T1 可能叫「幽暗林道」也可能叫「枯骨墓園」。
-       若把 name 納入判定，15 張 T1 白圖會被拆成 4~6 堆
-       （實測 42 張只併成 8 堆，仍然雜亂）。
-
-       對玩家來說，「T1 白圖」在功能上完全等價 ——
-       入場後的地形、怪物、掉落都一樣，只有名字不同。
-       POE 本身也是這樣處理：同階白圖就是一疊，不分名字。
-       因此只按 tier 合併，卡片以「該堆疊的第一張」的名字為代表。
+     規則摘要：
+       · 白圖（無詞綴）→ 同 tier 併成一疊，卡片以第一張的名字為代表
+       · 藍圖／黃圖（有詞綴）→ 各自獨立一格
      ══════════════════════════════════════════════════════════════ */
   /** 地圖的堆疊鍵（稀有度不是 normal 就回 null，代表不參與堆疊） */
   function mapStackKey(m) {
-    if (!m) return null;
     var sys = mapSys();
-    var rarity = sys ? sys.mapRarity(m) : ((m.mods || []).length ? 'x' : 'normal');
+    if (sys && typeof sys.mapStackKey === 'function') return sys.mapStackKey(m);
+    /* 後備（系統未載入時）：只按 tier 併白圖 */
+    if (!m) return null;
+    var rarity = (m.mods || []).length ? 'x' : 'normal';
     if (rarity !== 'normal') return null;
-    return String(num(m.tier, 1));
+    return 'T' + num(m.tier, 1);
   }
 
   /** 把地圖清單壓成堆疊群組
       @returns [{ key, map, uids:[uid...], count }]（保持原本排序） */
   function groupMaps(maps) {
+    var sys = mapSys();
+    if (sys && typeof sys.groupMaps === 'function') return sys.groupMaps(maps);
+    /* 後備：與 atlasSystem.groupMaps 同邏輯 */
     var groups = [];
     var idxByKey = {};
     (maps || []).forEach(function (m) {
       var key = mapStackKey(m);
       if (key === null) {
-        /* 藍圖／黃圖：各自獨立一格 */
         groups.push({ key: null, map: m, uids: [m.uid], count: 1 });
         return;
       }
@@ -68220,7 +68292,11 @@ window.HY = window.HY || {};
     var picked = Object.keys(a.talents || {}).length;
 
     h += '<div class="sg-label">🌌 地圖倉庫' +
-      '<span style="margin-left:auto;color:#64748b">共 ' + allMaps.length + ' 張</span></div>';
+      '<span style="margin-left:auto;color:#64748b">共 ' + allMaps.length + ' 張' +
+      (function () {
+        var gc = allMaps.length ? groupMaps(allMaps).length : 0;
+        return (gc && gc < allMaps.length) ? '（' + gc + ' 組）' : '';
+      })() + '</span></div>';
     h += '<div class="fg-toolbar">' +
       '<span class="fg-num" style="margin-left:0">輿圖天賦點 <b>' + left + '</b></span>' +
       '<span class="fg-num">已點選 <b>' + picked + '</b></span>' +
@@ -68301,6 +68377,13 @@ window.HY = window.HY || {};
     var right = '<div class="bagov-charbar">' + charBarHtml() + '</div>';
     right += mapGridHtml();
 
+    /* ⭐ 記下當前地圖版本，讓 renderModal 之外的輪詢能偵測外部變動 */
+    try {
+      var _ms = mapSys();
+      if (_ms && typeof _ms.mapsVersion === 'function') _mapStashVer = _ms.mapsVersion();
+    } catch (e) { }
+    startMapSync();
+
     _els.head.className = 'bagov-head jew';
     _els.head.innerHTML = '<span class="bagov-title">🌌 地圖倉庫</span>' +
       stashTabsTopHtml('mapstash') +
@@ -68315,8 +68398,7 @@ window.HY = window.HY || {};
       '<div class="bagov-right">' + right + '</div>';
 
     renderFoot(0, 0, 'mapstash');
-    refreshOriginals();
-    parkOriginals();
+    refreshOriginals();    parkOriginals();
     bindHead();
     bindStash();
     bindMapStash();
@@ -69064,6 +69146,39 @@ window.HY = window.HY || {};
         '點左側裝備指定　重組會消耗兩件原料　拆解不可逆　Esc 返回行囊</span>';
       return;
     }
+    if (page === 'mapstash') {
+      /* ⭐ 地圖倉庫的底部狀態列
+         ⚠️ 原本這裡沒有分支，直接落到「行囊」那一段，
+            結果顯示「顯示 0/0 件」—— 跟上方「共 51 張」自相矛盾，
+            玩家就會覺得資料沒同步。 */
+      var allM = 0, grpN = 0, tierN = 0, selected = null;
+      try {
+        var msys = mapSys();
+        var mc = APP().charSys.state;
+        var mlist = msys ? msys.listMaps(mc) : [];
+        allM = mlist.length;
+        grpN = mlist.length ? ((typeof msys.groupCount === 'function')
+          ? msys.groupCount(mlist) : mlist.length) : 0;
+        var tseen = {};
+        mlist.forEach(function (x) { tseen[num(x.tier, 1)] = 1; });
+        tierN = Object.keys(tseen).length;
+        if (_mapSelUid) {
+          selected = mlist.filter(function (x) { return x.uid === _mapSelUid; })[0] || null;
+        }
+      } catch (e) { /* 系統未載入時保持 0 */ }
+
+      _els.foot.innerHTML =
+        '<span>🌌 地圖倉庫</span>' +
+        '<span>共 <b>' + allM + '</b> 張' +
+        (grpN && grpN < allM ? '（<b>' + grpN + '</b> 組）' : '') + '</span>' +
+        '<span>階級 <b>' + tierN + '</b> 種</span>' +
+        '<span>目標：<b>' +
+        esc(selected ? ('T' + selected.tier + ' ' + String(selected.name || '')) : '未選擇') +
+        '</b></span>' +
+        '<span style="margin-left:auto;color:#64748b">' +
+        '左鍵選圖　右鍵合成（3→1）　點左側通貨改造　Esc 返回行囊</span>';
+      return;
+    }
     var lockedN = 0;
     bagAll().forEach(function (it) { if (isLocked(it)) lockedN += 1; });
     _els.foot.innerHTML =
@@ -69084,7 +69199,7 @@ window.HY = window.HY || {};
   function bindHead() {
     on('bagov-close', 'click', function () {
       if (_page === 'stash' || _page === 'essence' || _page === 'fossil' ||
-          _page === 'rune' || _page === 'jewel' || _page === 'kmcraft') {
+          _page === 'mapstash' || _page === 'rune' || _page === 'jewel' || _page === 'kmcraft') {
         _page = 'bag'; renderModal(); return;
       }
       close();
@@ -69402,6 +69517,7 @@ window.HY = window.HY || {};
   }
   function close() {
     if (!_els) return false;
+    stopMapSync();
     _els.mask.classList.add('hidden');
     _els.modal.classList.remove('wide');
     hidePair(); hideCtx();
@@ -69419,8 +69535,31 @@ window.HY = window.HY || {};
     return true;
   }
   function toggle() { return _open ? close() : open(); }
-  function renderModal() {
-    if (!_els) return;
+
+  /* ⭐ 地圖倉庫的即時同步：
+     地圖可能在別的地方被改動（輿圖面板合成、打圖 BOSS 掉落地圖、
+     通貨改造…），但玩家停在「地圖倉庫」這一頁時原本完全不會更新
+     → 這就是「地圖沒有同步」最直接的體感來源。
+     每 600ms 檢查一次資料版本，有變就重繪。 */
+  var _mapSyncTimer = null;
+  function startMapSync() {
+    if (_mapSyncTimer) return;
+    _mapSyncTimer = setInterval(function () {
+      if (!_open || _page !== 'mapstash') return;
+      var msys = mapSys();
+      if (!msys || typeof msys.mapsVersion !== 'function') return;
+      var v = msys.mapsVersion();
+      if (v === _mapStashVer) return;
+      /* 記號先更新，避免重繪期間又觸發一次 */
+      _mapStashVer = v;
+      try { renderMapStash(); } catch (e) { }
+    }, 600);
+  }
+  function stopMapSync() {
+    if (_mapSyncTimer) { clearInterval(_mapSyncTimer); _mapSyncTimer = null; }
+  }
+
+  function renderModal() {    if (!_els) return;
     hidePair();
     if (_page === 'stash') renderStash();
     else if (_page === 'essence') renderEssenceStash();
@@ -69519,7 +69658,17 @@ window.HY = window.HY || {};
       renderModal();
       return _page;
     },
-    page: function () { return _page; },
+    /** 讀取／設定目前頁面（傳空值=讀取）
+        ⭐ 加 setter 是為了讓「背包 → 地圖倉庫」可直接跳轉，
+           也方便除錯與外部模組開啟指定倉庫頁。 */
+    page: function (v) {
+      if (v === undefined) return _page;
+      if (['bag', 'stash', 'essence', 'mapstash', 'fossil', 'rune', 'jewel', 'kmcraft'].indexOf(v) < 0) return _page;
+      if (!_open) open();
+      _page = v;
+      renderModal();
+      return _page;
+    },
     install: function () { var a = installIntercept(); var b = installFloat(); return { intercept: a, float: b }; },
     refresh: function () { renderModal(); return true; },
     bestGear: bestGear,
@@ -98957,7 +99106,7 @@ window.HY = window.HY || {};
                 '</div>' +
                 '</div>' +
                 '<div class="dv-foot">' +
-                '<span>擊敗怪物節點回復硫磺　硫磺不足時可尋找「硫磺礦泉」節點</span>' +
+                '<span>⛽ 每次移動都會消耗硫磺　·　擊敗怪物或採集「硫磺礦脈」可回復　·　硫磺為 0 時無法移動</span>' +
                 '<span style="margin-left:auto">Esc 關閉</span>' +
                 '</div>';
             document.body.appendChild(root);
@@ -99166,20 +99315,41 @@ window.HY = window.HY || {};
                 zoom: this._zoom,       /* 0 = 自動適合畫面 */
                 rowMin: band.min,
                 rowMax: band.max,
+                /* ⭐ 每步都要硫磺 → 地圖需要知道「這一步多少錢」與「現在有多少」 */
+                fuel: num(m.fuel, 0),
+                fuelCostAt: function (row) {
+                    return window.HY.Data.delveFuelCostAt(Math.max(1, row));
+                },
                 onNodeClick: function (key, mp) {
                     if (self.delve.inBattle) { self._toast('戰鬥中無法移動', true); return; }
                     self._enter(key);
                 },
                 onNodeHover: function (node, ev, enterable) {
                     if (!self.el.tip) return;
+                    var D2 = window.HY.Data;
+                    /* ⭐ 每步都要硫磺：顯示這一步的實際花費與是否付得起 */
+                    var stepCost = enterable && !node.done
+                        ? D2.delveFuelCostAt(Math.max(1, node.row)) : 0;
+                    var fuelNow = num(m.fuel, 0);
+                    var canPay = (fuelNow >= stepCost);
+
                     var stateTxt = node.done ? '✅ 已清理'
-                        : (enterable ? '🟢 可進入' : '⚫ 尚未探明（需先連通）');
+                        : (!enterable ? '⚫ 尚未探明（需先連通）'
+                            : (canPay ? '🟢 可進入' : '⛽ 硫磺不足'));
+                    var stateCls = (node.done || (enterable && canPay)) ? 'ok' : 'no';
                     var kind = node.category === 'combat' ? '戰鬥'
                         : (node.category === 'reward' ? '獎勵' : '通道');
+                    var costLine = '';
+                    if (!node.done && enterable) {
+                        costLine = '<div class="st ' + (canPay ? 'ok' : 'no') + '">' +
+                            '⛽ 移動消耗 ' + stepCost + '　（現有 ' + fuelNow + '）' +
+                            (canPay ? '' : '　← 不足，無法移動') + '</div>';
+                    }
                     var tip = '<b>' + esc(node.name) + '</b>' +
                         '<span class="tt">' + esc(node.desc) + '</span>' +
-                        '<div class="st ' + (enterable && !node.done ? 'ok' : (node.done ? 'ok' : 'no')) + '">' +
-                        stateTxt + '　·　第 ' + node.row + ' 層　·　' + kind + '</div>';
+                        '<div class="st ' + stateCls + '">' +
+                        stateTxt + '　·　第 ' + (node.row + 1) + ' 層　·　' + kind + '</div>' +
+                        costLine;
                     self.el.tip.innerHTML = tip;
                     self.el.tip.classList.remove('hidden');
                     /* 定位（相對 mapwrap） */
@@ -99216,7 +99386,9 @@ window.HY = window.HY || {};
             this.el.biome.style.color = biome.color;
             this.el.fuel.textContent = num(m.fuel, 0) +
                 (D.DELVE_CONFIG.MAX_FUEL > 0 ? ' / ' + D.DELVE_CONFIG.MAX_FUEL : '');
-            /* ⭐ 節點消耗（本層每次選擇）與深入消耗（下一層） */
+            /* ⭐ 每步移動都要硫磺：顯示「下一步」與「深入下一層」的實際費用
+               ⚠️ 移動費用以「目標節點所在層」計算（節點可能在上面或下面），
+                  所以這裡只能用「目前層」與「下一層」當代表值。 */
             var nodeCost = D.delveFuelCostAt(depth);
             var nextCost = D.delveFuelCostAt(Math.floor(depth) + 1);
             var fuelNow = num(m.fuel, 0);
@@ -99228,15 +99400,27 @@ window.HY = window.HY || {};
                 this.el.cost.textContent = nextCost;
                 this.el.cost.style.color = (fuelNow >= nextCost) ? '#6ee7b7' : '#fca5a5';
             }
+            /* ⭐ 硫磺歸零 → 在進度列直接警告，避免玩家亂點猜原因 */
+            if (this.el.prognote) {
+                if (fuelNow <= 0) {
+                    this.el.prognote.textContent = '⛽ 硫磺已耗盡　·　只能前往相鄰的「硫磺礦脈」補給' +
+                        '（或先打怪回復）';
+                    this.el.prognote.style.color = '#fca5a5';
+                } else {
+                    this.el.prognote.textContent = '第 ' + (num(m.curRow, 0) + 1) + ' 層　·　' +
+                        progress.done + '/' + progress.total + '　·　' + esc(biome.desc);
+                    this.el.prognote.style.color = '';
+                }
+            }
             this.el.deepest.textContent = num(m.stats.deepest, 1);
             var pct = progress.total ? Math.round(progress.done / progress.total * 100) : 0;
             this.el.progbar.style.width = pct + '%';
-            this.el.prognote.textContent = '第 ' + (num(m.curRow, 0) + 1) + ' 層　·　' + progress.done + '/' + progress.total +
-                '　·　' + esc(biome.desc);
-            /* ⭐ 網格地圖（只在狀態變動時重繪，避免每 180ms 的 ATB tick 一直重建 SVG） */
+            /* ⭐ 網格地圖（只在狀態變動時重繪，避免每 180ms 的 ATB tick 一直重建 SVG）
+               ⚠️ 硫磺量必須納入簽章 —— 每步都扣硫磺，付不付得起會改變節點顏色 */
             var sig = [
                 m.seed, m.rows, m.depth, m.curCol, m.curRow,
-                (m.doneKeys || []).length, this._zoom, this.delve.inBattle ? 1 : 0
+                (m.doneKeys || []).length, this._zoom, this.delve.inBattle ? 1 : 0,
+                num(m.fuel, 0)
             ].join('|');
             if (sig !== this._mapSig) {
                 this._mapSig = sig;
@@ -99694,6 +99878,12 @@ window.HY = window.HY || {};
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    /* 安全數字（本檔自成一個 IIFE，不能依賴外部 num） */
+    function num(v, d) {
+        var n = Number(v);
+        return isFinite(n) ? n : (typeof d === 'number' ? d : 0);
+    }
+
     function posOf(map, node) {
         return {
             x: PAD_X + (node.col + map.half) * CELL_W,
@@ -99909,6 +100099,13 @@ window.HY = window.HY || {};
             var known = (n.state !== 'hidden');
             var dim = known ? 1 : 0.55;               /* 未探明的節點壓暗但仍可見 */
 
+            /* ⭐ 硫磺不足：可連通但付不出這一步的費用 → 標紅提示 */
+            var stepCost = 0, noFuel = false;
+            if (enterable && !n.done && typeof o.fuelCostAt === 'function') {
+                stepCost = o.fuelCostAt(n.row);
+                noFuel = (num(o.fuel, 0) < stepCost);
+            }
+
             /* 深度刻度（每 10 列） */
             if (n.col === 0 && n.row > 0 && n.row % 10 === 0) {
                 p.push('<text x="' + (PAD_X - 20) + '" y="' + (pt.y + 4) +
@@ -99916,10 +100113,11 @@ window.HY = window.HY || {};
                     'font-family="Consolas,monospace">' + n.row + '</text>');
             }
 
-            p.push('<g class="dvm-node" data-node="' + esc(n.col + ',' + n.row) + '" ' +
+            p.push('<g class="dvm-node' + (noFuel ? ' nofuel' : '') + '" data-node="' + esc(n.col + ',' + n.row) + '" ' +
                 'data-enter="' + (enterable ? '1' : '0') + '" ' +
+                'data-nofuel="' + (noFuel ? '1' : '0') + '" ' +
                 'opacity="' + dim + '" ' +
-                'style="cursor:' + (enterable ? 'pointer' : 'default') + '">');
+                'style="cursor:' + (enterable ? (noFuel ? 'not-allowed' : 'pointer') : 'default') + '">');
 
             /* 大範圍透明點擊區（讓小圓點也好點） */
             p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + Math.max(ICON_R, 12) +
@@ -99964,12 +100162,18 @@ window.HY = window.HY || {};
                 /* ── 主幹 / 通道：小圓點 ── */
                 var dotFill = n.isMainPath ? '#e6c477' : '#8b97a5';
                 var dotGlow = n.isMainPath ? '#f5d896' : '#a9b4c1';
-                if (n.isMainPath) {
+                /* ⭐ 硫磺不足 → 轉為警告紅 */
+                if (noFuel) { dotFill = '#ef4444'; dotGlow = '#fca5a5'; }
+                if (n.isMainPath && !noFuel) {
                     p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="10" fill="' + dotGlow +
                         '" opacity="0.25" filter="url(#dvm-blur-s)"/>');
+                } else if (noFuel) {
+                    p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="9" fill="#ef4444" ' +
+                        '" opacity="0.28" filter="url(#dvm-blur-s)"/>');
                 }
                 p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + DOT_R +
-                    '" fill="#0a0e14" stroke="' + dotFill + '" stroke-width="1.8"/>');
+                    '" fill="#0a0e14" stroke="' + dotFill + '" stroke-width="' + (noFuel ? '2' : '1.8') + '"' +
+                    (noFuel ? ' stroke-dasharray="2.6 2"' : '') + '/>');
                 p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + (DOT_R - 2.4) +
                     '" fill="' + dotGlow + '" opacity="' + (enterable ? 1 : 0.7) + '"/>');
                 p.push('</g>');
@@ -99978,6 +100182,8 @@ window.HY = window.HY || {};
 
             /* ── 獎勵 / 戰鬥：帶圖示的大節點 ── */
             var col = n.color || '#7b8794';
+            /* ⭐ 硫磺不足 → 整顆節點轉為警告紅，玩家一眼就知道「卡在硫磺」 */
+            if (noFuel) col = '#ef4444';
             if (isBoss) {
                 p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + (ICON_R + 9) +
                     '" fill="#dc2626" opacity="0.28" filter="url(#dvm-blur-l)"/>');
@@ -99987,13 +100193,14 @@ window.HY = window.HY || {};
             }
             /* 外環 + 深色底 */
             p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + (ICON_R + 2.5) +
-                '" fill="#0a0e14" stroke="' + col + '" stroke-width="1.5" ' +
-                'stroke-opacity="' + (enterable ? 0.95 : 0.7) + '"/>');
+                '" fill="#0a0e14" stroke="' + col + '" stroke-width="' + (noFuel ? '2.2' : '1.5') + '" ' +
+                'stroke-opacity="' + (enterable ? 0.95 : 0.7) + '"' +
+                (noFuel ? ' stroke-dasharray="3 2.5"' : '') + '/>');
             p.push('<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + ICON_R +
                 '" fill="' + col + '" opacity="' + (enterable ? 0.26 : 0.14) + '"/>');
             /* 圖示 */
             p.push(iconShape(n.type, pt.x, pt.y, ICON_R * 0.78,
-                enterable ? '#f8fafc' : '#b9c4d1'));
+                enterable ? (noFuel ? '#fecaca' : '#f8fafc') : '#b9c4d1'));
 
             p.push('</g>');
         });
@@ -103108,6 +103315,10 @@ window.HY = window.HY || {};
             h += row('護體防禦', fmt(st.def || 0), 'up');
             h += row('最大氣血', fmt(st.maxHp || 0), 'up');
             h += row('最大內力', fmt(st.maxMp || 0), 'up');
+            /* ⭐ 能量護盾：有護盾時才顯示（與左側護盾條一致） */
+            if (num(st.energyShield, 0) > 0) {
+                h += row('🔵 能量護盾', fmt(st.energyShield), 'up');
+            }
             h += row('命中', fmt(st.hit || 0) + '%');
             h += row('閃避', fmt(st.eva || 0) + '%');
             h += row('爆擊', num(st.crit, 0).toFixed(1) + '%');
@@ -103121,8 +103332,17 @@ window.HY = window.HY || {};
 
             /* ⭐ POE 官方節點的數值全部是 stats 字串（「+10 to Strength」這種），
                不是 tb.flat / tb.more 的結構化欄位，所以上面那段永遠是空的。
-               這裡額外統計「已配置節點的效果條數」，並列出前幾條翻譯後的效果。 */
-            var poeLines = [];
+               這裡額外統計「已配置節點的效果條數」，並列出前幾條翻譯後的效果。
+
+               ⚠️ v55：改為「相同屬性合併」。
+                  原本是逐條列出，所以 24 個節點可能顯示成
+                    +10 最大能量護盾
+                    +20 最大能量護盾
+                    +10 最大能量護盾
+                    +14 最大能量護盾
+                  同樣的屬性重複四行，玩家根本看不出總共加了多少。
+                  現在把「同一個屬性 + 同一種計算方式」加總成一行。 */
+            var poeLines = [];          /* 保留原始逐條（除錯用） */
             var _TZ3 = window.HY.TalentZh;
             var _NODES3 = window.HY.Data.TALENT_NODES || {};
             var _alloc3 = (c.talent && c.talent.allocated) || {};
@@ -103134,30 +103354,136 @@ window.HY = window.HY || {};
                     poeLines.push(zh);
                 });
             });
+
+            /* ── ⭐ 相同屬性合併 ──
+               把翻譯後的字串拆成「數值 + 屬性名」，同屬性同單位就加總。
+               例：+10 最大能量護盾 / +20 最大能量護盾 → +30 最大能量護盾
+                   最大能量護盾增加 4% / 增加 6%       → 最大能量護盾增加 10%
+               無法辨識的句型（條件式、特殊機制）原樣保留，不合併。 */
+            var MERGE = (function () {
+                var buckets = {};      /* key → { name, val, unit, cond } */
+                var others = [];       /* 無法安全合併的原文 */
+                var order = [];        /* 保持出現順序 */
+
+                function add(name, val, unit, cond) {
+                    var nm = String(name || '').trim();
+                    if (!nm) return false;
+                    var key = nm + '|' + unit + '|' + (cond || '');
+                    if (!buckets[key]) {
+                        buckets[key] = { name: nm, val: 0, unit: unit, cond: cond || '' };
+                        order.push(key);
+                    }
+                    buckets[key].val += val;
+                    return true;
+                }
+
+                poeLines.forEach(function (raw) {
+                    var s = String(raw || '').trim();
+                    if (!s) return;
+                    var m;
+
+                    /* ① 「+30 最大能量護盾」→ 純加法 */
+                    m = /^([+-]?[\d.]+)\s+(.+)$/.exec(s);
+                    if (m && !/%/.test(s)) {
+                        if (add(m[2], parseFloat(m[1]), 'flat', '')) return;
+                    }
+
+                    /* ② 「最大能量護盾增加 6%」→ 百分比加法 */
+                    m = /^(.+?)(?:增加|提高|提升)\s*([\d.]+)%$/.exec(s);
+                    if (m) {
+                        if (add(m[1], parseFloat(m[2]), 'pct', '')) return;
+                    }
+
+                    /* ③ 「+14% 最大能量護盾」→ 百分比加法 */
+                    m = /^([+-][\d.]+)%\s+(.+)$/.exec(s);
+                    if (m) {
+                        if (add(m[2], parseFloat(m[1]), 'pct', '')) return;
+                    }
+
+                    /* ④ 「每秒回復 5 魔力」→ 同屬性加法（保留「每秒」語意） */
+                    m = /^每秒(?:回復|恢復)\s*([\d.]+)\s*(.+)$/.exec(s);
+                    if (m) {
+                        if (add('回復 ' + m[2] + '/秒', parseFloat(m[1]), 'flat', '')) return;
+                    }
+
+                    /* ⑤ 「能量護盾回復速率增加 10%」→ 屬性 + 百分比 */
+                    m = /^(.+?速率)(?:增加|提高|提升)\s*([\d.]+)%$/.exec(s);
+                    if (m) {
+                        if (add(m[1], parseFloat(m[2]), 'pct', '')) return;
+                    }
+
+                    /* 其他（條件式／特殊機制）原樣保留 */
+                    others.push(s);
+                });
+
+                var merged = order.map(function (k) {
+                    var b = buckets[k];
+                    var val = Math.round(b.val * 100) / 100;
+                    var txt;
+                    if (b.unit === 'pct') {
+                        txt = b.name + ' 增加 ' + val + '%';
+                    } else {
+                        txt = (val >= 0 ? '+' : '') + val + ' ' + b.name;
+                    }
+                    return { txt: txt, val: Math.abs(val) };
+                });
+                /* 數值大的排前面，讓主要加成先被看到 */
+                merged.sort(function (a, b) { return b.val - a.val; });
+                return { merged: merged.map(function (x) { return x.txt; }), others: others };
+            })();
+
+            /* 給後續 UI 用的最終清單：合併後的屬性 + 無法合併的原句 */
+            poeLines = MERGE.merged.concat(MERGE.others);
             if (tb) {
                 var hasAny = false;
                 var LBL = {
-                    maxHp: '最大氣血', maxMp: '最大內力', atk: '外功攻擊', def: '護體防禦',
+                    maxHp: '最大氣血', maxMp: '最大內力', maxEs: '最大能量護盾',
+                    atk: '外功攻擊', def: '護體防禦',
                     hit: '命中', eva: '閃避', crit: '爆擊', critRes: '暴擊抵抗'
                 };
                 var lines = [];
+
+                /* ⭐ 避免同一屬性顯示兩次：
+                   結構化通道（tb.flat / tb.more）與 POE 逐條翻譯（poeLines）
+                   常常描述同一個加成（例如 maxEs 11% 與「最大能量護盾 增加 11%」）。
+                   若 POE 行已經涵蓋該屬性，就跳過結構化那行，只留 POE 那行
+                   （POE 行的名稱更完整、來源更精確）。 */
+                var _poeJoined = poeLines.join(' ').replace(/\s+/g, '');
+                function poeCovers(key) {
+                    var ALIAS = {
+                        maxHp: ['最大生命', '最大氣血', '生命'],
+                        maxMp: ['最大魔力', '最大內力', '魔力'],
+                        maxEs: ['最大能量護盾', '能量護盾'],
+                        atk: ['攻擊', '物理傷害'],
+                        def: ['護甲', '防禦'],
+                        hit: ['命中'],
+                        eva: ['閃避'],
+                        crit: ['暴擊', '爆擊'],
+                        critRes: ['暴擊抵抗']
+                    }[key];
+                    if (!ALIAS) return false;
+                    return ALIAS.some(function (w) { return _poeJoined.indexOf(w) >= 0; });
+                }
+
                 Object.keys(tb.flat || {}).forEach(function (k) {
                     var v = tb.flat[k];
                     if (!v) return;
+                    if (poeCovers(k)) return;            /* POE 行已涵蓋 → 不重複 */
                     var nm = LBL[k] || k;
                     if (k.indexOf('elAtk_') === 0) nm = k.replace('elAtk_', '') + '元素攻擊';
                     if (k.indexOf('elDef_') === 0) nm = k.replace('elDef_', '') + '元素抗性';
                     lines.push([nm, (v > 0 ? '+' : '') + fmt(v)]);
                     hasAny = true;
                 });
+                /* （_poeJoined / poeCovers 已在上面宣告，這裡直接用） */
                 Object.keys(tb.more || {}).forEach(function (k) {
                     var v = tb.more[k];
                     if (!v) return;
+                    if (poeCovers(k)) return;        /* POE 行已涵蓋 → 不重複顯示 */
                     var nm = LBL[k] || k;
                     lines.push([nm + '（乘算）', (v > 0 ? '+' : '') + (v * 100).toFixed(1) + '%']);
                     hasAny = true;
-                });
-                ['con', 'str', 'agi', 'int'].forEach(function (k) {
+                });                ['con', 'str', 'agi', 'int'].forEach(function (k) {
                     var v = (tb.attr || {})[k];
                     if (!v) return;
                     var nm = { con: '體魄', str: '力道', agi: '身法', int: '內息' }[k];
@@ -103171,23 +103497,25 @@ window.HY = window.HY || {};
                     lines.push([nm, '+' + fmt(v) + (k === 'atkSpd' ? '' : '%')]);
                     hasAny = true;
                 });
+                /* ⭐ 合併後條數變少，可以提高顯示上限（原本 26 條被截斷得很嚴重） */
+                var MAX_SHOW = 40;
+                var totalLines = lines.length + poeLines.length;
                 h += '<div class="sec"><h4>🌳 天賦貢獻 <span class="n">' +
-                    (lines.length + poeLines.length) + ' 項</span></h4>';
+                    totalLines + ' 項</span></h4>';
                 if (!hasAny && !poeLines.length) {
                     h += '<div class="empty">尚未配置任何有加成效果的節點。<br>' +
                         '點擊樹上的節點開始配置。</div>';
                 } else {
-                    lines.slice(0, 26).forEach(function (p) {
+                    lines.slice(0, MAX_SHOW).forEach(function (p) {
                         h += row(p[0], p[1], 'up');
                     });
-                    /* ⭐ POE 節點的效果（已翻譯） */
-                    poeLines.slice(0, Math.max(0, 26 - lines.length)).forEach(function (txt) {
+                    /* ⭐ POE 節點的效果（已翻譯，且相同屬性已合併） */
+                    poeLines.slice(0, Math.max(0, MAX_SHOW - lines.length)).forEach(function (txt) {
                         h += '<div class="row"><span style="color:#94a3b8">・' +
                             esc(txt) + '</span></div>';
                     });
-                    var totalLines = lines.length + poeLines.length;
-                    if (totalLines > 26) {
-                        h += '<div class="note">…另有 ' + (totalLines - 26) + ' 項</div>';
+                    if (totalLines > MAX_SHOW) {
+                        h += '<div class="note">…另有 ' + (totalLines - MAX_SHOW) + ' 項</div>';
                     }
                 }
                 h += '</div>';
@@ -110748,6 +111076,7 @@ window.HY = window.HY || {};
             var m = this.data().atlasRollMap(tier);
             a.maps.push(m);
             if (m.tier > a.bestTier) a.bestTier = m.tier;
+            this.bumpMapsVersion();
             return m;
         }
 
@@ -110768,7 +111097,11 @@ window.HY = window.HY || {};
             var a = this.ensureState(charObj);
             if (!a) return false;
             for (var i = 0; i < a.maps.length; i++) {
-                if (a.maps[i].uid === uid) { a.maps.splice(i, 1); return true; }
+                if (a.maps[i].uid === uid) {
+                    a.maps.splice(i, 1);
+                    this.bumpMapsVersion();
+                    return true;
+                }
             }
             return false;
         }
@@ -110798,6 +111131,7 @@ window.HY = window.HY || {};
             } else {
                 this._log('🧭 合成成功：3 張 T' + t + ' → 1 張 T' + (t + 1) + '【' + nm.name + '】', 'system');
             }
+            this.bumpMapsVersion();
             return { ok: true, newMap: nm };
         }
 
@@ -110911,6 +111245,72 @@ window.HY = window.HY || {};
                 });
             });
             return out;
+        }
+
+        // ──────────────────────────────────────────────────────────
+        //  地圖堆疊（⭐ UI 共用唯一來源）
+        // ──────────────────────────────────────────────────────────
+        /* 為什麼要集中到這裡：
+           「地圖管理」（uiAtlas）與「地圖倉庫」（uiBagOverhaul）是兩個獨立面板，
+           原本各自實作一套分組規則，結果兩邊算出來的組數不一致：
+             · uiAtlas      ：tier + rarity + mods + name  → 同名才併
+             · uiBagOverhaul：只有 tier（白圖）          → 不分名字全併
+           同一批 50 張 T1 白圖，在左邊顯示「7 組」、在右邊顯示「1 組」，
+           玩家自然會覺得「地圖沒有同步」。
+           現在兩邊都呼叫這支，規則只有一份，永遠一致。 */
+
+        /** ⭐ 地圖資料版本號：任何增減改動都要 +1，
+            讓開著的 UI 能偵測「資料變了」並重繪（跨面板同步用） */
+        bumpMapsVersion() {
+            this._mapsVer = (this._mapsVer || 0) + 1;
+            return this._mapsVer;
+        }
+        mapsVersion() { return this._mapsVer || 0; }
+
+        /**
+         * 地圖的堆疊鍵
+         * ⭐ 白圖（無詞綴）只按 tier 併 —— 因為 atlasRollMap() 每張都會重新抽名字，
+         *    若把 name 納入判定，50 張 T1 白圖會散成 4~6 堆，反而更雜亂。
+         *    對玩家而言同階白圖功能完全等價（地形/怪物/掉落都一樣），
+         *    POE 也是如此：同階白圖就是一疊。
+         * ⭐ 藍圖／黃圖有詞綴，各自獨立一格（不參與堆疊）。
+         * @returns {string|null} 可堆疊時回傳鍵，否則 null
+         */
+        mapStackKey(map) {
+            if (!map) return null;
+            if (this.mapRarity(map) !== 'normal') return null;
+            return 'T' + num(map.tier, 1);
+        }
+
+        /**
+         * 把地圖清單壓成堆疊群組（保持原本排序）
+         * @returns {Array<{key,map,uids:Array,count}>}
+         */
+        groupMaps(maps) {
+            var self = this;
+            var groups = [];
+            var idxByKey = {};
+            (maps || []).forEach(function (m) {
+                var key = self.mapStackKey(m);
+                if (key === null) {
+                    groups.push({ key: null, map: m, uids: [m.uid], count: 1 });
+                    return;
+                }
+                if (idxByKey[key] !== undefined) {
+                    var g = groups[idxByKey[key]];
+                    g.uids.push(m.uid);
+                    g.count += 1;
+                } else {
+                    idxByKey[key] = groups.length;
+                    groups.push({ key: key, map: m, uids: [m.uid], count: 1 });
+                }
+            });
+            return groups;
+        }
+
+        /** 堆疊後的組數（給標題「N 張（M 組）」用） */
+        groupCount(maps) {
+            return this.groupMaps(maps).length;
         }
 
         // ──────────────────────────────────────────────────────────
@@ -111051,6 +111451,8 @@ window.HY = window.HY || {};
             wallet[orbId] -= 1;
             this._log('🛠️ 使用【' + orb.name + '】改造地圖 T' + map.tier + '【' + map.name + '】→ ' +
                 ((map.modNames || []).length ? (map.modNames.join('、')) : '無詞綴'), 'system');
+            /* ⭐ 詞綴改變 → 稀有度可能從白變藍，堆疊分組會跟著變，必須通知 UI */
+            this.bumpMapsVersion();
             return { ok: true, map: map };
         }
 
@@ -112718,14 +113120,43 @@ window.HY = window.HY || {};
         }
 
         /** ⭐ 即時同步迴圈：輿圖開著時每 250ms 同步戰鬥狀態
-            （修「輿圖戰鬥面板沒有即時跟著刷圖更新」） */
+            （修「輿圖戰鬥面板沒有即時跟著刷圖更新」）
+            ⭐ v47：同時偵測「地圖清單變動」並重繪右欄
+            原本只同步戰鬥，地圖增減（BOSS 掉落、合成、別的面板改造）
+            都不會反映 → 玩家看到的就是「地圖沒有同步」。 */
         _startSyncLoop() {
             var self = this;
             if (this._syncTimer) return;
             this._syncTimer = setInterval(function () {
                 if (!self.isOpen) { self._stopSyncLoop(); return; }
                 try { self.syncBattle(); } catch (e) { }
+                try { self._syncMapListIfChanged(); } catch (e) { }
             }, 250);
+        }
+
+        /** 地圖清單的簽章（版本號 + 張數）—— 任一邊變了就重繪 */
+        _mapListSig() {
+            try {
+                var ver = (typeof this.sys.mapsVersion === 'function') ? this.sys.mapsVersion() : 0;
+                var c = this.app.charSys.state;
+                return ver + '#' + this.sys.listMaps(c).length;
+            } catch (e) { return ''; }
+        }
+
+        /** 地圖清單有變動 → 只重繪右欄（比整頁 render 省） */
+        _syncMapListIfChanged() {
+            var sig = this._mapListSig();
+            if (sig === this._lastMapListSig) return;
+            this._lastMapListSig = sig;
+            if (!this.el || !this.el.right) return;
+            /* 戰鬥中重繪右欄不會影響戰鬥面板（在 el.mid），安全 */
+            this._renderRight();
+            /* 標題（張數/組數）也要跟著更新 */
+            var self = this;
+            var c = this.app.charSys.state;
+            var a = this.sys.ensureState(c);
+            if (this.el.clears) this.el.clears.textContent = num(a.clears, 0);
+            if (this.el.best) this.el.best.textContent = a.bestTier > 0 ? ('T' + a.bestTier) : '—';
         }
 
         _stopSyncLoop() {
@@ -112750,6 +113181,7 @@ window.HY = window.HY || {};
             this._renderLeft();
             this._renderMid();
             this._renderRight();
+            this._lastMapListSig = this._mapListSig();
             this.refreshProgress();
         }
 
@@ -113695,17 +114127,11 @@ window.HY = window.HY || {};
             var maps = sys.listMaps(c);
             var inMap = sys.isInMap();
 
-            /* ⭐ v46：先算出「堆疊後會有幾組」，標題同時顯示張數與組數 */
-            var _grpCount = 0;
-            (function () {
-                var seen = {};
-                maps.forEach(function (m) {
-                    var rar = sys.mapRarity(m);
-                    var mods = (m.mods || []).slice().sort().join(',');
-                    var k = [num(m.tier, 1), rar, mods, String(m.name || '')].join('|');
-                    if (!seen[k]) { seen[k] = 1; _grpCount += 1; }
-                });
-            })();
+            /* ⭐ 先算出「堆疊後會有幾組」—— 直接問系統，不要在 UI 重算
+               （UI 自己算一套是「地圖沒有同步」的元凶） */
+            var _grpCount = (typeof sys.groupCount === 'function')
+                ? sys.groupCount(maps)
+                : maps.length;
 
             var h = '<div class="at-tierttl">🗺️ 地圖管理' +
                 '<span class="cnt">' + maps.length + ' 張' +
@@ -113745,32 +114171,27 @@ window.HY = window.HY || {};
                 if (open) {
                     h += '<div class="at-mgb">';
 
-                    /* ⭐ v46：同階級 + 同樣式 + 同詞綴 → 堆疊成一行
+                    /* ⭐ 堆疊分組一律交給 atlasSystem（與「地圖倉庫」共用同一份規則）
                        ──────────────────────────────────────────────────
-                       原本 48 張 T1 白圖會展開成 48 行，列表極度冗長。
-                       這裡把「可堆疊」的條件定為：
-                         tier 相同、rarity 相同、mods 組合相同、name 相同
-                       （name 相同才不會把「幽暗林道」和「枯骨墓園」併成一筆）
-                       有詞綴的圖（藍/黃）因為詞綴各異，仍會各自獨立成行。 */
-                    var groups = [];
-                    var groupIdx = {};
-                    list.forEach(function (m) {
-                        var rarity = sys.mapRarity(m);
-                        var mods = (m.mods || []).slice().sort().join(',');
-                        var key = [num(m.tier, 1), rarity, mods, String(m.name || '')].join('|');
-                        if (groupIdx[key] === undefined) {
-                            groupIdx[key] = groups.length;
-                            groups.push({
-                                key: key,
-                                rarity: rarity,
-                                name: m.name,
-                                level: m.level,
-                                mods: (m.mods || []),
-                                items: [m]
-                            });
-                        } else {
-                            groups[groupIdx[key]].items.push(m);
-                        }
+                       原本這裡自己用 tier+rarity+mods+name 分組，
+                       而地圖倉庫只用 tier 分組 → 同一批白圖兩邊組數不同，
+                       玩家就會看到「地圖沒有同步」。
+                       現在兩邊都呼叫 sys.groupMaps()，規則只有一份。 */
+                    var rawGroups = (typeof sys.groupMaps === 'function')
+                        ? sys.groupMaps(list)
+                        : list.map(function (m) { return { key: null, map: m, uids: [m.uid], count: 1 }; });
+
+                    var groups = rawGroups.map(function (g) {
+                        return {
+                            key: g.key,
+                            rarity: sys.mapRarity(g.map),
+                            name: g.map.name,
+                            level: g.map.level,
+                            mods: (g.map.mods || []),
+                            items: (g.map ? [g.map] : []),
+                            uids: g.uids,
+                            count: g.count
+                        };
                     });
 
                     /* 堆疊後排序：先依樣式（白→藍→黃），再依名稱，
@@ -113782,7 +114203,7 @@ window.HY = window.HY || {};
                         if (ra !== rb) return ra - rb;
                         var na = String(a.name || ''), nb = String(b.name || '');
                         if (na !== nb) return na.localeCompare(nb, 'zh-Hant');
-                        return (b.items.length) - (a.items.length);
+                        return (b.count) - (a.count);
                     });
 
                     groups.forEach(function (gp) {
@@ -113790,13 +114211,11 @@ window.HY = window.HY || {};
                         var rarity = gp.rarity;
                         var rarTxt = { normal: '白', magic: '藍', rare: '黃' }[rarity] || '';
                         var rarCls = 'r-' + rarity;
-                        var cnt = gp.items.length;
+                        var cnt = gp.count;
                         /* 該堆疊中是否有「目前放上地圖儀」的那張 */
-                        var mine = gp.items.some(function (x) { return x.uid === self._selMapUid; });
-                        /* 點擊時：預設取第一張；若堆疊內有已選中的，則取該張 */
-                        var clickUid = mine
-                            ? self._selMapUid
-                            : gp.items[0].uid;
+                        var mine = (gp.uids || []).indexOf(self._selMapUid) !== -1;
+                        /* 點擊時：若堆疊內有已選中的就取該張，否則取第一張 */
+                        var clickUid = mine ? self._selMapUid : gp.uids[0];
                         h += '<div class="at-mgrow' + (mine ? ' sel' : '') + '"' +
                             ' data-mapsel="' + esc(clickUid) + '"' +
                             (cnt > 1 ? ' data-stack="' + cnt + '"' : '') + '>' +
