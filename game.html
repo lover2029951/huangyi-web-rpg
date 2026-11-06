@@ -147,6 +147,23 @@ h3 {
 .progress-fill.hp { background: linear-gradient(90deg, #b91c1c, #ef4444); width: 100%; }
 .progress-fill.mp { background: linear-gradient(90deg, #1d4ed8, #3b82f6); width: 100%; }
 
+/* ⭐ v57：能量護盾條（青藍，與 HP 紅 / MP 藍區隔）
+   用於戰鬥面板（uiCombatExplore）與角色面板 */
+.progress-fill.es {
+  background: linear-gradient(90deg, #075985, #0ea5e9 45%, #7dd3fc);
+  width: 100%;
+}
+.progress-bg.es-bg {
+  border-color: #0369a1;
+  box-shadow: 0 0 5px rgba(56, 189, 248, 0.35);
+}
+
+/* 戰鬥面板的護盾條（hpmp-bar 系列，由 uiDexAtb 注入主樣式，
+   這裡補一份全域版本，供 uiCombatExplore 等待命畫面使用） */
+.hpmp-bar.es { border-color: #0369a1; box-shadow: 0 0 5px rgba(56, 189, 248, 0.35); }
+.hpmp-bar.es .fi { background: linear-gradient(90deg, #075985, #0ea5e9 45%, #7dd3fc); }
+.hpmp-bar.enemy-es .fi { background: linear-gradient(90deg, #164e63, #0891b2 45%, #67e8f9); }
+
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -63743,6 +63760,21 @@ window.HY = window.HY || {};
                 '<div class="tx">' + label + '</div>' +
             '</div>';
         }
+
+        /** ⭐ v57：能量護盾條（有護盾上限才產生 HTML） */
+        buildEsBar(cur, max, isEnemy) {
+            var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
+            if (safeMax <= 0) return '';
+            var safeCur = Math.max(0, Math.min(
+                (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax, safeMax));
+            var pct = (safeCur / safeMax) * 100;
+            var label = '🔵 ' + Math.floor(safeCur).toLocaleString() +
+                ' / ' + Math.floor(safeMax).toLocaleString();
+            return '<div class="hpmp-bar es' + (isEnemy ? ' enemy-es' : '') + '">' +
+                '<div class="fi" style="width:' + pct.toFixed(1) + '%;"></div>' +
+                '<div class="tx">' + label + '</div>' +
+            '</div>';
+        }
         renderExploreAndCombat() {
             const Data = window.HY.Data;
             const app = this.app;
@@ -63862,6 +63894,10 @@ window.HY = window.HY || {};
                         '<div style="font-size:0.8rem; flex-shrink:0;"><strong>' + m.name + ' (Lv.' + m.lv + ')</strong></div>' +
                         this.buildHpmpBar('hp', m.currentHp, md.maxHp, false) +
                         this.buildHpmpBar('mp', m.currentMp, md.maxMp, false) +
+                        /* ⭐ v57：能量護盾條 */
+                        this.buildEsBar(
+                            (typeof m.esCurrent === 'number') ? m.esCurrent : md.energyShield,
+                            md.energyShield, false) +
                         '<div class="fixed-affix-line" style="color:#64748b;">等待交鋒中…</div>';
                     partyBox.appendChild(row);
                 });
@@ -90223,6 +90259,10 @@ window.HY = window.HY || {};
                 '.hpmp-bar.mp .fi { background: linear-gradient(90deg, #1e3a8a, #2563eb 45%, #60a5fa); }' +
                 '.hpmp-bar .tx { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: bold; color: #fff; text-shadow: 0 1px 2px #000, 0 0 4px rgba(0,0,0,0.85); letter-spacing: 0.2px; pointer-events: none; white-space: nowrap; line-height: 1; }' +
                 '.hpmp-bar.enemy-hp .fi { background: linear-gradient(90deg, #450a0a, #b91c1c 45%, #ef4444); }' +
+                /* ⭐ v57：能量護盾條（青藍色，與 HP 紅 / MP 藍明顯區隔） */
+                '.hpmp-bar.es { border-color: #0369a1; box-shadow: 0 0 5px rgba(56,189,248,.35); }' +
+                '.hpmp-bar.es .fi { background: linear-gradient(90deg, #075985, #0ea5e9 45%, #7dd3fc); }' +
+                '.hpmp-bar.enemy-es .fi { background: linear-gradient(90deg, #164e63, #0891b2 45%, #67e8f9); }' +
                 '.fixed-affix-line { height: 16px; line-height: 16px; background: rgba(0,0,0,0.45); padding: 0 5px; font-size: 0.69rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 2px; box-sizing: border-box; flex-shrink: 0; }' +
                 /* ⭐ 集氣條滿時「下一招預告」 */
                 '.next-act { display: flex; align-items: center; gap: 4px; height: 17px; line-height: 17px; padding: 0 6px; font-size: 0.70rem; white-space: nowrap; overflow: hidden; border-radius: 2px; box-sizing: border-box; flex-shrink: 0; background: rgba(0,0,0,0.50); border-left: 2px solid #475569; }' +
@@ -90463,6 +90503,26 @@ window.HY = window.HY || {};
                 : ('hpmp-bar mp' + (isEnemy ? ' enemy-mp' : ''));
             var label = (isHp ? '❤ ' : '💧 ') + Math.floor(safeCur).toLocaleString() + ' / ' + Math.floor(safeMax).toLocaleString();
             return '<div class="' + cls + '">' +
+                '<div class="fi" id="' + idPrefix + '-fill" style="width:' + pct.toFixed(1) + '%;"></div>' +
+                '<div class="tx" id="' + idPrefix + '-text">' + label + '</div>' +
+            '</div>';
+        }
+
+        /** ⭐ v57：能量護盾條
+            ⚠️ 只在「實際有護盾上限」時才產生 HTML（沒護盾的角色不佔版面）。
+               與氣血/內力條同寬、同高，方便玩家一眼比較三層防護。
+            @param cur  目前護盾（undefined 時視為滿值）
+            @param max  護盾上限（<=0 時回傳空字串） */
+        buildEsBar(idPrefix, cur, max, isEnemy) {
+            var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
+            if (safeMax <= 0) return '';
+            var safeCur = Math.max(0, Math.min(
+                (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax,
+                safeMax));
+            var pct = (safeCur / safeMax) * 100;
+            var label = '🔵 ' + Math.floor(safeCur).toLocaleString() +
+                ' / ' + Math.floor(safeMax).toLocaleString();
+            return '<div class="hpmp-bar es' + (isEnemy ? ' enemy-es' : '') + '">' +
                 '<div class="fi" id="' + idPrefix + '-fill" style="width:' + pct.toFixed(1) + '%;"></div>' +
                 '<div class="tx" id="' + idPrefix + '-text">' + label + '</div>' +
             '</div>';
@@ -90811,6 +90871,11 @@ window.HY = window.HY || {};
                             }) +
                             this.buildHpmpBar('hp', 'ally-hp-' + i, m.currentHp, md.maxHp, false) +
                             this.buildHpmpBar('mp', 'ally-mp-' + i, m.currentMp, md.maxMp, false) +
+                            /* ⭐ v57：能量護盾條（有護盾上限才顯示）
+                               必須放在 HP/MP 之後，讓「血 → 內 → 盾」的層次清楚 */
+                            this.buildEsBar('ally-es-' + i,
+                                (typeof m.esCurrent === 'number') ? m.esCurrent : md.energyShield,
+                                md.energyShield, false) +
                             /* ⭐ 原本的「門派 ｜ 心法」改為「集氣條滿時下一招預告」 */
                             this.buildNextActionHtml(m, 'ally-next-' + i, false) +
                             this.buildFeatTableHtml(m, 'ally-feat-' + i) +
@@ -90889,6 +90954,12 @@ window.HY = window.HY || {};
                             }) +
                             this.buildHpmpBar('hp', 'enemy-hp-' + j, e.currentHp, e.maxHp, true) +
                             this.buildHpmpBar('mp', 'enemy-mp-' + j, eCurMp, eMaxMp, true) +
+                            /* ⭐ v57：敵方護盾條（怪物有護盾詞綴時才顯示） */
+                            this.buildEsBar('enemy-es-' + j,
+                                (typeof e.currentEs === 'number') ? e.currentEs
+                                    : (typeof e.esCurrent === 'number') ? e.esCurrent
+                                        : num(e.energyShield, 0),
+                                num(e.energyShield, 0) || num(e.maxEs, 0), true) +
                             /* ⭐ 敵方也加上「集氣條滿時下一招預告」 */
                             this.buildNextActionHtml(e, 'enemy-next-' + j, true) +
                             '<div class="fixed-affix-line" style="border-left:2px solid #334155; color:#94a3b8;">絕技：' + sList + '</div>' +
@@ -90959,6 +91030,25 @@ window.HY = window.HY || {};
                     txt.textContent = icon + Math.floor(safeCur).toLocaleString() + ' / ' + Math.floor(safeMax).toLocaleString();
                 }
             }
+            /* ⭐ v57：護盾條的即時更新
+               和 setBar 分開，因為：
+                 · 圖示固定是 🔵（不像 hp/mp 要判斷）
+                 · 元素不存在時（該角色沒護盾）要安靜跳過 */
+            function setEsBar(prefix, cur, max) {
+                var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
+                if (safeMax <= 0) return;
+                var safeCur = Math.max(0, Math.min(
+                    (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax,
+                    safeMax));
+                var pct = (safeCur / safeMax) * 100;
+                var fill = document.getElementById(prefix + '-fill');
+                var txt = document.getElementById(prefix + '-text');
+                if (fill) fill.style.width = pct.toFixed(1) + '%';
+                if (txt) {
+                    txt.textContent = '🔵 ' + Math.floor(safeCur).toLocaleString() +
+                        ' / ' + Math.floor(safeMax).toLocaleString();
+                }
+            }
             function setAtb(headId, barId, txtId, pct) {
                 var p = Math.max(0, Math.min(100, Math.floor(pct || 0)));
                 var head = document.getElementById(headId);
@@ -90978,6 +91068,10 @@ window.HY = window.HY || {};
                 setAtb('ally-head-' + idx, 'ally-atb-bar-' + idx, 'ally-atb-text-' + idx, isDead ? 0 : m.atb);
                 setBar('ally-hp-' + idx, m.currentHp, md.maxHp);
                 setBar('ally-mp-' + idx, m.currentMp, md.maxMp);
+                /* ⭐ v57：護盾即時更新（沒護盾的角色會自動跳過） */
+                setEsBar('ally-es-' + idx,
+                    (typeof m.esCurrent === 'number') ? m.esCurrent : md.energyShield,
+                    md.energyShield);
                 // ⭐ v56：戰力每 tick 更新
                 var pwEl = document.getElementById('ally-pw-' + idx);
                 if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
@@ -91001,6 +91095,12 @@ window.HY = window.HY || {};
                 var eCurMp = (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp;
                 setBar('enemy-hp-' + eIdx, e.currentHp, e.maxHp);
                 setBar('enemy-mp-' + eIdx, eCurMp, eMaxMp);
+                /* ⭐ v57：敵方護盾即時更新（怪物有護盾詞綴時才顯示） */
+                setEsBar('enemy-es-' + eIdx,
+                    (typeof e.currentEs === 'number') ? e.currentEs
+                        : (typeof e.esCurrent === 'number') ? e.esCurrent
+                            : num(e.energyShield, 0),
+                    num(e.energyShield, 0) || num(e.maxEs, 0));
                 // ⭐ v56：敵方戰力每 tick 更新
                 var ePwEl = document.getElementById('enemy-pw-' + eIdx);
                 if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
@@ -91106,6 +91206,17 @@ window.HY = window.HY || {};
             '.cp-hp .cp-fi{background:linear-gradient(90deg,#7f1d1d,#dc2626 45%,#f87171);}',
             '.cp-mp .cp-fi{background:linear-gradient(90deg,#1e3a8a,#2563eb 45%,#60a5fa);}',
             '.cp-hp.enemy .cp-fi{background:linear-gradient(90deg,#450a0a,#b91c1c 45%,#ef4444);}',
+            /* ⭐ v57：能量護盾條（青藍色） */
+            '.cp-es{position:relative;height:18px;border-radius:3px;overflow:hidden;',
+            'border:1px solid #0369a1;background:#090d14;flex-shrink:0;box-sizing:border-box;',
+            'box-shadow:0 0 5px rgba(56,189,248,.35);}',
+            '.cp-es .cp-fi{position:absolute;top:0;left:0;bottom:0;transition:width .18s linear;',
+            'background:linear-gradient(90deg,#075985,#0ea5e9 45%,#7dd3fc);}',
+            '.cp-es.enemy .cp-fi{background:linear-gradient(90deg,#164e63,#0891b2 45%,#67e8f9);}',
+            '.cp-es .cp-tx{position:absolute;inset:0;display:flex;align-items:center;',
+            'justify-content:center;font-size:.68rem;font-weight:bold;color:#fff;',
+            'text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.85);letter-spacing:.2px;',
+            'pointer-events:none;white-space:nowrap;line-height:1;}',
             '.cp-hp .cp-tx,.cp-mp .cp-tx{position:absolute;inset:0;display:flex;align-items:center;',
             'justify-content:center;font-size:.68rem;font-weight:bold;color:#fff;',
             'text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.85);letter-spacing:.2px;',
@@ -91160,6 +91271,21 @@ window.HY = window.HY || {};
         return '<div class="' + cls + '"' + idAttr + '>' +
             '<div class="cp-fi" style="width:' + pct.toFixed(1) + '%"></div>' +
             '<div class="cp-tx"' + txId + '>' + icon + fmt(safeCur) + ' / ' + fmt(safeMax) + '</div>' +
+            '</div>';
+    }
+
+    /** ⭐ v57：能量護盾條（max <= 0 時回傳空字串，不佔版面） */
+    function esBarHtml(cur, max, isEnemy, idPrefix) {
+        var safeMax = Math.max(0, Math.floor(num(max, 0)));
+        if (safeMax <= 0) return '';
+        var rawCur = (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax;
+        var safeCur = Math.max(0, Math.min(rawCur, safeMax));
+        var pct = (safeCur / safeMax) * 100;
+        var idAttr = idPrefix ? ' id="' + idPrefix + '"' : '';
+        var txId = idPrefix ? ' id="' + idPrefix + '-tx"' : '';
+        return '<div class="cp-es' + (isEnemy ? ' enemy' : '') + '"' + idAttr + '>' +
+            '<div class="cp-fi" style="width:' + pct.toFixed(1) + '%"></div>' +
+            '<div class="cp-tx"' + txId + '>🔵 ' + fmt(safeCur) + ' / ' + fmt(safeMax) + '</div>' +
             '</div>';
     }
 
@@ -91427,6 +91553,15 @@ window.HY = window.HY || {};
         h += barHtml('mp', o.curMp != null ? o.curMp : u.currentMp,
             o.maxMp, isEnemy, o.mpId);
 
+        /* ⭐ v57：能量護盾（有上限才顯示；我方讀 esCurrent，敵方讀 currentEs） */
+        var esMax = num(o.maxEs, num(o.energyShield, 0));
+        if (!esMax && !isEnemy) esMax = num(u.energyShield, 0);
+        if (!esMax && isEnemy) esMax = num(u.energyShield, num(u.maxEs, 0));
+        var esCur = (typeof u.esCurrent === 'number') ? u.esCurrent
+            : (typeof u.currentEs === 'number') ? u.currentEs
+                : esMax;
+        h += esBarHtml(esCur, esMax, isEnemy, o.esId);
+
         /* 下一招預告 */
         h += nextActionHtml(u, isEnemy, o.nextId, o.system ? { system: o.system } : null);
 
@@ -91448,6 +91583,7 @@ window.HY = window.HY || {};
     window.HY.CombatPanel = {
         css: css,
         barHtml: barHtml,
+        esBarHtml: esBarHtml,
         atbHtml: atbHtml,
         featHtml: featHtml,
         nextActionHtml: nextActionHtml,
@@ -99629,9 +99765,12 @@ window.HY = window.HY || {};
                         maxHp: md.maxHp,
                         maxMp: md.maxMp,
                         curMp: m.currentMp,
+                        /* ⭐ v57：能量護盾 */
+                        maxEs: num(md.energyShield, 0),
                         atbId: 'dv-atb-' + i,
                         hpId: 'dv-hp-' + i,
                         mpId: 'dv-mp-' + i,
+                        esId: 'dv-es-' + i,
                         nextId: 'dv-next-' + i,
                         system: 'delve',
                         sectLine: '⛩️ ' + esc(sectName) + ' ｜ 🔥 ' + esc(xfName),
@@ -99678,9 +99817,12 @@ window.HY = window.HY || {};
                         maxHp: e.maxHp,
                         maxMp: eMaxMp,
                         curMp: eCurMp,
+                        /* ⭐ v57：敵方能量護盾（有詞綴才有） */
+                        maxEs: num(e.energyShield, num(e.maxEs, 0)),
                         atbId: 'dv-eatb-' + j,
                         hpId: 'dv-ehp-' + j,
                         mpId: 'dv-emp-' + j,
+                        esId: 'dv-ees-' + j,
                         nextId: 'dv-enext-' + j,
                         system: 'delve',
                         sectLine: afs ? ('👹 ' + afs) : '',
