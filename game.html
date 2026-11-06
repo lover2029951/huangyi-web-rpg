@@ -74107,7 +74107,7 @@ window.HY = window.HY || {};
     });
     html += '</div>';
     html += '<div class="ca-hint" style="margin-top:5px">減傷 ' + ((d.dmgReduce || 0) * 100).toFixed(1) +
-      '%　爆傷 ' + (d.critDmg || 150) + '%　攻速 ' + (d.atkSpd || 100) + '%</div>';
+      '%　爆傷 ' + (d.critDmg || 150) + '%　攻速 ' + Math.round(d.atkSpd || 100) + '%</div>';
     html += '</div>';
     html += '</div>';
     html += '<div class="ca-cols">';
@@ -89965,7 +89965,7 @@ window.HY = window.HY || {};
                                 powerText: pwTxt,
                                 pct: isDead ? 0 : atbPct, isEnemy: false, empty: false,
                                 nameHtml: m.name + rootBadge +
-                                    ' <span style="color:#7dd3fc;">[攻速 ' + md.atkSpd + ']</span>'
+                                    ' <span style="color:#7dd3fc;">[攻速 ' + Math.round(num(md.atkSpd, 100)) + ']</span>'
                             }) +
                             this.buildHpmpBar('hp', 'ally-hp-' + i, m.currentHp, md.maxHp, false) +
                             this.buildHpmpBar('mp', 'ally-mp-' + i, m.currentMp, md.maxMp, false) +
@@ -98572,7 +98572,7 @@ window.HY = window.HY || {};
                         mainColor: isMain ? '#00e5ff' : '#10b981',
                         nameText: String(m.name || '隊員') + rootBadge +
                             ' <span style="color:#7dd3fc;font-size:.68rem">[攻速 ' +
-                            num(md.atkSpd, 0) + ']</span>',
+                            Math.round(num(md.atkSpd, 100)) + ']</span>',
                         powerText: powerOf(md),
                         atbPct: m.atb,
                         maxHp: md.maxHp,
