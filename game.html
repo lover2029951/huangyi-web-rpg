@@ -102978,6 +102978,27 @@ window.HY = window.HY || {};
                     'line-height: 1;' +
                 '}' +
                 '.unit-head .atb-tx .nm { overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; min-width: 0; letter-spacing: 0.2px; }' +
+                /* ⭐ v497：等級徽章（在戰力之前，藍灰色系以區別於金色的戰力） */
+                '.unit-head .atb-tx .lv {' +
+                    'flex: 0 0 auto;' +
+                    'font-size: 0.66rem;' +
+                    'font-weight: bold;' +
+                    'padding: 0 4px;' +
+                    'border-radius: 2px;' +
+                    'background: rgba(15,32,54,0.78);' +
+                    'border: 1px solid rgba(125,211,252,0.55);' +
+                    'color: #7dd3fc;' +
+                    'margin-right: 3px;' +
+                    'text-shadow: 0 1px 2px #000;' +
+                    'white-space: nowrap;' +
+                    'letter-spacing: 0.2px;' +
+                    'line-height: 1.35;' +
+                '}' +
+                '.unit-head.enemy .atb-tx .lv {' +
+                    'background: rgba(45,20,24,0.78);' +
+                    'border-color: rgba(252,165,165,0.5);' +
+                    'color: #fca5a5;' +
+                '}' +
                 /* ⭐ 戰力徽章（位於 ⚡ 之前） */
                 '.unit-head .atb-tx .pw {' +
                     'flex: 0 0 auto;' +
@@ -103254,6 +103275,11 @@ window.HY = window.HY || {};
                         opts.nameHtml +
                     '</span>');
             var pctText = opts.empty ? '⚡ 0%' : (pct >= 100 ? '⚡ 滿' : '⚡ ' + Math.floor(pct) + '%');
+            /* ⭐ v497：等級徽章（位於戰力之前；空位不顯示） */
+            var lvHtml = '';
+            if (!opts.empty && opts.levelText) {
+                lvHtml = '<span class="lv">' + opts.levelText + '</span>';
+            }
             // ⭐ v56：戰力徽章（插在 ⚡ 之前；空位不顯示）
             var pwHtml = '';
             if (!opts.empty && opts.powerId) {
@@ -103261,7 +103287,7 @@ window.HY = window.HY || {};
             }
             return '<div class="' + headCls + full + '" id="' + opts.headId + '">' +
                 '<div class="atb-fill" id="' + opts.barId + '" style="width:' + pct.toFixed(1) + '%;"></div>' +
-                '<div class="atb-tx">' + nameHtml + pwHtml + '<span class="pc" id="' + opts.textId + '">' + pctText + '</span></div>' +
+                '<div class="atb-tx">' + nameHtml + lvHtml + pwHtml + '<span class="pc" id="' + opts.textId + '">' + pctText + '</span></div>' +
             '</div>';
         }
         buildHpmpBar(kind, idPrefix, cur, max, isEnemy) {
@@ -103678,6 +103704,7 @@ window.HY = window.HY || {};
                                 textId: 'ally-atb-text-' + i,
                                 powerId: showPw ? ('ally-pw-' + i) : null,
                                 powerText: pwTxt,
+                                levelText: 'Lv.' + num(m.lv, 1),
                                 pct: isDead ? 0 : atbPct, isEnemy: false, empty: false,
                                 nameHtml: m.name + rootBadge +
                                     ' <span style="color:#7dd3fc;">[攻速 ' + Math.round(num(md.atkSpd, 100)) + ']</span>'
@@ -103809,7 +103836,8 @@ window.HY = window.HY || {};
                                 pct: eAtbPct, isEnemy: true, empty: false,
                                 rarityLabel: '[' + (e.rarityName || '普通') + ']',
                                 rarityColor: (e.rarityColor || '#e2e8f0'),
-                                nameHtml: e.name + eRootBadge + ' (Lv.' + e.lv + ')'
+                                levelText: 'Lv.' + num(e.lv, 1),
+                                nameHtml: e.name + eRootBadge
                             }) +
                             this.buildHpmpBar('hp', 'enemy-hp-' + j, e.currentHp, e.maxHp, true) +
                             this.buildHpmpBar('mp', 'enemy-mp-' + j, eCurMp, eMaxMp, true) +
@@ -104066,6 +104094,12 @@ window.HY = window.HY || {};
             'padding:0 6px;font-size:.72rem;font-weight:bold;color:#fff;',
             'text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.85);white-space:nowrap;}',
             '.cp-uh .cp-nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}',
+            /* ⭐ v497：等級徽章（在戰力之前，藍色系以區別於金色的戰力） */
+            '.cp-uh .cp-lv{flex:0 0 auto;padding:0 4px;border-radius:2px;',
+            'background:rgba(15,32,54,.78);border:1px solid rgba(125,211,252,.55);',
+            'color:#7dd3fc;font-size:.68rem;}',
+            '.cp-uh.enemy .cp-lv{background:rgba(45,20,24,.78);',
+            'border-color:rgba(252,165,165,.5);color:#fca5a5;}',
             '.cp-uh .cp-pw{flex:0 0 auto;padding:0 4px;border-radius:2px;background:rgba(0,0,0,.55);',
             'color:#fbbf24;font-size:.68rem;}',
             '.cp-uh .cp-pc{flex:0 0 auto;color:#e2e8f0;font-size:.7rem;}',
@@ -104157,7 +104191,7 @@ window.HY = window.HY || {};
     /** ATB 條
         ⚠️ name 允許傳入已轉義的 HTML（因為戰位標題常帶徽章），
            由呼叫端決定是否含標籤。 */
-    function atbHtml(name, power, pct, isEnemy, idPrefix) {
+    function atbHtml(name, power, pct, isEnemy, idPrefix, levelText) {
         var p = Math.max(0, Math.min(100, Math.floor(num(pct, 0))));
         var cls = 'cp-uh' + (isEnemy ? ' enemy' : '') + (p >= 100 ? ' full' : '');
         var idAttr = idPrefix ? ' id="' + idPrefix + '"' : '';
@@ -104166,6 +104200,8 @@ window.HY = window.HY || {};
             '<div class="cp-fill" style="width:' + p.toFixed(1) + '%"></div>' +
             '<div class="cp-tx">' +
             '<span class="cp-nm">' + nameHtml + '</span>' +
+            /* ⭐ v497：等級徽章（在戰力之前） */
+            (levelText ? '<span class="cp-lv">' + esc(levelText) + '</span>' : '') +
             (power ? '<span class="cp-pw">⚔️' + esc(power) + '</span>' : '') +
             '<span class="cp-pc">' + (p >= 100 ? '⚡ 滿' : '⚡ ' + p + '%') + '</span>' +
             '</div></div>';
@@ -104409,9 +104445,9 @@ window.HY = window.HY || {};
         var h = '<div class="' + cls + '" style="border-left-color:' +
             esc(o.mainColor || (isEnemy ? '#ef4444' : '#10b981')) + '">';
 
-        /* ATB + 名字 + 戰力 */
+        /* ATB + 名字 + 等級 + 戰力 */
         h += atbHtml(o.nameText || String(u.name || '單位'),
-            o.powerText || '', o.atbPct, isEnemy, o.atbId);
+            o.powerText || '', o.atbPct, isEnemy, o.atbId, o.levelText || '');
 
         /* HP / MP */
         h += barHtml('hp', u.currentHp, o.maxHp, isEnemy, o.hpId);
@@ -113286,6 +113322,7 @@ window.HY = window.HY || {};
                         nameText: String(m.name || '隊員') + rootBadge +
                             ' <span style="color:#7dd3fc;font-size:.68rem">[攻速 ' +
                             Math.round(num(md.atkSpd, 100)) + ']</span>',
+                        levelText: 'Lv.' + num(m.lv, 1),
                         powerText: powerOf(md),
                         atbPct: m.atb,
                         maxHp: md.maxHp,
@@ -113336,8 +113373,8 @@ window.HY = window.HY || {};
                         isEnemy: true,
                         mainColor: e.rarityColor || '#ef4444',
                         nameText: '<span style="color:' + esc(e.rarityColor || '#e2e8f0') + '">[' +
-                            esc(e.rarityName || '普通') + ']</span> ' + String(e.name || '') +
-                            ' <span style="color:#94a3b8;font-size:.68rem">(Lv.' + num(e.lv, 1) + ')</span>',
+                            esc(e.rarityName || '普通') + ']</span> ' + String(e.name || ''),
+                        levelText: 'Lv.' + num(e.lv, 1),
                         powerText: powerOf(e),
                         atbPct: e.atb,
                         maxHp: e.maxHp,
@@ -148447,6 +148484,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
