@@ -719,21 +719,21 @@ details > summary::marker {
 </style>
 </head>
 <body>
-    <!-- ⭐ v61：開機遮罩改為「半透明」，讓下方已渲染的 UI 透出來
+    <!-- ⭐ 開機遮罩（半透明）
          ──────────────────────────────────────────────────────────────
-         原本是 background:#0f141c 完全不透明 → 243 個 JS 載完前全黑。
-         改成 rgba(15,20,28,.88) + 模糊 → 玩家看得到標籤列已經在那裡，
+         原本 background:#0f141c 完全不透明 → 所有 JS 載完前全黑一片。
+         改成 rgba(15,20,28,.88) + 模糊 → 玩家看得到底下的 UI 已經在那裡，
          心理上不會覺得「等很久」。
 
-         ⭐⭐ v62 真正的原因與修正：
-         遮罩 position:fixed; inset:0 + z-index:99999 會把「整條頂部標籤列」
-         一起蓋住，而頂部列是 index.html 的靜態 HTML，第一帧（約 30~80ms）
-         就已經畫好 → 玩家感受到的「標籤顯示太慢」其實是遮罩擋住它。
+         ⚠️ 這裡【刻意不】抬高 #top-bar 的 z-index。
+         曾有版本為了讓標籤早點露臉而把 #top-bar 設成 z-index:100000，
+         結果它會壓在所有全螢幕子頁面（昇華 9350、礦坑 9200、藏書閣 9365…）
+         之上 → 進入子頁面後頂部面板還留著。
 
-         修正：讓 #top-bar 以 z-index:100000 疊在遮罩之上（見下方 <style>），
-               遮罩本身維持 inset:0 蓋住主內容。
-               搭配 body:not(.hy-ready) 時停用指針事件，
-               避免載入途中誤點「重啟時空」清掉存檔。 -->
+         現在的做法：遮罩照樣蓋住畫面，加速只靠
+         ① 遮罩淡出的時機提前（bootLoader.js 的 finish）
+         ② 各 UI 模組「立即注入按鈕」而不是先等 300~500ms
+         完全不動任何元素的層級關係。 -->
     <div id="hy-boot-overlay" style="position:fixed;inset:0;background:rgba(15,20,28,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);">
         <div style="font-size:1.3rem;color:#c89d54;font-weight:bold;margin-bottom:16px;">⚡ 黃易群俠傳 Web</div>
         <div style="width:340px;height:10px;background:#121822;border:1px solid #2e3b4e;border-radius:6px;overflow:hidden;">
@@ -742,34 +742,17 @@ details > summary::marker {
         <div id="hy-boot-text" style="margin-top:12px;font-size:0.82rem;color:#94a3b8;">正在初始化時空引擎…</div>
     </div>
 
-    <!-- ⭐⭐ v61/v62：頂部標籤的可見性
+    <!-- ⭐ 頂部標籤的顯示時機
          ──────────────────────────────────────────────────────────────
-         v61 曾在此預先渲染一個「標籤骨架」，但骨架的 z-index 只有 9998，
-         而開機遮罩是 99999 → 骨架從來沒顯示過（純粹白做）。
+         ⚠️ 這裡【不】對 #top-bar 做任何 z-index 調整。
 
-         v62 改為根本解法：真正的 #top-bar 是靜態 HTML，30~80ms 就畫好，
-         只要把它抬到遮罩之上（z-index:100000）即可，不需要任何骨架。
-         因此移除骨架，改用下面的 <style>。 -->
-    <style>
-        /* ⭐⭐ v62：頂部標籤列疊在開機遮罩之上
-           ──────────────────────────────────────────────────────────
-           遮罩是 z-index:99999 的 fixed 全屏元素，把 #top-bar（靜態 HTML，
-           30~80ms 就畫好）整條壓住 → 這就是「標籤顯現太慢」的真正原因。
-           把列抬到 100000 之後，玩家一開頁就看到標籤列，不必等 246 個 JS。
+         歷史教訓：曾為了讓標籤「早點出現」把 #top-bar 抬到 z-index:100000，
+         結果它會壓在所有全螢幕子頁面（昇華 9350、礦坑 9200、藏書閣 9365…）
+         之上，變成「進入子頁面後頂部面板還在」。
 
-           載入完成前用 pointer-events:none 鎖住點擊，
-           避免誤觸「重啟時空」而清掉存檔；hy-ready 後恢復可點。 */
-        #top-bar {
-            position: relative;
-            z-index: 100000;
-        }
-        body:not(.hy-ready) #top-bar {
-            pointer-events: none;
-        }
-        body:not(.hy-ready) #top-bar .system-controls > button {
-            opacity: .72;
-        }
-    </style>
+         正確的加速方式只在「遮罩淡出時機」與「按鈕注入時機」下手
+         （bootLoader.js 的 finish()、各 UI 模組的立即注入），
+         完全不動任何元素的層級。 -->
 
     <div id="game-container">
         <!-- 頂部：時空與系統列（重啟鈕已移至最左以防誤點） -->
@@ -137349,11 +137332,8 @@ window.HY = window.HY || {};
 function __HY_FINISH_BOOT__() {
   try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) { console.error(e); }
 
-  /* ⭐ v62：標記 body.hy-ready
-     index.html 的 #top-bar 被抬到遮罩之上（z-index:100000），
-     但載入完成前是 pointer-events:none（避免誤觸「重啟時空」）。
-     打包版不會執行 bootLoader.js，所以必須在這裡自己解除鎖定，
-     否則整條頂部列會永遠點不動。 */
+  /* ⭐ 標記 body.hy-ready（供其他模組判斷「載入完成」）
+     打包版不會執行 bootLoader.js，所以必須在這裡自己加。 */
   try { document.body.classList.add('hy-ready'); } catch (e) {}
 
   /* 移除開機遮罩（原本由 bootLoader.js 負責，內聯後需自己處理） */
