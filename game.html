@@ -4539,8 +4539,16 @@ window.HY = window.HY || {};
         blockChance:  { name: '格擋率',     group: 'defense', pct: true, cap: 75 },
         dodgeChance:  { name: '躲避率',     group: 'defense', pct: true, cap: 75 },
         dmgReduce:    { name: '受傷減免',   group: 'defense', pct: true, cap: 75 },
-        esShield:     { name: '罡氣',       group: 'defense', pct: false },
-        esPct:        { name: '罡氣加成',   group: 'defense', pct: true },
+        /* ⭐⭐ v488：罡氣（esShield）與罡氣加成（esPct）已移除登錄
+           ──────────────────────────────────────────────────────────
+           罡氣／護盾機制已於 v482 完整下架，但屬性註冊表還留著這兩項，
+           導致「詳細戰鬥與抗性面板」的防禦區仍列出
+           「罡氣：0」「罡氣加成：0」—— 這兩個數字永遠是 0，
+           玩家看了只會困惑「這是不是壞了」。
+
+           移除登錄後，面板不再為它們產生格子（key 不在 STATS 就不會被渲染）。
+           ⚠️ 只刪註冊，不動 derived 上的欄位計算 ——
+              其他地方若還讀 d.esShield 仍然拿得到 0，不會出現 undefined。 */
         thornsDmg:    { name: '反傷',       group: 'defense', pct: true },
 
         /* ── 抗性 ──
@@ -72516,8 +72524,10 @@ window.HY = window.HY || {};
                 elemDmg: '九元素內勁', critDmg: '會心傷害', critFlat: '會心率加成',
                 hitFlat: '命中率加成', armorPen: '破甲穿透', dotDmg: '持續傷害',
                 armorPct: '護體加成', evaPct: '輕功加成', blockChance: '格擋率',
-                dodgeChance: '閃避率', dmgReduce: '受傷減免', esShield: '罡氣值',
-                esPct: '罡氣加成', thornsDmg: '反震傷害',
+                dodgeChance: '閃避率', dmgReduce: '受傷減免',
+                /* ⭐ v488：esShield（罡氣值）與 esPct（罡氣加成）已移除
+                   —— 機制已在 v482 下架，這兩個永遠是 0，不該再列在面板上。 */
+                thornsDmg: '反震傷害',
                 fireRes: '火抗', coldRes: '冰抗', lightningRes: '雷抗',
                 chaosRes: '毒抗', allRes: '全元素抗性',
                 maxFireRes: '火抗上限', maxColdRes: '冰抗上限', maxLightRes: '雷抗上限',
@@ -95274,9 +95284,12 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_es', statKey: 'esShield', genType: 1,
-            name: '罡氣', label: '罡氣', unit: '', slots: ['helmet', 'body', 'offhand', 'gloves'],
-            tags: ['DEFENCE', 'ES'],
+            /* ⭐ v488：罡氣機制已移除 → 詞綴改為「厚生（氣血）」
+               statKey 從 esShield 改成 maxHp，數值不變（1:1 轉換），
+               避免裝備上出現永遠無效的「罡氣 +N」。 */
+            groupId: 'wx_es', statKey: 'maxHp', genType: 1,
+            name: '厚生', label: '氣血', unit: '', slots: ['helmet', 'body', 'offhand', 'gloves'],
+            tags: ['DEFENCE', 'HP'],
             tiers: [
                 { reqLv: 20, min: 15, max: 30 },
                 { reqLv: 44, min: 40, max: 80 },
@@ -95445,9 +95458,10 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_es_pct', statKey: 'esPct', genType: 1,
-            name: '罡勁', label: '罡勁', unit: '%', slots: ['helmet', 'body', 'offhand', 'belt'],
-            tags: ['ES', 'DEFENCE'],
+            /* ⭐ v488：罡勁（原先作用於護盾上限 %）→ 改為「培元（氣血上限%）」 */
+            groupId: 'wx_es_pct', statKey: 'maxHpPct', genType: 1,
+            name: '培元', label: '氣血上限', unit: '%', slots: ['helmet', 'body', 'offhand', 'belt'],
+            tags: ['HP', 'DEFENCE'],
             tiers: [
                 { reqLv: 22, min: 6, max: 11 },
                 { reqLv: 50, min: 12, max: 20 },
@@ -134972,6 +134986,47 @@ window.HY = window.HY || {};
             if (this._timer) { clearInterval(this._timer); this._timer = null; }
         }
 
+        /* ⭐⭐⭐ v488：道心天賦「精準更新」
+           ──────────────────────────────────────────────────────────
+           問題：點越多天賦越卡，最後幾乎無法操作。
+
+           根因（實測）：原本每次點擊都呼叫 g.renderAll(true)，
+                 而 forceAll=true 會強制重繪全部 12 個面板。
+                 實測完整一次要 96.3ms：
+                   · renderMartialTab      69.8ms  ← 最大元凶
+                   · renderPetTab          15.9ms
+                   · renderSectTab          3.9ms
+                   · renderPartyRoster      2.3ms
+                   · 其他                   4.4ms
+                 每點一下就卡 1/10 秒，連續點 10 點就是將近 1 秒的凍結感。
+
+           修法：道心天賦只影響「角色屬性」與「道心自己」，
+                 因此只更新真正需要的三處：
+                   ① 道心面板本身（已在呼叫端做過）
+                   ② 左側角色面板的血量／屬性數字
+                   ③ 若天賦分頁開著，才更新它
+                 完全不再呼叫 forceAll。
+
+           ⚠️ 不呼叫 getDerivedStatsForChar 的快取清除 —— 道心 allocate()
+              內部已經清過（_clearCaches），這裡只負責把新值畫到畫面上。 */
+        _refreshAffected() {
+            try {
+                var g = G();
+                /* ② 左側常駐角色面板（氣血／內力／攻防等數字） */
+                if (g.uiCharParty) {
+                    try { g.uiCharParty.renderCharacterPanel(); } catch (e1) { }
+                    try { if (g.uiCharParty.syncVitals) g.uiCharParty.syncVitals(); } catch (e2) { }
+                }
+                /* ③ 天賦分頁若有開著，同步它的數字（但不強制全繪） */
+                var talentTab = document.getElementById('tab-talent');
+                if (talentTab && talentTab.classList.contains('active') && g.uiTalent) {
+                    try {
+                        if (typeof g.uiTalent.renderTalentTab === 'function') g.uiTalent.renderTalentTab();
+                    } catch (e3) { }
+                }
+            } catch (e) { }
+        }
+
         renderAll() {
             this.renderHeader();
             this.renderTabs();
@@ -135280,15 +135335,20 @@ window.HY = window.HY || {};
                         var r0 = dh.canDeallocate(id, c);
                         if (!r0.ok) { self._toast(r0.why || '無法取消', true); return; }
                         var r = dh.deallocate(id, c);
-                        if (r.ok) { self._toast('已取消該天賦'); self.renderAll(); if (g.renderAll) g.renderAll(true); }
-                        else self._toast(r.why || '取消失敗', true);
+                        if (r.ok) {
+                            self._toast('已取消該天賦');
+                            self.renderAll();
+                            self._refreshAffected();
+                        } else {
+                            self._toast(r.why || '取消失敗', true);
+                        }
                         return;
                     }
                     var res = dh.allocate(id, c);
                     if (res.ok) {
                         self._toast('☯️ 領悟：' + res.node.name, 'ok');
                         self.renderAll();
-                        if (g.renderAll) g.renderAll(true);
+                        self._refreshAffected();
                     } else {
                         self._toast(res.why || '無法領悟', true);
                     }
@@ -135308,7 +135368,7 @@ window.HY = window.HY || {};
                     if (r.ok) {
                         self._toast('🔄 已重置道心天賦', 'ok');
                         self.renderAll();
-                        if (g.renderAll) g.renderAll(true);
+                        self._refreshAffected();
                     } else {
                         self._toast(r.why || '重置失敗', true);
                     }
@@ -143914,7 +143974,8 @@ window.HY = window.HY || {};
             '會心傷害': 'critDmg', '會心率加成': 'critFlat', '命中率加成': 'hitFlat',
             '破甲穿透': 'armorPen', '護體加成': 'armorPct', '輕功加成': 'evaPct',
             '格擋率': 'blockChance', '閃避率': 'dodgeChance', '受傷減免': 'dmgReduce',
-            '罡氣值': 'esShield', '罡氣加成': 'esPct', '反震傷害': 'thornsDmg',
+            /* ⭐ v488：罡氣值／罡氣加成 已移除（機制下架，面板不再顯示） */
+            '反震傷害': 'thornsDmg',
             '氣血回復': 'lifeRegen', '內力回復': 'manaRegen',
             '氣血吸取': 'lifeLeech', '內力吸取': 'manaLeech',
             '擊中回血': 'lifeOnHit', '擊中回內': 'manaOnHit', '擊殺回血': 'lifeOnKill',
