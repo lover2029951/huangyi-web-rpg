@@ -73523,7 +73523,7 @@ window.HY = window.HY || {};
                         '</h4>' +
                         (feat ? '<p style="color:' + feat.color + '; font-size:0.8rem;">' + feat.icon + ' ' + feat.name + (stacks ? '（' + stacks + '）' : '') + '</p>' : '') +
                         '<p>門派：' + this.sectName(c.sect) + ' | 戰力：<strong style="color:#f43f5e;">' + d.powerScore + '</strong></p>' +
-                        '<p>攻擊：<strong>' + d.atk + '</strong> | 防禦：<strong>' + d.def + '</strong> | 命中：<span style="color:#38bdf8;">' + d.hit + '%</span> | 閃避：' + d.eva + '% | 爆擊：' + d.crit + '% | 暴抗：<span style="color:#a78bfa;">' + d.critRes + '%</span></p>' +
+                        '<p>攻擊：<strong>' + this.fix1(d.atk) + '</strong> | 防禦：<strong>' + this.fix1(d.def) + '</strong> | 命中：<span style="color:#38bdf8;">' + this.fix1(d.hit) + '%</span> | 閃避：' + this.fix1(d.eva) + '% | 爆擊：' + this.fix1(d.crit) + '% | 暴抗：<span style="color:#a78bfa;">' + this.fix1(d.critRes) + '%</span></p>' +
                         (elemLine ? '<p>' + elemLine + '</p>' : '') +
                     '</div>' +
                     '<div class="btn-group-row">' +
@@ -104101,7 +104101,19 @@ window.HY = window.HY || {};
                             /* ⭐ 原本的「門派 ｜ 心法」改為「集氣條滿時下一招預告」 */
                             this.buildNextActionHtml(m, 'ally-next-' + i, false) +
                             this.buildFeatTableHtml(m, 'ally-feat-' + i) +
-                            '<div class="fixed-affix-line" style="border-left:2px solid #10b981; color:#94a3b8;">⚔️ 攻 ' + md.atk + ' ｜ 防 ' + md.def + ' ｜ 命 ' + md.hit + '% ｜ 閃 ' + md.eva + '% ｜ 爆 ' + md.crit + '%</div>';
+                            /* ⭐ v502：數值一律取整，避免出現 7.800000000000001% 這種浮點誤差 */
+                            (function () {
+                                function n(v) { var x = Number(v); return isFinite(x) ? x : 0; }
+                                function r0(v) { return Math.round(n(v)); }
+                                function r1(v) { return Math.round(n(v) * 10) / 10; }
+                                return '<div class="fixed-affix-line" style="border-left:2px solid #10b981; color:#94a3b8;">' +
+                                    '⚔️ 攻 ' + r0(md.atk) +
+                                    ' ｜ 防 ' + r0(md.def) +
+                                    ' ｜ 命 ' + r0(md.hit) + '%' +
+                                    ' ｜ 閃 ' + r0(md.eva) + '%' +
+                                    ' ｜ 爆 ' + r1(md.crit) + '%' +
+                                '</div>';
+                            })();
                     } else {
                         row.style.borderLeft = '3px solid #1e293b';
                         row.style.opacity = '0.45';
@@ -148891,6 +148903,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
