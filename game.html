@@ -8614,57 +8614,242 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 /* ===== 34 / 246 : petData.js ===== */
-// js/petData.js
-// 專門存放：靈獸與生化坐騎數據 (PETS)
+// js/petData.js  (v3 — 200 隻靈獸，規則驅動生成)
+// ⭐ 多功能靈獸系統資料
+//
+// ── 為什麼用「規則驅動」而不是硬寫 200 筆 ────────────────────
+//   硬寫 200 筆會有以下問題：
+//     · 檔案 90+ KB，難以維護
+//     · 要調整平衡時得改 200 個地方
+//     · 新增定位或元素時要重寫整份
+//
+//   本檔只存「素材表 + 階層規劃」，執行時展開成 200 隻。
+//   調整平衡只需改一處（例如 QUALITY.mul），全部 200 隻同步生效。
+//
+// ── 架構 ────────────────────────────────────────────────────
+//   5 種戰鬥定位 × 8 種八元素 × 5 種品階，依等級分 7 個階層。
+//
+//   定位（role）：
+//     attack 猛攻型 — 每回合主動追擊，輸出最高
+//     guard  守護型 — 挺身替主人分攤傷害
+//     heal   治療型 — 定期回復主人與隊友氣血
+//     debuff 干擾型 — 命中時削弱敵人
+//     burst  爆發型 — 積蓄數回合後釋放巨額傷害
+//
+//   元素（element）：金木水火土冰風雷（對應本作八元素系統）
+//   品階（quality）：凡品 / 良品 / 珍品 / 絕品 / 神品
+// ────────────────────────────────────────────────────────────
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
 (function () {
-    const Data = window.HY.Data;
-    Data.PETS = {
-        cyber_hound: {
-            id: 'cyber_hound', name: '機械獵犬 K-9', species: '🤖 星際方舟生化獸', reqLv: 2,
-            desc: '馬博士打造的鈦合金機械戰犬，內建紅外線鎖定儀，提升命中並撕咬敵人。',
-            adoptGold: 120, feedGold: 60, feedSp: 40, skillName: '高頻粒子撕咬', effectType: 'bite', powerMult: 0.45,
-            bonus: { atk: 12, def: 8, maxHp: 60, hit: 5 }
+    var Data = window.HY.Data;
+
+    /* ══════════════════════════════════════════════════════
+       一、命名素材
+       ══════════════════════════════════════════════════════ */
+    var ELEM = {
+        metal:     { zh: '金', prefixes: ['金甲', '庚金', '銳金', '玄鐵', '白金'], flavor: '銳金之氣', bonus: 'def' },
+        wood:      { zh: '木', prefixes: ['青木', '乙木', '翠藤', '蒼松', '青囊'], flavor: '青木生機', bonus: 'maxHp' },
+        water:     { zh: '水', prefixes: ['玄水', '滄波', '碧海', '寒潭', '流泉'], flavor: '玄水綿長', bonus: 'maxMp' },
+        fire:      { zh: '火', prefixes: ['赤焰', '烈焰', '焚天', '離火', '赤霄'], flavor: '烈焰焚天', bonus: 'atk' },
+        earth:     { zh: '土', prefixes: ['厚土', '戊土', '磐石', '山嶽', '黃壤'], flavor: '厚土承載', bonus: 'maxHp' },
+        ice:       { zh: '冰', prefixes: ['寒冰', '玄冰', '冰魄', '霜華', '極寒'], flavor: '寒冰凝冽', bonus: 'critRes' },
+        wind:      { zh: '風', prefixes: ['疾風', '罡風', '御風', '清風', '飄絮'], flavor: '罡風迅捷', bonus: 'eva' },
+        lightning: { zh: '雷', prefixes: ['紫雷', '九霄', '奔雷', '驚蟄', '雷霆'], flavor: '紫雷震怒', bonus: 'crit' }
+    };
+
+    var ROLE = {
+        attack: {
+            zh: '猛攻', power: 0.55,
+            beasts: ['戰虎', '血狼', '玄豹', '獅王', '暴熊'],
+            skills: ['裂空爪', '噬魂咬', '斷嶽撲', '狂嘯破', '裂地擊'],
+            desc: '每回合主動追擊當前目標，是純粹的輸出型靈獸'
         },
-        wuzhui_horse: {
-            id: 'wuzhui_horse', name: '飛馬牧場・烏騅神駒', species: '🐎 尋秦/大唐絕世名駒', reqLv: 15,
-            desc: '商秀珣飛馬牧場培育的汗血神駒，亦是項少龍愛駒，提升閃避、命中與暴擊抵抗。',
-            adoptGold: 450, feedGold: 140, feedSp: 90, skillName: '鐵蹄破陣衝鋒', effectType: 'charge', powerMult: 0.65,
-            bonus: { eva: 6, hit: 6, critRes: 5, atk: 28, maxHp: 220 }
+        guard: {
+            zh: '守護', power: 0.30,
+            beasts: ['玄龜', '鐵犀', '巨象', '撼山牛', '獬豸'],
+            skills: ['不動壁', '磐石甲', '撼地盾', '山嶽壁', '鎮岳甲'],
+            desc: '戰鬥中會挺身替主人分攤傷害，並提供額外防禦'
         },
-        black_eagle: {
-            id: 'black_eagle', name: '驚雁宮・戰神黑雕', species: '🦅 塞外異種神禽', reqLv: 45,
-            desc: '傳鷹翱翔天際的通靈巨雕，高空鷹眼鎖定敵人破綻，大幅提升命中與爆擊。',
-            adoptGold: 1600, feedGold: 350, feedSp: 220, skillName: '九霄裂空爪', effectType: 'crit_claw', powerMult: 0.90,
-            bonus: { crit: 8, hit: 12, eva: 6, atk: 65, maxHp: 500 }
+        heal: {
+            zh: '治療', power: 0.28,
+            beasts: ['靈鹿', '仙鶴', '玉兔', '青羚', '踏雲驥'],
+            skills: ['回春露', '清心咒', '續命光', '甘露灑', '養元息'],
+            desc: '定期為主人與隊友回復氣血，適合長期征戰'
         },
-        flame_leopard: {
-            id: 'flame_leopard', name: '魔師宮・赤焰雪豹', species: '🐯 域外冰火異獸', reqLv: 95,
-            desc: '生於極北苦寒之地的通靈異豹，迅捷無倫，撲擊時為主人吸取真氣。',
-            adoptGold: 4500, feedGold: 800, feedSp: 500, skillName: '赤焰噬魂撲', effectType: 'drain_bite', powerMult: 1.15,
-            bonus: { atk: 160, def: 90, maxHp: 1200, hit: 15, critRes: 12 }
+        debuff: {
+            zh: '干擾', power: 0.42,
+            beasts: ['紫蛛', '毒蠍', '夜梟', '影蝠', '靈蛇'],
+            skills: ['縛身絲', '麻痺毒', '亂神鳴', '蔽目翼', '纏魂絞'],
+            desc: '命中時削弱敵人，降低其防禦、速度或命中'
         },
-        golden_roc: {
-            id: 'golden_roc', name: '天竺・金翅大鵬鳥', species: '🦅 邊荒/武周神話靈禽', reqLv: 160,
-            desc: '展翅遮天蔽日的神話靈禽，罡風護體提供極高閃避、命中與暴擊抵抗。',
-            adoptGold: 15000, feedGold: 2200, feedSp: 1400, skillName: '扶搖九萬里・金羽嵐', effectType: 'crit_claw', powerMult: 1.45,
-            bonus: { atk: 380, def: 220, maxHp: 3200, crit: 12, hit: 22, eva: 12, critRes: 18 }
-        },
-        void_dragon: {
-            id: 'void_dragon', name: '戰神殿・破碎虛空魔龍', species: '🐉 上古天道神獸', reqLv: 220,
-            desc: '鎮守《戰神圖錄》的太古魔龍，吐息間毀天滅地，無視敵方防禦並護佑主人。',
-            adoptGold: 42000, feedGold: 5000, feedSp: 3200, skillName: '虛空滅世龍息', effectType: 'dragon_breath', powerMult: 1.75,
-            bonus: { atk: 750, def: 450, maxHp: 7500, crit: 15, hit: 28, critRes: 25 }
-        },
-        star_behemoth: {
-            id: 'star_behemoth', name: '黑洞星門・量子吞星獸', species: '🌌 超維宇宙終極巨獸', reqLv: 270,
-            desc: '棲息於星際黑洞邊緣的反物質巨獸，掌控重力波與曲速力場，萬法不侵。',
-            adoptGold: 110000, feedGold: 12000, feedSp: 8000, skillName: '超新星引力坍縮砲', effectType: 'dragon_breath', powerMult: 2.20,
-            bonus: { atk: 1600, def: 1000, maxHp: 18000, crit: 20, eva: 16, hit: 38, critRes: 38 }
+        burst: {
+            zh: '爆發', power: 0.85,
+            beasts: ['蛟龍', '金鵬', '火鳳', '麒麟', '騰蛇'],
+            skills: ['滅世息', '裂天翼', '涅槃炎', '震嶽踏', '崩雲吼'],
+            desc: '每數回合積蓄力量，一次釋放造成巨額傷害'
         }
     };
+
+    var QUALITY = {
+        common: { zh: '凡品', mul: 1.00, color: '#94a3b8' },
+        rare:   { zh: '良品', mul: 1.18, color: '#38bdf8' },
+        epic:   { zh: '珍品', mul: 1.42, color: '#a855f7' },
+        legend: { zh: '絕品', mul: 1.75, color: '#f59e0b' },
+        myth:   { zh: '神品', mul: 2.20, color: '#ef4444' }
+    };
+
+    /* ══════════════════════════════════════════════════════
+       二、階層規劃（合計 200 隻）
+       ══════════════════════════════════════════════════════ */
+    var TIERS = [
+        { lv: 2,   count: 34, quals: ['common', 'common', 'common', 'rare', 'rare'] },
+        { lv: 32,  count: 32, quals: ['common', 'rare', 'rare', 'rare', 'epic'] },
+        { lv: 64,  count: 30, quals: ['rare', 'rare', 'epic', 'epic', 'epic'] },
+        { lv: 98,  count: 30, quals: ['rare', 'epic', 'epic', 'epic', 'legend'] },
+        { lv: 140, count: 28, quals: ['epic', 'epic', 'legend', 'legend', 'legend'] },
+        { lv: 186, count: 24, quals: ['epic', 'legend', 'legend', 'legend', 'myth'] },
+        { lv: 230, count: 22, quals: ['legend', 'legend', 'myth', 'myth', 'myth'] }
+    ];
+
+    /* ══════════════════════════════════════════════════════
+       三、費用曲線（分段線性，非指數）
+       ──────────────────────────────────────────────────────────
+       指數成長在 Lv.240 會爆到 500 萬，中階靈獸也買不起。
+       改用分段：低階平緩、高階陡升，讓玩家每個階段都有目標。
+       ══════════════════════════════════════════════════════ */
+    function costOf(lv, quality) {
+        var qmul = { common: 1, rare: 1.35, epic: 1.9, legend: 2.8, myth: 4.2 }[quality] || 1;
+        var base;
+        if (lv <= 32) base = 80 + lv * 12;
+        else if (lv <= 64) base = 500 + (lv - 32) * 38;
+        else if (lv <= 98) base = 1800 + (lv - 64) * 90;
+        else if (lv <= 140) base = 5000 + (lv - 98) * 260;
+        else if (lv <= 186) base = 16000 + (lv - 140) * 900;
+        else base = 58000 + (lv - 186) * 3200;
+        return Math.floor(base * qmul);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       四、生成 200 隻
+       ══════════════════════════════════════════════════════ */
+    var PETS = {};
+    var eKeys = Object.keys(ELEM);
+    var rKeys = Object.keys(ROLE);
+    var usedNames = {};
+    var idx = 0;
+
+    TIERS.forEach(function (tier) {
+        for (var i = 0; i < tier.count; i++) {
+            idx++;
+
+            /* 元素與定位輪替：確保 8 元素 × 5 定位均勻分佈 */
+            var ek = eKeys[(idx - 1) % 8];
+            var rk = rKeys[Math.floor((idx - 1) / 8) % 5];
+            var qk = tier.quals[(idx - 1) % tier.quals.length];
+
+            var E = ELEM[ek], R = ROLE[rk], Q = QUALITY[qk];
+
+            var pf = E.prefixes[(idx - 1) % E.prefixes.length];
+            var be = R.beasts[Math.floor(idx / 3) % R.beasts.length];
+            var sk = R.skills[(idx - 1) % R.skills.length];
+
+            var name = pf + be;
+            if (usedNames[name]) {
+                usedNames[name]++;
+                var CN = ['', '', '・貳', '・參', '・肆', '・伍', '・陸', '・柒', '・捌', '・玖', '・拾'];
+                var o = usedNames[name];
+                name += (o < CN.length ? CN[o] : '・' + o);
+            } else {
+                usedNames[name] = 1;
+            }
+
+            var pad = idx < 10 ? '00' + idx : (idx < 100 ? '0' + idx : '' + idx);
+            var id = 'pet_' + pad;
+            var skillName = pf + be + '・' + sk;
+            var reqLv = tier.lv + Math.floor(i / 4) * 2;
+
+            /* 基礎數值：隨等級與品階成長 */
+            var lvMul = 1 + (reqLv / 100) * 2.2;
+            var base = 10 * lvMul * Q.mul;
+
+            var atk = Math.floor(base * 1.5);
+            var def = Math.floor(base * 0.9);
+            var maxHp = Math.floor(base * 12);
+            var hit = Math.floor(2 + reqLv * 0.06);
+
+            var bonus = { atk: atk, def: def, maxHp: maxHp, hit: hit };
+            if (E.bonus === 'eva') bonus.eva = Math.floor(2 + reqLv * 0.05);
+            if (E.bonus === 'crit') bonus.crit = Math.floor(1 + reqLv * 0.03);
+            if (E.bonus === 'critRes') bonus.critRes = Math.floor(2 + reqLv * 0.04);
+            if (E.bonus === 'maxMp') bonus.maxMp = Math.floor(8 + reqLv * 0.3);
+
+            var adoptGold = costOf(reqLv, qk);
+            var feedGold = Math.floor(adoptGold * 0.25);
+            var feedSp = Math.floor(adoptGold * 0.18);
+
+            var powerMult = Math.round(R.power * Q.mul * 100) / 100;
+            var desc = E.flavor + '所鍾之' + E.zh + '屬靈獸，' + R.desc + '。';
+
+            PETS[id] = {
+                id: id, name: name,
+                species: Q.zh + '・' + E.zh + '屬・' + R.zh + '型',
+                reqLv: reqLv,
+                desc: desc,
+                adoptGold: adoptGold, feedGold: feedGold, feedSp: feedSp,
+                skillName: skillName,
+                effectType: rk,
+                powerMult: powerMult,
+                role: rk, element: ek, quality: qk,
+                qualityColor: Q.color,
+                bonus: bonus
+            };
+        }
+    });
+
+    Data.PETS = PETS;
+
+    /* ══════════════════════════════════════════════════════
+       五、衍生索引（供 UI 篩選與排序）
+       ══════════════════════════════════════════════════════ */
+    var IDS = Object.keys(PETS);
+
+    /** 全部 id（依等級排序） */
+    Data.PET_IDS = IDS.slice().sort(function (a, b) {
+        return (PETS[a].reqLv || 1) - (PETS[b].reqLv || 1);
+    });
+
+    /** 依定位／元素／品階分組 */
+    Data.PET_BY_ROLE = {};
+    Data.PET_BY_ELEMENT = {};
+    Data.PET_BY_QUALITY = {};
+    IDS.forEach(function (id) {
+        var p = PETS[id];
+        (Data.PET_BY_ROLE[p.role] = Data.PET_BY_ROLE[p.role] || []).push(id);
+        (Data.PET_BY_ELEMENT[p.element] = Data.PET_BY_ELEMENT[p.element] || []).push(id);
+        (Data.PET_BY_QUALITY[p.quality] = Data.PET_BY_QUALITY[p.quality] || []).push(id);
+    });
+
+    /* ══════════════════════════════════════════════════════
+       六、對照表
+       ══════════════════════════════════════════════════════ */
+    Data.PET_ROLE_NAMES = { attack: '猛攻', guard: '守護', heal: '治療', debuff: '干擾', burst: '爆發' };
+    Data.PET_ROLE_ICONS = { attack: '⚔️', guard: '🛡️', heal: '💚', debuff: '🕸️', burst: '💥' };
+    Data.PET_ROLE_DESC = {
+        attack: '每回合主動追擊，輸出最高',
+        guard: '挺身替主人分攤傷害',
+        heal: '定期回復主人與隊友氣血',
+        debuff: '命中時削弱敵人',
+        burst: '積蓄數回合後釋放巨額傷害'
+    };
+    Data.PET_QUALITY_NAMES = { common: '凡品', rare: '良品', epic: '珍品', legend: '絕品', myth: '神品' };
+    Data.PET_QUALITY_COLORS = { common: '#94a3b8', rare: '#38bdf8', epic: '#a855f7', legend: '#f59e0b', myth: '#ef4444' };
+    Data.PET_QUALITY_ORDER = ['common', 'rare', 'epic', 'legend', 'myth'];
+
+    console.log('[petData] ✓ 已載入 ' + IDS.length + ' 隻靈獸（5 定位 × 8 元素 × 5 品階）' +
+        '｜等級 Lv.' + PETS[Data.PET_IDS[0]].reqLv + ' ~ Lv.' + PETS[Data.PET_IDS[Data.PET_IDS.length - 1]].reqLv);
 })();
+
 
 /* ===== 35 / 246 : partyData.js ===== */
 // js/partyData.js
@@ -29789,6 +29974,27 @@ window.HY = window.HY || {};
                    有些 UI / 戰鬥層讀 out.maxEs，有些讀 out.energyShield，
                    兩個都指向同一個數字，避免其中一邊永遠是 undefined。
                    ⚠ 必須放在乘法加成「之後」，否則 maxEs 會是未放大的舊值。 */
+                /* ⭐⭐ v424：靈獸（minion）屬性通道
+                   ──────────────────────────────────────────────────────────
+                   天賦樹有 10 種靈獸詞條、89 條效果（靈獸傷害／氣血／攻速／
+                   身法／全能／吸血／八元素抗性…），但 characterSystem 從來
+                   沒有把它們寫進 derived stats → 天賦點了完全無效。
+
+                   這裡把 ext 裡的 minion* 值換算成百分比並輸出：
+                     · minionDmg  → 靈獸傷害 %（petSystem 會乘在攻擊上）
+                     · minionHp   → 靈獸氣血 %
+                     · minionSpd  → 靈獸速度 %
+                   值本身已由 wuxiaStatParser 累積（kind: 'more' → 小數），
+                   這裡轉成百分比數字供 UI 與戰鬥層直接讀。 */
+                ['minionDmg', 'minionHp', 'minionSpd'].forEach(function (mk) {
+                    var raw = num2(ext[mk], 0);
+                    /* wuxiaStatParser 給的是「小數」（0.06 = +6%），
+                       但 poeStatEngine 可能給「整數百分比」（6）。
+                       小於 1 視為小數，乘以 100。 */
+                    var pct = (raw !== 0 && Math.abs(raw) < 1) ? raw * 100 : raw;
+                    out[mk] = Math.round(pct * 10) / 10;
+                });
+
                 out.maxEs = num2(out.energyShield, 0);
 
                 /* ⭐⭐ v423：罡氣統一（機制層 ↔ derived stats 的單一來源）
@@ -43252,6 +43458,8 @@ window.HY = window.HY || {};
             Object.keys(pet.bonus).forEach(function (k) {
                 bonus[k] = Math.floor(pet.bonus[k] * scale);
             });
+
+            /* ⭐ v3：把定位、元素、品階一併帶出，供戰鬥層分流處理 */
             return {
                 id: pet.id,
                 name: pet.name,
@@ -43259,9 +43467,85 @@ window.HY = window.HY || {};
                 lv: lv,
                 skillName: pet.skillName,
                 effectType: pet.effectType,
+                role: pet.role || 'attack',
+                element: pet.element || 'metal',
+                quality: pet.quality || 'common',
+                qualityColor: pet.qualityColor || '#94a3b8',
                 powerMult: pet.powerMult * (1 + (lv - 1) * 0.1),
                 bonus: bonus
             };
+        }
+
+        /* ══════════════════════════════════════════════════
+           ⭐ v3：定位相關的輔助查詢
+           ══════════════════════════════════════════════════ */
+
+        /** 該靈獸的定位中文名 */
+        roleName(pet) {
+            var D = window.HY.Data || {};
+            var N = D.PET_ROLE_NAMES || {};
+            return N[pet && pet.role] || '猛攻';
+        }
+
+        /** 該靈獸的定位圖示 */
+        roleIcon(pet) {
+            var D = window.HY.Data || {};
+            var I = D.PET_ROLE_ICONS || {};
+            return I[pet && pet.role] || '⚔️';
+        }
+
+        /**
+         * 依定位計算實際戰鬥數值。
+         * @param {object} pet   getActivePetInfo() 的結果
+         * @param {object} stats 主人的 derived stats（含 minionDmg 等天賦加成）
+         * @returns {object} { dmg, heal, guardPct, debuff, burstMult }
+         */
+        combatProfile(pet, stats) {
+            if (!pet) return null;
+            var s = stats || {};
+            /* 天賦加成：靈獸傷害 / 靈獸氣血 / 靈獸速度 */
+            var mdMul = 1 + (Number(s.minionDmg) || 0) / 100;
+            var baseAtk = Number(s.atk) || 100;
+            var atk = baseAtk * pet.powerMult * mdMul;
+
+            var out = {
+                dmg: 0, heal: 0, guardPct: 0, debuff: null, burstMult: 1,
+                mdMul: mdMul
+            };
+
+            switch (pet.role) {
+                case 'attack':
+                    out.dmg = atk;
+                    break;
+
+                case 'guard':
+                    /* 守護型：傷害低，但機率替主人分攤 */
+                    out.dmg = atk * 0.45;
+                    out.guardPct = 0.25 + pet.lv * 0.01;   /* 25% ~ */
+                    break;
+
+                case 'heal':
+                    /* 治療型：傷害低，每 2 回合治療 */
+                    out.dmg = atk * 0.40;
+                    out.heal = Math.floor((Number(s.maxHp) || 1000) * (0.04 + pet.lv * 0.002) * mdMul);
+                    break;
+
+                case 'debuff':
+                    /* 干擾型：傷害中等，附帶削弱 */
+                    out.dmg = atk * 0.75;
+                    out.debuff = {
+                        defDown: 0.10 + pet.lv * 0.005,   /* 降防 */
+                        turns: 2
+                    };
+                    break;
+
+                case 'burst':
+                    /* 爆發型：平時傷害低，每 4 回合一次大爆發 */
+                    out.dmg = atk * 0.35;
+                    out.burstMult = 3.2;
+                    break;
+            }
+            return out;
         }
     }
     window.HY.PetSystem = PetSystem;
@@ -62376,20 +62660,102 @@ window.HY = window.HY || {};
             if (!petSys || !core.currentEnemy) return;
             var pet = petSys.getActivePetInfo();
             if (!pet) return;
-            var petDmg = Math.floor(playerStats.atk * pet.powerMult - core.currentEnemy.def * 0.25);
-            if (pet.effectType === 'dragon_breath') petDmg = Math.floor(playerStats.atk * pet.powerMult);
-            petDmg = Math.max(5, petDmg);
-            var target = core.currentEnemy;
-            target.currentHp = Math.max(0, target.currentHp - petDmg);
-            var msg = '🐉 靈獸【' + pet.name + '】發動《' + pet.skillName + '》，對【' + target.name + '】造成 ' + petDmg + ' 點傷害！';
-            if (pet.effectType === 'drain_bite' || pet.effectType === 'dragon_breath') {
-                var petHealTarget = this.getMostWoundedMember(partyMembers, 'hp') || core.charSys.state;
-                var heal = Math.floor(15 + pet.lv * 12);
-                this.applyHeal(petHealTarget, heal, heal);
-                msg += ' [💚回復【' + petHealTarget.name + '】+' + heal + 'HP/+' + heal + 'MP]';
+
+            /* ⭐ v3：依「定位」分流（多功能靈獸系統）
+               ──────────────────────────────────────────────────────────
+               舊版：所有靈獸都是 atk × powerMult 的固定傷害。
+               新版：5 種定位各有不同行為 ——
+                 attack 猛攻：純輸出
+                 guard  守護：低傷害 + 機率替主人分攤傷害
+                 heal   治療：低傷害 + 定期治療
+                 debuff 干擾：中傷害 + 削弱敵人防禦
+                 burst  爆發：低傷害 + 每 4 回合一次巨額爆發
+               ────────────────────────────────────────────────────────── */
+            var profile = null;
+            try {
+                profile = petSys.combatProfile(pet, playerStats);
+            } catch (ePf) { profile = null; }
+
+            /* 沒有 profile（舊存檔或異常）→ 退回舊公式 */
+            if (!profile) {
+                var oldDmg = Math.floor(playerStats.atk * pet.powerMult - core.currentEnemy.def * 0.25);
+                if (pet.effectType === 'dragon_breath') oldDmg = Math.floor(playerStats.atk * pet.powerMult);
+                oldDmg = Math.max(5, oldDmg);
+                core.currentEnemy.currentHp = Math.max(0, core.currentEnemy.currentHp - oldDmg);
+                core.log('🐉 靈獸【' + pet.name + '】發動《' + pet.skillName + '》，對【' +
+                    core.currentEnemy.name + '】造成 ' + oldDmg + ' 點傷害！', 'combat');
+                return;
             }
+
+            var target = core.currentEnemy;
+            var roleIcon = petSys.roleIcon(pet);
+            var roleName = petSys.roleName(pet);
+            var defFactor = target.def * 0.25;
+            var dmg = Math.max(5, Math.floor(profile.dmg - defFactor));
+            var extras = [];
+
+            /* ── 各定位的特殊行為 ── */
+            if (pet.role === 'guard') {
+                /* 守護型：登記本回合的守護狀態，敵方回合會用到 */
+                if (!this._petGuard) this._petGuard = {};
+                this._petGuard[pet.id] = {
+                    pct: Math.min(0.60, profile.guardPct),
+                    src: pet.name
+                };
+                extras.push('🛡️ 張開守護（' + Math.round(Math.min(0.60, profile.guardPct) * 100) + '% 分攤）');
+            }
+
+            if (pet.role === 'heal') {
+                /* 治療型：每 2 回合治療一次 */
+                if (!this._petHealCd) this._petHealCd = 0;
+                this._petHealCd++;
+                if (this._petHealCd >= 2) {
+                    this._petHealCd = 0;
+                    var healTarget = this.getMostWoundedMember(partyMembers, 'hp') || core.charSys.state;
+                    var heal = Math.max(1, profile.heal);
+                    this.applyHeal(healTarget, heal, Math.floor(heal * 0.6));
+                    extras.push('💚 治療【' + healTarget.name + '】+' + heal + ' 氣血');
+                }
+            }
+
+            if (pet.role === 'debuff') {
+                /* 干擾型：削弱敵人防禦 */
+                var db = profile.debuff;
+                if (target.def > 0) {
+                    var cut = Math.floor(target.def * db.defDown);
+                    target.def = Math.max(0, target.def - cut);
+                    extras.push('🕸️ 破防 -' + cut);
+                }
+                /* 也降低集氣 */
+                if (typeof target.atb === 'number') {
+                    target.atb = Math.max(0, target.atb * 0.85);
+                    extras.push('減速 15%');
+                }
+            }
+
+            if (pet.role === 'burst') {
+                /* 爆發型：每 4 回合一次大爆發 */
+                if (!this._petBurstCd) this._petBurstCd = 0;
+                this._petBurstCd++;
+                if (this._petBurstCd >= 4) {
+                    this._petBurstCd = 0;
+                    var burstDmg = Math.floor(dmg * profile.burstMult);
+                    dmg = burstDmg;
+                    extras.push('💥 積蓄爆發 ×' + profile.burstMult);
+                }
+            }
+
+            /* 扣血 */
+            target.currentHp = Math.max(0, target.currentHp - dmg);
+
+            var msg = roleIcon + ' 靈獸【' + pet.name + '】（' + roleName + '）發動《' + pet.skillName +
+                '》，對【' + target.name + '】造成 ' + dmg + ' 點傷害！';
+            if (extras.length) msg += ' [' + extras.join('、') + ']';
             core.log(msg, 'combat');
-            if (target.currentHp <= 0 && affixSys) affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
+
+            if (target.currentHp <= 0 && affixSys) {
+                affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
+            }
         }
     }
     window.HY.CombatPlayerTurn = CombatPlayerTurn;
@@ -73449,7 +73815,111 @@ window.HY = window.HY || {};
             const ownedPets = app.charSys.rootState.pets;
             const activePetId = app.charSys.rootState.activePet;
             const maxCharLv = app.petSys.getMaxCharLv();
-            Object.values(Data.PETS).forEach(pet => {
+
+            /* ⭐ v3：200 隻靈獸需要篩選器（全部列出會捲不完）
+               ──────────────────────────────────────────────────────────
+               篩選維度：定位（5 種）／元素（8 種）／品階（5 種）／已擁有
+               狀態存在 this._petFilter，切換時只重繪不重建篩選器。 */
+            if (!this._petFilter) {
+                this._petFilter = { role: 'all', element: 'all', quality: 'all', ownedOnly: false };
+            }
+            const F = this._petFilter;
+
+            /* 篩選器 UI */
+            var filterHost = document.getElementById('pet-filter');
+            if (!filterHost) {
+                filterHost = document.createElement('div');
+                filterHost.id = 'pet-filter';
+                filterHost.style.cssText = 'margin-bottom:10px;padding:8px 10px;background:#121822;' +
+                    'border:1px solid #2e3b4e;border-radius:6px;font-size:.82rem;';
+                petListEl.parentNode.insertBefore(filterHost, petListEl);
+            }
+
+            function chipGroup(label, key, opts, cur) {
+                var h = '<div style="margin-bottom:5px;"><span style="color:#64748b;margin-right:6px;">' + label + '</span>';
+                opts.forEach(function (o) {
+                    var on = (cur === o.v);
+                    h += '<button data-pf="' + key + '" data-pv="' + o.v + '" style="' +
+                        'margin:0 4px 2px 0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;' +
+                        'font-family:inherit;' +
+                        (on
+                            ? 'background:#1e3a5f;border:1px solid #38bdf8;color:#7dd3fc;'
+                            : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
+                        '">' + o.n + '</button>';
+                });
+                return h + '</div>';
+            }
+
+            var roleOpts = [{ v: 'all', n: '全部' }];
+            Object.keys(Data.PET_ROLE_NAMES || {}).forEach(function (k) {
+                roleOpts.push({ v: k, n: (Data.PET_ROLE_ICONS[k] || '') + Data.PET_ROLE_NAMES[k] +
+                    ' (' + ((Data.PET_BY_ROLE[k] || []).length) + ')' });
+            });
+            var elemOpts = [{ v: 'all', n: '全部' }];
+            (Data.ELEMENT_RING || Object.keys(Data.ELEMENTS || {})).forEach(function (k) {
+                var m = (Data.ELEMENTS || {})[k];
+                if (m) elemOpts.push({ v: k, n: m.icon + m.name });
+            });
+            var qualOpts = [{ v: 'all', n: '全部' }];
+            (Data.PET_QUALITY_ORDER || ['common', 'rare', 'epic', 'legend', 'myth']).forEach(function (k) {
+                qualOpts.push({ v: k, n: Data.PET_QUALITY_NAMES[k] });
+            });
+
+            var ownedCount = Object.keys(ownedPets).length;
+            filterHost.innerHTML =
+                chipGroup('定位', 'role', roleOpts, F.role) +
+                chipGroup('元素', 'element', elemOpts, F.element) +
+                chipGroup('品階', 'quality', qualOpts, F.quality) +
+                '<div><span style="color:#64748b;margin-right:6px;">其他</span>' +
+                '<button data-pf="owned" data-pv="' + (F.ownedOnly ? '0' : '1') + '" style="' +
+                'margin:0 4px 2px 0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;font-family:inherit;' +
+                (F.ownedOnly ? 'background:#14532d;border:1px solid #10b981;color:#6ee7b7;'
+                             : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
+                '">' + (F.ownedOnly ? '✔ ' : '') + '僅顯示已收服 (' + ownedCount + ')</button>' +
+                '<span style="float:right;color:#64748b;">共 ' + Object.keys(Data.PETS).length + ' 隻</span></div>';
+
+            /* 綁定篩選 */
+            var self = this;
+            filterHost.querySelectorAll('[data-pf]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var k = btn.getAttribute('data-pf');
+                    var v = btn.getAttribute('data-pv');
+                    if (k === 'owned') { F.ownedOnly = (v === '1'); }
+                    else { F[k] = v; }
+                    self.renderPetTab();
+                });
+            });
+
+            /* 產出符合條件的清單 */
+            var listIds = (Data.PET_IDS || Object.keys(Data.PETS)).filter(function (id) {
+                var p = Data.PETS[id];
+                if (!p) return false;
+                if (F.role !== 'all' && p.role !== F.role) return false;
+                if (F.element !== 'all' && p.element !== F.element) return false;
+                if (F.quality !== 'all' && p.quality !== F.quality) return false;
+                if (F.ownedOnly && !ownedPets[id]) return false;
+                return true;
+            });
+
+            /* 顯示筆數提示 */
+            var countEl = document.createElement('div');
+            countEl.style.cssText = 'margin:0 0 8px;font-size:.82rem;color:#94a3b8;';
+            countEl.textContent = '顯示 ' + listIds.length + ' 隻' +
+                (listIds.length < Object.keys(Data.PETS).length ? '（已篩選）' : '');
+            petListEl.appendChild(countEl);
+
+            /* 最多一次渲染 120 隻，避免 DOM 過重 */
+            const LIMIT = 120;
+            var shown = listIds.slice(0, LIMIT);
+            if (listIds.length > LIMIT) {
+                var note = document.createElement('div');
+                note.style.cssText = 'margin:6px 0;font-size:.82rem;color:#f59e0b;';
+                note.textContent = '⚠️ 僅顯示前 ' + LIMIT + ' 隻，請用上方篩選器縮小範圍';
+                petListEl.appendChild(note);
+            }
+
+            shown.forEach(petId => {
+                const pet = Data.PETS[petId];
                 const lv = ownedPets[pet.id] || 0;
                 const isActive = activePetId === pet.id;
                 const feedCost = app.petSys.getFeedCost(pet.id);
@@ -73486,8 +73956,16 @@ window.HY = window.HY || {};
                 }
                 card.innerHTML =
                     '<div>' +
-                        '<h4>' + pet.name + ' <small style="color:#10b981;">[需 Lv.' + pet.reqLv + '+ | ' + pet.species + ']</small> ' +
-                        (lv > 0 ? '<span class="sp-color">(Lv.' + lv + ')</span>' : '<span style="color:#64748b;">(未收服)</span>') + '</h4>' +
+                        '<h4>' +
+                            '<span style="color:' + (pet.qualityColor || '#94a3b8') + '">' +
+                                (Data.PET_ROLE_ICONS[pet.role] || '⚔️') + ' ' + pet.name +
+                            '</span> ' +
+                            '<small style="color:#10b981;">[需 Lv.' + pet.reqLv + '+ | ' + pet.species + ']</small> ' +
+                            (lv > 0 ? '<span class="sp-color">(Lv.' + lv + ')</span>' : '<span style="color:#64748b;">(未收服)</span>') +
+                        '</h4>' +
+                        '<p style="color:#94a3b8;font-size:.85em">' +
+                            (Data.PET_ROLE_DESC[pet.role] || '') +
+                        '</p>' +
                         '<p>' + pet.desc + '</p>' +
                         '<p>💥 靈獸戰技：<strong>《' + pet.skillName + '》</strong> | 騎乘加成：' + bonusText + '</p>' +
                     '</div>' +
