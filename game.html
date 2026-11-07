@@ -147595,47 +147595,57 @@ window.HY = window.HY || {};
                 'box-shadow:0 0 14px rgba(0,229,255,.9);' +
             '}',
 
-            /* ── 標籤本體 ── */
+            /* ── 標籤本體 ──
+               ⭐ v492：標籤原本是同一個青色（#00e5ff），跟新加的邊框
+                    完全同色 → 混在一起看不出來，使用者反映「跟邊緣一樣不明顯」。
+                    改為「金黃色系」與青色邊框形成強烈對比，
+                    同時整體尺寸放大 1.5 倍（30→45 寬、104→156 高、字 .76→1.14rem）。 */
             '.hy-edge-tab{' +
-                'position:fixed;z-index:9002;' +
-                'display:flex;align-items:center;justify-content:center;gap:4px;' +
-                'background:linear-gradient(180deg,#1b2432,#0f1822);' +
-                'border:1px solid #00e5ff;' +
-                'color:#7dd3fc;' +
-                'font-size:.76rem;font-weight:bold;' +
+                'position:fixed;z-index:9006;' +
+                'display:flex;align-items:center;justify-content:center;gap:6px;' +
+                'background:linear-gradient(180deg,#3a2a10,#1e1508);' +
+                'border:2px solid #fbbf24;' +
+                'color:#fde68a;' +
+                'font-size:1.14rem;font-weight:bold;' +
+                'text-shadow:0 0 10px rgba(251,191,36,.9), 0 0 3px rgba(0,0,0,.9);' +
                 'cursor:pointer;' +
                 'user-select:none;' +
                 '-webkit-user-select:none;' +
                 'opacity:0;' +
                 'pointer-events:none;' +
                 'transition:opacity .18s ease, transform .18s ease, background .18s, color .18s;' +
-                'box-shadow:0 0 14px rgba(0,229,255,.35);' +
-                'letter-spacing:.06em;' +
+                'box-shadow:0 0 22px rgba(251,191,36,.75), inset 0 0 14px rgba(251,191,36,.25);' +
+                'letter-spacing:.08em;' +
                 'white-space:nowrap;' +
             '}',
-            '.hy-edge-tab:hover{background:#123a4a;color:#e0f7ff;box-shadow:0 0 20px rgba(0,229,255,.7);}',
+            '.hy-edge-tab:hover{' +
+                'background:linear-gradient(180deg,#6b4a12,#3a2a10);' +
+                'color:#fffbeb;' +
+                'border-color:#fcd34d;' +
+                'box-shadow:0 0 32px rgba(252,211,77,1), inset 0 0 18px rgba(252,211,77,.4);' +
+            '}',
 
-            /* 左右標籤：直立膠囊 */
+            /* 左右標籤：直立膠囊（尺寸 ×1.5：45 × 156） */
             '.hy-edge-tab[data-k="left"],.hy-edge-tab[data-k="right"]{' +
                 'top:50%;' +
-                'width:30px;height:104px;' +
+                'width:45px;height:156px;' +
                 'writing-mode:vertical-rl;text-orientation:mixed;' +
-                'padding:10px 0;' +
+                'padding:15px 0;' +
             '}',
             '.hy-edge-tab[data-k="left"]{' +
-                'left:0;border-left:none;border-radius:0 9px 9px 0;' +
+                'left:0;border-left:none;border-radius:0 13px 13px 0;' +
                 'transform:translate(-110%,-50%);' +
             '}',
             '.hy-edge-tab[data-k="right"]{' +
-                'right:0;border-right:none;border-radius:9px 0 0 9px;' +
+                'right:0;border-right:none;border-radius:13px 0 0 13px;' +
                 'transform:translate(110%,-50%);' +
             '}',
 
-            /* 上方標籤：橫向膠囊 */
+            /* 上方標籤：橫向膠囊（尺寸 ×1.5：198 × 42） */
             '.hy-edge-tab[data-k="top"]{' +
                 'top:0;left:50%;' +
-                'width:132px;height:28px;' +
-                'border-top:none;border-radius:0 0 9px 9px;' +
+                'width:198px;height:42px;' +
+                'border-top:none;border-radius:0 0 13px 13px;' +
                 'transform:translate(-50%,-110%);' +
             '}',
 
@@ -147674,13 +147684,14 @@ window.HY = window.HY || {};
                     'rgba(0,229,255,.28) 7px,rgba(0,229,255,.06) 12px,rgba(0,229,255,0) 16px);' +
                 'border-bottom:1px solid rgba(140,245,255,.75);' +
             '}',
-            /* 底部不開啟面板，只作為視覺邊界 + 提示三條邊可拉出 */
+            /* 底部不開啟面板，只作為視覺邊界 + 提示三條邊可拉出
+               ⭐ v492：改為金色（與青色邊框區隔），字級放大 0.5 倍 */
             '.hy-edge-footnote{' +
-                'position:fixed;left:50%;bottom:9px;transform:translateX(-50%);' +
-                'z-index:8999;pointer-events:none;' +
-                'font-size:.72rem;letter-spacing:.18em;font-weight:bold;' +
-                'color:rgba(125,211,252,.85);' +
-                'text-shadow:0 0 12px rgba(0,229,255,.9), 0 0 3px rgba(0,0,0,.9);' +
+                'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);' +
+                'z-index:9006;pointer-events:none;' +
+                'font-size:1.08rem;letter-spacing:.2em;font-weight:bold;' +
+                'color:#fde68a;' +
+                'text-shadow:0 0 14px rgba(251,191,36,.95), 0 0 4px rgba(0,0,0,.95);' +
                 'white-space:nowrap;' +
                 'transition:opacity .25s;' +
             '}',
@@ -147718,7 +147729,6 @@ window.HY = window.HY || {};
             tab.title = '點擊展開／收起' + d.label.replace(/^\S+\s/, '');
             document.body.appendChild(tab);
             self.tabs[d.k] = tab;
-
             tab.addEventListener('mouseenter', function () {
                 self._cancelHide(d.k);
                 tab.classList.add('hy-edge-peek');
@@ -147799,6 +147809,18 @@ window.HY = window.HY || {};
             var nearRight = (x >= w - EDGE_PX);
             var nearBottom = (y >= h - EDGE_PX);
 
+            /* ⭐ v492：標籤放大到 45×156（原 30×104）後，滑鼠從邊緣
+               移到標籤中央會離開 34px 的感應區 → 標籤立刻縮回去。
+               這裡改成「只要游標還在已彈出的標籤矩形內，就維持顯示」。
+               （標籤本身 pointer-events:auto，但滑鼠在它上面時
+                 document 的 mousemove 仍會觸發，所以用矩形判斷即可） */
+            var onTab = function (k) {
+                var t = self.tabs[k];
+                if (!t || !t.classList.contains('hy-edge-peek')) return false;
+                var r = t.getBoundingClientRect();
+                return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+            };
+
             /* ⭐ v491：除了靠近時高亮對應邊，也要讓「常駐外框」知道
                現在靠著哪一邊 —— 四角括號會跟著亮起來。 */
             document.body.classList.toggle('hy-edge-hover-top', nearTop);
@@ -147809,10 +147831,11 @@ window.HY = window.HY || {};
             if (self.elBottomHint) self.elBottomHint.style.opacity = nearBottom ? '1' : '';
             if (self.elFootNote) self.elFootNote.style.opacity = nearBottom ? '0' : '';
 
-            /* 角落優先序：上 → 左 → 右（上方面積最小，優先讓給它） */
-            if (nearTop) self._peek('top');
-            else if (nearLeft) self._peek('left');
-            else if (nearRight) self._peek('right');
+            /* 角落優先序：上 → 左 → 右（上方面積最小，優先讓給它）
+               ⚠️ 游標停在已彈出的標籤上時要維持該方向，不可被收起。 */
+            if (nearTop || onTab('top')) self._peek('top');
+            else if (nearLeft || onTab('left')) self._peek('left');
+            else if (nearRight || onTab('right')) self._peek('right');
             else self._scheduleHideAll();
         }, { passive: true });
 
@@ -148093,4 +148116,5 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
