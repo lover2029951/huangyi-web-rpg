@@ -1053,7 +1053,9 @@ details > summary::marker {
                             </div>
                         </details>
 
-                        <div id="enemy-list" class="enemy-grid"></div>
+                        <!-- ⭐ v507：怪物列表已移入「點擊紀元地圖」的彈出視窗，
+                             此容器保留（部分程式仍會查詢），但預設隱藏。 -->
+                        <div id="enemy-list" class="enemy-grid" style="display:none;"></div>
 
                         <div id="battle-arena" class="hidden">
                             <div class="fighter-cards" style="align-items:stretch;">
@@ -1096,7 +1098,7 @@ details > summary::marker {
                         </div>
                     </div>
 
-                    <div id="roster-party-list" class="enemy-grid" style="margin-bottom:18px;"></div>
+                    <div id="roster-party-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;"></div>
                 </div>
 
                 <div id="tab-martial" class="tab-content">
@@ -15725,6 +15727,34 @@ window.HY = window.HY || {};
         return (Math.round(n * 10) / 10).toString();
     }
 
+    /* ⭐⭐⭐ v505：內力回復專用縮放（一律 0.1 ~ 0.3%）
+       ──────────────────────────────────────────────────────────
+       使用者要求：天賦樹上「加內力回復%」的數值一律改為 0.1~0.3%。
+
+       為什麼要單獨開一個通道：
+         內力回復是「每秒回復內力上限的百分比」，屬復甦型數值。
+         POE 原始一條就是 10~40%，經 VALUE_SCALE(0.22) 後仍有 2~9%，
+         一個小節點就給 9%/秒 → 內力幾乎回不完，戰鬥節奏被破壞。
+
+       做法：把原始值線性映射到 0.1~0.3 的區間。
+         · 原值 ≤ 8  → 0.1
+         · 原值 8~25 → 0.1 ~ 0.25 等比
+         · 原值 ≥ 40 → 0.3（上限）
+       這樣不管 POE 給 8% 還是 40%，顯示與實際效果都落在 0.1~0.3%。 */
+    var MP_REGEN_MIN = 0.1;
+    var MP_REGEN_MAX = 0.3;
+    function mpRegen(v) {
+        var raw = num(v, 0);
+        if (raw <= 0) return '0.1';
+        var t;
+        if (raw <= 8) t = 0;
+        else if (raw >= 40) t = 1;
+        else t = (raw - 8) / 32;
+        var n = MP_REGEN_MIN + (MP_REGEN_MAX - MP_REGEN_MIN) * t;
+        /* 保留一位小數：0.1 / 0.2 / 0.3 */
+        return (Math.round(n * 10) / 10).toFixed(1);
+    }
+
     var RULES = [
 
         /* ───────── 核心資源 ───────── */
@@ -15889,8 +15919,25 @@ window.HY = window.HY || {};
         [/^(\d+(?:\.\d+)?)% increased Life Regeneration Rate$/, function (m) {
             return '氣血回復 +' + s(m[1]) + '%';
         }],
+        /* ⭐ v505：內力回復一律 0.1~0.3%（見 mpRegen 說明） */
         [/^(\d+(?:\.\d+)?)% increased Mana Regeneration Rate$/, function (m) {
-            return '內力回復 +' + s(m[1]) + '%';
+            return '內力回復 +' + mpRegen(m[1]) + '%';
+        }],
+        /* 其他「內力回復」變體也一併壓到 0.1~0.3% */
+        [/^(\d+(?:\.\d+)?)% increased Mana Regeneration Rate while (.*)$/, function (m) {
+            return '內力回復 +' + mpRegen(m[1]) + '%（' + m[2] + '）';
+        }],
+        [/^(\d+(?:\.\d+)?)% increased Mana Regeneration if (.*)$/, function (m) {
+            return '內力回復 +' + mpRegen(m[1]) + '%（' + m[2] + '）';
+        }],
+        [/^Regenerate (\d+(?:\.\d+)?)% of Mana per second$/, function (m) {
+            return '每秒回復內力 ' + mpRegen(m[1]) + '%';
+        }],
+        [/^(\d+(?:\.\d+)?)% increased Mana Recovery Rate$/, function (m) {
+            return '內力回復 +' + mpRegen(m[1]) + '%';
+        }],
+        [/^(\d+(?:\.\d+)?)% increased Mana Recovered$/, function (m) {
+            return '內力回復 +' + mpRegen(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% of Physical Attack Damage Leeched as Life$/, function (m) {
             return '外功吸血 ' + s(m[1]) + '%';
@@ -17731,7 +17778,10 @@ window.HY.Data = window.HY.Data || {};
         ],
         resource: [
             { n: '內力上限', v: [10, 12, 14, 18], isPct: true },
-            { n: '內力回復', v: [12, 15, 18, 22], isPct: true },
+            /* ⭐ v505：內力回復一律 0.1~0.3%（四階遞增：0.1 / 0.2 / 0.25 / 0.3）
+               ⚠️ 這裡的值直接輸出成「內力回復 +0.1%」，不再經過任何縮放，
+                  所以數值本身就必須是 0.1~0.3。 */
+            { n: '內力回復', v: [0.1, 0.2, 0.25, 0.3], isPct: true },
             { n: '氣血回復', v: [12, 15, 18, 22], isPct: true },
             { n: '罡氣上限', v: [8, 10, 12, 15], isPct: true },
             { n: '內息', v: [8, 10, 12, 15], isPct: false }
@@ -17765,7 +17815,7 @@ window.HY.Data = window.HY.Data || {};
         ],
         Hierophant: [
             { n: '符籙精通', st: ['招式範圍 +30%', '真元效果 +30%'] },
-            { n: '陣樞之心', st: ['內力上限 +30%', '內力回復 +40%'] },
+            { n: '陣樞之心', st: ['內力上限 +30%', '內力回復 +0.3%'] },
             { n: '天師印', st: ['九元素內勁 +40%'] },
             { n: '太乙玄門', st: ['罡氣上限 +35%', '罡氣效果 +25%'] },
             { n: '符火', st: ['火勁傷害 +40%', '招式範圍 +20%'] },
@@ -17827,17 +17877,17 @@ window.HY.Data = window.HY.Data || {};
             { n: '獵殺', st: ['會心 +22%', '暗器傷害 +25%'] }
         ],
         Pathfinder: [
-            { n: '百草精通', st: ['氣血回復 +50%', '內力回復 +40%'] },
+            { n: '百草精通', st: ['氣血回復 +50%', '內力回復 +0.3%'] },
             { n: '丹道', st: ['氣血上限 +30%', '氣血回復 +35%'] },
             { n: '毒性專精', st: ['毒勁傷害 +50%'] },
-            { n: '續戰', st: ['內力回復 +45%', '罡氣上限 +25%'] },
+            { n: '續戰', st: ['內力回復 +0.3%', '罡氣上限 +25%'] },
             { n: '藥理', st: ['氣血回復 +40%'] },
             { n: '自然之友', st: ['九元素抗性 +28%'] },
             { n: '堅韌', st: ['氣血上限 +28%'] }
         ],
         Occultist: [
             { n: '陰煞精通', st: ['陰煞效果 +45%', '九元素內勁 +25%'] },
-            { n: '奪元', st: ['內力回復 +45%', '陰煞效果 +30%'] },
+            { n: '奪元', st: ['內力回復 +0.3%', '陰煞效果 +30%'] },
             { n: '詛咒宗師', st: ['陰煞效果 +50%'] },
             { n: '暗影之力', st: ['九元素內勁 +40%'] },
             { n: '魂魄', st: ['內息 +24', '內力上限 +28%'] },
@@ -21304,9 +21354,10 @@ window.HY = window.HY || {};
            ⑮ 速度／回復條件
            ══════════════════════════════════════════════════════ */
         '10% increased Attack Speed when on Full Life': '生命全滿時攻擊速度增加 10%',
-        '30% increased Mana Regeneration Rate while stationary': '靜止時魔力回復速率增加 30%',
+        /* ⭐ v505：內力回復一律 0.1~0.3% */
+        '30% increased Mana Regeneration Rate while stationary': '靜止時內力回復 +0.3%',
         '40% increased Mana Regeneration if you\'ve used a Movement Skill Recently':
-            '近期使用移動技能過，魔力回復增加 40%',
+            '近期使用身法過，內力回復 +0.3%',
         '40% increased Accuracy Rating if you haven\'t been Hit Recently': '',
         '5% increased Cast Speed with Cold Skills': '冰冷技能施法速度增加 5%',
         '5% increased Cast Speed with Fire Skills': '火焰技能施法速度增加 5%',
@@ -26685,6 +26736,18 @@ window.HY = window.HY || {};
         if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
         return (Math.round(n * 10) / 10).toString();
     }
+    /* ⭐ v505：內力回復一律 0.1~0.3%（與 wuxiaTalentRemap 同一規則）
+       原值 ≤8 → 0.1；8~40 線性；≥40 → 0.3 */
+    function mpRegen(v) {
+        var raw = num(v, 0);
+        if (raw <= 0) return '0.1';
+        var t;
+        if (raw <= 8) t = 0;
+        else if (raw >= 40) t = 1;
+        else t = (raw - 8) / 32;
+        var n = 0.1 + 0.2 * t;
+        return (Math.round(n * 10) / 10).toFixed(1);
+    }
 
     /* ══════════════════════════════════════════════════════
        一、專精名稱對照（POE 的 XX Mastery → 武俠）
@@ -26825,14 +26888,15 @@ window.HY = window.HY || {};
         [/^Regenerate (\d+(?:\.\d+)?)% of Life per second$/, function (m) {
             return '每秒回復 ' + s(m[1]) + '% 氣血';
         }],
-        [/^Regenerate (\d+(?:\.\d+)?)% of Mana per second$/, function (m) {
-            return '每秒回復 ' + s(m[1]) + '% 內力';
+        /* ⭐ v505：內力回復一律 0.1~0.3% */
+        [/^Regenerate (\d+(?:\.\d+)?)% of Mana per second(?:\s+if\s+.*)?$/, function (m) {
+            return '每秒回復內力 ' + mpRegen(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased Life Recovery Rate$/, function (m) {
             return '氣血回復速率 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased Mana Recovery Rate$/, function (m) {
-            return '內力回復速率 +' + s(m[1]) + '%';
+            return '內力回復 +' + mpRegen(m[1]) + '%';
         }],
 
         /* ── 防禦 ── */
@@ -73211,21 +73275,121 @@ window.HY = window.HY || {};
                         'style="width:28px;height:28px;border-radius:6px;object-fit:cover;' +
                         'border:1.5px solid ' + col + ';vertical-align:middle;margin-right:5px;">';
                 }
-                /* full */
-                return '<div style="flex:0 0 auto;width:96px;height:128px;border-radius:10px;' +
+                /* full — 卡片左側立繪（104×136，貼齊上緣裁切） */
+                return '<div style="flex:0 0 auto;width:104px;height:136px;border-radius:10px;' +
                     'overflow:hidden;border:2px solid ' + col + ';box-shadow:0 0 10px ' + col + '55;' +
                     'background:#0b1220;position:relative;">' +
-                    '<img src="' + p.full + '" alt="" width="96" height="128" decoding="async" ' +
+                    '<img src="' + p.full + '" alt="" width="104" height="136" decoding="async" ' +
                     'style="width:100%;height:100%;object-fit:cover;object-position:top center;">' +
-                    '<span style="position:absolute;left:0;right:0;bottom:0;font-size:.6rem;' +
-                    'text-align:center;color:' + col + ';background:linear-gradient(transparent,rgba(0,0,0,.85));' +
-                    'padding:8px 0 2px;">' + p.title + '</span>' +
+                    '<span style="position:absolute;left:0;right:0;bottom:0;font-size:.62rem;' +
+                    'text-align:center;color:' + col + ';background:linear-gradient(transparent,rgba(0,0,0,.88));' +
+                    'padding:10px 2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                    p.title + '</span>' +
                 '</div>';
             } catch (e) { return ''; }
         }
 
         /** 向後相容：頭像版 */
         _artAvatarHtml(c) { return this._artHtmlFor(c, 'avatar'); }
+
+        /** ⭐ v505：屬性標籤（等寬小卡，取代管線符號硬串） */
+        _statChip(label, value, color) {
+            return '<span class="hy-chip">' +
+                '<i>' + label + '</i>' +
+                '<b style="color:' + (color || '#e2e8f0') + ';">' + value + '</b>' +
+            '</span>';
+        }
+
+        /** ⭐ v505：角色卡片排版樣式（只注入一次） */
+        _ensureRosterCardStyle() {
+            if (document.getElementById('hy-roster-card-css')) return;
+            var st = document.createElement('style');
+            st.id = 'hy-roster-card-css';
+            st.textContent = [
+                /* 卡片本身：三段橫排 */
+                '#roster-party-list .card-item{' +
+                    'display:block !important;' +
+                    'padding:13px 15px !important;' +
+                '}',
+                '#roster-party-list .hy-rc-body{' +
+                    'display:flex;gap:15px;align-items:flex-start;' +
+                '}',
+                /* 左：立繪 */
+                '#roster-party-list .hy-rc-art{flex:0 0 auto;}',
+                /* 中：資訊（可壓縮） */
+                '#roster-party-list .hy-rc-main{flex:1 1 auto;min-width:0;overflow:hidden;}',
+                /* 右：按鈕（固定寬，不換行） */
+                '#roster-party-list .hy-rc-acts{' +
+                    'flex:0 0 92px;display:flex;flex-direction:column;gap:5px;' +
+                '}',
+                '#roster-party-list .hy-rc-acts button{' +
+                    'width:100%;padding:4px 6px;font-size:.74rem;line-height:1.3;' +
+                    'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+                '}',
+
+                /* 標題列 */
+                '#roster-party-list .hy-rc-head{' +
+                    'display:flex;align-items:center;flex-wrap:wrap;gap:5px;' +
+                    'margin-bottom:5px;line-height:1.4;' +
+                '}',
+                '#roster-party-list .hy-rc-idx{' +
+                    'font-size:.72rem;color:#64748b;font-weight:normal;' +
+                '}',
+                '#roster-party-list .hy-rc-name{' +
+                    'font-size:.98rem;font-weight:bold;color:#c89d54;' +
+                '}',
+                '#roster-party-list .hy-rc-lv{' +
+                    'font-size:.76rem;color:#fbbf24;font-variant-numeric:tabular-nums;' +
+                '}',
+                '#roster-party-list .hy-rc-lv i{font-style:normal;color:#64748b;font-size:.9em;}',
+                '#roster-party-list .hy-rc-tag{' +
+                    'font-size:.68rem;padding:1px 6px;border-radius:9px;font-weight:bold;' +
+                '}',
+                '#roster-party-list .hy-rc-tag.tag-on{background:rgba(0,229,255,.18);color:#7dd3fc;border:1px solid #00e5ff88;}',
+                '#roster-party-list .hy-rc-tag.tag-party{background:rgba(16,185,129,.16);color:#6ee7b7;border:1px solid #10b98188;}',
+                '#roster-party-list .hy-rc-tag.tag-rest{background:#1b2432;color:#64748b;border:1px solid #2e3b4e;}',
+
+                /* 副標列：門派 / 特色 / 戰力 */
+                '#roster-party-list .hy-rc-sub{' +
+                    'display:flex;align-items:center;flex-wrap:wrap;gap:14px;' +
+                    'font-size:.79rem;color:#94a3b8;margin:1px 0 8px;' +
+                '}',
+                '#roster-party-list .hy-rc-power{color:#94a3b8;}',
+                '#roster-party-list .hy-rc-power b{color:#f43f5e;font-size:.92rem;}',
+
+                /* 屬性標籤 */
+                '#roster-party-list .hy-rc-stats{' +
+                    'display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px;' +
+                '}',
+                '#roster-party-list .hy-chip{' +
+                    'display:inline-flex;align-items:center;gap:5px;' +
+                    'background:#0f1720;border:1px solid #26313f;border-radius:5px;' +
+                    'padding:3px 10px;font-size:.77rem;line-height:1.45;' +
+                    'min-width:74px;box-sizing:border-box;' +
+                '}',
+                '#roster-party-list .hy-chip i{' +
+                    'font-style:normal;color:#64748b;font-size:.92em;' +
+                    'min-width:1.6em;' +
+                '}',
+                '#roster-party-list .hy-chip b{font-variant-numeric:tabular-nums;}',
+
+                '#roster-party-list .hy-rc-elem{' +
+                    'font-size:.75rem;color:#94a3b8;line-height:1.7;' +
+                    'padding-top:4px;border-top:1px dashed #1e293b;' +
+                '}',
+
+                /* 窄螢幕：按鈕換到下方橫排 */
+                '@media (max-width: 720px){' +
+                    '#roster-party-list .hy-rc-body{flex-wrap:wrap;}' +
+                    '#roster-party-list .hy-rc-main{flex-basis:calc(100% - 110px);}' +
+                    '#roster-party-list .hy-rc-acts{' +
+                        'flex:1 1 100%;flex-direction:row;flex-wrap:wrap;' +
+                    '}' +
+                    '#roster-party-list .hy-rc-acts button{flex:1 1 auto;width:auto;min-width:64px;}' +
+                '}'
+            ].join('');
+            document.head.appendChild(st);
+        }
 
         buildElementSummaryLine(charObj) {
             var es = window.HY.game && window.HY.game.elementSys;
@@ -73843,6 +74007,8 @@ window.HY = window.HY || {};
             const app = this.app;
             const listEl = document.getElementById('roster-party-list');
             if (!listEl) return;
+            /* ⭐ v505：注入卡片排版樣式 */
+            this._ensureRosterCardStyle();
             listEl.innerHTML = '';
             const allChars = app.rosterSys.getAllCharacters();
             const curIdx = app.charSys.rootState.activeCharIndex;
@@ -73858,32 +74024,58 @@ window.HY = window.HY || {};
                 card.className = 'card-item';
                 card.style.borderColor = isSelected ? '#00e5ff' : (inParty ? '#10b981' : '#2e3b4e');
                 card.innerHTML =
-                    '<div style="display:flex;gap:12px;align-items:flex-start;">' +
-                        /* ⭐ v504：全身立繪（左側） */
-                        this._artHtmlFor(c, 'full') +
-                        '<div style="flex:1;min-width:0;">' +
-                        '<h4>' + this._artAvatarHtml(c) + (idx + 1) + '號欄位：' + c.name + ' ' + this.buildRootBadge(c.spiritRoot, c.spiritRootLv, true) + ' (Lv.' + c.lv + '/300) ' +
-                        (isSelected ? '<span class="sci-color">[當前操控]</span> ' : '') +
-                        (inParty ? '<span style="color:#10b981;">[🚩上陣中]</span>' : '<span style="color:#64748b;">[休息中]</span>') +
-                        '</h4>' +
-                        (feat ? '<p style="color:' + feat.color + '; font-size:0.8rem;">' + feat.icon + ' ' + feat.name + (stacks ? '（' + stacks + '）' : '') + '</p>' : '') +
-                        '<p>門派：' + this.sectName(c.sect) + ' | 戰力：<strong style="color:#f43f5e;">' + d.powerScore + '</strong></p>' +
-                        '<p>攻擊：<strong>' + this.fix1(d.atk) + '</strong> | 防禦：<strong>' + this.fix1(d.def) + '</strong> | 命中：<span style="color:#38bdf8;">' + this.fix1(d.hit) + '%</span> | 閃避：' + this.fix1(d.eva) + '% | 爆擊：' + this.fix1(d.crit) + '% | 暴抗：<span style="color:#a78bfa;">' + this.fix1(d.critRes) + '%</span></p>' +
-                        (elemLine ? '<p>' + elemLine + '</p>' : '') +
+                    '<div class="hy-rc-body">' +
+                        /* ⭐ v505：左欄 — 全身立繪 */
+                        '<div class="hy-rc-art">' + this._artHtmlFor(c, 'full') + '</div>' +
+                        /* 中欄 — 名字 + 屬性標籤 */
+                        '<div class="hy-rc-main">' +
+                            '<div class="hy-rc-head">' +
+                                this._artAvatarHtml(c) +
+                                '<span class="hy-rc-idx">' + (idx + 1) + '號</span>' +
+                                '<span class="hy-rc-name">' + this._esc(c.name) + '</span>' +
+                                this.buildRootBadge(c.spiritRoot, c.spiritRootLv, true) +
+                                '<span class="hy-rc-lv">Lv.' + c.lv + '<i>/300</i></span>' +
+                                (isSelected
+                                    ? '<span class="hy-rc-tag tag-on">當前操控</span>'
+                                    : '') +
+                                (inParty
+                                    ? '<span class="hy-rc-tag tag-party">🚩 上陣中</span>'
+                                    : '<span class="hy-rc-tag tag-rest">休息中</span>') +
+                            '</div>' +
+                            '<div class="hy-rc-sub">' +
+                                '<span class="hy-rc-sect">⛩️ ' + this._esc(this.sectName(c.sect)) + '</span>' +
+                                (feat
+                                    ? '<span class="hy-rc-feat" style="color:' + feat.color + ';">' +
+                                        feat.icon + ' ' + this._esc(feat.name) +
+                                        (stacks ? '（' + this._esc(String(stacks)) + '）' : '') +
+                                      '</span>'
+                                    : '') +
+                                '<span class="hy-rc-power">戰力 <b>' + this.fix1(d.powerScore) + '</b></span>' +
+                            '</div>' +
+                            /* 屬性改成等寬標籤，不再用管線符號硬串 */
+                            '<div class="hy-rc-stats">' +
+                                this._statChip('攻', this.fix1(d.atk), '#f87171') +
+                                this._statChip('防', this.fix1(d.def), '#60a5fa') +
+                                this._statChip('命', this.fix1(d.hit) + '%', '#38bdf8') +
+                                this._statChip('閃', this.fix1(d.eva) + '%', '#34d399') +
+                                this._statChip('爆', this.fix1(d.crit) + '%', '#fbbf24') +
+                                this._statChip('暴抗', this.fix1(d.critRes) + '%', '#a78bfa') +
+                            '</div>' +
+                            (elemLine ? '<div class="hy-rc-elem">' + elemLine + '</div>' : '') +
                         '</div>' +
-                    '</div>' +
-                    '<div class="btn-group-row">' +
-                        '<button class="btn-primary btn-select-char" ' + (isSelected ? 'disabled' : '') + '>' +
-                            (isSelected ? '👤 操控養成中' : '👤 切換操控') +
-                        '</button>' +
-                        '<button class="action-btn btn-rename-char" style="border-color:#a78bfa; color:#c4b5fd;">✏️ 改名</button>' +
-                        /* ⭐ v504：選擇立繪（全身圖 + 對應頭像） */
-                        '<button class="action-btn btn-pick-art" style="border-color:#38bdf8; color:#7dd3fc;">🎨 選擇立繪</button>' +
-                        '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
-                            (inParty ? '⛺ 退下休息' : '🚩 加入上陣') +
-                        '</button>' +
-                        '<button class="action-btn btn-delete-char" style="border-color:#ef4444; color:#fca5a5;" ' +
-                        (allChars.length <= 1 ? 'disabled title="至少需保留 1 名角色"' : '') + '>🗑️ 刪除</button>' +
+                        /* 右欄 — 操作按鈕 */
+                        '<div class="hy-rc-acts">' +
+                            '<button class="btn-primary btn-select-char" ' + (isSelected ? 'disabled' : '') + '>' +
+                                (isSelected ? '👤 操控中' : '👤 切換操控') +
+                            '</button>' +
+                            '<button class="action-btn btn-rename-char" style="border-color:#a78bfa; color:#c4b5fd;">✏️ 改名</button>' +
+                            '<button class="action-btn btn-pick-art" style="border-color:#38bdf8; color:#7dd3fc;">🎨 立繪</button>' +
+                            '<button class="action-btn btn-toggle-party" style="border-color:' + (inParty ? '#f59e0b' : '#10b981') + ';">' +
+                                (inParty ? '⛺ 退下' : '🚩 上陣') +
+                            '</button>' +
+                            '<button class="action-btn btn-delete-char" style="border-color:#ef4444; color:#fca5a5;" ' +
+                            (allChars.length <= 1 ? 'disabled title="至少需保留 1 名角色"' : '') + '>🗑️ 刪除</button>' +
+                        '</div>' +
                     '</div>';
                 card.querySelector('.btn-select-char').addEventListener('click', () => {
                     if (app.rosterSys.selectCharacter(idx)) app.renderAll();
@@ -74233,7 +74425,87 @@ window.HY = window.HY || {};
 window.HY = window.HY || {};
 (function () {
     class UICombatExplore {
-        constructor(app) { this.app = app; }
+        constructor(app) {
+            this.app = app;
+            this._ensureDialogStyle();
+        }
+
+        /** ⭐ v507：紀元地圖選怪視窗樣式（只注入一次） */
+        _ensureDialogStyle() {
+            if (document.getElementById('hy-med-css')) return;
+            var st = document.createElement('style');
+            st.id = 'hy-med-css';
+            st.textContent = [
+                '.hy-med-mask{position:fixed;inset:0;z-index:9300;background:rgba(2,6,12,.86);' +
+                    'display:flex;align-items:center;justify-content:center;padding:16px;}',
+                '.hy-med-panel{width:min(94vw,720px);max-height:86vh;display:flex;flex-direction:column;' +
+                    'background:#0f141c;border:2px solid #00e5ff;border-radius:10px;' +
+                    'box-shadow:0 24px 70px rgba(0,0,0,.9);overflow:hidden;}',
+
+                /* 標題列 */
+                '.hy-med-title{display:flex;align-items:center;gap:10px;padding:12px 16px;' +
+                    'background:#111a24;border-bottom:1px solid #2e3b4e;flex-wrap:wrap;}',
+                '.hy-med-title-txt{font-size:1rem;font-weight:bold;color:#7dd3fc;}',
+                '.hy-med-title-sub{font-size:.76rem;color:#64748b;}',
+                '.hy-med-close{margin-left:auto;background:#1b2432;border:1px solid #2e3b4e;' +
+                    'color:#94a3b8;border-radius:5px;cursor:pointer;padding:3px 11px;' +
+                    'font-size:.82rem;font-family:inherit;}',
+                '.hy-med-close:hover{border-color:#f87171;color:#fca5a5;}',
+
+                '.hy-med-desc{padding:9px 16px;font-size:.79rem;color:#94a3b8;' +
+                    'border-bottom:1px solid #1a2330;line-height:1.6;}',
+
+                /* 怪物清單 */
+                '.hy-med-list{padding:12px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;}',
+                '.hy-med-empty{padding:26px;text-align:center;color:#64748b;font-size:.86rem;}',
+
+                /* 單隻怪的卡片（整張可點） */
+                '.hy-med-card{background:#121822;border:1px solid #2e3b4e;border-radius:8px;' +
+                    'padding:10px 13px;cursor:pointer;transition:.14s;}',
+                '.hy-med-card:hover{border-color:#00e5ff;background:#16212e;' +
+                    'box-shadow:0 0 14px rgba(0,229,255,.28);transform:translateY(-1px);}',
+                '.hy-med-card.is-locked{opacity:.55;cursor:not-allowed;}',
+                '.hy-med-card.is-locked:hover{border-color:#2e3b4e;background:#121822;' +
+                    'box-shadow:none;transform:none;}',
+
+                '.hy-med-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;flex-wrap:wrap;}',
+                '.hy-med-name{font-size:.95rem;font-weight:bold;color:#c89d54;}',
+                '.hy-med-lv{font-size:.74rem;color:#fbbf24;background:rgba(251,191,36,.12);' +
+                    'border:1px solid #fbbf2455;border-radius:9px;padding:0 7px;' +
+                    'font-variant-numeric:tabular-nums;}',
+                '.hy-med-go{margin-left:auto;font-size:.78rem;color:#00e5ff;font-weight:bold;}',
+
+                '.hy-med-row{display:flex;gap:8px;font-size:.79rem;line-height:1.75;}',
+                '.hy-med-k{color:#64748b;white-space:nowrap;min-width:3.6em;}',
+                '.hy-med-v{color:#cbd5e1;min-width:0;overflow:hidden;text-overflow:ellipsis;}',
+                '.hy-med-v.cy{color:#22d3ee;}',
+                '.hy-med-v.rd{color:#f87171;}',
+
+                '.hy-med-stats{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 5px;}',
+                '.hy-med-stats span{background:#0d1520;border:1px solid #26313f;border-radius:5px;' +
+                    'padding:2px 8px;font-size:.75rem;color:#64748b;}',
+                '.hy-med-stats b{color:#e2e8f0;font-variant-numeric:tabular-nums;margin-left:3px;}',
+
+                '.hy-med-reward{font-size:.76rem;color:#4ade80;}',
+
+                /* 底部 */
+                '.hy-med-foot{display:flex;align-items:center;gap:10px;padding:11px 16px;' +
+                    'background:#111a24;border-top:1px solid #2e3b4e;flex-wrap:wrap;}',
+                '.hy-med-hint{font-size:.74rem;color:#64748b;margin-left:auto;}',
+
+                /* 地圖按鈕上的怪物數量徽章 */
+                '.hy-era-map-count{display:inline-block;margin-left:5px;font-size:.68rem;' +
+                    'color:#64748b;background:#0b1220;border:1px solid #26313f;' +
+                    'border-radius:8px;padding:0 5px;vertical-align:middle;}',
+
+                '@media (max-width:640px){' +
+                    '.hy-med-stats span{font-size:.7rem;padding:2px 6px;}' +
+                    '.hy-med-foot .action-btn{flex:1 1 100%;}' +
+                    '.hy-med-hint{margin-left:0;}' +
+                '}'
+            ].join('');
+            document.head.appendChild(st);
+        }
         // ⭐ v50：無效輸入（NaN）→ 不更新，保留原值
         bindCfgField(id, key, isNum, isBool) {
             var el = document.getElementById(id);
@@ -74486,6 +74758,154 @@ window.HY = window.HY || {};
                 });
             }
         }
+        /* ⭐⭐⭐ v507：紀元地圖 → 選怪小視窗
+           ──────────────────────────────────────────────────────────
+           使用者需求：點擊紀元地圖區域會跳出小視窗，把怪物內容移到視窗內，
+                       可以直接點選要打的怪。
+
+           設計：
+             · 標題顯示地圖名稱 / 推薦等級 / 怪物數量
+             · 每隻怪一張卡（名稱、宗門、絕技、血量內力攻防命閃爆抗、獎勵）
+             · 卡片整張可點 → 直接開打
+             · 未達等級鎖定時顯示提示並禁用
+             · 底部有「切換到此地圖」與「關閉」 */
+        _openMapEnemyDialog(map, locked) {
+            var app = this.app;
+            if (!map) return;
+            this._closeMapEnemyDialog();
+
+            var pSize = app.partySys.getPartySize();
+            var enemies = (map.enemies || []).slice();
+            var inBattle = !!app.combatSys.currentEnemy;
+
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function enemyCardHtml(enemy, i) {
+                var adjExp = Math.max(1, Math.floor(enemy.exp / 5));
+                var adjSp = Math.max(1, Math.floor((enemy.sp / 10) * app.charSys.rewardRate));
+                var adjGold = Math.max(1, Math.floor((enemy.gold / 10) * app.charSys.rewardRate));
+                var skillNames = (enemy.skills || []).map(function (s) {
+                    return '《' + esc(s.name) + '》';
+                }).join('、');
+                var estMp = Math.floor(80 + (enemy.lv || 1) * 25 + (enemy.atk || 20) * 0.15);
+                var boss = /頭目|首領|霸主/.test(String(enemy.name || ''));
+
+                return '<div class="hy-med-card' + (locked ? ' is-locked' : '') + '" data-ei="' + i + '"' +
+                    (locked ? ' data-locked="1"' : '') + '>' +
+                    '<div class="hy-med-head">' +
+                        '<span class="hy-med-name">' + (boss ? '👑 ' : '') + esc(enemy.name) + '</span>' +
+                        '<span class="hy-med-lv">Lv.' + (enemy.lv || 1) + '</span>' +
+                        '<span class="hy-med-go">' + (locked ? '🔒 等級不足' : (inBattle ? '⚔️ 重新挑戰' : '⚔️ 開打')) + '</span>' +
+                    '</div>' +
+                    '<div class="hy-med-row"><span class="hy-med-k">⛩️ 宗門</span>' +
+                        '<span class="hy-med-v cy">' + esc(enemy.faction || '江湖散人') + '</span></div>' +
+                    '<div class="hy-med-row"><span class="hy-med-k">⚡ 絕技</span>' +
+                        '<span class="hy-med-v rd">' + (skillNames || '基礎武技') + '</span></div>' +
+                    '<div class="hy-med-stats">' +
+                        '<span>氣血 <b>' + esc(String(enemy.hp)) + '</b></span>' +
+                        '<span>內力 <b>' + esc(String(estMp)) + '</b></span>' +
+                        '<span>攻擊 <b>' + esc(String(enemy.atk)) + '</b></span>' +
+                        '<span>防禦 <b>' + esc(String(enemy.def)) + '</b></span>' +
+                        '<span>命中 <b>' + esc(String(enemy.hit || 90)) + '%</b></span>' +
+                        '<span>閃避 <b>' + esc(String(enemy.eva || 5)) + '%</b></span>' +
+                        '<span>爆擊 <b>' + esc(String(enemy.crit || 5)) + '%</b></span>' +
+                        '<span>暴抗 <b>' + esc(String(enemy.critRes || 0)) + '%</b></span>' +
+                    '</div>' +
+                    '<div class="hy-med-reward">🎁 ' + adjExp + ' 經驗 · ' + adjSp + ' 武點 · ' + adjGold + ' 兩</div>' +
+                '</div>';
+            }
+
+            var box = document.createElement('div');
+            box.id = 'hy-map-enemy-dlg';
+            box.className = 'hy-med-mask';
+
+            var bodyHtml = enemies.length
+                ? enemies.map(enemyCardHtml).join('')
+                : '<div class="hy-med-empty">此區域沒有可挑戰的對手</div>';
+
+            box.innerHTML =
+                '<div class="hy-med-panel">' +
+                    '<div class="hy-med-title">' +
+                        '<span class="hy-med-title-txt">📍 ' + esc(map.name) + '</span>' +
+                        '<span class="hy-med-title-sub">推薦 Lv.' + (map.minLv || 1) + '+　·　' +
+                            enemies.length + ' 位對手　·　我方 ' + pSize + ' 人</span>' +
+                        '<button type="button" class="hy-med-close" id="hy-med-close">✕</button>' +
+                    '</div>' +
+                    (map.desc ? '<div class="hy-med-desc">' + esc(map.desc) + '</div>' : '') +
+                    '<div class="hy-med-list">' + bodyHtml + '</div>' +
+                    '<div class="hy-med-foot">' +
+                        '<button type="button" class="action-btn" id="hy-med-travel"' +
+                            (locked ? ' disabled' : '') + '>🚩 切換到此區域</button>' +
+                        '<span class="hy-med-hint">點擊任一對手即可開戰</span>' +
+                    '</div>' +
+                '</div>';
+
+            document.body.appendChild(box);
+
+            var self = this;
+
+            /* 點卡片 → 開打 */
+            box.querySelectorAll('.hy-med-card').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    if (el.getAttribute('data-locked') === '1') {
+                        if (app.logger) {
+                            app.logger.add('🔒 境界不足，需達 Lv.' + (map.minLv || 1) + ' 才能挑戰此區域。', 'system');
+                        }
+                        return;
+                    }
+                    var ei = parseInt(el.getAttribute('data-ei'), 10);
+                    var enemy = enemies[ei];
+                    if (!enemy) return;
+                    /* 先切換地圖，再開打（保證獎勵與地圖一致）
+                       ⚠️ currentMap 存在「角色物件」上，不在 timeSys 上 */
+                    try {
+                        if (app.charSys.state && app.charSys.state.currentMap !== map.id) {
+                            app.timeSys.travelTo(map.id);
+                        }
+                    } catch (e) { }
+                    self._closeMapEnemyDialog();
+                    app.combatSys.startBattle(enemy);
+                });
+            });
+
+            var closeBtn = box.querySelector('#hy-med-close');
+            if (closeBtn) closeBtn.addEventListener('click', function () { self._closeMapEnemyDialog(); });
+
+            var travelBtn = box.querySelector('#hy-med-travel');
+            if (travelBtn) {
+                travelBtn.addEventListener('click', function () {
+                    if (locked) return;
+                    if (app.timeSys.travelTo(map.id)) {
+                        self._closeMapEnemyDialog();
+                        app.renderAll();
+                    }
+                });
+            }
+
+            /* 點遮罩空白處關閉 */
+            box.addEventListener('click', function (ev) {
+                if (ev.target === box) self._closeMapEnemyDialog();
+            });
+            /* ESC 關閉 */
+            box.__esc = function (ev) {
+                if (ev.key === 'Escape') self._closeMapEnemyDialog();
+            };
+            document.addEventListener('keydown', box.__esc);
+        }
+
+        _closeMapEnemyDialog() {
+            var el = document.getElementById('hy-map-enemy-dlg');
+            if (!el) return;
+            if (el.__esc) {
+                try { document.removeEventListener('keydown', el.__esc); } catch (e) { }
+            }
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }
+
         buildHpmpBar(kind, cur, max, isEnemy) {
             var safeMax = (typeof max === 'number' && max > 0) ? max : 0;
             var safeCur = Math.max(0, Math.min(cur || 0, safeMax));
@@ -74553,12 +74973,19 @@ window.HY = window.HY || {};
                     const isCurrent = m.id === curMap.id;
                     const isLocked = app.charSys.state.lv < m.minLv;
                     const btn = document.createElement('button');
-                    btn.className = 'action-btn';
+                    btn.className = 'action-btn hy-era-map-btn';
+                    btn.setAttribute('data-map-id', m.id);
                     btn.style.borderColor = isCurrent ? '#00e5ff' : (isLocked ? '#334155' : '#64748b');
                     btn.style.opacity = isLocked ? '0.55' : '1';
                     btn.style.background = isCurrent ? 'rgba(0, 229, 255, 0.18)' : '#1a2434';
-                    btn.innerHTML = (isLocked ? '🔒 ' : (isCurrent ? '📍 ' : '')) + m.name + ' <small>(Lv.' + m.minLv + ')</small>';
-                    btn.addEventListener('click', () => { if (app.timeSys.travelTo(m.id)) app.renderAll(); });
+                    btn.innerHTML = (isLocked ? '🔒 ' : (isCurrent ? '📍 ' : '')) + m.name +
+                        ' <small>(Lv.' + m.minLv + ')</small>' +
+                        '<span class="hy-era-map-count">' + (m.enemies ? m.enemies.length : 0) + ' 怪</span>';
+                    /* ⭐ v507：點擊紀元地圖 → 彈出小視窗選擇要打的怪
+                       （原本是直接切換目前地圖，怪物列表留在頁面下方佔版面） */
+                    btn.addEventListener('click', () => {
+                        this._openMapEnemyDialog(m, isLocked);
+                    });
                     grid.appendChild(btn);
                 });
                 eraGroup.appendChild(grid);
@@ -74567,7 +74994,10 @@ window.HY = window.HY || {};
             const enemyListEl = document.getElementById('enemy-list');
             const arenaEl = document.getElementById('battle-arena');
             if (!enemyListEl || !arenaEl) return;
-            enemyListEl.classList.remove('hidden');
+            /* ⭐ v507：怪物列表已移到彈出視窗 → 這裡永遠保持隱藏，
+               但仍會把「醫療艙」這類非怪物內容插進去並單獨顯示。 */
+            enemyListEl.classList.add('hidden');
+            enemyListEl.style.display = 'none';
             arenaEl.classList.remove('hidden');
             enemyListEl.innerHTML = '';
             if (curMap.hasMedicalPod) {
@@ -74585,9 +75015,29 @@ window.HY = window.HY || {};
                     app.logger.add('🛸 全隊角色躺入【奈米時空醫療艙】，氣血與內力已全部恢復至 100%！', 'gain');
                     app.renderAll();
                 });
-                enemyListEl.appendChild(podCard);
+                /* ⭐ v507：醫療艙不再掛在隱藏的怪物列表裡，
+                   改放到「選擇地圖」區下方，永遠可見。 */
+                var medHost = document.getElementById('hy-medpod-host');
+                if (!medHost) {
+                    medHost = document.createElement('div');
+                    medHost.id = 'hy-medpod-host';
+                    medHost.style.cssText = 'margin-bottom:10px;';
+                    var mapBox = document.getElementById('map-selector-box');
+                    if (mapBox && mapBox.parentNode) {
+                        mapBox.parentNode.insertBefore(medHost, mapBox.nextSibling);
+                    } else {
+                        arenaEl.parentNode.insertBefore(medHost, arenaEl);
+                    }
+                }
+                medHost.innerHTML = '';
+                medHost.appendChild(podCard);
+            } else {
+                var oldHost = document.getElementById('hy-medpod-host');
+                if (oldHost) oldHost.innerHTML = '';
             }
-            curMap.enemies.forEach(enemy => {
+            /* ⭐ v507：怪物卡片已移到「點擊紀元地圖」的彈出視窗，
+               這裡不再渲染到頁面（保留容器供相容性）。 */
+            if (false) curMap.enemies.forEach(enemy => {
                 const adjExp  = Math.max(1, Math.floor(enemy.exp / 5));
                 const adjSp   = Math.max(1, Math.floor((enemy.sp / 10) * app.charSys.rewardRate));
                 const adjGold = Math.max(1, Math.floor((enemy.gold / 10) * app.charSys.rewardRate));
@@ -103771,7 +104221,8 @@ window.HY = window.HY || {};
             style.id = 'hy-arena-fixed-style';
             style.innerHTML =
                 '#battle-arena { display: block !important; }' +
-                '#enemy-list { display: block !important; }' +
+                /* ⭐ v507：怪物列表已移到「點擊紀元地圖」的彈出視窗，
+                   這裡不可再用 !important 強制顯示，否則會在頁面下方露出空容器。 */
                 '#battle-arena { margin-bottom: 14px; border: 1px solid #00e5ff; background: #111722; padding: 12px; border-radius: 8px; }' +
                 '#battle-arena .fighter-cards { display: grid !important; grid-template-columns: 1fr 44px 1fr; align-items: start; gap: 10px; margin-bottom: 10px; }' +
                 '#battle-arena .fighter-card { width: 100% !important; padding: 10px !important; display: flex; flex-direction: column; }' +
@@ -103958,9 +104409,8 @@ window.HY = window.HY || {};
                 uiCombat.renderExploreAndCombat = function () {
                     origRenderExplore();
                     var arenaEl = document.getElementById('battle-arena');
-                    var enemyListEl = document.getElementById('enemy-list');
                     if (arenaEl) arenaEl.classList.remove('hidden');
-                    if (enemyListEl) enemyListEl.classList.remove('hidden');
+                    /* ⭐ v507：enemy-list 不再顯示（怪物改到彈出視窗） */
                     self.renderFixedMaxBattleArena();
                 };
             }
@@ -149383,6 +149833,9 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
+
+
 
 
 
