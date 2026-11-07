@@ -73283,17 +73283,7 @@ window.HY = window.HY || {};
                 : ((defeatedList[0] && defeatedList[0].name) || '強敵');
             this.log('🏆 戰鬥大捷！我方小隊成功殲滅了全數 ' + count + ' 名【' + tplName + '】！', 'combat');
             this.charSys.gainRewards(finalExp, finalSp, finalGold);
-            /* ⭐ v517：戰鬥結算橫幅（勝利） */
-            try {
-                var _stg = document.getElementById('hy-battle-stage');
-                var _BS = window.HY && window.HY.BattleStage;
-                if (_stg && _BS && _BS.result) {
-                    _BS.result(_stg, true, null,
-                        '經驗 <b>' + finalExp.toLocaleString() + '</b>　·　武點 <b>' +
-                        finalSp.toLocaleString() + '</b>　·　紋銀 <b>' +
-                        finalGold.toLocaleString() + '</b>');
-                }
-            } catch (eR) { }
+            /* ⭐ v521：戰鬥結算橫幅已移除（使用者要求） */
             var poeSys = window.HY.game && window.HY.game.poeSys;
             var self = this;
             var rLabelMap = { normal: '⚪白裝', magic: '🔵藍裝', rare: '🟡黃裝', unique: '🟠傳奇暗金' };
@@ -73389,12 +73379,7 @@ window.HY = window.HY || {};
                 this.log('⚠️ 因小隊全滅，自動戰鬥已安全停止。', 'time');
             }
             this.log('💀 小隊重傷不支，馬博士緊急啟動時空傳送將全隊救回實驗室療傷...', 'combat');
-            /* ⭐ v517：戰鬥結算橫幅（失敗） */
-            try {
-                var _stg2 = document.getElementById('hy-battle-stage');
-                var _BS2 = window.HY && window.HY.BattleStage;
-                if (_stg2 && _BS2 && _BS2.result) _BS2.result(_stg2, false, null, '');
-            } catch (eR2) { }
+            /* ⭐ v521：戰鬥結算橫幅已移除（使用者要求） */
             this.charSys.restoreAllPartyVitals(0.5);
             this.enemies = [];
             this.currentEnemy = null;
@@ -105114,15 +105099,21 @@ window.HY = window.HY || {};
         refreshNextAction(unit, idPrefix, isEnemy) {
             var el = document.getElementById(idPrefix);
             if (!el) return;
-            var info = this._previewAction(unit, isEnemy);
+
+            /* ⭐ v520：同 tick 內同一單位只計算一次（避免 5 人 × 每 tick 重複選招） */
+            var ck = 'na|' + idPrefix + '|' + this._skillCacheKey(unit, isEnemy);
+            var cached = this._skillCacheGet(ck);
+            var info = cached ? cached.val : this._skillCacheSet(ck, this._previewAction(unit, isEnemy));
 
             if (!info) {
-                el.setAttribute('data-kind', 'none');
-                el.className = (isEnemy ? 'next-act enemy' : 'next-act');
-                el.innerHTML = '<span class="na-ico">⏳</span>' +
+                var h0 = '<span class="na-ico">⏳</span>' +
                     '<span class="na-sk">待命</span>' +
                     '<span class="na-arrow">→</span>' +
                     '<span class="na-tgt">—</span>';
+                if (el.getAttribute('data-kind') === 'none' && el.innerHTML === h0) return;
+                el.setAttribute('data-kind', 'none');
+                el.className = (isEnemy ? 'next-act enemy' : 'next-act');
+                el.innerHTML = h0;
                 return;
             }
 
@@ -105396,9 +105387,46 @@ window.HY = window.HY || {};
              ② 施術者的靈根 spiritRoot（角色與怪物都有，五行設定）
              ③ null → 使用陣營預設色
            群攻判斷：招式 isAoe，或敵方 effect 含 aoe/群/掃/範。 */
+        /** ⭐ v520：招式預測快取
+            ──────────────────────────────────────────────────────────
+           `pickTacticalSkillForChar` 每次要掃全部已學招式、算耗內/回血/群攻
+           等條件，5 人 × 每 tick 就是 10 次以上 → 實測 setInterval 單次 56~85ms。
+
+           快取策略（不改戰鬥邏輯，只在 UI 層做）：
+             · key = 單位 id + 氣血百分比 + 內力百分比 + 存活狀態
+             · TTL 350ms（UI 更新頻率遠高於此，但招式選擇不會這麼快變）
+             · 同一個 tick 內的重複呼叫直接命中 */
+        _skillCacheGet(cacheKey) {
+            var c = this.__skillCache;
+            if (!c) c = this.__skillCache = {};
+            var e = c[cacheKey];
+            if (e && (Date.now() - e.ts) < 350) return e;
+            return null;
+        }
+
+        _skillCacheSet(cacheKey, val) {
+            var c = this.__skillCache;
+            if (!c) c = this.__skillCache = {};
+            c[cacheKey] = { val: val, ts: Date.now() };
+            return val;
+        }
+
+        _skillCacheKey(unit, isEnemy) {
+            var hp = Number(unit.currentHp) || 0;
+            var mp = Number(unit.currentMp) || 0;
+            var hpPct = Math.round(hp / 100) * 100;
+            var mpPct = Math.round(mp / 100) * 100;
+            return (isEnemy ? 'E:' : 'A:') + String(unit.id || unit.name || '') +
+                ':' + hpPct + ':' + mpPct + ':' + (hp > 0 ? 1 : 0);
+        }
+
         _stageSkillMeta(unit, isEnemy) {
             try {
                 if (!unit || Number(unit.currentHp) <= 0) return { element: null, aoe: false };
+                var ck = 'meta|' + this._skillCacheKey(unit, isEnemy);
+                var hit = this._skillCacheGet(ck);
+                if (hit) return hit.val;
+
                 var Data = window.HY.Data || {};
 
                 /* ① 先看角色/怪物自身靈根 */
@@ -105411,10 +105439,10 @@ window.HY = window.HY || {};
                         return (b.mult || 1) - (a.mult || 1);
                     })[0] : null;
                     var effE = pick ? String(pick.effect || '') : '';
-                    return {
+                    return this._skillCacheSet(ck, {
                         element: (pick && pick.element) || rootElem,
                         aoe: /aoe|群|掃|範/.test(effE)
-                    };
+                    });
                 }
 
                 /* 我方：用戰術選出的招式 */
@@ -105427,25 +105455,50 @@ window.HY = window.HY || {};
                 } catch (e) { sid = null; }
                 if (!sid) sid = 'basic_punch';
                 var art = (Data.MARTIAL_ARTS || {})[sid] || {};
-                return {
+                return this._skillCacheSet(ck, {
                     element: art.element || rootElem,
                     aoe: !!art.isAoe
-                };
+                });
             } catch (e) { return { element: null, aoe: false }; }
         }
 
-        /** ⭐ v511：舞台用的「這回合會放的招式名」（給技能名稱浮現） */
+        /** ⭐ v511：舞台用的「這回合會放的招式名」（給技能名稱浮現）
+            ⭐ v520：加入快取，避免每 tick 重算戰術選招 */
         _stageSkillName(unit, isEnemy) {
             try {
                 if (!unit) return null;
                 if (Number(unit.currentHp) <= 0) return null;
+                var ck = 'name|' + this._skillCacheKey(unit, isEnemy);
+                var hit = this._skillCacheGet(ck);
+                if (hit) return hit.val;
+
                 var info = this._previewAction(unit, !!isEnemy);
-                if (!info) return null;
-                if (info.kind === 'idle' || info.kind === 'dead') return null;
+                if (!info) return this._skillCacheSet(ck, null);
+                if (info.kind === 'idle' || info.kind === 'dead') return this._skillCacheSet(ck, null);
                 var nm = String(info.skillName || '').trim();
-                if (!nm || nm === '普攻' || nm === '待命') return null;
-                return nm;
+                if (!nm || nm === '普攻' || nm === '待命') return this._skillCacheSet(ck, null);
+                return this._skillCacheSet(ck, nm);
             } catch (e) { return null; }
+        }
+
+        /** ⭐ v520：取得 derived 的同輪快取（避免每 tick 重複計算 5 次）
+            只在「同一個 tick 週期」內有效（16ms），下一次 tick 會自動過期。 */
+        _derivedCached(m) {
+            try {
+                var now = Date.now();
+                if (!this.__dsCache || (now - this.__dsTickTs) > 16) {
+                    this.__dsCache = {};
+                    this.__dsTickTs = now;
+                }
+                var key = String((m && m.id) || '');
+                if (!key) return this.app.charSys.getDerivedStatsForChar(m) || {};
+                if (this.__dsCache[key]) return this.__dsCache[key];
+                var d = this.app.charSys.getDerivedStatsForChar(m) || {};
+                this.__dsCache[key] = d;
+                return d;
+            } catch (e) {
+                try { return this.app.charSys.getDerivedStatsForChar(m) || {}; } catch (e2) { return {}; }
+            }
         }
 
         /** ⭐ v510：組出舞台資料（我方 + 敵方 + 場景 + 狀態圖示 + 集火目標） */
@@ -105466,8 +105519,7 @@ window.HY = window.HY || {};
             if (!inMap) {
                 (partyMembers || []).forEach(function (m) {
                     if (!m) return;
-                    var md = {};
-                    try { md = app.charSys.getDerivedStatsForChar(m) || {}; } catch (e) { md = {}; }
+                    var md = self._derivedCached(m);
                     var maxHp = Number(md.maxHp);
                     if (!isFinite(maxHp) || maxHp <= 0) maxHp = Number(m.maxHp) || 0;
                     var cur = Number(m.currentHp);
@@ -106712,17 +106764,8 @@ window.HY = window.HY || {};
             'animation:hy-fx-ring .48s ease-out forwards;}',
         '@keyframes hy-fx-ring{0%{opacity:1;transform:scale(.3);}100%{opacity:0;transform:scale(7);}}',
 
-        /* ⭐ v517：全舞台震動（暴擊時） */
-        '.hy-stage.shake-sm{animation:hy-shake-sm .26s ease-out;}',
-        '@keyframes hy-shake-sm{0%,100%{transform:translate(0,0);}' +
-            '20%{transform:translate(-3px,2px);}40%{transform:translate(3px,-2px);}' +
-            '60%{transform:translate(-2px,1px);}80%{transform:translate(2px,-1px);}}',
-        '.hy-stage.shake-lg{animation:hy-shake-lg .36s ease-out;}',
-        '@keyframes hy-shake-lg{0%,100%{transform:translate(0,0);}' +
-            '14%{transform:translate(-6px,4px) rotate(-.3deg);}' +
-            '28%{transform:translate(6px,-4px) rotate(.3deg);}' +
-            '42%{transform:translate(-5px,3px);}56%{transform:translate(5px,-2px);}' +
-            '70%{transform:translate(-3px,2px);}84%{transform:translate(2px,-1px);}}',
+        /* ⭐ v517：全舞台震動
+           ⭐ v521：已移除（使用者要求） */
 
         /* ⭐ v517：集氣滿的蓄力呼吸（施放前預備動作） */
         '.hy-stage-unit.charging .hy-stage-img{' +
@@ -106774,29 +106817,8 @@ window.HY = window.HY || {};
             '74%{opacity:1;}' +
             '100%{opacity:0;transform:translate(-50%,-50%) scale(.94);}}',
 
-        /* ⭐ v517：戰鬥結算橫幅 */
-        '.hy-result{position:absolute;inset:0;z-index:14;pointer-events:none;' +
-            'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-            'background:radial-gradient(ellipse at 50% 46%,rgba(2,6,12,.55),rgba(2,6,12,.92));' +
-            'animation:hy-result-in .3s ease-out both;}',
-        '@keyframes hy-result-in{from{opacity:0;}to{opacity:1;}}',
-        '.hy-result .rs-main{font-size:2.4rem;font-weight:900;letter-spacing:10px;' +
-            'animation:hy-result-pop .5s cubic-bezier(.2,1.5,.4,1) both;}',
-        '.hy-result.win .rs-main{color:#fbbf24;' +
-            'text-shadow:0 4px 12px #000,0 0 28px rgba(251,191,36,.95),0 0 56px rgba(251,191,36,.6);}',
-        '.hy-result.lose .rs-main{color:#94a3b8;' +
-            'text-shadow:0 4px 12px #000,0 0 24px rgba(148,163,184,.8);}',
-        '@keyframes hy-result-pop{0%{opacity:0;transform:scale(2.2);}' +
-            '60%{opacity:1;transform:scale(.96);}100%{transform:scale(1);}}',
-        '.hy-result .rs-line{width:min(70%,420px);height:2px;margin:9px 0 11px;' +
-            'background:linear-gradient(90deg,transparent,rgba(251,191,36,.85),transparent);' +
-            'animation:hy-result-line .55s ease-out .12s both;}',
-        '@keyframes hy-result-line{from{transform:scaleX(0);opacity:0;}to{transform:scaleX(1);opacity:1;}}',
-        '.hy-result .rs-drops{display:flex;flex-direction:column;gap:3px;' +
-            'font-size:.74rem;color:#cbd5e1;text-align:center;' +
-            'animation:hy-result-up .4s ease-out .26s both;}',
-        '@keyframes hy-result-up{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}',
-        '.hy-result .rs-drops b{color:#4ade80;}',
+        /* ⭐ v517：戰鬥結算橫幅
+           ⭐ v521：已移除（使用者要求），CSS 一併清除 */
 
 
         /* ⭐ v510：鎖定準心（點擊集火的目標） */
@@ -107870,15 +107892,10 @@ window.HY = window.HY || {};
         return null;
     }
 
-    /** ⭐ v517：全舞台震動（暴擊 / 大傷害時） */
+    /** ⭐ v517：全舞台震動
+        ⭐ v521：已移除（使用者要求）—— 保留空函式避免呼叫端報錯 */
     function shakeStage(el, big) {
-        el = resolveEl(el);
-        if (!el) return;
-        var cls = big ? 'shake-lg' : 'shake-sm';
-        el.classList.remove('shake-sm', 'shake-lg');
-        void el.offsetWidth;
-        el.classList.add(cls);
-        setTimeout(function () { el.classList.remove(cls); }, big ? 380 : 280);
+        void el; void big;
     }
 
     /** ⭐ v517：Boss 登場演出（紅色衝擊 + 警示字）
@@ -107908,44 +107925,15 @@ window.HY = window.HY || {};
     }
 
     /** ⭐ v517：戰鬥結算橫幅
-        @param {boolean} win  true=勝利 / false=失敗
-        @param {Array} drops [{ name, count }] */
+        ⭐ v521：已移除（使用者要求）—— 保留空函式避免呼叫端報錯。 */
     function showResult(elOrId, win, drops, detail) {
-        var el = resolveEl(elOrId);
-        if (!el) return;
-        hideResult(el);
-
-        var box = document.createElement('div');
-        box.className = 'hy-result ' + (win ? 'win' : 'lose');
-
-        var h = '<div class="rs-main">' + (win ? '勝 利' : '戰 敗') + '</div>' +
-            '<div class="rs-line"></div>';
-
-        var lines = [];
-        if (detail) lines.push(detail);
-        (drops || []).slice(0, 6).forEach(function (d) {
-            if (!d || !d.name) return;
-            lines.push('獲得 <b>' + esc(d.name) + '</b>' +
-                (d.count && d.count > 1 ? ' ×' + d.count : ''));
-        });
-        if (lines.length) {
-            h += '<div class="rs-drops">' +
-                lines.map(function (t) { return '<span>' + t + '</span>'; }).join('') +
-                '</div>';
-        }
-
-        box.innerHTML = h;
-        el.appendChild(box);
-        el.__resultBox = box;
-
-        clearTimeout(el.__resultT);
-        el.__resultT = setTimeout(function () { hideResult(el); }, 8000);
+        void elOrId; void win; void drops; void detail;
     }
 
     function hideResult(elOrId) {
         var el = resolveEl(elOrId);
         if (!el) return;
-        var b = el.__resultBox;
+        var b = el.querySelector ? el.querySelector('.hy-result') : null;
         if (b && b.parentNode) b.parentNode.removeChild(b);
         el.__resultBox = null;
     }
