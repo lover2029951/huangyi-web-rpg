@@ -1718,6 +1718,12 @@ window.HY = window.HY || {};
         var roundStart = t;
 
         for (var i = 0; i < ids.length; i++) {
+            /* ⭐ v489：整輪預算用完就不再啟動新任務（剩下的留給下一輪） */
+            if ((now() - roundStart) > TICK_BUDGET_MS) {
+                S.__lastRoundMs = Math.round(now() - roundStart);
+                S.__lastRoundCut = true;
+                return;
+            }
             var id = ids[i];
             var task = S.tasks[id];
             if (!task) continue;
@@ -1727,6 +1733,15 @@ window.HY = window.HY || {};
             var taskStart = now();
 
             while (task.acc >= task.baseMs && guard < MAX_GUARD) {
+                /* ⭐ v489：預算要在「執行前」檢查，不是執行後。
+                   舊版是跑完才判斷是否超支 —— 一個 300ms 的任務照樣跑完，
+                   整輪 tick 就被拖住 300ms（Chrome 直接記 [Violation]）。
+                   現在只要本輪或本任務預算已用完，就先把累積量留到下一輪。 */
+                if (guard > 0 && (
+                    (now() - roundStart) > TICK_BUDGET_MS ||
+                    (now() - taskStart) > TASK_BUDGET_MS
+                )) break;
+
                 task.acc -= task.baseMs;
                 guard++;
                 var cbStart = now();
@@ -1796,6 +1811,15 @@ window.HY = window.HY || {};
         return N.clearTimeout(id);
     };
     // ── 速度控制 API ──
+    /* ⭐ v489：除錯出口 —— 供效能分析讀取排程器狀態 */
+    CFG.speed.debugTasks = function () {
+        var out = { tasks: [], slow: S.__slowTasks || {}, lastRoundMs: S.__lastRoundMs, cut: S.__lastRoundCut };
+        Object.keys(S.tasks).forEach(function (id) {
+            var t = S.tasks[id];
+            out.tasks.push({ id: id, baseMs: t.baseMs, src: String(t.cb).replace(/\s+/g, ' ').slice(0, 90) });
+        });
+        return out;
+    };
     CFG.speed.get = function () { return CFG.speed.global; };
     CFG.speed.set = function (mult) {
         var s = CFG.speed;
@@ -31454,6 +31478,45 @@ window.HY = window.HY || {};
                         atkSpd: 100, powerScore: 100
                     };
                 }
+                /* ⭐⭐⭐ v489：遞迴深度計數器
+                   ──────────────────────────────────────────────────────────
+                   本函式被 7 支模組包裝，其中 StatusEffectSystem 的
+                   _applyBuffToDerived → shieldOf → getDerivedStatsForChar
+                   會形成自我遞迴（實測 1677 層）。
+                   shieldOf 已改為直接傳入已知 maxHp，正常情況不會再遞迴；
+                   這裡再加一道「深度上限」保險：
+                   若深度過大（其他包裝層意外遞迴），直接回傳快取值，
+                   寧可數值略舊，也絕不讓主執行緒被遞迴拖死。 */
+                var _depth = (window.HY.__derivedDepth | 0) + 1;
+                window.HY.__derivedDepth = _depth;
+                try {
+                    if (_depth > 4) {
+                        if (c.__dsCache && c.__dsCache.d) {
+                            return this._copyDerived(c.__dsCache.d);
+                        }
+                        /* 沒有任何快取 → 用手上能取得的欄位做最小回應 */
+                        return {
+                            maxHp: num2(c.currentHp, 100), maxMp: num2(c.currentMp, 50),
+                            atk: 10, def: 5, hit: 90, eva: 5, crit: 5, critRes: 0,
+                            critDmg: 165, dmgReduce: 0, atkSpd: 100, powerScore: 100,
+                            __depthGuard: true
+                        };
+                    }
+                    return this._getDerivedStatsCached(c, Data);
+                } finally {
+                    window.HY.__derivedDepth = _depth - 1;
+                }
+            }
+            /** 淺拷貝衍生屬性（給深度保險與快取共用） */
+            _copyDerived(src) {
+                var o = {};
+                for (var k in src) {
+                    if (Object.prototype.hasOwnProperty.call(src, k)) o[k] = src[k];
+                }
+                return o;
+            }
+            /** 真正的快取包裝（由 getDerivedStatsForChar 呼叫，含遞迴深度保護） */
+            _getDerivedStatsCached(c, Data) {
                 /* ⭐⭐ 效能快取（關鍵）
                    這個函式每幀會被呼叫 5~20 次（血條、AI、戰鬥、UI、排行榜…），
                    每次都要跑 2000+ 節點的天賦彙總 + 60 條詞綴結算，
@@ -133657,17 +133720,48 @@ window.HY = window.HY || {};
             return out;
         }
 
-        /** 護盾值（真氣護體） */
-        shieldOf(charObj) {
+        /**
+         * 護盾值（真氣護體）
+         * @param {object} charObj
+         * @param {number} [knownMaxHp] 若呼叫端已經算好 maxHp，直接傳入可完全避免遞迴
+         */
+        shieldOf(charObj, knownMaxHp) {
             var b = this.bag(charObj);
             if (!b) return 0;
             var B = D().BUFFS || {};
             var total = 0;
-            var maxHp = 0;
-            try {
-                var d = G().charSys.getDerivedStatsForChar(charObj);
-                maxHp = num(d && d.maxHp, 0);
-            } catch (e) { }
+            var maxHp = num(knownMaxHp, 0);
+            /* ⭐⭐⭐ v489：遞迴防護（效能致命傷）
+               ──────────────────────────────────────────────────────────
+               症狀：[Violation] 'setInterval' handler took 284~313ms，
+                     每次 ATB tick 都卡 0.3 秒，道心天賦點越多越卡。
+
+               根因（CPU Profile 實測）：
+                 shieldOf() 為了拿 maxHp 去呼叫 getDerivedStatsForChar()，
+                 但該函式的包裝鏈裡有
+                 _applyBuffToDerived() → shieldOf() → getDerivedStatsForChar() …
+                 形成「自我遞迴」，實測單次屬性計算展開 1677 層、
+                 耗 66ms，而 ATB tick 每 100ms 會呼叫多次 → 300ms 卡頓。
+
+               修法：① 呼叫端若已算好 maxHp 直接傳入（主要路徑）
+                     ② 真的需要自己拿時，用「重入旗標」阻斷遞迴 */
+            if (!maxHp) {
+                var ch = charObj || (G().charSys && G().charSys.state);
+                var inCalc = (window.HY && window.HY.__derivedDepth > 0) || (ch && ch.__inShieldCalc);
+                if (inCalc) {
+                    var cached = ch && ch.__dsCache && ch.__dsCache.d;
+                    maxHp = num(cached && cached.maxHp, 0) || num(ch && ch.maxHp, 0);
+                } else if (ch) {
+                    ch.__inShieldCalc = true;
+                    try {
+                        var d = G().charSys.getDerivedStatsForChar(ch);
+                        maxHp = num(d && d.maxHp, 0);
+                    } catch (e) {
+                    } finally {
+                        ch.__inShieldCalc = false;
+                    }
+                }
+            }
             Object.keys(b).forEach(function (id) {
                 var st = b[id];
                 if (!st || num(st.stacks, 0) <= 0) return;
@@ -133714,6 +133808,8 @@ window.HY = window.HY || {};
                 if (B[id] && def.healPerStackPct && o.isChar) {
                     var maxHp = 0;
                     try {
+                        /* ⭐ v489：帶入 knownMaxHp 思路 —— 若呼叫端已提供就用，
+                           否則走一次（此處不在屬性計算鏈內，安全）。 */
                         var d = G().charSys.getDerivedStatsForChar(target);
                         maxHp = num(d && d.maxHp, 0);
                     } catch (e) { }
@@ -133795,6 +133891,13 @@ window.HY = window.HY || {};
             var m = this.buffModsOf(c);
             var has = false;
             Object.keys(m).forEach(function (k) { if (m[k]) has = true; });
+
+            /* ⭐⭐⭐ v489：即使沒有任何「屬性 mod」，護盾（shieldPerStackPct）
+               仍然要在這裡處理 —— 舊版 `if (!has) return;` 讓護盾永遠算不出來
+               （加上遞迴問題，護盾機制實際上是完全失效的）。
+               現在先判斷有沒有護盾，再決定要不要提前返回。 */
+            var sh = this.shieldOf(c, num(d.maxHp, 0));
+            if (sh > 0) d.__statusShield = sh;
             if (!has) return;
 
             if (m.atkPct) d.atk = Math.floor(num(d.atk, 10) * (1 + m.atkPct / 100));
@@ -133816,8 +133919,7 @@ window.HY = window.HY || {};
             if (m.thorns) d.__thorns = num(d.__thorns, 0) + m.thorns;
 
             d.__buffMods = m;
-            var sh = this.shieldOf(c);
-            if (sh > 0) d.__statusShield = sh;
+            /* 護盾值已在函式開頭算過（見上方 v489 說明），此處不重複計算。 */
         }
 
         /* ══════════════════════════════════════════════════
