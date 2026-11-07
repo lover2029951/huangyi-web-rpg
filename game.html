@@ -105340,18 +105340,46 @@ window.HY = window.HY || {};
            ──────────────────────────────────────────────────────────
            插在 #battle-arena 的最上方，也就是「🚩 我方陣營 / ⚔️ 敵方陣營」
            兩張表格之上。資料來源與下方表格相同，只是改成全身立繪呈現。 */
-        renderBattleStage(partyMembers, inMap) {
+        renderBattleStage(partyMembers, inMap, skipFoe) {
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 if (!BS) return;
                 var arenaEl = document.getElementById('battle-arena');
                 if (!arenaEl) return;
-                var app = this.app;
-                var combat = app.combatSys || {};
+                var p = this._stagePayload(BS, partyMembers, inMap, skipFoe);
+                BS.render(arenaEl, {
+                    party: p.party, enemies: p.enemies,
+                    id: 'hy-battle-stage',
+                    scene: p.scene,
+                    onTarget: function (side, idx, unit) {
+                        if (!unit) return;
+                        if (window.HY.game && window.HY.game.logger) {
+                            window.HY.game.logger.add(
+                                '🎯 已將【' + (unit.name || '敵人') + '】設為集火目標。', 'system');
+                        }
+                    }
+                });
+            } catch (err) {
+                if (window.console) console.warn('[BattleStage] 渲染失敗', err);
+            }
+        }
 
-                /* 我方：用 derived 取 maxHp，避免吃到未刷新的舊值 */
-                var party = [];
-                (inMap ? [] : (partyMembers || [])).forEach(function (m) {
+        /** ⭐ v510：組出舞台資料（我方 + 敵方 + 場景 + 狀態圖示 + 集火目標） */
+        _chkAtlasInMap() {
+            try {
+                var s = window.HY.game && window.HY.game.atlasSys;
+                return !!(s && typeof s.isInMap === 'function' && s.isInMap());
+            } catch (e) { return false; }
+        }
+
+        _stagePayload(BS, partyMembers, inMap, skipFoe) {
+            var app = this.app;
+            var combat = app.combatSys || {};
+
+            /* ── 我方 ── */
+            var party = [];
+            if (!inMap) {
+                (partyMembers || []).forEach(function (m) {
                     if (!m) return;
                     var md = {};
                     try { md = app.charSys.getDerivedStatsForChar(m) || {}; } catch (e) { md = {}; }
@@ -105363,37 +105391,48 @@ window.HY = window.HY || {};
                         name: m.name || '隊員',
                         cur: cur, max: maxHp,
                         alive: cur > 0,
-                        ready: combat.currentEnemy ? Number(m.atb || 0) >= 100 : false,
+                        ready: !!combat.currentEnemy && Number(m.atb || 0) >= 100,
                         sprite: BS.charSprite(m),
-                        color: BS.charColor(m)
+                        color: BS.charColor(m),
+                        buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
                     });
                 });
-
-                /* 敵方：打圖時不顯示（由輿圖面板自己管） */
-                var foes = [];
-                var atlasChk = window.HY.game && window.HY.game.atlasSys;
-                var skipFoe = inMap || !!(atlasChk && typeof atlasChk.isInMap === 'function' && atlasChk.isInMap());
-                if (!skipFoe && combat.enemies) {
-                    combat.enemies.forEach(function (e) {
-                        if (!e) return;
-                        var maxHp = Number(e.maxHp) || 0;
-                        var cur = Number(e.currentHp);
-                        if (!isFinite(cur)) cur = maxHp;
-                        foes.push({
-                            name: e.name || '敵人',
-                            cur: cur, max: maxHp,
-                            alive: cur > 0,
-                            ready: Number(e.atb || 0) >= 100,
-                            sprite: BS.monSprite(e),
-                            avatar: BS.monAvatar(e)
-                        });
-                    });
-                }
-
-                BS.render(arenaEl, { party: party, enemies: foes, id: 'hy-battle-stage' });
-            } catch (err) {
-                if (window.console) console.warn('[BattleStage] 渲染失敗', err);
             }
+
+            /* ── 敵方（打圖由輿圖面板自己管） ── */
+            var foes = [];
+            var atlasChk = window.HY.game && window.HY.game.atlasSys;
+            var blocked = skipFoe || this._chkAtlasInMap();
+            if (!inMap && !blocked && combat.enemies) {
+                combat.enemies.forEach(function (e) {
+                    if (!e) return;
+                    var maxHp = Number(e.maxHp) || 0;
+                    var cur = Number(e.currentHp);
+                    if (!isFinite(cur)) cur = maxHp;
+                    foes.push({
+                        name: e.name || '敵人',
+                        cur: cur, max: maxHp,
+                        alive: cur > 0,
+                        ready: Number(e.atb || 0) >= 100,
+                        sprite: BS.monSprite(e),
+                        avatar: BS.monAvatar(e),
+                        target: (combat.currentEnemy === e),
+                        buffs: BS.buffIconsOf ? BS.buffIconsOf(e) : []
+                    });
+                });
+            }
+
+            /* ── 場景 ── */
+            var scene = 'default';
+            try {
+                var boss = (combat.currentEnemy && /【/.test(String(combat.currentEnemy.name || '')));
+                if (boss) scene = 'boss';
+                else if (app.charSys && app.charSys.state && app.charSys.state.currentMap) {
+                    scene = app.charSys.state.currentMap;
+                }
+            } catch (e) { }
+
+            return { party: party, enemies: foes, scene: scene };
         }
 
         renderFixedMaxBattleArena() {
@@ -105620,7 +105659,7 @@ window.HY = window.HY || {};
                 }
             }
             /* ⭐ v509：先畫戰鬥畫面（立繪對峙），再畫下方兩張表格 */
-            this.renderBattleStage(app.partySys.getPartyMembers(), _inMap);
+            this.renderBattleStage(app.partySys.getPartyMembers(), _inMap, false);
             this.renderFormationBlocks();
             var skillBox = document.getElementById('skill-buttons-container');
             if (skillBox && skillBox.children.length === 0) {
@@ -105759,47 +105798,16 @@ window.HY = window.HY || {};
             // 存活徽章
             var inBattle = !!combat.currentEnemy && !_inMapNow;
 
-            /* ⭐ v509：戰鬥畫面每 tick 同步（只更新血條／集氣光環，不重建 DOM） */
+            /* ⭐ v509/v510：戰鬥畫面每 tick 同步（只更新血條／集氣／狀態圖示，不重建 DOM） */
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 var stageEl = document.getElementById('hy-battle-stage');
-                if (BS && stageEl) {
-                    var _foes = [];
-                    var _atlasNow = window.HY.game && window.HY.game.atlasSys;
-                    var _skip = _inMapNow || !!(_atlasNow && typeof _atlasNow.isInMap === 'function' && _atlasNow.isInMap());
-                    if (!_skip) {
-                        (combat.enemies || []).forEach(function (e) {
-                            if (!e) return;
-                            var mx = Number(e.maxHp) || 0;
-                            var cu = Number(e.currentHp);
-                            if (!isFinite(cu)) cu = mx;
-                            _foes.push({
-                                name: e.name || '敵人',
-                                cur: cu, max: mx, alive: cu > 0,
-                                ready: Number(e.atb || 0) >= 100,
-                                sprite: BS.monSprite(e), avatar: BS.monAvatar(e)
-                            });
-                        });
-                    }
-                    var _ally = [];
-                    if (!_inMapNow) {
-                        partyMembers.forEach(function (m) {
-                            if (!m) return;
-                            var md2 = app.charSys.getDerivedStatsForChar(m) || {};
-                            var mx2 = Number(md2.maxHp);
-                            if (!isFinite(mx2) || mx2 <= 0) mx2 = Number(m.maxHp) || 0;
-                            var cu2 = Number(m.currentHp);
-                            if (!isFinite(cu2)) cu2 = mx2;
-                            _ally.push({
-                                name: m.name || '隊員',
-                                cur: cu2, max: mx2, alive: cu2 > 0,
-                                ready: inBattle && Number(m.atb || 0) >= 100,
-                                sprite: BS.charSprite(m), color: BS.charColor(m)
-                            });
-                        });
-                    }
-                    /* sig 相同時只更新狀態；不同時才重建 */
-                    BS.render(stageEl.parentNode, { party: _ally, enemies: _foes, id: 'hy-battle-stage' });
+                if (BS && stageEl && stageEl.parentNode) {
+                    var pl = this._stagePayload(BS, partyMembers, _inMapNow, false);
+                    BS.render(stageEl.parentNode, {
+                        party: pl.party, enemies: pl.enemies,
+                        id: 'hy-battle-stage', scene: pl.scene
+                    });
                 }
             } catch (eStage) { }
 
@@ -106290,14 +106298,15 @@ window.HY = window.HY || {};
 
 
 /* ===== 185 / 260 : battleStage.js ===== */
-// js/battleStage.js  (v1)
+// js/battleStage.js  (v2)
 // ⭐ v509：戰鬥畫面（戰鬥隊伍面板上方的立繪舞台）
+// ⭐ v510：打擊感強化 + 場景背景 + 字幕條 + 狀態圖示 + 點擊集火
 //
 // ══════════════════════════════════════════════════════════════
 // 【用途】
 //   在「🚩 我方陣營 / ⚔️ 敵方陣營」兩張表格的上方，加一層
 //   真正的戰鬥畫面：左邊站我方角色立繪、右邊站怪物立繪，
-//   下方各帶名字牌與氣血條。
+//   下方各帶名字牌、狀態圖示與氣血條。
 //
 // 【圖片來源】
 //   assets/sprites/{artId}_stage.png      角色全身去背立繪（20 位）
@@ -106307,9 +106316,15 @@ window.HY = window.HY || {};
 // 【設計重點】
 //   1. 只在「陣容簽章」變動時重建 DOM，其餘時間只更新血條與狀態，
 //      避免每 tick 重繪導致動畫重置與圖片閃爍。
-//   2. 倒地單位灰階 + 旋轉 8 度 + 半透明。
-//   3. 集氣滿（ATB >= 100）的單位加金色光環 + 浮動動畫 → 一眼看出誰要出手。
-//   4. 找不到立繪就退回頭像圓形，不會出現破圖。
+//   2. 打擊感完全由「數值差異」自動推導，不侵入戰鬥邏輯：
+//        氣血下降 → 受擊震動 + 紅閃 + 傷害飄字（暴擊放大）
+//        氣血上升 → 綠色補血飄字
+//        存活→倒地 → 倒地消散動畫（播放一次）
+//        集氣 0→100 → 金色光環 + 浮動
+//      因此任何來源的傷害（普攻／招式／DoT／反傷／門派機制）都會有反應。
+//   3. 場景背景依當前地圖自動切換（紀元七套 + 礦坑 + 世界王）。
+//   4. 點敵方立繪即可鎖定為攻擊目標（集火），帶括號準心標記。
+//   5. 找不到立繪就退回頭像圓形，不會出現破圖。
 // ══════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
 (function (HY) {
@@ -106318,69 +106333,206 @@ window.HY = window.HY || {};
     var STYLE_ID = 'hy-battle-stage-css';
     var SPRITE_DIR = 'assets/sprites/';
 
+    /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
+    var SNAPSHOT = {};
+
+    /* ══════════════════════════════════════════════════════
+       場景對照表（地圖 id → css class）
+       ══════════════════════════════════════════════════════ */
+    var SCENE_MAP = {
+        star_ark: 'scene-void',
+
+        yangzhou: 'scene-tang',
+        nanyang: 'scene-tang',
+        luoyang: 'scene-tang',
+        changan: 'scene-tang',
+        steppe: 'scene-steppe',
+
+        handan: 'scene-warring',
+        daliang: 'scene-warring',
+        xianyang: 'scene-warring',
+
+        bianhuang_town: 'scene-wasteland',
+        jiankang: 'scene-river',
+
+        dongting: 'scene-water',
+        lanjiang: 'scene-water',
+
+        shendu: 'scene-demon',
+        secret_realm: 'scene-demon',
+
+        palace: 'scene-heaven',
+        tian_dao: 'scene-heaven'
+    };
+
+    function sceneClass(scene) {
+        if (!scene) return 'scene-default';
+        if (scene === 'delve') return 'scene-mine';
+        if (scene === 'boss') return 'scene-boss';
+        return SCENE_MAP[scene] || 'scene-default';
+    }
+
     /* ══════════════════════════════════════════════════════
        樣式（只注入一次）
        ══════════════════════════════════════════════════════ */
     var CSS = [
-        /* 舞台外框 */
+        /* ── 舞台外框 ── */
         '.hy-stage{position:relative;margin:0 0 10px;border-radius:10px;overflow:hidden;' +
             'display:flex;align-items:flex-end;justify-content:space-between;' +
-            'padding:14px 12px 6px;min-height:200px;box-sizing:border-box;' +
-            'border:1px solid #1e3a4c;background:' +
-            'radial-gradient(ellipse 60% 70% at 50% 42%,rgba(34,80,120,.42) 0%,rgba(10,16,24,.98) 72%),' +
+            'padding:14px 12px 28px;min-height:212px;box-sizing:border-box;' +
+            'border:1px solid #1e3a4c;' +
+            'background:radial-gradient(ellipse 60% 70% at 50% 42%,rgba(34,80,120,.42) 0%,rgba(10,16,24,.98) 72%),' +
             'linear-gradient(180deg,#0a1220 0%,#0d1622 46%,#080d14 100%);' +
-            'box-shadow:inset 0 0 46px rgba(0,0,0,.86);}',
-        /* 中央光柱 */
+            'box-shadow:inset 0 0 46px rgba(0,0,0,.86);' +
+            'transition:background .5s ease;}',
+
+        /* ── 場景變體（只覆寫底色與光暈顏色） ── */
+        '.hy-stage.scene-default{background:radial-gradient(ellipse 60% 70% at 50% 42%,rgba(34,80,120,.42),rgba(10,16,24,.98) 72%),linear-gradient(180deg,#0a1220,#0d1622 46%,#080d14);}',
+        '.hy-stage.scene-void{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(99,102,241,.34),rgba(8,10,22,.98) 70%),linear-gradient(180deg,#080b18,#0d1024 46%,#05060f);}',
+        '.hy-stage.scene-tang{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(180,120,40,.30),rgba(16,12,8,.98) 70%),linear-gradient(180deg,#14100a,#1a1409 46%,#0a0805);}',
+        '.hy-stage.scene-warring{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(160,90,30,.28),rgba(14,12,10,.98) 70%),linear-gradient(180deg,#12100c,#181410 46%,#090807);}',
+        '.hy-stage.scene-steppe{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(200,150,60,.26),rgba(20,16,10,.98) 70%),linear-gradient(180deg,#161208,#1c170c 46%,#0b0905);}',
+        '.hy-stage.scene-wasteland{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(120,110,100,.24),rgba(14,14,16,.98) 70%),linear-gradient(180deg,#101012,#16161a 46%,#08080a);}',
+        '.hy-stage.scene-river{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(40,140,150,.30),rgba(8,16,20,.98) 70%),linear-gradient(180deg,#081418,#0a1a1e 46%,#040a0c);}',
+        '.hy-stage.scene-water{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(30,130,120,.30),rgba(6,14,16,.98) 70%),linear-gradient(180deg,#061214,#081a1c 46%,#030a0b);}',
+        '.hy-stage.scene-demon{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(150,50,140,.34),rgba(14,6,18,.98) 70%),linear-gradient(180deg,#100616,#16081e 46%,#08030b);}',
+        '.hy-stage.scene-heaven{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(220,190,90,.34),rgba(18,16,10,.98) 70%),linear-gradient(180deg,#16130a,#1e1a0c 46%,#0a0904);}',
+        '.hy-stage.scene-mine{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(150,45,35,.34),rgba(16,8,8,.98) 70%),linear-gradient(180deg,#140808,#1c0c0c 46%,#080404);}',
+        '.hy-stage.scene-boss{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(190,140,40,.36),rgba(16,10,6,.98) 70%),linear-gradient(180deg,#14100a,#1e1608 46%,#0a0704);}',
+
+        /* ── 中央光柱 ── */
         '.hy-stage::before{content:"";position:absolute;left:50%;top:-14%;width:46%;height:120%;' +
             'transform:translateX(-50%);pointer-events:none;' +
             'background:radial-gradient(ellipse at 50% 26%,rgba(56,189,248,.16),transparent 68%);}',
-        /* 地平線 */
+        /* ── 地平線 ── */
         '.hy-stage-ground{position:absolute;left:0;right:0;bottom:0;height:34%;pointer-events:none;' +
             'background:linear-gradient(180deg,transparent,rgba(3,7,12,.92) 62%);}',
         '.hy-stage-floor{position:absolute;left:8%;right:8%;bottom:23%;height:2px;pointer-events:none;' +
             'background:linear-gradient(90deg,transparent,rgba(34,211,238,.5),rgba(34,211,238,.72),' +
             'rgba(34,211,238,.5),transparent);box-shadow:0 0 14px rgba(34,211,238,.45);}',
 
-        /* 兩側站位（舞台是 flex 容器，兩側各吃一半，向中央靠攏形成對峙） */
+        /* ── 兩側站位 ── */
         '.hy-stage-side{position:relative;z-index:2;width:49%;display:flex;align-items:flex-end;gap:2px;' +
-            'min-height:226px;}',
+            'min-height:186px;--h:180px;}',
         '.hy-stage-side.ally{justify-content:flex-end;padding-right:26px;}',
         '.hy-stage-side.foe{justify-content:flex-start;padding-left:26px;}',
 
-        /* 單一單位 */
+        /* ── 單一單位 ── */
         '.hy-stage-unit{position:relative;flex:0 0 auto;display:flex;flex-direction:column;' +
             'align-items:center;justify-content:flex-end;transition:opacity .2s,filter .2s;' +
             'animation:hy-stage-in .34s ease-out both;}',
+        '@keyframes hy-stage-in{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}',
 
-        /* 依人數自動縮放立繪（--h 由 JS 依該側人數設定） */
-        '.hy-stage-side{--h:190px;}',
+        /* ⭐ v510：可點擊的敵方（集火） */
+        '.hy-stage-unit.foe{cursor:pointer;}',
+        '.hy-stage-unit.foe:hover .hy-stage-img{filter:drop-shadow(0 0 10px rgba(248,113,113,.75)) ' +
+            'drop-shadow(0 8px 12px rgba(0,0,0,.85));}',
 
-        '.hy-stage-img{display:block;height:var(--h,190px);width:auto;max-width:100%;' +
+        /* ── 立繪本體 ── */
+        '.hy-stage-img{display:block;height:var(--h,180px);width:auto;max-width:100%;' +
             'object-fit:contain;object-position:bottom center;' +
             'filter:drop-shadow(0 8px 12px rgba(0,0,0,.85)) drop-shadow(0 0 5px rgba(0,0,0,.6));' +
             'transition:filter .2s,transform .2s;pointer-events:none;}',
-        '@keyframes hy-stage-in{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}',
         '.hy-stage-unit.ally .hy-stage-img{filter:drop-shadow(0 8px 12px rgba(0,0,0,.85)) ' +
             'drop-shadow(0 0 10px rgba(56,189,248,.22));}',
         '.hy-stage-unit.foe .hy-stage-img{filter:drop-shadow(0 8px 12px rgba(0,0,0,.85)) ' +
             'drop-shadow(0 0 10px rgba(239,68,68,.22));}',
 
-        /* 集氣滿 → 金色光環 + 浮動 */
+        /* ── 集氣滿 → 金色光環 + 浮動 ── */
         '.hy-stage-unit.ready .hy-stage-img{animation:hy-stage-bob 1.15s ease-in-out infinite;' +
             'filter:drop-shadow(0 0 12px rgba(251,191,36,.92)) drop-shadow(0 6px 12px rgba(0,0,0,.8));}',
         '@keyframes hy-stage-bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}',
-        '.hy-stage-unit.ready::after{content:"";position:absolute;left:50%;bottom:26px;' +
+        '.hy-stage-unit.ready::after{content:"";position:absolute;left:50%;bottom:36px;' +
             'transform:translateX(-50%);width:76px;height:12px;border-radius:50%;pointer-events:none;' +
             'background:radial-gradient(ellipse,rgba(251,191,36,.55),transparent 70%);' +
-            'animation:hy-stage-glow 1.15s ease-in-out infinite;}',
+            'animation:hy-stage-glow 1.15s ease-in-out infinite;z-index:1;}',
         '@keyframes hy-stage-glow{0%,100%{opacity:.45;width:70px;}50%{opacity:.95;width:88px;}}',
 
-        /* 倒地 */
-        '.hy-stage-unit.dead{opacity:.34;filter:grayscale(1);}',
-        '.hy-stage-unit.dead .hy-stage-img{transform:rotate(-7deg) translateY(6px);}',
+        /* ⭐ v510：受擊 → 左右震動 + 紅閃 */
+        '.hy-stage-unit.hit .hy-stage-img{animation:hy-stage-shake .3s ease-out;' +
+            'filter:drop-shadow(0 0 14px rgba(248,113,113,.95)) brightness(1.45) saturate(1.5) ' +
+            'drop-shadow(0 6px 10px rgba(0,0,0,.7));}',
+        '@keyframes hy-stage-shake{0%{transform:translateX(0);}' +
+            '18%{transform:translateX(-8px) rotate(-1.6deg);}' +
+            '36%{transform:translateX(7px) rotate(1.4deg);}' +
+            '54%{transform:translateX(-5px);}' +
+            '72%{transform:translateX(3px);}' +
+            '100%{transform:translateX(0);}}',
+        /* 受擊紅閃覆蓋層 */
+        '.hy-stage-flash{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;' +
+            'background:radial-gradient(circle,rgba(248,113,113,.85),transparent 68%);' +
+            'animation:hy-stage-flash .3s ease-out forwards;}',
+        '@keyframes hy-stage-flash{0%{opacity:.95;}100%{opacity:0;}}',
 
-        /* 名字牌 + 血條 */
-        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:86px;margin-top:2px;' +
+        /* ⭐ v510：出手衝刺（我方往右、敵方往左） */
+        '.hy-stage-unit.lunge.ally .hy-stage-img{animation:hy-stage-lunge-r .42s ease-out;}',
+        '.hy-stage-unit.lunge.foe .hy-stage-img{animation:hy-stage-lunge-l .42s ease-out;}',
+        '@keyframes hy-stage-lunge-r{0%{transform:translateX(0);}' +
+            '38%{transform:translateX(26px) scale(1.03);}100%{transform:translateX(0);}}',
+        '@keyframes hy-stage-lunge-l{0%{transform:translateX(0);}' +
+            '38%{transform:translateX(-26px) scale(1.03);}100%{transform:translateX(0);}}',
+
+        /* ⭐ v510：倒地消散 */
+        '.hy-stage-unit.dying .hy-stage-img{animation:hy-stage-die .62s ease-in forwards;}',
+        '@keyframes hy-stage-die{0%{opacity:1;transform:rotate(0) translateY(0);filter:none;}' +
+            '55%{opacity:.92;transform:rotate(-16deg) translateY(6px);' +
+            'filter:grayscale(.6) brightness(1.5);}' +
+            '100%{opacity:0;transform:rotate(-26deg) translateY(14px) scale(.94);' +
+            'filter:grayscale(1) brightness(.7);}}',
+        /* 倒地定態 */
+        '.hy-stage-unit.dead{opacity:.3;filter:grayscale(1);}',
+        '.hy-stage-unit.dead .hy-stage-img{transform:rotate(-24deg) translateY(10px);}',
+
+        /* ⭐ v510：傷害飄字 */
+        '.hy-fx-dmg{position:absolute;left:50%;top:4px;z-index:6;pointer-events:none;' +
+            'font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;' +
+            'transform:translateX(-50%);' +
+            'text-shadow:0 2px 4px #000,0 0 10px rgba(0,0,0,.95),0 0 3px #000;' +
+            'animation:hy-fx-rise .92s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.dmg{color:#fecaca;font-size:1.02rem;}',
+        '.hy-fx-dmg.dmg.crit{color:#fbbf24;font-size:1.5rem;letter-spacing:.5px;' +
+            'text-shadow:0 2px 5px #000,0 0 14px rgba(251,191,36,.95);}',
+        '.hy-fx-dmg.heal{color:#6ee7b7;font-size:1.02rem;' +
+            'text-shadow:0 2px 4px #000,0 0 12px rgba(52,211,153,.9);}',
+        '.hy-fx-dmg.miss{color:#cbd5e1;font-size:.9rem;letter-spacing:1px;}',
+        '.hy-fx-dmg.shield{color:#93c5fd;font-size:.95rem;}',
+        '@keyframes hy-fx-rise{0%{opacity:0;transform:translate(-50%,6px) scale(.7);}' +
+            '16%{opacity:1;transform:translate(-50%,-2px) scale(1.1);}' +
+            '30%{transform:translate(-50%,-6px) scale(1);}' +
+            '100%{opacity:0;transform:translate(-50%,-40px) scale(.96);}}',
+        /* 暴擊附加衝擊環 */
+        '.hy-fx-ring{position:absolute;left:50%;top:42%;z-index:5;pointer-events:none;' +
+            'width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;' +
+            'border:2px solid rgba(251,191,36,.95);' +
+            'box-shadow:0 0 16px rgba(251,191,36,.85);' +
+            'animation:hy-fx-ring .48s ease-out forwards;}',
+        '@keyframes hy-fx-ring{0%{opacity:1;transform:scale(.3);}100%{opacity:0;transform:scale(7);}}',
+
+        /* ⭐ v510：鎖定準心（點擊集火的目標） */
+        '.hy-stage-unit.is-target::before{content:"";position:absolute;left:50%;top:50%;' +
+            'width:calc(var(--h,180px) * .78);height:calc(var(--h,180px) * .78);' +
+            'transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:1;' +
+            'border:2px dashed rgba(251,191,36,.85);' +
+            'box-shadow:0 0 18px rgba(251,191,36,.55),inset 0 0 18px rgba(251,191,36,.28);' +
+            'animation:hy-target-spin 5.5s linear infinite;}',
+        '@keyframes hy-target-spin{to{transform:translate(-50%,-50%) rotate(360deg);}}',
+        '.hy-stage-unit.is-target .hy-stage-nm{color:#fbbf24 !important;}',
+        '.hy-stage-unit.is-target .hy-stage-nm::after{content:" 🎯";}',
+
+        /* ⭐ v510：立繪上方的 buff / debuff 圖示 */
+        '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;' +
+            'max-width:96px;margin-bottom:2px;z-index:4;}',
+        '.hy-stage-buff{display:inline-flex;align-items:center;justify-content:center;' +
+            'min-width:15px;height:15px;padding:0 2px;border-radius:3px;' +
+            'font-size:.58rem;line-height:1;' +
+            'background:rgba(6,12,20,.88);border:1px solid #334155;' +
+            'box-shadow:0 0 4px rgba(0,0,0,.7);}',
+        '.hy-stage-buff.bad{border-color:rgba(248,113,113,.75);}' +
+        '.hy-stage-buff.good{border-color:rgba(74,222,128,.7);}' +
+        '.hy-stage-buff b{font-size:.5rem;font-weight:bold;color:#e2e8f0;margin-left:1px;}',
+
+        /* ── 名字牌 + 血條 ── */
+        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:88px;margin-top:2px;' +
             'text-align:center;line-height:1.1;}',
         '.hy-stage-nm{display:block;font-size:.62rem;font-weight:bold;white-space:nowrap;' +
             'overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px #000;}',
@@ -106394,16 +106546,29 @@ window.HY = window.HY || {};
         '.hy-stage-unit.foe .hy-stage-hp i{background:linear-gradient(90deg,#b91c1c,#f87171);}',
         '.hy-stage-hp i.low{background:linear-gradient(90deg,#b91c1c,#fbbf24) !important;}',
 
-        /* 名字牌前的圓形頭像（立繪缺失時作為替代） */
+        /* 立繪缺失時的圓形頭像 */
         '.hy-stage-fallback{width:54px;height:54px;border-radius:50%;object-fit:cover;' +
             'border:2px solid #334155;margin-bottom:6px;}',
 
-        /* 中央 VERSUS 標記 */
+        /* ── 中央 VS ── */
         '.hy-stage-vs{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);' +
             'z-index:4;pointer-events:none;font-size:.76rem;font-weight:bold;letter-spacing:2px;' +
             'color:#94a3b8;padding:4px 11px;border-radius:10px;' +
             'background:rgba(6,12,20,.86);border:1px solid #1e3a4c;' +
             'text-shadow:0 0 8px rgba(34,211,238,.6);}',
+
+        /* ⭐ v510：底部戰鬥字幕條 */
+        '.hy-stage-ticker{position:absolute;left:0;right:0;bottom:0;z-index:7;height:24px;' +
+            'display:flex;align-items:center;gap:6px;padding:0 12px;' +
+            'background:linear-gradient(90deg,rgba(4,8,14,.96),rgba(10,18,28,.92),rgba(4,8,14,.96));' +
+            'border-top:1px solid rgba(34,211,238,.22);' +
+            'font-size:.72rem;color:#cbd5e1;overflow:hidden;' +
+            'text-shadow:0 1px 2px #000;white-space:nowrap;}',
+        '.hy-stage-ticker .tk-ico{flex:0 0 auto;font-size:.7rem;opacity:.85;}',
+        '.hy-stage-ticker .tk-txt{flex:1 1 auto;min-width:0;overflow:hidden;' +
+            'text-overflow:ellipsis;display:block;}',
+        '.hy-stage-ticker .tk-txt.swap{animation:hy-tk-in .28s ease-out;}',
+        '@keyframes hy-tk-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
 
         /* 空場提示 */
         '.hy-stage-empty{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);' +
@@ -106411,9 +106576,12 @@ window.HY = window.HY || {};
 
         /* 窄螢幕縮小立繪 */
         '@media (max-width:900px){' +
-            '.hy-stage-img{height:calc(var(--h,132px) * .78);}' +
-            '.hy-stage-tag{max-width:64px;}' +
+            '.hy-stage-img{height:calc(var(--h,180px) * .78);}' +
+            '.hy-stage-tag{max-width:62px;}' +
             '.hy-stage-nm{font-size:.56rem;}' +
+            '.hy-stage-side{min-height:150px;}' +
+            '.hy-stage{min-height:176px;}' +
+            '.hy-stage-buffs{max-width:68px;}' +
         '}'
     ].join('');
 
@@ -106481,15 +106649,42 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════
+       狀態圖示（讀 statusEffectSystem）
+       ══════════════════════════════════════════════════════ */
+    function buffIconsOf(ref) {
+        try {
+            var g = HY.game;
+            var ss = g && g.statusSys;
+            if (!ss || typeof ss.list !== 'function' || !ref) return [];
+            var list = ss.list(ref) || [];
+            return list.slice(0, 6).map(function (s) {
+                var def = s.def || {};
+                var bad = (def.cat === 'ailment' || def.cat === 'control' || def.cat === 'wound');
+                return {
+                    icon: def.icon || '•',
+                    color: def.color || '#94a3b8',
+                    name: def.name || s.id,
+                    stacks: s.stacks > 1 ? s.stacks : 0,
+                    turns: s.turns,
+                    bad: bad
+                };
+            });
+        } catch (e) { return []; }
+    }
+
+    /* ══════════════════════════════════════════════════════
        建立／更新
        ══════════════════════════════════════════════════════ */
 
     /**
      * @param {HTMLElement} host 插入位置（會被 append 進去）
      * @param {Object} opts
-     *   opts.party   [{ name, cur, max, alive, ready, sprite, color }]
-     *   opts.enemies [{ name, cur, max, alive, ready, sprite, avatar }]
+     *   opts.party   [{ name, cur, max, alive, ready, sprite, color, ref, buffs, target }]
+     *   opts.enemies [同上，另可帶 avatar]
      *   opts.id      容器 id（多個面板共用時避免衝突）
+     *   opts.scene   場景 key（地圖 id / 'delve' / 'boss'）
+     *   opts.ticker  字幕文字（不給就自動讀戰鬥日誌）
+     *   opts.onTarget(side, index, unit) 點擊敵方立繪的回呼
      */
     function render(host, opts) {
         if (!host) return;
@@ -106505,57 +106700,67 @@ window.HY = window.HY || {};
             el.id = id;
             el.className = 'hy-stage';
             host.insertBefore(el, host.firstChild);
+            bindClick(el, id);
+        }
+        el.__opts = opts;
+
+        /* 場景背景 */
+        var sceneCls = sceneClass(opts.scene);
+        if (el.getAttribute('data-scene') !== sceneCls) {
+            el.setAttribute('data-scene', sceneCls);
+            el.className = 'hy-stage ' + sceneCls;
         }
 
         /* 陣容簽章：只有成員或圖片變動才重建 DOM */
         var sig = party.map(function (u) { return u.sprite || u.name; }).join('|') + '#' +
             enemies.map(function (u) { return u.sprite || u.name; }).join('|') + '#' +
             party.length + '#' + enemies.length;
-        if (el.getAttribute('data-sig') === sig) {
-            updateStates(el, party, enemies);
-            return;
+
+        var rebuilt = false;
+        if (el.getAttribute('data-sig') !== sig) {
+            el.setAttribute('data-sig', sig);
+            el.innerHTML = buildHtml(party, enemies);
+            rebuilt = true;
+            SNAPSHOT[id] = null;   /* 重建後不做血量差異比對 */
         }
-        el.setAttribute('data-sig', sig);
-        el.innerHTML = buildHtml(party, enemies);
-        updateStates(el, party, enemies);
+
+        applySide(el, party, 'ally', id, rebuilt);
+        applySide(el, enemies, 'foe', id, rebuilt);
+        updateTicker(el, opts);
     }
 
     function buildHtml(party, enemies) {
         var h = '';
-        /* 背景層（絕對定位，不影響 flex 佈局） */
         h += '<div class="hy-stage-ground"></div>';
         h += '<div class="hy-stage-floor"></div>';
         if (party.length && enemies.length) {
             h += '<div class="hy-stage-vs">⚔ VS ⚔</div>';
         }
 
-        /* 我方 */
         h += '<div class="hy-stage-side ally">';
         if (!party.length) {
             h += '<div class="hy-stage-empty" style="position:static;transform:none;width:100%;">尚未編入隊員</div>';
         }
-        party.forEach(function (u, i) {
-            h += unitHtml(u, 'ally', i);
-        });
+        party.forEach(function (u, i) { h += unitHtml(u, 'ally', i); });
         h += '</div>';
 
-        /* 敵方 */
         h += '<div class="hy-stage-side foe">';
         if (!enemies.length) {
             h += '<div class="hy-stage-empty" style="position:static;transform:none;width:100%;">待命中</div>';
         }
-        enemies.forEach(function (u, i) {
-            h += unitHtml(u, 'foe', i);
-        });
+        enemies.forEach(function (u, i) { h += unitHtml(u, 'foe', i); });
         h += '</div>';
 
+        h += '<div class="hy-stage-ticker" style="display:none;">' +
+            '<span class="tk-ico">⚔️</span><span class="tk-txt"></span></div>';
         return h;
     }
 
     function unitHtml(u, side, i) {
         var cls = 'hy-stage-unit ' + side +
             (u.alive === false ? ' dead' : '') +
-            (u.ready ? ' ready' : '');
+            (u.ready ? ' ready' : '') +
+            (u.target ? ' is-target' : '');
         var img = '';
         if (u.sprite) {
             img = '<img class="hy-stage-img" src="' + u.sprite + '" alt="" ' +
@@ -106571,6 +106776,7 @@ window.HY = window.HY || {};
         var nmColor = u.color ? ' style="color:' + u.color + ';"' : '';
         return '<div class="' + cls + '" data-i="' + i + '" data-side="' + side + '">' +
             img +
+            '<div class="hy-stage-buffs"></div>' +
             '<div class="hy-stage-tag">' +
                 '<span class="hy-stage-nm"' + nmColor + ' title="' + esc(u.name) + '">' +
                     esc(u.name) + '</span>' +
@@ -106585,34 +106791,52 @@ window.HY = window.HY || {};
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    /** 只更新血條寬度與集氣／倒地狀態（不重建 DOM） */
-    function updateStates(el, party, enemies) {
-        applySide(el, party, 'ally');
-        applySide(el, enemies, 'foe');
-    }
-
     /** 依該側人數調整立繪高度：1~2 人最大、3 人略縮、4~5 人再縮 */
     function heightFor(n) {
-        if (n <= 1) return 196;
-        if (n === 2) return 184;
-        if (n === 3) return 156;
-        if (n === 4) return 136;
-        return 120;
+        if (n <= 1) return 186;
+        if (n === 2) return 176;
+        if (n === 3) return 150;
+        if (n === 4) return 132;
+        return 118;
     }
 
-    function applySide(el, list, side) {
+    /* ══════════════════════════════════════════════════════
+       逐單位更新（血條 / 集氣 / 倒地 / 狀態圖示 / 打擊特效）
+       ══════════════════════════════════════════════════════ */
+    function applySide(el, list, side, stageId, rebuilt) {
         var sideEl = el.querySelector('.hy-stage-side.' + side);
-        if (sideEl) {
-            sideEl.style.setProperty('--h', heightFor(list.length) + 'px');
-        }
+        if (sideEl) sideEl.style.setProperty('--h', heightFor(list.length) + 'px');
+
+        if (!SNAPSHOT[stageId]) SNAPSHOT[stageId] = { ally: [], foe: [] };
+        var prev = SNAPSHOT[stageId][side] || [];
+
         var units = el.querySelectorAll('.hy-stage-unit[data-side="' + side + '"]');
         for (var i = 0; i < units.length; i++) {
             var node = units[i];
             var u = list[i];
             if (!u) continue;
+
+            /* ── 血量差異 → 打擊特效 ── */
+            var p = prev[i];
+            if (!rebuilt && p) {
+                var d = (Number(u.cur) || 0) - (Number(p.cur) || 0);
+                if (d < -0.5) {
+                    var dmg = Math.abs(d);
+                    var crit = dmg >= Math.max(1, (Number(p.max) || 0) * 0.18);
+                    playHit(el, node, side, i, dmg, crit);
+                } else if (d > 0.5) {
+                    playHeal(node, d);
+                }
+                /* 存活 → 倒地 */
+                if (p.alive !== false && u.alive === false) playDeath(node);
+            }
+
+            /* ── 類別狀態 ── */
             node.classList.toggle('dead', u.alive === false);
             node.classList.toggle('ready', !!u.ready && u.alive !== false);
+            node.classList.toggle('is-target', !!u.target && u.alive !== false);
 
+            /* ── 血條 ── */
             var bar = node.querySelector('[data-hp="' + side + i + '"]');
             if (bar) {
                 var pct = 100;
@@ -106622,13 +106846,176 @@ window.HY = window.HY || {};
                 bar.style.width = pct.toFixed(1) + '%';
                 bar.classList.toggle('low', pct <= 30);
             }
+
+            /* ── 狀態圖示 ── */
+            var buffBox = node.querySelector('.hy-stage-buffs');
+            if (buffBox) {
+                var sig = JSON.stringify(u.buffs || []);
+                if (buffBox.getAttribute('data-sig') !== sig) {
+                    buffBox.setAttribute('data-sig', sig);
+                    buffBox.innerHTML = (u.buffs || []).slice(0, 6).map(function (b) {
+                        return '<i class="hy-stage-buff ' + (b.bad ? 'bad' : 'good') + '" ' +
+                            'title="' + esc(b.name) + (b.turns ? '（剩 ' + b.turns + ' 回合）' : '') + '" ' +
+                            'style="border-color:' + (b.color || '#334155') + '99;color:' +
+                            (b.color || '#cbd5e1') + ';">' + b.icon +
+                            (b.stacks ? '<b>' + b.stacks + '</b>' : '') + '</i>';
+                    }).join('');
+                }
+            }
         }
+
+        SNAPSHOT[stageId][side] = list.map(function (u) {
+            return { cur: Number(u.cur) || 0, max: Number(u.max) || 0, alive: u.alive !== false };
+        });
+    }
+
+    /* ══════════════════════════════════════════════════════
+       特效
+       ══════════════════════════════════════════════════════ */
+    function floatText(node, text, kind) {
+        var d = document.createElement('div');
+        d.className = 'hy-fx-dmg ' + kind;
+        d.textContent = text;
+        node.appendChild(d);
+        setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 960);
+    }
+
+    function playHit(el, node, side, i, dmg, crit) {
+        if (!node) return;
+        /* 紅閃 */
+        var fl = document.createElement('div');
+        fl.className = 'hy-stage-flash';
+        fl.style.width = '70px';
+        fl.style.height = '70px';
+        fl.style.left = 'calc(50% - 35px)';
+        fl.style.top = 'calc(50% - 35px)';
+        node.appendChild(fl);
+        setTimeout(function () { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 320);
+
+        /* 震動 */
+        node.classList.remove('hit');
+        void node.offsetWidth;          /* 強制重排，讓動畫可重播 */
+        node.classList.add('hit');
+        setTimeout(function () { node.classList.remove('hit'); }, 330);
+
+        /* 傷害飄字 */
+        var n = Math.round(dmg);
+        floatText(node, (crit ? '💥 ' : '') + n.toLocaleString(), crit ? 'dmg crit' : 'dmg');
+
+        /* 暴擊衝擊環 */
+        if (crit) {
+            var ring = document.createElement('div');
+            ring.className = 'hy-fx-ring';
+            node.appendChild(ring);
+            setTimeout(function () { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 500);
+        }
+
+        /* 出手者往前衝（打誰就往誰衝） */
+        var attackerSide = (side === 'foe') ? 'ally' : 'foe';
+        var atkEl = el.querySelector('.hy-stage-side.' + attackerSide);
+        if (atkEl) {
+            var cands = atkEl.querySelectorAll('.hy-stage-unit:not(.dead)');
+            if (cands.length) {
+                var a = cands[Math.floor(Math.random() * cands.length)];
+                a.classList.remove('lunge');
+                void a.offsetWidth;
+                a.classList.add('lunge');
+                setTimeout(function () { a.classList.remove('lunge'); }, 440);
+            }
+        }
+    }
+
+    function playHeal(node, amount) {
+        if (!node) return;
+        floatText(node, '＋' + Math.round(amount).toLocaleString(), 'heal');
+    }
+
+    function playDeath(node) {
+        if (!node) return;
+        node.classList.add('dying');
+        setTimeout(function () { node.classList.remove('dying'); }, 640);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       字幕條（自動讀戰鬥日誌最新一行）
+       ══════════════════════════════════════════════════════ */
+    function updateTicker(el, opts) {
+        var box = el.querySelector('.hy-stage-ticker');
+        if (!box) return;
+        var txt = opts.ticker;
+        if (txt === undefined || txt === null) txt = readLatestLog();
+        if (!txt) { box.style.display = 'none'; return; }
+        box.style.display = 'flex';
+
+        var span = box.querySelector('.tk-txt');
+        if (!span) return;
+        if (span.getAttribute('data-last') === txt) return;
+        span.setAttribute('data-last', txt);
+        span.textContent = txt;
+        span.classList.remove('swap');
+        void span.offsetWidth;
+        span.classList.add('swap');
+    }
+
+    /** 從戰鬥日誌容器讀取最新一行（去掉 HTML 標籤） */
+    function readLatestLog() {
+        try {
+            var g = HY.game;
+            var box = (g && g.logger && g.logger.combatContainer) ||
+                document.getElementById('game-log');
+            if (!box) return '';
+            var first = box.firstElementChild;
+            if (!first) return '';
+            var t = (first.textContent || '').replace(/\s+/g, ' ').trim();
+            if (t.length > 120) t = t.slice(0, 118) + '…';
+            return t;
+        } catch (e) { return ''; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       點擊敵方立繪 → 集火
+       ══════════════════════════════════════════════════════ */
+    function bindClick(el, id) {
+        if (el.getAttribute('data-click-bound') === '1') return;
+        el.setAttribute('data-click-bound', '1');
+        el.addEventListener('click', function (ev) {
+            var node = ev.target && ev.target.closest
+                ? ev.target.closest('.hy-stage-unit.foe') : null;
+            if (!node) return;
+            if (node.classList.contains('dead')) return;
+            var idx = parseInt(node.getAttribute('data-i'), 10);
+            if (isNaN(idx)) return;
+            var o = el.__opts || {};
+            if (typeof o.onTarget === 'function') {
+                o.onTarget('foe', idx, (o.enemies || [])[idx]);
+            }
+            /* 預設行為：直接把 currentEnemy 指到這隻（集火）
+               ⚠️ 一般戰鬥與礦坑是兩套獨立系統，要指到各自的核心物件上 */
+            try {
+                var g = HY.game;
+                var isDelve = (id === 'hy-delve-stage');
+                var core = isDelve ? g.delveBattle : (g && g.combatSys);
+                if (core && core.enemies && core.enemies[idx]) {
+                    core.currentEnemy = core.enemies[idx];
+                    if (isDelve) {
+                        try { if (g.uiDelve) g.uiDelve._renderBattle(); } catch (e2) { }
+                    } else if (g.dexSys && g.uiDexAtb && g.uiDexAtb.renderFixedMaxBattleArena) {
+                        g.uiDexAtb.renderFixedMaxBattleArena();
+                    }
+                    if (g.logger) {
+                        g.logger.add('🎯 鎖定目標：【' + (core.enemies[idx].name || '敵人') + '】', 'system');
+                    }
+                }
+            } catch (e) { }
+        });
     }
 
     /** 移除舞台（切換面板時用） */
     function dispose(id) {
-        var el = document.getElementById(id || 'hy-battle-stage');
+        var key = id || 'hy-battle-stage';
+        var el = document.getElementById(key);
         if (el && el.parentNode) el.parentNode.removeChild(el);
+        delete SNAPSHOT[key];
     }
 
     HY.BattleStage = {
@@ -106637,10 +107024,33 @@ window.HY = window.HY || {};
         charSprite: charSprite,
         charColor: charColor,
         monSprite: monSprite,
-        monAvatar: monAvatar
+        monAvatar: monAvatar,
+        buffIconsOf: buffIconsOf,
+        sceneClass: sceneClass,
+        /* 對外手動觸發（給特殊技能表現用） */
+        fx: {
+            hit: function (id, side, index, dmg, crit) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) playHit(el, n, side, index, dmg || 0, !!crit);
+            },
+            heal: function (id, side, index, amount) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) playHeal(n, amount || 0);
+            },
+            text: function (id, side, index, text, kind) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) floatText(n, text, kind || 'dmg');
+            }
+        }
     };
 
-    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台已載入');
+    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台 v2 已載入（打擊感 / 場景 / 字幕 / 狀態 / 集火）');
 })(window.HY);
 
 
@@ -115410,7 +115820,8 @@ window.HY = window.HY || {};
             el.battle.classList.remove('hidden');
             this._renderToolbar();
 
-            /* ⭐ v509：戰鬥畫面（我方／敵方立繪對峙），插在兩張表格上方 */
+            /* ⭐ v509：戰鬥畫面（我方／敵方立繪對峙），插在兩張表格上方
+               ⭐ v510：加入礦坑場景、狀態圖示與集火鎖定 */
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 var dbRef = this.app.delveBattle || (window.HY.game && window.HY.game.delveBattle);
@@ -115430,7 +115841,8 @@ window.HY = window.HY || {};
                             cur: cu, max: mx, alive: cu > 0,
                             ready: Number(m.atb || 0) >= 100,
                             sprite: BS.charSprite(m),
-                            color: BS.charColor(m)
+                            color: BS.charColor(m),
+                            buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
                         });
                     });
                     var _foes2 = [];
@@ -115444,10 +115856,15 @@ window.HY = window.HY || {};
                             cur: cu2, max: mx2, alive: cu2 > 0,
                             ready: Number(e.atb || 0) >= 100,
                             sprite: BS.monSprite(e),
-                            avatar: BS.monAvatar(e)
+                            avatar: BS.monAvatar(e),
+                            target: (dbRef.currentEnemy === e),
+                            buffs: BS.buffIconsOf ? BS.buffIconsOf(e) : []
                         });
                     });
-                    BS.render(el.battle, { party: _party, enemies: _foes2, id: 'hy-delve-stage' });
+                    BS.render(el.battle, {
+                        party: _party, enemies: _foes2,
+                        id: 'hy-delve-stage', scene: 'delve'
+                    });
                 }
             } catch (eStage2) { }
 
