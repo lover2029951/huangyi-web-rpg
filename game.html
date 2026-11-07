@@ -5422,7 +5422,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'swarm', name: '萬蠱噬心', icon: '🐛', color: '#84cc16', maxStack: 6,
                 shortDesc: '召喚蠱蟲群，每隻獨立追擊敵人',
-                desc: '每次出手後自動召喚 1 隻「蠱蟲」（上限 6 隻）。每隻蠱蟲在自身出手後獨立追擊隨機敵人，造成 35% 攻擊力的傷害，並有 25% 機率被反噬死亡。蠱蟲存活時每隻使自身攻擊提升 1.5%。\n【機制連動】召喚物共用天賦樹的 Minion 系統——所有「Minions deal increased Damage」「+1 to maximum number of Summoned Minions」等 115 條召喚天賦全部生效。'
+                desc: '每次出手後自動召喚 1 隻「蠱蟲」（上限 6 隻）。每隻蠱蟲在自身出手後獨立追擊隨機敵人，造成 35% 攻擊力的傷害，並有 25% 機率被反噬死亡。蠱蟲存活時每隻使自身攻擊提升 1.5%。\n【武學相生】蠱蟲越多，氣勢越盛——天賦中的「靈獸傷害」「靈獸氣血」等詞條同樣作用於蠱蟲。'
             },
             /* ⭐ 這幾欄供 UI 顯示流派標籤 */
             mechanic: 'minion',
@@ -5439,7 +5439,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'minefield', name: '火雷天羅', icon: '💣', color: '#f59e0b', maxStack: 5,
                 shortDesc: '佈設地雷，滿載後自動引爆全體',
-                desc: '每次出手後自動佈設 1 枚「火雷」（上限 5 枚），每枚使自身傷害提升 4%。火雷累積至上限時自動引爆，對全部敵人造成每枚 0.35 倍攻擊力的範圍傷害。\n【機制連動】火雷共用天賦樹的 Mine 系統——「increased Mine Damage」「Mines have increased Detonation Speed」「+1 to maximum number of Mines」等 42 條地雷天賦全部生效。'
+                desc: '每次出手後自動佈設 1 枚「火雷」（上限 5 枚），每枚使自身傷害提升 4%。火雷累積至上限時自動引爆，對全部敵人造成每枚 0.35 倍攻擊力的範圍傷害。\n【武學相生】火雷威力隨外功傷害成長——天賦中的「外功傷害」「會心」等詞條會直接提升引爆威力。'
             },
             mechanic: 'mine',
             mechanicName: '地雷',
@@ -5455,7 +5455,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'trapweb', name: '天羅地網', icon: '🪤', color: '#a855f7', maxStack: 4,
                 shortDesc: '佈下陷阱，滿載時重創目標',
-                desc: '每次出手後自動佈下 1 個「陷阱」（上限 4 個），每個使自身傷害提升 5%。陷阱累積至上限時自動觸發，對當前目標造成每枚 0.45 倍攻擊力的傷害。\n【機制連動】陷阱共用天賦樹的 Trap 系統——「increased Trap Damage」「Can have up to N additional Traps placed at a time」「increased Trap Throwing Speed」等 34 條陷阱天賦全部生效。'
+                desc: '每次出手後自動佈下 1 個「陷阱」（上限 4 個），每個使自身傷害提升 5%。陷阱累積至上限時自動觸發，對當前目標造成每枚 0.45 倍攻擊力的傷害。\n【武學相生】機關威力隨外功傷害成長——天賦中的「外功傷害」「出手速度」等詞條會提升布設與觸發效率。'
             },
             mechanic: 'trap',
             mechanicName: '陷阱',
@@ -5487,7 +5487,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'aroma', name: '百草靈氣', icon: '🌟', color: '#22d3ee', maxStack: 1,
                 shortDesc: '常駐靈氣光環，持續強化全隊',
-                desc: '開場自動開啟「百草靈氣」光環（不需手動施放），持續為自身與全隊提供攻擊 +8%、全抗性 +3；每習得一階本門心法，靈氣再強化一層。\n【機制連動】靈氣共用天賦樹的 Aura 系統——所有「increased Effect of Auras」「increased Aura Effect」等 29 條光環天賦全部生效；光環數量與強度會即時反映在角色面板。'
+                desc: '開場自動開啟「百草靈氣」光環（不需手動施放），持續為自身與全隊提供攻擊 +8%、全抗性 +3；每習得一階本門心法，靈氣再強化一層。\n【武學相生】靈氣強度隨內功修為成長——天賦中的「真元效果」「內力上限」等詞條會同時提升靈氣威力。'
             },
             mechanic: 'aura',
             mechanicName: '光環',
@@ -5503,7 +5503,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'fortify', name: '不滅金身', icon: '🗿', color: '#78716c', maxStack: 20,
                 shortDesc: '近戰命中疊護體，每層減傷',
-                desc: '每次近戰命中累積 1 層「護體」（上限 20 層），每層使自身受到的傷害降低 1%；若天賦有「increased Effect of Fortification」，每層減傷再提升。護體每回合自然消退 2 層，需持續進攻維持。\n【機制連動】護體共用天賦樹的 Fortification 系統——「Fortifying Hits grant increased Fortification」「+N to maximum Fortification」等 14 條護體天賦全部生效。'
+                desc: '每次近戰命中累積 1 層「護體」（上限 20 層），每層使自身受到的傷害降低 1%；天賦中的護體相關詞條會同時提升每層減傷。護體每回合自然消退 2 層，需持續進攻維持。\n【武學相生】護體層數上限隨天賦提升——「護體」「氣血上限」等詞條皆有效。'
             },
             mechanic: 'fortify',
             mechanicName: '護體',
@@ -5519,7 +5519,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'swordarray', name: '萬劍歸宗', icon: '🗡️', color: '#60a5fa', maxStack: 3,
                 shortDesc: '佈下劍陣圖騰，每回合自動攻擊',
-                desc: '開場自動佈下 1 座「劍陣圖騰」（上限 3 座），每座圖騰在自身出手後獨立攻擊敵人；弩炮型圖騰可連射 3 段。圖騰存在時每個使自身攻擊提升 5%。\n【機制連動】劍陣共用天賦樹的 Totem 系統——所有「increased Totem Damage」「+1 to maximum number of Summoned Totems」「increased Totem Duration」等 58 條圖騰天賦全部生效。'
+                desc: '開場自動佈下 1 座「劍陣圖騰」（上限 3 座），每座圖騰在自身出手後獨立攻擊敵人；弩炮型圖騰可連射 3 段。圖騰存在時每個使自身攻擊提升 5%。\n【武學相生】劍陣威力隨外功成長——所有「increased Totem Damage」「+1 to maximum number of Summoned Totems」「increased Totem Duration」等 58 條圖騰天賦全部生效。'
             },
             mechanic: 'totem',
             mechanicName: '圖騰',
@@ -5535,7 +5535,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'cursefield', name: '天魔解體', icon: '🕷️', color: '#c084fc', maxStack: 2,
                 shortDesc: '對敵人施放詛咒，削弱其攻防',
-                desc: '對當前敵人自動施放 1 道「天魔詛咒」（可同時存在 2 道）：\n· 脆弱 → 目標受到傷害 +15%\n· 衰弱 → 目標攻擊 -20%\n· 絕望 → 目標防禦 -25%\n【機制連動】詛咒共用天賦樹的 Curse 系統——「increased Effect of your Curses」「increased Curse Duration」等 51 條詛咒天賦全部生效。'
+                desc: '對當前敵人自動施放 1 道「天魔詛咒」（可同時存在 2 道）：\n· 脆弱 → 目標受到傷害 +15%\n· 衰弱 → 目標攻擊 -20%\n· 絕望 → 目標防禦 -25%\n【武學相生】陰煞效果隨天賦中的「陰煞效果」「毒勁傷害」等詞條提升。'
             },
             mechanic: 'curse',
             mechanicName: '詛咒',
@@ -5551,7 +5551,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'brandmark', name: '梵音烙印', icon: '🔯', color: '#fbbf24', maxStack: 3,
                 shortDesc: '烙印附著敵人，持續灼燒並自動跳轉',
-                desc: '每次出手後自動在敵人身上附著 1 道「梵音烙印」（上限 3 道），每道烙印每回合造成 0.25 倍攻擊力的灼燒傷害，持續 8 回合；目標死亡時烙印會自動跳轉至其他存活敵人。\n【機制連動】烙印共用天賦樹的 Brand 系統——「increased Brand Damage」「Brand Skills have increased Duration」「Brand Recall」等 22 條烙印天賦全部生效。'
+                desc: '每次出手後自動在敵人身上附著 1 道「梵音烙印」（上限 3 道），每道烙印每回合造成 0.25 倍攻擊力的灼燒傷害，持續 8 回合；目標死亡時烙印會自動跳轉至其他存活敵人。\n【武學相生】真言印威力隨外功與會心成長。'
             },
             mechanic: 'brand',
             mechanicName: '烙印',
@@ -5567,7 +5567,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'soulbond', name: '心心相印', icon: '🔗', color: '#34d399', maxStack: 1,
                 shortDesc: '與隊友建立連結，共享攻防增益',
-                desc: '開場自動與最近的一名隊友建立「心心相印」連結（無隊友則連結自身），持續 8 回合；連結期間自身攻擊 +12%、受到傷害 -6%，隊友同步獲得一半效果。連結結束後自動重新建立。\n【機制連動】連結共用天賦樹的 Link 系統——所有 Link Skill 相關的 16 條天賦（持續時間、效果強化）全部生效。'
+                desc: '開場自動與最近的一名隊友建立「心心相印」連結（無隊友則連結自身），持續 8 回合；連結期間自身攻擊 +12%、受到傷害 -6%，隊友同步獲得一半效果。連結結束後自動重新建立。\n【武學相生】心印持續與效果隨天賦中的防禦與氣血詞條提升。'
             },
             mechanic: 'link',
             mechanicName: '連結',
@@ -62606,14 +62606,28 @@ window.HY = window.HY || {};
             }
         },
 
-        /* ── 取代 warcry（戰吼）───────────────────────────
-           門派：衡天教（原本機制為 trade，改為「喝陣」）
-           概念：一聲長嘯提振全隊氣勢。 */
-        hezhen: {
-            id: 'hezhen', name: '喝陣', sect: 'hengtian', icon: '📢',
-            desc: '每 4 次出手自動發動喝陣，全隊攻擊 +12%、暴擊 +6，持續 2 回合。',
+        /* ── 衡天教：戰意（原創機制）───────────────────────
+           ⚠️ 舊版此處是「喝陣」——那是從 POE 的 Warcry（戰吼）
+              改名而來的機制。本作沒有戰吼技能類型，
+              因此整組機制重做為「戰意凝聚」：
+
+           設計概念：
+             衡天教主張「以戰養戰」。每次出手都會在自身累積
+             一層「戰意」，戰意越高攻擊越強；累積到第 4 層時
+             化為「破軍一擊」——把全部戰意一次引爆，
+             造成額外傷害並回復氣血。
+
+           與舊「喝陣」的差異：
+             · 不影響全隊，只強化自身（原本是全隊增益）
+             · 不是「冷卻→發動」的計時器，而是「累積→引爆」的資源循環
+             · 沒有任何「號令／喝陣／戰吼」的字樣 */
+        zhanyi: {
+            id: 'zhanyi', name: '戰意', sect: 'hengtian', icon: '🔥',
+            desc: '每次出手累積 1 層戰意（上限 4）：每層攻擊 +4%、會心 +2。' +
+                  '累積至 4 層時化為「破軍一擊」——額外造成 180% 攻擊力傷害，' +
+                  '並回復 8% 氣血，隨後戰意歸零重新累積。',
             fields: {
-                cd: { name: '喝陣冷卻', max: 4 }
+                stack: { name: '戰意層數', max: 4 }
             }
         },
 
@@ -62781,7 +62795,7 @@ window.HY = window.HY || {};
         charges:      'qijin',
         impale:       'anjin',
         curse:        'yinsha',
-        warcry:       'hezhen',
+        warcry:       'zhanyi',
         totem:        'jianzhuang',
         brand:        'zhenyan',
         tincture:     'yaoyin',
@@ -62848,6 +62862,16 @@ window.HY = window.HY || {};
         if (!art) return out;
 
         switch (art) {
+            case 'zhanyi':
+                /* 戰意：每層攻擊 +4%、會心 +2（上限 4 層） */
+                var zs2 = Math.min(4, numOf(c, 'zhanyiStack'));
+                if (zs2 > 0) {
+                    out.atkPct += zs2 * 4;
+                    out.critFlat += zs2 * 2;
+                    out.tags.push('戰意×' + zs2);
+                }
+                break;
+
             case 'xinjue':
                 /* 剛訣 / 柔訣 */
                 var mode = numOf(c, 'xinjueMode');
@@ -62939,14 +62963,32 @@ window.HY = window.HY || {};
                 break;
             }
 
-            case 'hezhen': {
-                var cd = numOf(c, 'hezhenCd') + 1;
-                if (cd >= 4) {
-                    cd = 0;
-                    applyTeamBuff(c, 'atkPct', 12, 2);
-                    log.push('📢 喝陣！全隊攻擊 +12%');
+            case 'zhanyi': {
+                /* 戰意累積：每次出手 +1 層（上限 4） */
+                var zs = Math.min(4, numOf(c, 'zhanyiStack') + 1);
+                setNumOf(c, 'zhanyiStack', zs);
+
+                if (zs >= 4) {
+                    /* 累積滿 → 破軍一擊 */
+                    var zst = null;
+                    try { zst = window.HY.game.charSys.getDerivedStatsForChar(c); } catch (e) { }
+                    var zatk = num(zst && zst.atk, 100);
+                    var zmaxHp = num(zst && zst.maxHp, 1000);
+
+                    /* 額外傷害：180% 攻擊力 */
+                    var zdmg = Math.round(zatk * 1.8);
+                    if (target && target.currentHp > 0) {
+                        target.currentHp = Math.max(0, target.currentHp - zdmg);
+                    }
+                    /* 回復 8% 氣血 */
+                    var zheal = Math.round(zmaxHp * 0.08);
+                    c.currentHp = Math.min(zmaxHp, num(c.currentHp, zmaxHp) + zheal);
+
+                    setNumOf(c, 'zhanyiStack', 0);
+                    log.push('🔥 破軍一擊！' + zdmg + ' 傷害、回復 ' + zheal + ' 氣血（戰意歸零）');
+                } else {
+                    log.push('🔥 戰意凝聚 ' + zs + '/4');
                 }
-                setNumOf(c, 'hezhenCd', cd);
                 break;
             }
 
@@ -63234,10 +63276,12 @@ window.HY = window.HY || {};
                   '【定位】削弱型，專治高防高回的硬骨頭。'
         },
         hengtian: {
-            name: '喝陣', icon: '📢', color: '#f0c674', maxStack: 1,
-            shortDesc: '每 4 次出手發動喝陣，全隊增益',
-            desc: '每累積 4 次出手自動發動「喝陣」，全隊攻擊 +12%、暴擊 +6，持續 2 回合。\n\n' +
-                  '【定位】團隊增益型，適合多人陣容。'
+            name: '戰意', icon: '🔥', color: '#f0c674', maxStack: 4,
+            shortDesc: '出手累積戰意，滿層化為破軍一擊',
+            desc: '每次出手累積 1 層「戰意」（上限 4 層）：每層攻擊 +4%、會心 +2。\n' +
+                  '累積至 4 層時化為「破軍一擊」——額外造成 180% 攻擊力傷害，\n' +
+                  '並回復 8% 氣血，隨後戰意歸零重新累積。\n\n' +
+                  '【定位】爆發型，前期蓄勢、滿層收割。'
         },
         wanjian: {
             name: '劍樁', icon: '🗡️', color: '#38bdf8', maxStack: 3,
