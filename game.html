@@ -10618,8 +10618,20 @@ window.HY = window.HY || {};
                 var linked = (cur.links || []).indexOf(map.key(node.col, node.row)) >= 0;
                 if (!linked) return false;
 
-                /* 目前位置必須已清理（否則站在未清理節點上不能亂走） */
-                return !!cur.done;
+                /* ⭐⭐ v59 修正：不要求「目前位置已清理」
+                   ──────────────────────────────────────────────
+                   Bug：原本要求 cur.done，導致「站在未清理節點上完全無法移動」。
+                   重現方式：
+                     ① 進入一個戰鬥節點（enterNode 會把 curCol/curRow 設成該節點）
+                     ② 但該節點要打贏才會 _markDone
+                     ③ 若在戰鬥中撤退 / 中斷戰鬥 / 存檔重讀
+                        → 位置停在未清理節點上 → 永遠無法移動 → 卡死
+
+                   正確規則：
+                     · 只能走「相鄰且有礦道連線」的節點（這條保留，防止跳關）
+                     · 「從哪裡出發」不重要 —— 你人就在那裡，本來就該能走出去
+                     · 是否重複給獎勵由節點的 done 狀態控制，與能否移動無關 */
+                return true;
             }
 
             /* ── 沒有玩家座標（舊呼叫）→ 退回寬鬆判定 ── */
@@ -32647,6 +32659,16 @@ window.HY = window.HY || {};
             if (node.needBattle || node.category === 'combat') {
                 var tpl = this.spawnDelveEnemy(node.row, !!node.isBoss, node);
                 if (!tpl) return { ok: false, why: '開戰失敗' };
+                /* ⭐ v59：進戰鬥時就把節點標記為 done
+                   ──────────────────────────────────────────────
+                   原本只有「打贏」（_handleVictory 裡的 _markDone）才標記，
+                   導致：
+                     · 戰鬥中撤退 / 中斷 / 存檔重讀 → 位置停在未清理節點
+                     · 該節點永遠不算「已走過」，玩家會卡在原地
+                   POE 的做法也是「進入即視為已探索」，獎勵在擊敗時才給。
+                   這裡用 _markDone 標記「已探索」，獎勵結算仍走 _handleVictory。 */
+                this._markDone(node);
+                this._refreshRowView();
                 return { ok: true, battle: true, node: node, cost: charged };
             }
 
@@ -61370,6 +61392,19 @@ window.HY = window.HY || {};
         var c = charObj;
         if (!c) return null;
         var m = init(c);
+
+        /* ⭐⭐ v59 修正：先清空所有機制旗標
+           ──────────────────────────────────────────────────────
+           Bug：init() 會回傳快取物件，syncFromTalents 只在上面「加」旗標，
+               從來不清除 → 換門派 / 改天賦後舊機制全部殘留。
+               實測：切到 yanluo 後同時有 doom + defer，
+                    再切 jingmai 變成 meridianlock + slowdown + doom + defer。
+               後果：玩家會同時擁有多個門派的專屬機制。
+
+           正確做法：每次同步都以「當前門派 + 當前天賦」重算，先歸零。 */
+        Object.keys(m.enabled || {}).forEach(function (k) {
+            m.enabled[k] = false;
+        });
 
         /* ⭐⭐ v41：門派獨佔機制必須「無條件」先判定
            ──────────────────────────────────────────────────────
