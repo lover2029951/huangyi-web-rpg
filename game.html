@@ -1107,6 +1107,9 @@ details > summary::marker {
                     </div>
 
                     <div id="sub-skills" class="sub-martial-panel">
+                        <!-- ⭐ v495：每個武學子分頁都有自己的選角列（陣法除外）
+                             放在子分頁內，切到哪個分類就看到「正在給誰設定」。 -->
+                        <div id="skills-char-picker" class="hy-char-picker"></div>
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                             <h3 style="margin:0;">🗡️ 外功武學招式（每門派 10 式，Lv.10/40/70/100/130/160/190/220/250/280 各解鎖一式）</h3>
                             <div id="skills-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
@@ -1119,6 +1122,7 @@ details > summary::marker {
                     </div>
 
                     <div id="sub-xinfa" class="sub-martial-panel hidden">
+                        <div id="xinfa-char-picker" class="hy-char-picker"></div>
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                             <h3 style="margin:0;">🔥 內功心法（每門派 5 階，Lv.20/70/130/200/280 各解鎖一階；主運心法強化門派特色）</h3>
                             <div id="xinfa-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;"></div>
@@ -1127,6 +1131,7 @@ details > summary::marker {
                     </div>
 
                     <div id="sub-qinggong" class="sub-martial-panel hidden">
+                        <div id="qinggong-char-picker" class="hy-char-picker"></div>
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                             <h3 style="margin:0;">🍃 輕功身法（江湖共通 4 門 + 每門派專屬 3 階，Lv.30/120/240；每人僅能常駐 1 門，常駐者強化門派特色）</h3>
                             <div id="qinggong-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;"></div>
@@ -1135,11 +1140,13 @@ details > summary::marker {
                     </div>
 
                     <div id="sub-mastery" class="sub-martial-panel hidden">
+                        <div id="mastery-char-picker" class="hy-char-picker"></div>
                         <h3>🎯 武道專精（18 門：命中／閃避／暴抗 3 門 + 15 門魔獸世界風格專精）</h3>
                         <div id="mastery-list" class="enemy-grid"></div>
                     </div>
 
                     <div id="sub-meridian" class="sub-martial-panel hidden">
+                        <div id="meridian-char-picker" class="hy-char-picker"></div>
                         <h3>🧘 奇經十四脈周天運轉（打通十四脈穴道，強化命中、暴抗、攻防與真氣）</h3>
                         <div id="meridian-list" class="enemy-grid"></div>
                     </div>
@@ -1156,6 +1163,10 @@ details > summary::marker {
 
                 <div id="tab-sect" class="tab-content">
                     <h3>⛩️ 黃易武學門派（各派擁有獨一無二的「專屬門派特色」機制）</h3>
+                    <!-- ⭐ v495：門派面板內建「選擇角色」
+                         原本切換角色要拉開左側抽屜，抽屜一開就蓋住門派面板，
+                         根本看不清楚在給誰選門派。現在直接在門派面板頂端列出角色。 -->
+                    <div id="sect-char-picker" class="hy-char-picker"></div>
                     <div id="sect-list" class="card-list"></div>
                 </div>
 
@@ -74026,6 +74037,18 @@ window.HY = window.HY || {};
                         : '';
                 }
             })();
+
+            /* ⭐ v495：五個武學子分頁各自的「選擇角色」列（陣法除外）
+               ──────────────────────────────────────────────────────────
+               使用者：除了陣法，每個分頁都要有選擇角色功能。
+               每個子分頁各自一塊，切到哪個分類就看到「正在給誰設定」。
+               放在快取判斷之前，否則簽章命中時角色列不會更新。 */
+            this._renderCharPicker('skills-char-picker', 'martial');
+            this._renderCharPicker('xinfa-char-picker', 'martial');
+            this._renderCharPicker('qinggong-char-picker', 'martial');
+            this._renderCharPicker('mastery-char-picker', 'martial');
+            this._renderCharPicker('meridian-char-picker', 'martial');
+
             if (this._martialSig === _sig && document.getElementById('martial-list')) {
                 return;   /* 狀態沒變 → 不重建 */
             }
@@ -74341,6 +74364,9 @@ window.HY = window.HY || {};
             const charLv = app.charSys.state.lv;
             const charSect = app.charSys.state.sect;
 
+            /* ⭐ v495：面板內建「選擇角色」 */
+            this._renderCharPicker('sect-char-picker', 'sect');
+
             /* ⭐ v2：是否已拜入門派（有門派就不能再拜其他門派） */
             const hasSect = !!charSect;
             const curSectObj = charSect ? (Data.SECTS || {})[charSect] : null;
@@ -74434,6 +74460,135 @@ window.HY = window.HY || {};
                 });
                 sList.appendChild(card);
             });
+        }
+
+        /* ⭐ v495：面板內建「選擇角色」列（門派 / 武學心法共用）
+           ──────────────────────────────────────────────────────────
+           使用者：在面板內加入可選擇角色功能。
+           原本切換角色只能靠左側抽屜的角色清單，
+           但抽屜一拉開就蓋住門派／武學面板，選東西時看不清楚在給誰選。
+
+           現在直接在面板頂端放一排角色按鈕：
+             · 標示當前操控角色（青色高亮）
+             · 標示各角色已拜入的門派（避免選錯人重複拜師）
+             · 點擊切換後重繪所在面板 */
+        /* ⭐ v495：選角列共用樣式（只注入一次）
+           五個子分頁 + 門派面板都用同一套，避免行內樣式重複膨脹。 */
+        _ensurePickerStyle(host) {
+            if (!host.classList.contains('hy-char-picker')) host.classList.add('hy-char-picker');
+            if (document.getElementById('hy-char-picker-style')) return;
+            var st = document.createElement('style');
+            st.id = 'hy-char-picker-style';
+            st.textContent =
+                '.hy-char-picker{' +
+                    'margin-bottom:11px;padding:8px 10px;' +
+                    'background:#121822;border:1px solid #2e3b4e;border-radius:6px;' +
+                '}' +
+                '.hy-char-picker .hy-cp-head{' +
+                    'font-size:.78rem;color:#64748b;margin-bottom:6px;' +
+                '}' +
+                '.hy-char-picker .hy-cp-row{' +
+                    'display:flex;flex-wrap:wrap;gap:6px;' +
+                '}' +
+                '.hy-char-picker .hy-cp-btn{' +
+                    'display:flex;flex-direction:column;align-items:flex-start;gap:1px;' +
+                    'padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;' +
+                    'font-size:.8rem;line-height:1.3;text-align:left;' +
+                    'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;' +
+                '}' +
+                '.hy-char-picker .hy-cp-btn:hover{border-color:#38bdf8;color:#bae6fd;}' +
+                '.hy-char-picker .hy-cp-btn.hy-cp-sel{' +
+                    'background:rgba(0,229,255,.18);border:1px solid #00e5ff;color:#7dd3fc;' +
+                '}' +
+                '.hy-char-picker .hy-cp-name{font-weight:bold;}' +
+                '.hy-char-picker .hy-cp-sect{font-size:.7rem;color:#64748b;}' +
+                '.hy-char-picker .hy-cp-sect.has-sect{color:#10b981;}';
+            document.head.appendChild(st);
+        }
+
+        _renderCharPicker(hostId, panelKey) {
+            const app = this.app;
+            const host = document.getElementById(hostId);
+            if (!host) return;
+            this._ensurePickerStyle(host);
+
+            const Data = window.HY.Data || {};
+            const SECTS = Data.SECTS || {};
+            const allChars = (app.rosterSys && typeof app.rosterSys.getAllCharacters === 'function')
+                ? app.rosterSys.getAllCharacters() : [app.charSys.state];
+            const curIdx = app.charSys.rootState ? app.charSys.rootState.activeCharIndex : 0;
+
+            /* 簽章：角色 + 等級 + 門派 + 當前操控。不變就不重建（避免每 tick 閃動） */
+            const sig = allChars.map(function (c) {
+                return (c.id || '') + ':' + c.lv + ':' + (c.sect || '');
+            }).join(',') + '|' + curIdx + '|' + hostId;
+            this._pickerSig = this._pickerSig || {};
+            if (this._pickerSig[hostId] === sig && host.children.length > 0) return;
+            this._pickerSig[hostId] = sig;
+
+            host.innerHTML = '';
+
+            var head = document.createElement('div');
+            head.className = 'hy-cp-head';
+            head.textContent = '選擇角色（以下操作套用於被選中的角色）';
+            host.appendChild(head);
+
+            var row = document.createElement('div');
+            row.className = 'hy-cp-row';
+
+            var self = this;
+            allChars.forEach(function (c, idx) {
+                var isSel = (idx === curIdx);
+                var sectObj = c.sect ? SECTS[c.sect] : null;
+                var sectTxt = sectObj ? sectObj.name : (c.sect ? c.sect : '無門無派');
+
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'hy-cp-btn' + (isSel ? ' hy-cp-sel' : '');
+                btn.setAttribute('data-char-id', String(c.id || ''));
+                btn.setAttribute('data-char-index', String(idx));
+                btn.innerHTML =
+                    '<span class="hy-cp-name">' +
+                        (isSel ? '🎯 ' : '') + (idx + 1) + '.' + c.name +
+                        ' <small style="opacity:.72;">Lv.' + c.lv + '</small>' +
+                    '</span>' +
+                    '<span class="hy-cp-sect' + (c.sect ? ' has-sect' : '') + '">' +
+                        '⛩️ ' + sectTxt +
+                    '</span>';
+                btn.title = isSel
+                    ? '當前操控中 · ' + sectTxt
+                    : '點擊切換為此角色 · ' + sectTxt;
+
+                btn.addEventListener('click', function (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    if (isSel || btn.__switching) return;
+                    btn.__switching = true;
+                    var ok = false;
+                    try {
+                        ok = !!app.rosterSys.selectCharacter(idx);
+                    } catch (e) {
+                        if (window.console) console.warn('[panel char switch]', e);
+                        ok = false;
+                    }
+                    btn.__switching = false;
+                    if (!ok) {
+                        if (app.logger) app.logger.add('⚠️ 切換角色失敗，請重新載入頁面。', 'system');
+                        return;
+                    }
+                    /* 切換後兩個分頁的內容都變了 → 清簽章強制重繪 */
+                    self._sectSig = null;
+                    self._martialSig = null;
+                    self._pickerSig = {};
+                    if (panelKey === 'sect') self.renderSectTab();
+                    else self.renderMartialTab();
+                    if (typeof app.renderAll === 'function') app.renderAll();
+                });
+
+                row.appendChild(btn);
+            });
+
+            host.appendChild(row);
         }
     }
     window.HY.UIMartialSect = UIMartialSect;
@@ -148292,6 +148447,8 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
+
 
 
 
