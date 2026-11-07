@@ -15429,7 +15429,9 @@ window.HY = window.HY || {};
             return '內力上限 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased maximum Energy Shield$/, function (m) {
-            return '罡氣上限 +' + s(m[1]) + '%';
+            /* ⭐ v484：罡氣機制已完整移除，此詞條實際效果為「氣血上限」。
+               原本顯示「罡氣上限 +X%」，玩家會以為機制沒下架。 */
+            return '氣血上限 +' + s(m[1]) + '%';
         }],
         [/^\+(\d+(?:\.\d+)?) to maximum Life$/, function (m) {
             return '氣血 +' + s(m[1]);
@@ -15438,7 +15440,8 @@ window.HY = window.HY || {};
             return '內力 +' + s(m[1]);
         }],
         [/^\+(\d+(?:\.\d+)?) to maximum Energy Shield$/, function (m) {
-            return '罡氣 +' + s(m[1]);
+            /* ⭐ v484：同上前提，改顯示為氣血 */
+            return '氣血 +' + s(m[1]);
         }],
         [/^\+(\d+(?:\.\d+)?) to Strength$/, function (m) {
             return '力道 +' + s(m[1]);
@@ -15657,7 +15660,7 @@ window.HY = window.HY || {};
             return '咒術效果 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased effect of Non-Curse Auras from your Skills$/, function (m) {
-            return '罡氣效果 +' + s(m[1]) + '%';
+            return '真元效果 +' + s(m[1]) + '%';
         }],
 
         /* ───────── 掉落／實用 ───────── */
@@ -15762,12 +15765,12 @@ window.HY = window.HY || {};
             return '出手有 ' + s(m[1]) + '% 機率使目標虛弱';
         }],
 
-        /* ── 護盾／回復機制 ── */
+        /* ── 護盾／回復機制（罡氣已移除，改為氣血相關） ── */
         [/^(\d+(?:\.\d+)?)% faster start of Energy Shield Recharge$/, function (m) {
-            return '罡氣回復啟動 +' + s(m[1]) + '%';
+            return '氣血回復 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased Energy Shield Recharge Rate$/, function (m) {
-            return '罡氣回復速度 +' + s(m[1]) + '%';
+            return '氣血回復 +' + s(m[1]) + '%';
         }],
         [/^\+(\d+(?:\.\d+)?) to maximum number of (?:Summoned )?(?:Skeletons|Zombies|Spectres|Golems|Raging Spirits)$/, function (m) {
             return '靈獸數量上限 +' + m[1];
@@ -15909,7 +15912,7 @@ window.HY = window.HY || {};
 
         /* ── 光環／詛咒細節 ── */
         [/^(\d+(?:\.\d+)?)% increased Aura Area of Effect$/, function (m) {
-            return '罡氣範圍 +' + s(m[1]) + '%';
+            return '真元範圍 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased Curse Area of Effect$/, function (m) {
             return '咒術範圍 +' + s(m[1]) + '%';
@@ -16168,7 +16171,7 @@ window.HY = window.HY || {};
        ══════════════════════════════════════════════════════ */
     var EFFECT_NAME_MAP = [
         [/氣血|回復.*氣血|擊殺回復.*氣血/, '培元'],
-        [/內力|罡氣/, '蓄氣'],
+        [/內力/, '蓄氣'],
         [/外功傷害|近身傷害/, '勁力'],
         [/火勁/, '烈火'],
         [/冰勁/, '寒冰'],
@@ -16189,7 +16192,7 @@ window.HY = window.HY || {};
         [/埋雷/, '火雷'],
         [/暗器/, '暗器'],
         [/咒術/, '咒法'],
-        [/罡氣效果/, '罡勁'],
+        [/真元效果/, '罡勁'],
         [/持續傷害|異常/, '陰毒'],
         [/範圍/, '橫掃'],
         [/怒氣|充能/, '血氣'],
@@ -16281,7 +16284,8 @@ window.HY = window.HY || {};
         var MAP = [
             [/maximum Life/i, '氣血上限'],
             [/maximum Mana/i, '內力上限'],
-            [/Energy Shield/i, '罡氣'],
+            /* ⭐ v484：護盾已移除，泛用詞一律顯示為氣血 */
+            [/Energy Shield/i, '氣血上限'],
             [/Physical Damage/i, '外功傷害'],
             [/Elemental Damage/i, '九元素內勁'],
             [/Fire Damage/i, '火勁傷害'],
@@ -16301,7 +16305,7 @@ window.HY = window.HY || {};
             [/Totem/i, '劍樁'],
             [/Trap/i, '機關'],
             [/Mine/i, '火雷'],
-            [/Aura/i, '罡氣'],
+            [/Aura/i, '真元'],
             [/Curse/i, '咒術'],
             [/Damage over Time/i, '持續傷害'],
             [/Area of Effect/i, '招式範圍'],
