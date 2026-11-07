@@ -101658,6 +101658,36 @@ window.HY = window.HY || {};
                 setEsBar('ally-es-' + idx,
                     this._esCurOf(m, md),
                     this._esMaxOf(md));
+                /* ⭐⭐ v477：同步更新「角色面板」的罡氣條
+                   ──────────────────────────────────────────────────────────
+                   角色面板（uiCharacterParty）的 #es-bar/#es-text 只在
+                   renderCharacterPanel() 被呼叫時才重繪 ——
+                   而那個函式只在「切換角色、點加點、開關面板」時觸發，
+                   戰鬥中完全不會跑。
+
+                   於是出現：戰鬥面板罡氣已經打到 0，
+                   但角色面板那一條還停在滿檔（實測 410 → 410 → 410）。
+                   這就是使用者回報的「罡氣條沒有同步」。
+
+                   修法：由戰鬥面板每 tick 順手把角色面板那一條也更新掉。
+                   只更新罡氣（不動其他欄位），避免整塊重繪造成卡頓。 */
+                try {
+                    var _isActive = (m === app.charSys.state);
+                    if (_isActive) {
+                        var _curEl = this._esCurOf(m, md);
+                        var _maxEl = this._esMaxOf(md);
+                        var _rowEl = document.getElementById('es-bar-row');
+                        var _barEl = document.getElementById('es-bar');
+                        var _txtEl = document.getElementById('es-text');
+                        if (_maxEl > 0) {
+                            if (_rowEl) _rowEl.style.display = '';
+                            if (_barEl) _barEl.style.width = Math.min(100, (_curEl / _maxEl) * 100) + '%';
+                            if (_txtEl) _txtEl.textContent = Math.floor(_curEl) + ' / ' + Math.floor(_maxEl);
+                        } else if (_rowEl) {
+                            _rowEl.style.display = 'none';
+                        }
+                    }
+                } catch (eSyncEs) { }
                 // ⭐ v56：戰力每 tick 更新
                 var pwEl = document.getElementById('ally-pw-' + idx);
                 if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
