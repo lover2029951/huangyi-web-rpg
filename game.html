@@ -79858,11 +79858,52 @@ window.HY = window.HY || {};
             const app = this.app;
             const petListEl = document.getElementById('pet-list');
             if (!petListEl || !Data.PETS) return;
-            petListEl.innerHTML = '';
             app.petSys.ensureState();
-            const ownedPets = app.charSys.rootState.pets;
-            const activePetId = app.charSys.rootState.activePet;
-            const maxCharLv = app.petSys.getMaxCharLv();
+
+            /* ⭐⭐⭐ v485：靈獸介面跳動修正
+               ──────────────────────────────────────────────────────────
+               症狀：靈獸面板會不停跳動、閃爍，滾動位置也會被拉回頂端。
+
+               根因（實測確認）：
+                 · 面板一次渲染 122 隻靈獸，每隻都是完整卡片（DOM 高度 8202px）
+                 · 每次畫面更新（戰鬥 tick、任何互動觸發 app.renderAll）
+                   都會執行 petListEl.innerHTML = '' 把 122 張卡全清空再重建
+                 · 重建瞬間高度歸零 → 滾動條被拉回頂端
+                 · 122 張卡的重新計算與重排 → 明顯閃爍
+
+               解法：簽章比對。
+                 把「會影響畫面的所有輸入」濃縮成一個字串簽章，
+                 與上次渲染的簽章比對，相同就整段跳過（完全不動 DOM）。
+                 只有真的換了篩選、收服、餵養、切換出戰時才重建。
+
+               ⚠️ 簽章必須包含所有會改變畫面的狀態，否則會「該更新卻不更新」：
+                  篩選條件、已擁有靈獸與等級、當前出戰靈獸、角色等級（影響鎖定）。 */
+            const ownedPets0 = app.charSys.rootState.pets || {};
+            const activePetId0 = app.charSys.rootState.activePet;
+            const maxCharLv0 = app.petSys.getMaxCharLv();
+            const F0 = this._petFilter || { role: 'all', element: 'all', quality: 'all', ownedOnly: false };
+            const sig = [
+                F0.role, F0.element, F0.quality, F0.ownedOnly ? 1 : 0,
+                activePetId0 || '', maxCharLv0,
+                Object.keys(ownedPets0).sort().map(function (k) {
+                    var v = ownedPets0[k];
+                    return k + ':' + (typeof v === 'object' ? (v.lv || 0) : v);
+                }).join(',')
+            ].join('|');
+            if (this.__petSig === sig && petListEl.children.length > 0) {
+                return;   /* 內容完全相同 → 不動 DOM，徹底消除跳動 */
+            }
+            this.__petSig = sig;
+
+            /* 重建前記住滾動位置，重建後還原（避免視窗跳回頂端） */
+            var _scrollHost = petListEl.closest('.tab-content') || petListEl.parentNode;
+            var _scrollTop = _scrollHost ? _scrollHost.scrollTop : 0;
+            var _winScroll = window.scrollY || 0;
+
+            petListEl.innerHTML = '';
+            const ownedPets = ownedPets0;
+            const activePetId = activePetId0;
+            const maxCharLv = maxCharLv0;
 
             /* ⭐ v3：200 隻靈獸需要篩選器（全部列出會捲不完）
                ──────────────────────────────────────────────────────────
@@ -80032,6 +80073,12 @@ window.HY = window.HY || {};
                 }
                 petListEl.appendChild(card);
             });
+
+            /* ⭐ v485：還原重建前的滾動位置（避免視窗跳回頂端） */
+            try {
+                if (_scrollHost && _scrollTop > 0) _scrollHost.scrollTop = _scrollTop;
+                if (_winScroll > 0) window.scrollTo(window.scrollX || 0, _winScroll);
+            } catch (eScroll) { }
         }
         renderCompanionTab() {
             const Data = window.HY.Data;
