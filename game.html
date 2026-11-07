@@ -41336,6 +41336,14 @@ window.HY = window.HY || {};
                 var bi = ZN && ZN.branchInfo ? ZN.branchInfo(id) : null;
                 var nm = (ZN && ZN.branchName) ? ZN.branchName(id)
                        : (fallbackName || ((ZH && ZH.branch) ? ZH.branch(id) : id));
+                /* ⭐ v481：以新版 META 為權威（名稱 + 圖示 + 核心機制）
+                   ascendancyZhNames 是舊表，圖示與名稱都可能是舊的。 */
+                var meta = (HY.Data && HY.Data.ASCENDANCY_META) ? HY.Data.ASCENDANCY_META[id] : null;
+                if (meta) {
+                    if (meta.name) nm = meta.name;
+                    if (meta.icon) bi = { icon: meta.icon, color: (bi && bi.color) || '#94a3b8' };
+                }
+                var ksName = (meta && meta.keystone && meta.keystone.name) ? meta.keystone.name : '';
                 return {
                     id: id,
                     name: nm,
@@ -41344,6 +41352,7 @@ window.HY = window.HY || {};
                     nodeCount: (byBranch[id] || []).length,
                     icon: bi ? bi.icon : '',
                     color: bi ? bi.color : '#94a3b8',
+                    keystoneName: ksName,
                     desc: ''
                 };
             }
@@ -44064,6 +44073,20 @@ window.HY = window.HY || {};
 
             var html = '<div class="tt">' + nameZh + '</div>';
             html += '<div class="ts">' + typ + '　Lv 需求：無</div>';
+
+            /* ⭐⭐ v481：核心機制的「機制說明」
+               ──────────────────────────────────────────────────────────
+               21 條分支各有一個核心機制（判罪／浴血／洞察／幽蝕…）。
+               這些不是數值，而是會改變戰鬥行為的規則，
+               玩家必須看得到說明才知道自己點了什麼。
+               kdesc 是節點上預存的完整敘述，直接顯示。 */
+            if (node.kdesc) {
+                html += '<div class="tk" style="margin:6px 0 8px;padding:7px 9px;' +
+                    'background:rgba(251,191,36,0.10);border-left:3px solid #fbbf24;' +
+                    'border-radius:4px;font-size:12px;line-height:1.6;color:#fde68a;">' +
+                    '⚙️ ' + node.kdesc + '</div>';
+            }
+
             (stats || []).forEach(function (s) {
                 html += '<div class="tm">' + s + '</div>';
             });
@@ -44160,6 +44183,53 @@ window.HY = window.HY || {};
             if (!sp) return null;
             var img = this._imgSet(sp.set);
             return { sp: sp, img: img };
+        }
+
+        /* ⭐⭐ v481：節點圖示（emoji）
+           ──────────────────────────────────────────────────────────
+           問題：新版昇華節點的 icon 是 emoji（🔥／⚖️／🌪️…），
+                 不是 POE 的圖檔路徑。_spriteOf() 用路徑查圖集，
+                 永遠查不到 → 30 個節點全部退回純色圓，畫面上完全沒有圖示。
+
+           解法：直接把 emoji 畫上去，並依節點類型給不同底色，
+                 讓 30 個節點一眼看得出層級：
+                   起點   → 綠底
+                   核心   → 金底（最顯眼，比其他節點大一號）
+                   顯著   → 藍底
+                   小天賦 → 灰藍底
+           ══════════════════════════════════════════════════════════ */
+        _drawEmojiIcon(ctx, node, x, y, r, allocated, canAlloc) {
+            if (!node || !node.icon) return false;
+            var em = String(node.icon);
+            /* 只處理 emoji；若是不小心殘留的圖片路徑就跳過 */
+            if (em.length > 8 || /[\/\\]/.test(em)) return false;
+
+            var bg;
+            if (node.isAscStart) bg = allocated ? '#065f46' : '#064e3b';
+            else if (node.isKeystone) bg = allocated ? '#78350f' : (canAlloc ? '#4a1d05' : '#2a2013');
+            else if (node.isNotable) bg = allocated ? '#075985' : (canAlloc ? '#0c2d48' : '#16283a');
+            else bg = allocated ? '#0369a1' : (canAlloc ? '#1e3a5f' : '#1a2332');
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = bg;
+            ctx.fill();
+            ctx.restore();
+
+            var fs = Math.max(7, Math.round(r * (node.isKeystone ? 1.30 : (node.isAscStart ? 1.18 : 1.02))));
+            ctx.save();
+            ctx.globalAlpha = allocated ? 1.0 : (canAlloc ? 0.95 : 0.62);
+            ctx.font = fs + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            /* 深色描邊：emoji 在亮背景與暗背景下都能看清 */
+            ctx.lineWidth = Math.max(1.5, fs * 0.13);
+            ctx.strokeStyle = 'rgba(2,6,12,0.9)';
+            try { ctx.strokeText(em, x, y + 0.5); } catch (e) { }
+            ctx.fillText(em, x, y + 0.5);
+            ctx.restore();
+            return true;
         }
 
         /* ──────────────────────────────────────────────────────────
@@ -44295,9 +44365,12 @@ window.HY = window.HY || {};
                     '<span class="asc-txt">' +
                         '<span class="bn">' + (b.nameZh || b.name || b.id) +
                         (joined ? ' <i class="asc-tag joined-tag">已加入</i>' : '') + '</span>' +
-                        /* ⭐ 副標只顯示節點數，不顯示內部 id（那是給程式看的） */
+                        /* ⭐ v481：副標顯示「節點數 + 核心機制名」，
+                           玩家在選分支時就知道這條的特色是什麼 */
                         '<span class="be">' + b.nodeCount + ' 節點' +
-                        (b.desc ? '　·　' + String(b.desc).slice(0, 10) + '…' : '') + '</span>' +
+                        (b.keystoneName
+                            ? '　·　⚙️ ' + b.keystoneName
+                            : (b.desc ? '　·　' + String(b.desc).slice(0, 10) + '…' : '')) + '</span>' +
                     '</span>' +
                     '</button>';
             }
@@ -44473,8 +44546,16 @@ window.HY = window.HY || {};
                     var n = N[id];
                     var nm = ZH ? ZH.nodeName(n) : n.name;
                     var st = ZH ? ZH.stats(n.stats) : n.stats;
-                    html += '<div class="asc-pick">';
-                    html += '<div class="pn">' + nm + '</div>';
+                    var isKs = !!n.keystone;
+                    html += '<div class="asc-pick"' + (isKs ? ' style="border-left:3px solid #fbbf24;"' : '') + '>';
+                    html += '<div class="pn">' + (isKs ? '⚙️ ' : '') + nm +
+                        (isKs ? '<span style="color:#fbbf24;font-size:.7em;margin-left:6px;">核心機制</span>' : '') +
+                        '</div>';
+                    /* 核心機制：把完整說明列出來（玩家才知道自己點了什麼） */
+                    if (n.kdesc) {
+                        html += '<div class="pe" style="color:#fde68a;line-height:1.65;margin-bottom:4px;">' +
+                            n.kdesc + '</div>';
+                    }
                     (st || []).forEach(function (s) {
                         html += '<div class="pe">' + s + '</div>';
                     });
@@ -44718,15 +44799,23 @@ window.HY = window.HY || {};
                     drewIcon = true;
                 }
                 if (!drewIcon) {
-                    ctx.beginPath();
-                    ctx.arc(x, y, r, 0, Math.PI * 2);
-                    var fill;
-                    if (n.allocated) fill = '#0ea5e9';
-                    else if (n.node.isAscStart) fill = '#10b981';
-                    else if (n.canAlloc) fill = '#1e3a5f';
-                    else fill = '#1a2332';
-                    ctx.fillStyle = fill;
-                    ctx.fill();
+                    /* ⭐ v481：先嘗試畫 emoji 圖示（新版節點都是用 emoji 當 icon）。
+                       畫不出來才退回純色圓。 */
+                    var emoOk = false;
+                    try {
+                        emoOk = this._drawEmojiIcon(ctx, n.node, x, y, r, n.allocated, n.canAlloc);
+                    } catch (eEmo) { emoOk = false; }
+                    if (!emoOk) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, r, 0, Math.PI * 2);
+                        var fill;
+                        if (n.allocated) fill = '#0ea5e9';
+                        else if (n.node.isAscStart) fill = '#10b981';
+                        else if (n.canAlloc) fill = '#1e3a5f';
+                        else fill = '#1a2332';
+                        ctx.fillStyle = fill;
+                        ctx.fill();
+                    }
                 }
 
                 /* 邊框：POE 風格的多層外框
