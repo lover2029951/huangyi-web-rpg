@@ -1407,16 +1407,18 @@ window.HY = window.HY || {};
             levelExpMin: 80,                 // ✖ 升級經驗下限
             levelGapThreshold: 5,            // ✖ 等級差懲罰門檻
             levelGapPenaltyMult: 0.30,       // ✖ 等級差經驗倍率
-            costConHpPerPoint: 15,           // ✖ 加體魄回血
-            costIntMpPerPoint: 8,            // ✖ 加內息回內
+            costConHpPerPoint: 15,           // ✖ 加體回血
+            costIntMpPerPoint: 7,            // ✖ 加智回內
             baseHp: 100, hpPerCon: 15, hpPerLv: 35,
-            baseMp: 50,  mpPerInt: 8,  mpPerLv: 15,
-            atkStrCoef: 2.5, atkIntCoef: 1.0, atkLvCoef: 4,
-            defConCoef: 1.5, defAgiCoef: 0.6, defLvCoef: 2,
-            hitBase: 85, hitAgiCoef: 0.35, hitIntCoef: 0.2, hitLvCoef: 0.25,
-            evaBase: 5, evaAgiCoef: 0.25,
-            critBase: 5, critAgiCoef: 0.3,
-            critResConCoef: 0.25, critResIntCoef: 0.2, critResLvCoef: 0.15,
+            /* ⭐ v523：五屬 — 內力由智(7)與精(3)共同提供 */
+            baseMp: 50,  mpPerInt: 7,  mpPerSpi: 3,  mpPerLv: 15,
+            atkStrCoef: 2.6, atkIntCoef: 0.6, atkLvCoef: 4,
+            defConCoef: 1.5, defAgiCoef: 0.5, defSpiCoef: 0.4, defLvCoef: 2,
+            hitBase: 85, hitAgiCoef: 0.30, hitIntCoef: 0.15, hitSpiCoef: 0.08, hitLvCoef: 0.25,
+            evaBase: 5, evaAgiCoef: 0.28, evaSpiCoef: 0.06,
+            critBase: 5, critAgiCoef: 0.30, critStrCoef: 0.10,
+            critResConCoef: 0.20, critResSpiCoef: 0.30, critResLvCoef: 0.15,
+            critDmgBase: 165, critDmgStrCoef: 0.85,
             evaCap: 85,
             critCap: 90
         },
@@ -1451,14 +1453,16 @@ window.HY = window.HY || {};
             enemyElemAtkRatio: 0.10,         // ⚡ 敵人元素攻擊係數
             enemyElemDefRatio: 0.06,         // ⚡ 敵人元素抗性係數
             maxElemDamagePctOfMaxHp: 0.25,   // ⚡ 元素傷害上限 %
-            // 基礎元素攻防公式（均分至八元素）
+            // ⭐ v523：五屬 — 基礎元素攻防公式（均分至九元素）
             flatAtkBase: 20,                 // ⚡ 基礎值
-            flatAtkIntCoef: 2.2,             // ⚡ 每點內息
-            flatAtkStrCoef: 1.0,             // ⚡ 每點力道
+            flatAtkIntCoef: 2.2,             // ⚡ 每點智
+            flatAtkStrCoef: 1.0,             // ⚡ 每點力
+            flatAtkSpiCoef: 0.6,             // ⚡ 每點精
             flatAtkLvCoef: 3.0,              // ⚡ 每級等級
             flatDefBase: 15,                 // ⚡ 基礎值
-            flatDefConCoef: 1.6,             // ⚡ 每點體魄
-            flatDefIntCoef: 1.2,             // ⚡ 每點內息
+            flatDefConCoef: 1.6,             // ⚡ 每點體
+            flatDefIntCoef: 1.2,             // ⚡ 每點智
+            flatDefSpiCoef: 0.8,             // ⚡ 每點精
             flatDefLvCoef: 2.0,              // ⚡ 每級等級
             // ✦ 補償係數（1.0 = 不補償；1.5 = 中度；4.0 = 接近舊版）
             flatAtkMult: 1.5
@@ -3672,8 +3676,9 @@ window.HY = window.HY || {};
     /* ── ATB ── */
     atbCalc: function (stats, lv, element, scope) {
       var A = C.ATB;
-      var agi = num(stats && stats.agi, 10);
+      var agi = num(stats && stats.agi, 8);
       var dex = num(stats && stats.dex, 0);
+      /* ⭐ v523：五屬 — 攻速由敏驅動，dex 已移除（保留相容） */
       var v = num(A.BASE, 100)
         + agi * num(A.PER_AGI, 0.85)
         + num(lv, 1) * num(A.PER_LV, 0.12)
@@ -11984,10 +11989,10 @@ window.HY.Data = window.HY.Data || {};
              （脈門是無加成節點，配置時不消耗點數）
        ══════════════════════════════════════════════════════════ */
     var GATES = [
-        { id: 'gate_1', d: 45,  name: '力道脈門' },
-        { id: 'gate_2', d: 135, name: '身法脈門' },
-        { id: 'gate_3', d: 225, name: '體魄脈門' },
-        { id: 'gate_4', d: 315, name: '內息脈門' }
+        { id: 'gate_1', d: 45,  name: '力脈門' },
+        { id: 'gate_2', d: 135, name: '敏脈門' },
+        { id: 'gate_3', d: 225, name: '體脈門' },
+        { id: 'gate_4', d: 315, name: '智脈門' }
     ];
     GATES.forEach(function (g) {
         var gp = pol(34, g.d);
@@ -11999,21 +12004,22 @@ window.HY.Data = window.HY.Data || {};
         });
         link('root', g.id);
     });
-    /* 依角度取最近的脈門（45 / 135 / 225 / 315） */
+    /* ⭐ v524：依角度取最近的脈門（四主幹幾何不變，45 / 135 / 225 / 315） */
     function gateFor(deg) {
         var k = Math.round((deg - 45) / 90);
         var idx = ((k % 4) + 4) % 4;
         return GATES[idx].id;
     }
     /* ══════════════════════════════════════════════════════════
-       ② 四維主幹（4 條 × 9 節，r 60 → 196）
-          角度：0°（力道）、90°（身法）、180°（體魄）、270°（內息）
+       ⭐ v524：屬性主幹（4 條 × 9 節，幾何不變）
+          角度：0°（力）、90°（敏）、180°（體）、270°（智）
+          精（spi）不佔主幹，由樞紐與小天賦提供。
        ══════════════════════════════════════════════════════════ */
     var ATTRS = [
-        { key: 'str', name: '力道', d: 0,   color: '#ef4444' },
-        { key: 'agi', name: '身法', d: 90,  color: '#4ade80' },
-        { key: 'con', name: '體魄', d: 180, color: '#fbbf24' },
-        { key: 'int', name: '內息', d: 270, color: '#38bdf8' }
+        { key: 'str', name: '力', d: 0,   color: '#ef4444' },
+        { key: 'agi', name: '敏', d: 90,  color: '#4ade80' },
+        { key: 'con', name: '體', d: 180, color: '#fbbf24' },
+        { key: 'int', name: '智', d: 270, color: '#38bdf8' }
     ];
     ATTRS.forEach(function (a, ai) {
         var prev = gateFor(a.d);        /* ⭐ 改由脈門起頭，不再全部從 root 放射 */
@@ -12031,6 +12037,7 @@ window.HY.Data = window.HY.Data || {};
                 if (a.key === 'agi') more.eva = 0.04;
                 if (a.key === 'con') more.maxHp = 0.04;
                 if (a.key === 'int') more.maxMp = 0.04;
+                if (a.key === 'spi') more.critRes = 0.04;
                 b.more = more;
             }
             addNode(id, {
@@ -12049,8 +12056,7 @@ window.HY.Data = window.HY.Data || {};
         }
     });
     /* ══════════════════════════════════════════════════════════
-       ③ 八核心主幹（8 條 × 5 節，r 105 → 209）
-          插在四維主幹之間的中線角度
+       ⭐ v524：核心主幹（8 條 × 5 節，幾何不變）
        ══════════════════════════════════════════════════════════ */
     var CORES = [
         { key: 'atk',     name: '外功攻擊', d: 45,  unit: '',  base: 30,  label: '剛勁' },
@@ -12087,12 +12093,12 @@ window.HY.Data = window.HY.Data || {};
         }
     });
     /* ══════════════════════════════════════════════════════════
-       ④ 樞紐（3 個，r 240）
+       ⭐ v524：樞紐（3 個，r 240，幾何不變）
        ══════════════════════════════════════════════════════════ */
     var HUBS = [
-        { id: 'hub_1', d: 67,  r: 240, name: '內息樞紐' },
-        { id: 'hub_2', d: 157, r: 240, name: '筋骨樞紐' },
-        { id: 'hub_3', d: 247, r: 240, name: '心神樞紐' }
+        { id: 'hub_1', d: 67,  r: 240, name: '智精樞紐' },
+        { id: 'hub_2', d: 157, r: 240, name: '體力樞紐' },
+        { id: 'hub_3', d: 247, r: 240, name: '敏精樞紐' }
     ];
     HUBS.forEach(function (h) {
         var p = pol(h.r, h.d);
@@ -12102,7 +12108,7 @@ window.HY.Data = window.HY.Data || {};
             out: [],
             group: 20,
             stats: ['全屬性 +2'],
-            bonus: bonus({ con: 2, str: 2, agi: 2, int: 2 })
+            bonus: bonus({ con: 2, str: 2, agi: 2, int: 2, spi: 2 })
         });
     });
     /* ══════════════════════════════════════════════════════════
@@ -12255,6 +12261,8 @@ window.HY.Data = window.HY.Data || {};
         { n: '輕功',     s: [{ k: 'eva', v: 4 }, { k: 'agi', v: 2 }] },
         { n: '氣血',     s: [{ k: 'maxHp', v: 260 }, { k: 'con', v: 2 }] },
         { n: '真元',     s: [{ k: 'maxMp', v: 55 }, { k: 'int', v: 2 }] },
+        { n: '凝神',     s: [{ k: 'critRes', v: 3 }, { k: 'spi', v: 2 }] },
+        { n: '養氣',     s: [{ k: 'maxMp', v: 45 }, { k: 'spi', v: 2 }] },
         { n: '會心',     s: [{ k: 'crit', v: 2.5 }, { k: 'atk', v: 28 }] },
         { n: '精準',     s: [{ k: 'hit', v: 5 }, { k: 'atk', v: 25 }] }
     ];
@@ -12272,7 +12280,8 @@ window.HY.Data = window.HY.Data || {};
             sp.s.forEach(function (one) {
                 var scale = 1 + (i - 1) * 0.35;
                 var v = Math.round(one.v * scale * 10) / 10;
-                if (one.k === 'con' || one.k === 'str' || one.k === 'agi' || one.k === 'int') {
+                if (one.k === 'con' || one.k === 'str' || one.k === 'agi' ||
+                    one.k === 'int' || one.k === 'spi') {
                     b.attr[one.k] = (b.attr[one.k] || 0) + v;
                 } else {
                     b.flat[one.k] = (b.flat[one.k] || 0) + v;
@@ -12285,6 +12294,7 @@ window.HY.Data = window.HY.Data || {};
                 if (mk === 'str') mk = 'atk';
                 if (mk === 'agi') mk = 'eva';
                 if (mk === 'int') mk = 'maxMp';
+                if (mk === 'spi') mk = 'critRes';
                 b.more[mk] = 0.05;
             }
             addNode(id, {
@@ -29990,19 +30000,19 @@ window.HY = window.HY || {};
   F.PERSONAS = [
     { id: 'grinder',  name: '武癡',   icon: '⚔️', desc: '一心只想變強，整天泡在怪物堆裡。',
       weights: { grind: 6, train: 3, treasure: 1, quest: 1, rest: 1, social: 0 },
-      alloc: { con: 1, str: 2, agi: 2, int: 0 } },
+      alloc: { str: 2, agi: 2, int: 0, spi: 0, con: 1 } },
     { id: 'trainer',  name: '苦修者', icon: '🧘', desc: '閉關苦修，境界提升最快。',
       weights: { grind: 2, train: 6, treasure: 1, quest: 1, rest: 1, social: 1 },
-      alloc: { con: 2, str: 1, agi: 1, int: 1 } },
+      alloc: { str: 1, agi: 1, int: 1, spi: 1, con: 1 } },
     { id: 'hunter',   name: '尋寶客', icon: '🎁', desc: '專挑寶物多的地方下手，戰利品最多。',
       weights: { grind: 3, train: 1, treasure: 6, quest: 1, rest: 1, social: 0 },
-      alloc: { con: 1, str: 1, agi: 3, int: 0 } },
+      alloc: { str: 1, agi: 3, int: 0, spi: 0, con: 1 } },
     { id: 'merchant', name: '走鏢客', icon: '📦', desc: '替人走鏢送貨，帶回的紋銀最多。',
       weights: { grind: 2, train: 1, treasure: 1, quest: 6, rest: 1, social: 1 },
-      alloc: { con: 2, str: 2, agi: 1, int: 0 } },
+      alloc: { str: 2, agi: 1, int: 0, spi: 0, con: 2 } },
     { id: 'scholar',  name: '隱士',   icon: '📜', desc: '淡泊名利，卻常有意外的機緣。',
       weights: { grind: 2, train: 4, treasure: 2, quest: 1, rest: 2, social: 3 },
-      alloc: { con: 1, str: 0, agi: 1, int: 3 } }
+      alloc: { str: 0, agi: 1, int: 2, spi: 2, con: 0 } }
   ];
   /* ══════════════════════════════════════════════════════
      自動行動（label 中的 {place} 會替換成地圖名）
@@ -30045,12 +30055,13 @@ window.HY = window.HY || {};
      沒有公會系統（townGuildSystem.js 未載入）時的職業後備
      ══════════════════════════════════════════════════════ */
   F.ROLES_FALLBACK = {
-    swordsman: { name: '劍客', icon: '🗡️', base: { con: 10, str: 12, agi: 12, int: 8 }, alloc: { con: 1, str: 2, agi: 2, int: 0 } },
-    blade:     { name: '刀客', icon: '⚔️', base: { con: 12, str: 14, agi: 8,  int: 7 }, alloc: { con: 2, str: 3, agi: 0, int: 0 } },
-    archer:    { name: '弓弩手', icon: '🏹', base: { con: 9, str: 12, agi: 14, int: 8 }, alloc: { con: 0, str: 2, agi: 3, int: 0 } },
-    healer:    { name: '醫者', icon: '🌿', base: { con: 12, str: 8, agi: 9,  int: 14 }, alloc: { con: 2, str: 0, agi: 0, int: 3 } },
-    sorcerer:  { name: '術士', icon: '🔮', base: { con: 10, str: 8, agi: 9,  int: 16 }, alloc: { con: 1, str: 0, agi: 0, int: 4 } },
-    ranger:    { name: '遊俠', icon: '🧭', base: { con: 11, str: 11, agi: 11, int: 11 }, alloc: { con: 1, str: 1, agi: 1, int: 2 } }
+    /* ⭐ v523：五屬（力 str / 敏 agi / 智 int / 精 spi / 體 con） */
+    swordsman: { name: '劍客', icon: '🗡️', base: { str: 12, agi: 12, int: 8, spi: 8, con: 10 }, alloc: { str: 2, agi: 2, int: 0, spi: 0, con: 1 } },
+    blade:     { name: '刀客', icon: '⚔️', base: { str: 14, agi: 8, int: 7, spi: 7, con: 12 }, alloc: { str: 3, agi: 0, int: 0, spi: 0, con: 2 } },
+    archer:    { name: '弓弩手', icon: '🏹', base: { str: 12, agi: 14, int: 8, spi: 8, con: 9 }, alloc: { str: 2, agi: 3, int: 0, spi: 0, con: 0 } },
+    healer:    { name: '醫者', icon: '🌿', base: { str: 8, agi: 9, int: 12, spi: 16, con: 10 }, alloc: { str: 0, agi: 0, int: 2, spi: 4, con: 1 } },
+    sorcerer:  { name: '術士', icon: '🔮', base: { str: 8, agi: 9, int: 16, spi: 11, con: 9 }, alloc: { str: 0, agi: 0, int: 4, spi: 1, con: 1 } },
+    ranger:    { name: '遊俠', icon: '🧭', base: { str: 11, agi: 11, int: 11, spi: 9, con: 10 }, alloc: { str: 1, agi: 1, int: 2, spi: 0, con: 1 } }
   };
   /* ══════════════════════════════════════════════════════
      姓名池 / 頭像池（小鎮鎮民不足時，從江湖名人與此池抽樣）
@@ -56380,24 +56391,25 @@ window.HY = window.HY || {};
      alloc 總和必須為 5（比照玩家每級 5 點潛能）
      ══════════════════════════════════════════════════════ */
   T.GUILD.ROLES = {
+    /* ⭐ v523：五屬（力 str / 敏 agi / 智 int / 精 spi / 體 con） */
     swordsman: { name: '劍客', icon: '🗡️', desc: '以劍入道，攻守均衡。',
-      base: { con: 10, str: 12, agi: 12, int: 8 },  alloc: { con: 1, str: 2, agi: 2, int: 0 } },
+      base: { str: 12, agi: 12, int: 8, spi: 8, con: 10 },  alloc: { str: 2, agi: 2, int: 0, spi: 0, con: 1 } },
     blade:     { name: '刀客', icon: '⚔️', desc: '刀走剛猛，力大身沉。',
-      base: { con: 12, str: 14, agi: 8,  int: 7 },  alloc: { con: 2, str: 3, agi: 0, int: 0 } },
+      base: { str: 14, agi: 8, int: 7, spi: 7, con: 12 },  alloc: { str: 3, agi: 0, int: 0, spi: 0, con: 2 } },
     boxer:     { name: '拳師', icon: '👊', desc: '外家拳腳，體魄驚人。',
-      base: { con: 14, str: 12, agi: 9,  int: 7 },  alloc: { con: 3, str: 2, agi: 0, int: 0 } },
+      base: { str: 12, agi: 9, int: 7, spi: 7, con: 14 },  alloc: { str: 2, agi: 0, int: 0, spi: 0, con: 3 } },
     spearman:  { name: '槍豪', icon: '🔱', desc: '槍出如龍，一寸長一寸強。',
-      base: { con: 11, str: 14, agi: 10, int: 7 },  alloc: { con: 1, str: 3, agi: 1, int: 0 } },
+      base: { str: 14, agi: 10, int: 7, spi: 7, con: 11 },  alloc: { str: 3, agi: 1, int: 0, spi: 0, con: 1 } },
     archer:    { name: '弓弩手', icon: '🏹', desc: '百步穿楊，身法靈動。',
-      base: { con: 9,  str: 12, agi: 14, int: 8 },  alloc: { con: 0, str: 2, agi: 3, int: 0 } },
+      base: { str: 12, agi: 14, int: 8, spi: 8, con: 9 },  alloc: { str: 2, agi: 3, int: 0, spi: 0, con: 0 } },
     assassin:  { name: '刺客', icon: '🗡', desc: '一擊必殺，來去如風。',
-      base: { con: 8,  str: 12, agi: 16, int: 8 },  alloc: { con: 0, str: 1, agi: 4, int: 0 } },
-    healer:    { name: '醫者', icon: '🌿', desc: '懸壺濟世，內息綿長。',
-      base: { con: 12, str: 8,  agi: 9,  int: 14 }, alloc: { con: 2, str: 0, agi: 0, int: 3 } },
+      base: { str: 12, agi: 16, int: 8, spi: 8, con: 8 },  alloc: { str: 1, agi: 4, int: 0, spi: 0, con: 0 } },
+    healer:    { name: '醫者', icon: '🌿', desc: '懸壺濟世，精神綿長。',
+      base: { str: 8, agi: 9, int: 12, spi: 16, con: 10 }, alloc: { str: 0, agi: 0, int: 2, spi: 4, con: 1 } },
     sorcerer:  { name: '術士', icon: '🔮', desc: '內力浩瀚，術法通玄。',
-      base: { con: 10, str: 8,  agi: 9,  int: 16 }, alloc: { con: 1, str: 0, agi: 0, int: 4 } },
+      base: { str: 8, agi: 9, int: 16, spi: 11, con: 9 }, alloc: { str: 0, agi: 0, int: 4, spi: 1, con: 1 } },
     ranger:    { name: '遊俠', icon: '🧭', desc: '四方遊歷，樣樣通曉。',
-      base: { con: 11, str: 11, agi: 11, int: 11 }, alloc: { con: 1, str: 1, agi: 1, int: 2 } }
+      base: { str: 11, agi: 11, int: 11, spi: 9, con: 10 }, alloc: { str: 1, agi: 1, int: 2, spi: 0, con: 1 } }
   };
   T.GUILD.ROLE_ORDER = ['swordsman', 'blade', 'boxer', 'spearman', 'archer', 'assassin', 'healer', 'sorcerer', 'ranger'];
   /* ══════════════════════════════════════════════════════
@@ -56652,14 +56664,14 @@ window.HY = window.HY || {};
     var roleId = opts.role || pick(T.GUILD.ROLE_ORDER);
     var role = T.GUILD.ROLES[roleId] || T.GUILD.ROLES.ranger;
     var lv = Math.max(1, num(opts.lv, num(npc.lv, 1)));
-    // 依職業比例自動分配「每級 5 點潛能」
+    // ⭐ v523：依職業比例自動分配「每級 5 點潛能」（五屬）
     var alloc = role.alloc;
-    var total = (alloc.con + alloc.str + alloc.agi + alloc.int) || 5;
+    var total = (alloc.con + alloc.str + alloc.agi + alloc.int + (alloc.spi || 0)) || 5;
     var pool = (lv - 1) * 5;
-    var acc = { con: 0, str: 0, agi: 0, int: 0 };
+    var acc = { con: 0, str: 0, agi: 0, int: 0, spi: 0 };
     var used = 0;
-    ['con', 'str', 'agi', 'int'].forEach(function (k) {
-      var v = Math.floor(pool * (alloc[k] / total));
+    ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+      var v = Math.floor(pool * ((alloc[k] || 0) / total));
       acc[k] = v; used += v;
     });
     var maxK = 'con';
@@ -56675,7 +56687,13 @@ window.HY = window.HY || {};
       freePoints: 0,
       role: roleId,
       sect: null,
-      stats: { con: role.base.con + acc.con, str: role.base.str + acc.str, agi: role.base.agi + acc.agi, int: role.base.int + acc.int },
+      stats: {
+        con: (role.base.con || 8) + acc.con,
+        str: (role.base.str || 8) + acc.str,
+        agi: (role.base.agi || 8) + acc.agi,
+        int: (role.base.int || 8) + acc.int,
+        spi: (role.base.spi || 8) + (acc.spi || 0)
+      },
       currentHp: 1, currentMp: 1,
       equipment: {},
       meridians: {},
@@ -56729,13 +56747,17 @@ window.HY = window.HY || {};
       try { return cs.getDerivedStatsForChar(adv); } catch (e) { /* 落入後備 */ }
     }
     // 後備（理論上不會用到）
-    var s = adv.stats || { con: 10, str: 10, agi: 10, int: 10 };
+    var s = adv.stats || { con: 8, str: 8, agi: 8, int: 8, spi: 8 };
     var lv = adv.lv || 1;
+    /* ⭐ v523：五屬後備公式 */
+    var _spi = (typeof s.spi === 'number' ? s.spi : 8);
     return {
-      maxHp: 100 + s.con * 15 + (lv - 1) * 35, maxMp: 50 + s.int * 8 + (lv - 1) * 15,
-      atk: Math.floor(s.str * 2.5 + s.int * 1.0 + lv * 4),
-      def: Math.floor(s.con * 1.5 + s.agi * 0.6 + lv * 2),
-      hit: 90, eva: 5, crit: 5, critRes: 0, critDmg: 165, dmgReduce: 0, atkSpd: 100, powerScore: 100
+      maxHp: 100 + s.con * 15 + (lv - 1) * 35,
+      maxMp: Math.floor(50 + s.int * 7 + _spi * 3 + (lv - 1) * 15),
+      atk: Math.floor(s.str * 2.6 + s.int * 0.6 + lv * 4),
+      def: Math.floor(s.con * 1.5 + s.agi * 0.5 + _spi * 0.4 + lv * 2),
+      critDmg: 165 + Math.floor(s.str * 0.85),
+      hit: 90, eva: 5, crit: 5, critRes: 0, dmgReduce: 0, atkSpd: 100, powerScore: 100
     };
   };
   proto.guildPower = function (adv) {
@@ -57238,16 +57260,18 @@ window.HY = window.HY || {};
         ups += 1;
         // 依職業自動配點
         var role = T.GUILD.ROLES[a.role];
-        var alloc = role ? role.alloc : { con: 1, str: 1, agi: 1, int: 1 };
-        var totalA = (alloc.con + alloc.str + alloc.agi + alloc.int) || 4;
+        var alloc = role ? role.alloc : { str: 1, agi: 1, int: 1, spi: 1, con: 1 };
+        var totalA = (alloc.con + alloc.str + alloc.agi + alloc.int + (alloc.spi || 0)) || 5;
         var left = 5, used = 0;
-        ['con', 'str', 'agi', 'int'].forEach(function (k) {
-          var v = Math.floor(5 * (alloc[k] / totalA));
-          a.stats[k] = num(a.stats[k], 10) + v; used += v;
+        ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+          var v = Math.floor(5 * ((alloc[k] || 0) / totalA));
+          a.stats[k] = num(a.stats[k], 8) + v; used += v;
         });
         var maxK = 'con';
-        ['con', 'str', 'agi', 'int'].forEach(function (k) { if (alloc[k] > alloc[maxK]) maxK = k; });
-        a.stats[maxK] = num(a.stats[maxK], 10) + (left - used);
+        ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+          if ((alloc[k] || 0) > (alloc[maxK] || 0)) maxK = k;
+        });
+        a.stats[maxK] = num(a.stats[maxK], 8) + (left - used);
         if (g.stats) g.stats.levelUps += 1;
       }
       var d = self.guildDerived(a);
@@ -57447,16 +57471,18 @@ window.HY = window.HY || {};
     while (adv.exp >= adv.maxExp && adv.lv < maxLv) {
       adv.exp -= adv.maxExp; adv.lv += 1; adv.maxExp = maxExpFor(adv.lv); ups += 1;
       var role = T.GUILD.ROLES[adv.role];
-      var alloc = role ? role.alloc : { con: 1, str: 1, agi: 1, int: 1 };
-      var totalA = (alloc.con + alloc.str + alloc.agi + alloc.int) || 4;
+      var alloc = role ? role.alloc : { str: 1, agi: 1, int: 1, spi: 1, con: 1 };
+      var totalA = (alloc.con + alloc.str + alloc.agi + alloc.int + (alloc.spi || 0)) || 5;
       var used = 0;
-      ['con', 'str', 'agi', 'int'].forEach(function (k) {
-        var v = Math.floor(5 * (alloc[k] / totalA));
-        adv.stats[k] = num(adv.stats[k], 10) + v; used += v;
+      ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+        var v = Math.floor(5 * ((alloc[k] || 0) / totalA));
+        adv.stats[k] = num(adv.stats[k], 8) + v; used += v;
       });
       var maxK = 'con';
-      ['con', 'str', 'agi', 'int'].forEach(function (k) { if (alloc[k] > alloc[maxK]) maxK = k; });
-      adv.stats[maxK] = num(adv.stats[maxK], 10) + (5 - used);
+      ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+        if ((alloc[k] || 0) > (alloc[maxK] || 0)) maxK = k;
+      });
+      adv.stats[maxK] = num(adv.stats[maxK], 8) + (5 - used);
       if (g.stats) g.stats.levelUps += 1;
     }
     var d = this.guildDerived(adv);
@@ -60366,7 +60392,7 @@ window.HY = window.HY || {};
     opts = opts || {};
     var R = roles(), order = roleOrder();
     var roleId = opts.role || (order.length ? pick(order) : 'swordsman');
-    var role = R[roleId] || { name: '遊俠', icon: '🧭', base: { con: 11, str: 11, agi: 11, int: 11 }, alloc: { con: 1, str: 1, agi: 1, int: 1 } };
+    var role = R[roleId] || { name: '遊俠', icon: '🧭', base: { str: 11, agi: 11, int: 11, spi: 9, con: 10 }, alloc: { str: 1, agi: 1, int: 2, spi: 0, con: 1 } };
     var lv = Math.max(1, Math.round(num(opts.lv, num(npc && npc.lv, rndInt(1, 5)))));
     var persona = PERSONAS.length ? pick(PERSONAS) : { id: 'grinder', name: '武癡', icon: '⚔️', alloc: { str: 2, agi: 2, int: 0, spi: 0, con: 1 } };
     var alloc = (persona && persona.alloc) || role.alloc || { str: 1, agi: 1, int: 1, spi: 1, con: 1 };
@@ -60573,15 +60599,18 @@ window.HY = window.HY || {};
     if (pts <= 0) return 0;
     var R = roles(), role = R[f.role] || null;
     var persona = this.friendPersona(f);
-    var alloc = (persona && persona.alloc) || (role && role.alloc) || { con: 1, str: 1, agi: 1, int: 1 };
-    var total = (alloc.con + alloc.str + alloc.agi + alloc.int) || 4;
+    var alloc = (persona && persona.alloc) || (role && role.alloc) || { str: 1, agi: 1, int: 1, spi: 1, con: 1 };
+    /* ⭐ v523：五屬（力 / 敏 / 智 / 精 / 體） */
+    var total = (alloc.con + alloc.str + alloc.agi + alloc.int + (alloc.spi || 0)) || 5;
     var maxK = 'con', used = 0;
-    ['con', 'str', 'agi', 'int'].forEach(function (k) { if (alloc[k] > alloc[maxK]) maxK = k; });
-    ['con', 'str', 'agi', 'int'].forEach(function (k) {
-      var v = Math.floor(pts * (alloc[k] / total));
-      if (v > 0) { f.stats[k] = num(f.stats[k], 10) + v; used += v; }
+    ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+      if ((alloc[k] || 0) > (alloc[maxK] || 0)) maxK = k;
     });
-    if (pts - used > 0) { f.stats[maxK] = num(f.stats[maxK], 10) + (pts - used); used = pts; }
+    ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+      var v = Math.floor(pts * ((alloc[k] || 0) / total));
+      if (v > 0) { f.stats[k] = num(f.stats[k], 8) + v; used += v; }
+    });
+    if (pts - used > 0) { f.stats[maxK] = num(f.stats[maxK], 8) + (pts - used); used = pts; }
     f.freePoints = 0;
     f.pointsSpent = num(f.pointsSpent, 0) + used;
     this.friendState().stats.points += used;
@@ -112965,30 +112994,31 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
                 { path: 'growth.levelExpMin',        label: '升級經驗下限',       type: 'num', step: 10, min: 0, max: 10000, live: 'dead' },
                 { path: 'growth.levelGapThreshold',    label: '等級差懲罰門檻', type: 'num', step: 1, min: 1, max: 100, live: 'dead' },
                 { path: 'growth.levelGapPenaltyMult',  label: '等級差經驗倍率', type: 'num', step: 0.05, min: 0, max: 1, live: 'dead' },
-                { path: 'growth.costConHpPerPoint',    label: '加體魄回血',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
-                { path: 'growth.costIntMpPerPoint',    label: '加內息回內',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
+                { path: 'growth.costConHpPerPoint',    label: '加體回血',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
+                { path: 'growth.costIntMpPerPoint',    label: '加智回內',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
                 { path: 'growth.baseHp',    label: '基礎氣血',       type: 'num', step: 10, min: 0, max: 10000, live: 'dead' },
-                { path: 'growth.hpPerCon',  label: '每點體魄 + 氣血', type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
+                { path: 'growth.hpPerCon',  label: '每點體 + 氣血', type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
                 { path: 'growth.hpPerLv',   label: '每級 + 氣血',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
                 { path: 'growth.baseMp',    label: '基礎內力',       type: 'num', step: 10, min: 0, max: 10000, live: 'dead' },
-                { path: 'growth.mpPerInt',  label: '每點內息 + 內力', type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
+                { path: 'growth.mpPerInt',  label: '每點智 + 內力', type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
                 { path: 'growth.mpPerLv',   label: '每級 + 內力',     type: 'num', step: 1, min: 0, max: 500, live: 'dead' },
-                { path: 'growth.atkStrCoef', label: '攻擊：力道係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
-                { path: 'growth.atkIntCoef', label: '攻擊：內息係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
+                { path: 'growth.atkStrCoef', label: '攻擊：力係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
+                { path: 'growth.atkIntCoef', label: '攻擊：智係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
+                { path: 'growth.atkSpiCoef', label: '攻擊：精係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
                 { path: 'growth.atkLvCoef',  label: '攻擊：等級係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
-                { path: 'growth.defConCoef', label: '防禦：體魄係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
-                { path: 'growth.defAgiCoef', label: '防禦：身法係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
+                { path: 'growth.defConCoef', label: '防禦：體係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
+                { path: 'growth.defAgiCoef', label: '防禦：敏係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
                 { path: 'growth.defLvCoef',  label: '防禦：等級係數', type: 'num', step: 0.1, min: 0, max: 50, live: 'dead' },
                 { path: 'growth.hitBase',     label: '命中：基礎',   type: 'num', step: 1, min: 0, max: 200, live: 'dead' },
-                { path: 'growth.hitAgiCoef',  label: '命中：身法係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
-                { path: 'growth.hitIntCoef',  label: '命中：內息係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.hitAgiCoef',  label: '命中：敏係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.hitIntCoef',  label: '命中：智係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
                 { path: 'growth.hitLvCoef',   label: '命中：等級係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
                 { path: 'growth.evaBase',     label: '閃避：基礎',   type: 'num', step: 1, min: 0, max: 200, live: 'dead' },
-                { path: 'growth.evaAgiCoef',  label: '閃避：身法係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.evaAgiCoef',  label: '閃避：敏係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
                 { path: 'growth.critBase',    label: '暴擊：基礎',   type: 'num', step: 1, min: 0, max: 200, live: 'dead' },
-                { path: 'growth.critAgiCoef', label: '暴擊：身法係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
-                { path: 'growth.critResConCoef', label: '暴抗：體魄係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
-                { path: 'growth.critResIntCoef', label: '暴抗：內息係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.critAgiCoef', label: '暴擊：敏係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.critResConCoef', label: '暴抗：體係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
+                { path: 'growth.critResIntCoef', label: '暴抗：智係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
                 { path: 'growth.critResLvCoef',  label: '暴抗：等級係數', type: 'num', step: 0.05, min: 0, max: 10, live: 'dead' },
                 { path: 'growth.evaCap',      label: '閃避上限 %',   type: 'num', step: 1, min: 0, max: 100, live: 'dead' },
                 { path: 'growth.critCap',     label: '暴擊上限 %',   type: 'num', step: 1, min: 0, max: 100, live: 'dead' }
@@ -113029,12 +113059,12 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
                 { path: 'element.enemyElemDefRatio', label: '敵人元素抗性係數', type: 'num', step: 0.01, min: 0, max: 2, live: 'live' },
                 { path: 'element.maxElemDamagePctOfMaxHp', label: '元素傷害上限 %', type: 'num', step: 0.05, min: 0, max: 1, live: 'live', hint: '0.25 = 最高 25% 最大氣血' },
                 { path: 'element.flatAtkBase',    label: '基礎元素攻擊：基礎值',  type: 'num', step: 1, min: 0, max: 10000, live: 'live' },
-                { path: 'element.flatAtkIntCoef', label: '基礎元素攻擊：內息係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
-                { path: 'element.flatAtkStrCoef', label: '基礎元素攻擊：力道係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
+                { path: 'element.flatAtkIntCoef', label: '基礎元素攻擊：智係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
+                { path: 'element.flatAtkStrCoef', label: '基礎元素攻擊：力係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
                 { path: 'element.flatAtkLvCoef',  label: '基礎元素攻擊：等級係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
                 { path: 'element.flatDefBase',    label: '基礎元素抗性：基礎值',  type: 'num', step: 1, min: 0, max: 10000, live: 'live' },
-                { path: 'element.flatDefConCoef', label: '基礎元素抗性：體魄係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
-                { path: 'element.flatDefIntCoef', label: '基礎元素抗性：內息係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
+                { path: 'element.flatDefConCoef', label: '基礎元素抗性：體係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
+                { path: 'element.flatDefIntCoef', label: '基礎元素抗性：智係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
                 { path: 'element.flatDefLvCoef',  label: '基礎元素抗性：等級係數', type: 'num', step: 0.1, min: 0, max: 100, live: 'live' },
                 { path: 'element.flatAtkMult',    label: '✦ 元素補償係數',        type: 'num', step: 0.1, min: 0, max: 10, live: 'live', hint: '1.0 不補償 / 1.5 中度 / 4.0 接近舊版' }
             ]
@@ -119719,7 +119749,7 @@ window.HY = window.HY || {};
             if (!s) return out;
             var NODES = (window.HY.Data && window.HY.Data.TALENT_NODES) || {};
             var R = (window.HY && window.HY.StatRegistry) || null;
-            var ATTR_NAME = { con: '體魄', str: '力道', agi: '身法', int: '內息' };
+            var ATTR_NAME = { con: '體', str: '力', agi: '敏', int: '智', spi: '精' };
             Object.keys(NODES).forEach(function (id) {
                 var n = NODES[id];
                 if (!n) return;
@@ -120123,7 +120153,7 @@ window.HY = window.HY || {};
             }
             Object.keys(b.attr || {}).forEach(function (k) {
                 if (b.attr[k]) {
-                    var al = { con: '體魄', str: '力道', agi: '身法', int: '內息' }[k] || k;
+                    var al = { con: '體', str: '力', agi: '敏', int: '智', spi: '精' }[k] || k;
                     pushFlat(k, b.attr[k], '');
                     lines[lines.length - 1].txt = al + ' +' + b.attr[k];
                 }
@@ -121537,7 +121567,7 @@ window.HY = window.HY || {};
                 ['con', 'str', 'agi', 'int'].forEach(function (k) {
                     var v = (tb.attr || {})[k];
                     if (!v) return;
-                    var nm = { con: '體魄', str: '力道', agi: '身法', int: '內息' }[k];
+                    var nm = { con: '體', str: '力', agi: '敏', int: '智', spi: '精' }[k];
                     structLines.push(nm + ' +' + fmt(v));
                 });
                 Object.keys(tb.flat || {}).forEach(function (k) {
