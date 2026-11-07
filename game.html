@@ -106903,7 +106903,7 @@ window.HY = window.HY || {};
         '.hy-stage-buff b{font-size:.5rem;font-weight:bold;color:#e2e8f0;margin-left:1px;}',
 
         /* ── 名字牌 + 血條 ── */
-        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:110px;margin-top:3px;' +
+        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:118px;margin-top:4px;' +
             'text-align:center;line-height:1.1;}',
         '.hy-stage-nm{display:block;font-size:.72rem;font-weight:bold;white-space:nowrap;' +
             'overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px #000;}',
@@ -106920,18 +106920,20 @@ window.HY = window.HY || {};
         '.hy-stage-hp i.low{background:linear-gradient(90deg,#ef4444,#fca5a5) !important;' +
             'box-shadow:0 0 9px rgba(239,68,68,1);}',
 
-        /* ⭐ v512：內力條（氣血下方一條細藍條） */
-        '.hy-stage-mp{height:3px;margin-top:1px;border-radius:2px;overflow:hidden;' +
-            'background:rgba(2,6,12,.9);border:1px solid rgba(30,58,74,.9);}',
+        /* ⭐ v512：內力條（v516 放大，與氣血條同高） */
+        '.hy-stage-mp{height:7px;margin-top:2px;border-radius:3px;overflow:hidden;' +
+            'background:rgba(2,6,12,.92);border:1px solid rgba(30,58,74,.95);}',
         '.hy-stage-mp i{display:block;height:100%;width:100%;' +
-            'transition:width .22s linear;background:linear-gradient(90deg,#1d4ed8,#60a5fa);}',
-        '.hy-stage-unit.foe .hy-stage-mp i{background:linear-gradient(90deg,#4338ca,#818cf8);}',
+            'transition:width .22s linear;background:linear-gradient(90deg,#1d4ed8,#60a5fa 55%,#93c5fd);' +
+            'box-shadow:0 0 6px rgba(96,165,250,.7);}',
+        '.hy-stage-unit.foe .hy-stage-mp i{background:linear-gradient(90deg,#4338ca,#818cf8 55%,#a5b4fc);' +
+            'box-shadow:0 0 6px rgba(129,140,248,.65);}',
         '.hy-stage-mp i.emptymana{background:linear-gradient(90deg,#334155,#475569) !important;' +
-            'opacity:.6;}',
+            'box-shadow:none !important;opacity:.6;}',
 
-        /* ⭐ v512：集氣條（ATB，內力條下方最細一條，滿檔發金光） */
-        '.hy-stage-atb{height:2px;margin-top:1px;border-radius:2px;overflow:hidden;' +
-            'background:rgba(2,6,12,.85);}',
+        /* ⭐ v512：集氣條（v516 放大） */
+        '.hy-stage-atb{height:5px;margin-top:2px;border-radius:3px;overflow:hidden;' +
+            'background:rgba(2,6,12,.88);border:1px solid rgba(120,53,15,.7);}',
         '.hy-stage-atb i{display:block;height:100%;width:0%;' +
             'transition:width .14s linear;background:linear-gradient(90deg,#b45309,#fbbf24);}',
         '.hy-stage-unit.ready .hy-stage-atb i{' +
