@@ -105364,6 +105364,20 @@ window.HY = window.HY || {};
             }
         }
 
+        /** ⭐ v511：舞台用的「這回合會放的招式名」（給技能名稱浮現） */
+        _stageSkillName(unit, isEnemy) {
+            try {
+                if (!unit) return null;
+                if (Number(unit.currentHp) <= 0) return null;
+                var info = this._previewAction(unit, !!isEnemy);
+                if (!info) return null;
+                if (info.kind === 'idle' || info.kind === 'dead') return null;
+                var nm = String(info.skillName || '').trim();
+                if (!nm || nm === '普攻' || nm === '待命') return null;
+                return nm;
+            } catch (e) { return null; }
+        }
+
         /** ⭐ v510：組出舞台資料（我方 + 敵方 + 場景 + 狀態圖示 + 集火目標） */
         _chkAtlasInMap() {
             try {
@@ -105375,6 +105389,7 @@ window.HY = window.HY || {};
         _stagePayload(BS, partyMembers, inMap, skipFoe) {
             var app = this.app;
             var combat = app.combatSys || {};
+            var self = this;
 
             /* ── 我方 ── */
             var party = [];
@@ -105392,6 +105407,8 @@ window.HY = window.HY || {};
                         cur: cur, max: maxHp,
                         alive: cur > 0,
                         ready: !!combat.currentEnemy && Number(m.atb || 0) >= 100,
+                        atb: Number(m.atb || 0),
+                        skill: self._stageSkillName(m, false),
                         sprite: BS.charSprite(m),
                         color: BS.charColor(m),
                         buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
@@ -105414,6 +105431,8 @@ window.HY = window.HY || {};
                         cur: cur, max: maxHp,
                         alive: cur > 0,
                         ready: Number(e.atb || 0) >= 100,
+                        atb: Number(e.atb || 0),
+                        skill: self._stageSkillName(e, true),
                         sprite: BS.monSprite(e),
                         avatar: BS.monAvatar(e),
                         target: (combat.currentEnemy === e),
@@ -105422,13 +105441,27 @@ window.HY = window.HY || {};
                 });
             }
 
-            /* ── 場景 ── */
+            /* ── 場景 ──
+               ⭐ 先取地圖的 era（較穩定），再退回地圖 id；
+                  遇到【頭目】/【宗師】等前綴時強制切到 boss 場景。 */
             var scene = 'default';
             try {
+                var curMapId = (app.charSys && app.charSys.state && app.charSys.state.currentMap) || null;
+                var MAPS = (window.HY.Data && window.HY.Data.MAPS) || {};
+                var mapDef = curMapId ? MAPS[curMapId] : null;
+                if (mapDef && mapDef.era) scene = mapDef.era;
+                else if (curMapId) scene = curMapId;
+
                 var boss = (combat.currentEnemy && /【/.test(String(combat.currentEnemy.name || '')));
-                if (boss) scene = 'boss';
-                else if (app.charSys && app.charSys.state && app.charSys.state.currentMap) {
-                    scene = app.charSys.state.currentMap;
+                /* 只有「世界王」才套專屬 boss 場景，紀元頭目仍保留該紀元氛圍 */
+                if (boss) {
+                    var isWorldBoss = false;
+                    try {
+                        var MA = window.HY.MonsterArt;
+                        var art = MA && MA.byName(combat.currentEnemy.name);
+                        isWorldBoss = !!(art && art.kind === '世界王');
+                    } catch (e2) { }
+                    if (isWorldBoss) scene = 'boss';
                 }
             } catch (e) { }
 
@@ -106337,31 +106370,33 @@ window.HY = window.HY || {};
     var SNAPSHOT = {};
 
     /* ══════════════════════════════════════════════════════
-       場景對照表（地圖 id → css class）
+       場景對照表
        ══════════════════════════════════════════════════════ */
-    var SCENE_MAP = {
+    /* ⭐ 依「紀元」對照（比依地圖 id 穩固：地圖 id 曾改過名） */
+    var ERA_SCENE = {
+        modern: 'scene-void',
+        datang: 'scene-tang',
+        xunqin: 'scene-warring',
+        bianhuang: 'scene-wasteland',
+        fuyu: 'scene-water',
+        riyue: 'scene-demon',
+        posui: 'scene-heaven'
+    };
+
+    /* 少數地圖需要更細的氛圍（覆蓋紀元預設） */
+    var MAP_SCENE = {
         star_ark: 'scene-void',
-
-        yangzhou: 'scene-tang',
-        nanyang: 'scene-tang',
-        luoyang: 'scene-tang',
-        changan: 'scene-tang',
         steppe: 'scene-steppe',
-
-        handan: 'scene-warring',
-        daliang: 'scene-warring',
-        xianyang: 'scene-warring',
-
-        bianhuang_town: 'scene-wasteland',
+        jiankang_city: 'scene-river',
         jiankang: 'scene-river',
-
         dongting: 'scene-water',
         lanjiang: 'scene-water',
-
+        shendu_luoyang: 'scene-demon',
         shendu: 'scene-demon',
+        secret_realm_evil: 'scene-demon',
         secret_realm: 'scene-demon',
-
         palace: 'scene-heaven',
+        tian_dao_void: 'scene-heaven',
         tian_dao: 'scene-heaven'
     };
 
@@ -106369,7 +106404,9 @@ window.HY = window.HY || {};
         if (!scene) return 'scene-default';
         if (scene === 'delve') return 'scene-mine';
         if (scene === 'boss') return 'scene-boss';
-        return SCENE_MAP[scene] || 'scene-default';
+        if (MAP_SCENE[scene]) return MAP_SCENE[scene];
+        if (ERA_SCENE[scene]) return ERA_SCENE[scene];
+        return 'scene-default';
     }
 
     /* ══════════════════════════════════════════════════════
@@ -106518,6 +106555,72 @@ window.HY = window.HY || {};
         '@keyframes hy-target-spin{to{transform:translate(-50%,-50%) rotate(360deg);}}',
         '.hy-stage-unit.is-target .hy-stage-nm{color:#fbbf24 !important;}',
         '.hy-stage-unit.is-target .hy-stage-nm::after{content:" 🎯";}',
+
+        /* ⭐ v511：攻擊軌跡線（SVG，橫跨整個舞台） */
+        '.hy-stage-fxline{position:absolute;inset:0;z-index:5;pointer-events:none;' +
+            'overflow:visible;width:100%;height:100%;}',
+        '.hy-stage-fxline path.trail{fill:none;stroke-linecap:round;' +
+            'stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);' +
+            'animation:hy-trail .46s ease-out forwards;}',
+        '@keyframes hy-trail{0%{stroke-dashoffset:var(--len,600);opacity:.2;}' +
+            '26%{opacity:1;}' +
+            '58%{stroke-dashoffset:0;opacity:1;}' +
+            '100%{stroke-dashoffset:0;opacity:0;}}',
+        /* 軌跡尖端爆點 */
+        '.hy-stage-fxline circle.trail-head{animation:hy-head .46s ease-out forwards;}',
+        '@keyframes hy-head{0%{opacity:0;r:2;}28%{opacity:1;r:9;}70%{opacity:.9;r:7;}' +
+            '100%{opacity:0;r:16;}}',
+
+        /* ⭐ v511：技能名稱浮現（立繪上方） */
+        '.hy-fx-skill{position:absolute;left:50%;top:-6px;z-index:8;pointer-events:none;' +
+            'transform:translateX(-50%);white-space:nowrap;' +
+            'font-size:.78rem;font-weight:bold;letter-spacing:1px;' +
+            'padding:2px 9px;border-radius:9px;' +
+            'animation:hy-skill-in 1.15s ease-out forwards;}',
+        '.hy-fx-skill.ally{color:#a5f3fc;background:rgba(6,26,40,.92);' +
+            'border:1px solid rgba(34,211,238,.75);' +
+            'box-shadow:0 0 12px rgba(34,211,238,.55);}',
+        '.hy-fx-skill.foe{color:#fecdd3;background:rgba(38,8,12,.92);' +
+            'border:1px solid rgba(248,113,113,.75);' +
+            'box-shadow:0 0 12px rgba(248,113,113,.55);}',
+        '@keyframes hy-skill-in{0%{opacity:0;transform:translate(-50%,10px) scale(.86);}' +
+            '16%{opacity:1;transform:translate(-50%,0) scale(1.06);}' +
+            '26%{transform:translate(-50%,0) scale(1);}' +
+            '74%{opacity:1;transform:translate(-50%,-4px) scale(1);}' +
+            '100%{opacity:0;transform:translate(-50%,-14px) scale(.95);}}',
+
+        /* ⭐ v511：殘血警示（氣血 ≤25% 脈動紅框） */
+        '.hy-stage-unit.lowhp .hy-stage-img{animation:hy-lowhp 1.05s ease-in-out infinite;}',
+        '@keyframes hy-lowhp{0%,100%{filter:drop-shadow(0 8px 12px rgba(0,0,0,.85)) ' +
+            'drop-shadow(0 0 4px rgba(239,68,68,.35));}' +
+            '50%{filter:drop-shadow(0 8px 12px rgba(0,0,0,.85)) ' +
+            'drop-shadow(0 0 15px rgba(239,68,68,.95));}}',
+        '.hy-stage-unit.lowhp .hy-stage-hp{border-color:rgba(239,68,68,.9);' +
+            'box-shadow:0 0 8px rgba(239,68,68,.7);}',
+        '.hy-stage-unit.lowhp .hy-stage-nm{animation:hy-lowhp-txt 1.05s ease-in-out infinite;}',
+        '@keyframes hy-lowhp-txt{0%,100%{opacity:1;}50%{opacity:.62;}}',
+
+        /* ⭐ v511：出手順序軸（舞台左上角） */
+        '.hy-stage-order{position:absolute;left:8px;top:8px;z-index:8;display:flex;align-items:center;' +
+            'gap:4px;padding:3px 7px;border-radius:8px;pointer-events:none;' +
+            'background:rgba(4,8,14,.82);border:1px solid rgba(51,65,85,.9);' +
+            'box-shadow:0 2px 10px rgba(0,0,0,.7);}',
+        '.hy-stage-order .od-lbl{font-size:.58rem;color:#64748b;letter-spacing:.5px;' +
+            'margin-right:2px;white-space:nowrap;}',
+        '.hy-stage-order .od-chip{display:inline-flex;align-items:center;justify-content:center;' +
+            'min-width:20px;height:20px;padding:0 4px;border-radius:4px;' +
+            'font-size:.6rem;font-weight:bold;line-height:1;' +
+            'background:#0b1420;border:1px solid #334155;color:#94a3b8;' +
+            'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px;}',
+        '.hy-stage-order .od-chip.ally{border-color:rgba(56,189,248,.7);color:#7dd3fc;' +
+            'background:rgba(6,26,40,.9);}',
+        '.hy-stage-order .od-chip.foe{border-color:rgba(248,113,113,.7);color:#fca5a5;' +
+            'background:rgba(38,8,12,.9);}',
+        '.hy-stage-order .od-chip.next{box-shadow:0 0 9px rgba(251,191,36,.9);' +
+            'border-color:#fbbf24;color:#fde68a;' +
+            'animation:hy-order-pulse .9s ease-in-out infinite;}',
+        '@keyframes hy-order-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}',
+        '.hy-stage-order .od-sep{font-size:.55rem;color:#334155;}',
 
         /* ⭐ v510：立繪上方的 buff / debuff 圖示 */
         '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;' +
@@ -106726,6 +106829,7 @@ window.HY = window.HY || {};
 
         applySide(el, party, 'ally', id, rebuilt);
         applySide(el, enemies, 'foe', id, rebuilt);
+        updateOrder(el, party, enemies);
         updateTicker(el, opts);
     }
 
@@ -106733,6 +106837,10 @@ window.HY = window.HY || {};
         var h = '';
         h += '<div class="hy-stage-ground"></div>';
         h += '<div class="hy-stage-floor"></div>';
+        /* ⭐ v511：攻擊軌跡線圖層（SVG，覆蓋全舞台） */
+        h += '<svg class="hy-stage-fxline" xmlns="http://www.w3.org/2000/svg" ' +
+            'preserveAspectRatio="none"></svg>';
+        h += '<div class="hy-stage-order"></div>';
         if (party.length && enemies.length) {
             h += '<div class="hy-stage-vs">⚔ VS ⚔</div>';
         }
@@ -106836,6 +106944,23 @@ window.HY = window.HY || {};
             node.classList.toggle('ready', !!u.ready && u.alive !== false);
             node.classList.toggle('is-target', !!u.target && u.alive !== false);
 
+            /* ⭐ v511：殘血警示（氣血 ≤25% 且未倒地） */
+            var hpPctForLow = 100;
+            if (typeof u.cur === 'number' && typeof u.max === 'number' && u.max > 0) {
+                hpPctForLow = (u.cur / u.max) * 100;
+            }
+            node.classList.toggle('lowhp', u.alive !== false && hpPctForLow <= 25 && hpPctForLow > 0);
+
+            /* ⭐ v511：技能名稱浮現（比對快照中的 skill，有變化才播） */
+            if (!rebuilt && u.skill && p && p.skill !== u.skill) {
+                showSkillName(node, u.skill, side, false);
+                /* 治療型技能改成綠色 */
+                if (/回|療|補|治|癒|復|春|癒/.test(String(u.skill))) {
+                    var last = node.querySelector('.hy-fx-skill');
+                    if (last) last.style.color = '#6ee7b7';
+                }
+            }
+
             /* ── 血條 ── */
             var bar = node.querySelector('[data-hp="' + side + i + '"]');
             if (bar) {
@@ -106865,7 +106990,11 @@ window.HY = window.HY || {};
         }
 
         SNAPSHOT[stageId][side] = list.map(function (u) {
-            return { cur: Number(u.cur) || 0, max: Number(u.max) || 0, alive: u.alive !== false };
+            return {
+                cur: Number(u.cur) || 0, max: Number(u.max) || 0,
+                alive: u.alive !== false,
+                skill: u.skill || null
+            };
         });
     }
 
@@ -106880,8 +107009,26 @@ window.HY = window.HY || {};
         setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 960);
     }
 
-    function playHit(el, node, side, i, dmg, crit) {
+    function playHit(el, node, side, i, dmg, crit, actorNode) {
         if (!node) return;
+
+        /* ⭐ v511：先畫攻擊軌跡線（從出手者 → 被打者） */
+        var atkEl = el.querySelector('.hy-stage-side.' + ((side === 'foe') ? 'ally' : 'foe'));
+        var attacker = actorNode;
+        if (!attacker && atkEl) {
+            var cands = atkEl.querySelectorAll('.hy-stage-unit:not(.dead):not(.dying)');
+            if (cands.length) attacker = cands[Math.floor(Math.random() * cands.length)];
+        }
+        if (attacker && attacker !== node) {
+            drawTrail(el, attacker, node, side === 'foe' ? 'ally' : 'foe', crit);
+        }
+        if (attacker) {
+            attacker.classList.remove('lunge');
+            void attacker.offsetWidth;
+            attacker.classList.add('lunge');
+            setTimeout(function () { attacker.classList.remove('lunge'); }, 440);
+        }
+
         /* 紅閃 */
         var fl = document.createElement('div');
         fl.className = 'hy-stage-flash';
@@ -106909,20 +107056,130 @@ window.HY = window.HY || {};
             node.appendChild(ring);
             setTimeout(function () { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 500);
         }
+    }
 
-        /* 出手者往前衝（打誰就往誰衝） */
-        var attackerSide = (side === 'foe') ? 'ally' : 'foe';
-        var atkEl = el.querySelector('.hy-stage-side.' + attackerSide);
-        if (atkEl) {
-            var cands = atkEl.querySelectorAll('.hy-stage-unit:not(.dead)');
-            if (cands.length) {
-                var a = cands[Math.floor(Math.random() * cands.length)];
-                a.classList.remove('lunge');
-                void a.offsetWidth;
-                a.classList.add('lunge');
-                setTimeout(function () { a.classList.remove('lunge'); }, 440);
-            }
-        }
+    /* ⭐ v511：攻擊軌跡線
+       ──────────────────────────────────────────────────────────
+       用 SVG 畫一條從出手者胸口到被打者胸口的弧形能量線。
+       我方 → 敵方：青色系；敵方 → 我方：紅色系；暴擊加粗並加尖端爆點。 */
+    function drawTrail(el, fromNode, toNode, fromSide, crit) {
+        try {
+            var svg = el.querySelector('.hy-stage-fxline');
+            if (!svg) return;
+            var box = el.getBoundingClientRect();
+            /* SVG 沒有 viewBox，用像素座標直接畫（preserveAspectRatio:none 不影響絕對座標） */
+            var fr = fromNode.getBoundingClientRect();
+            var tr = toNode.getBoundingClientRect();
+
+            var x1 = fr.left - box.left + fr.width / 2;
+            var y1 = fr.top - box.top + fr.height * 0.42;
+            var x2 = tr.left - box.left + tr.width / 2;
+            var y2 = tr.top - box.top + tr.height * 0.42;
+
+            /* 中點往上拱，形成拋物弧線 */
+            var mx = (x1 + x2) / 2;
+            var my = Math.min(y1, y2) - Math.abs(x2 - x1) * 0.10 - 12;
+
+            var isAlly = (fromSide === 'ally');
+            var col = isAlly ? '#22d3ee' : '#f87171';
+            var col2 = isAlly ? '#a5f3fc' : '#fecdd3';
+            var w = crit ? 4.2 : 2.6;
+
+            var d = 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2;
+
+            /* 量長度給 dash 動畫用 */
+            var len = Math.round(Math.hypot(x2 - x1, y2 - y1) * 1.5 + 80);
+
+            var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('opacity', '0.95');
+
+            /* 外光暈 */
+            var glow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            glow.setAttribute('d', d);
+            glow.setAttribute('class', 'trail');
+            glow.setAttribute('stroke', col);
+            glow.setAttribute('stroke-width', (w + 6).toFixed(1));
+            glow.setAttribute('opacity', '0.28');
+            glow.style.setProperty('--len', len);
+            g.appendChild(glow);
+
+            /* 主線 */
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.setAttribute('d', d);
+            line.setAttribute('class', 'trail');
+            line.setAttribute('stroke', col2);
+            line.setAttribute('stroke-width', w.toFixed(1));
+            line.style.setProperty('--len', len);
+            g.appendChild(line);
+
+            /* 尖端爆點 */
+            var head = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            head.setAttribute('class', 'trail-head');
+            head.setAttribute('cx', x2);
+            head.setAttribute('cy', y2);
+            head.setAttribute('r', '2');
+            head.setAttribute('fill', col2);
+            head.setAttribute('opacity', '0');
+            g.appendChild(head);
+
+            svg.appendChild(g);
+            setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 520);
+        } catch (e) { }
+    }
+
+    /* ⭐ v511：技能名稱浮現 */
+    function showSkillName(node, name, side, isHeal) {
+        if (!node || !name) return;
+        var d = document.createElement('div');
+        d.className = 'hy-fx-skill ' + (side === 'foe' ? 'foe' : 'ally');
+        d.textContent = (isHeal ? '✚ ' : '《') + name + (isHeal ? '' : '》');
+        if (isHeal) d.style.color = '#6ee7b7';
+        node.appendChild(d);
+        setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1180);
+    }
+
+    /* ⭐ v511：出手順序軸 */
+    function updateOrder(el, party, enemies) {
+        var box = el.querySelector('.hy-stage-order');
+        if (!box) return;
+        var all = [];
+        (party || []).forEach(function (u, i) {
+            if (!u) return;
+            all.push({
+                side: 'ally', name: u.name || '隊員',
+                atb: Number(u.atb || 0),
+                alive: u.alive !== false
+            });
+        });
+        (enemies || []).forEach(function (u, i) {
+            if (!u) return;
+            all.push({
+                side: 'foe', name: u.name || '敵人',
+                atb: Number(u.atb || 0),
+                alive: u.alive !== false
+            });
+        });
+
+        var live = all.filter(function (u) { return u.alive; });
+        if (!live.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+        box.style.display = 'flex';
+
+        /* 集氣愈高愈前面 */
+        live.sort(function (a, b) { return b.atb - a.atb; });
+
+        var sig = live.map(function (u) { return u.side + u.name + Math.floor(u.atb); }).join('|');
+        if (box.getAttribute('data-sig') === sig) return;
+        box.setAttribute('data-sig', sig);
+
+        var h = '<span class="od-lbl">出手順序</span>';
+        live.slice(0, 6).forEach(function (u, i) {
+            var short = u.name.length > 4 ? u.name.slice(0, 4) + '…' : u.name;
+            h += '<span class="od-chip ' + u.side + (i === 0 ? ' next' : '') + '" ' +
+                'title="' + esc(u.name) + ' · 集氣 ' + Math.floor(u.atb) + '%">' +
+                esc(short) + '</span>';
+            if (i < Math.min(live.length, 6) - 1) h += '<span class="od-sep">›</span>';
+        });
+        box.innerHTML = h;
     }
 
     function playHeal(node, amount) {
@@ -107029,11 +107286,16 @@ window.HY = window.HY || {};
         sceneClass: sceneClass,
         /* 對外手動觸發（給特殊技能表現用） */
         fx: {
-            hit: function (id, side, index, dmg, crit) {
+            hit: function (id, side, index, dmg, crit, actorIndex) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
-                if (n) playHit(el, n, side, index, dmg || 0, !!crit);
+                var actor = null;
+                if (typeof actorIndex === 'number') {
+                    actor = el.querySelector('.hy-stage-unit[data-side="' +
+                        (side === 'foe' ? 'ally' : 'foe') + '"][data-i="' + actorIndex + '"]');
+                }
+                if (n) playHit(el, n, side, index, dmg || 0, !!crit, actor);
             },
             heal: function (id, side, index, amount) {
                 var el = document.getElementById(id || 'hy-battle-stage');
@@ -107046,11 +107308,26 @@ window.HY = window.HY || {};
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
                 if (n) floatText(n, text, kind || 'dmg');
+            },
+            /* ⭐ v511：技能名稱浮現 */
+            skill: function (id, side, index, name) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) showSkillName(n, name, side, /回|療|補|治|癒/.test(String(name)));
+            },
+            /* ⭐ v511：手動畫軌跡線（from → to，兩邊都是 index） */
+            trail: function (id, fromSide, fromIndex, toSide, toIndex, crit) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var a = el.querySelector('.hy-stage-unit[data-side="' + fromSide + '"][data-i="' + fromIndex + '"]');
+                var b = el.querySelector('.hy-stage-unit[data-side="' + toSide + '"][data-i="' + toIndex + '"]');
+                if (a && b) drawTrail(el, a, b, fromSide, !!crit);
             }
         }
     };
 
-    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台 v2 已載入（打擊感 / 場景 / 字幕 / 狀態 / 集火）');
+    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台 v3 已載入（軌跡線 / 招式名 / 出手順序 / 殘血警示）');
 })(window.HY);
 
 
@@ -115840,6 +116117,9 @@ window.HY = window.HY || {};
                             name: m.name || '隊員',
                             cur: cu, max: mx, alive: cu > 0,
                             ready: Number(m.atb || 0) >= 100,
+                            atb: Number(m.atb || 0),
+                            skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
+                                ? HY.uiDexAtb._stageSkillName(m, false) : null,
                             sprite: BS.charSprite(m),
                             color: BS.charColor(m),
                             buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
@@ -115855,6 +116135,9 @@ window.HY = window.HY || {};
                             name: e.name || '敵人',
                             cur: cu2, max: mx2, alive: cu2 > 0,
                             ready: Number(e.atb || 0) >= 100,
+                            atb: Number(e.atb || 0),
+                            skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
+                                ? HY.uiDexAtb._stageSkillName(e, true) : null,
                             sprite: BS.monSprite(e),
                             avatar: BS.monAvatar(e),
                             target: (dbRef.currentEnemy === e),
