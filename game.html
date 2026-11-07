@@ -97551,6 +97551,48 @@ window.HY = window.HY || {};
                與氣血/內力條同寬、同高，方便玩家一眼比較三層防護。
             @param cur  目前護盾（undefined 時視為滿值）
             @param max  護盾上限（<=0 時回傳空字串） */
+        /* ⭐ v469：罡氣／護盾取值的唯一入口
+           ──────────────────────────────────────────────────────────
+           為什麼需要這兩個函式：
+             罡氣有兩個可能的資料位置
+               ① md.mx.qiCur / qiMax  ← 機制層（wuxiaSectMechanicsPro）
+               ② m.esCurrent / md.energyShield ← 舊的護盾通道
+             戰鬥中罡氣被消耗時，只有 ① 會即時變化，
+             ② 停留在戰鬥開始時的快照 → 戰鬥面板顯示「滿檔」但實際已空。
+
+           取值優先序：
+             上限 = md.mx.qiMax ＞ md.energyShield ＞ md.maxEs
+             當前 = md.mx.qiCur ＞ m.esCurrent ＞ md.esCurrent ＞ 上限（滿檔）
+           ⚠ 一律讀 md（derived），因為 characterSystem 已把 c.mx 同步進去。 */
+        _esMaxOf(md) {
+            if (!md) return 0;
+            var mx = md.mx || {};
+            var a = Number(mx.qiMax);
+            if (isFinite(a) && a > 0) return Math.floor(a);
+            var b = Number(md.energyShield);
+            if (isFinite(b) && b > 0) return Math.floor(b);
+            var c = Number(md.maxEs);
+            if (isFinite(c) && c > 0) return Math.floor(c);
+            return 0;
+        }
+        _esCurOf(m, md) {
+            var max = this._esMaxOf(md);
+            if (max <= 0) return 0;
+            var mx = (md && md.mx) || {};
+            var a = Number(mx.qiCur);
+            if (isFinite(a) && a >= 0) return Math.min(max, Math.floor(a));
+            var b = (m && typeof m.esCurrent === 'number') ? m.esCurrent : NaN;
+            if (isFinite(b) && b >= 0) return Math.min(max, Math.floor(b));
+            var c = (md && typeof md.esCurrent === 'number') ? md.esCurrent : NaN;
+            if (isFinite(c) && c >= 0) return Math.min(max, Math.floor(c));
+            return max;   /* 都沒有 → 視為滿檔 */
+        }
+        /** 敵方用：怪物沒有 mx 機制，走原本的欄位 */
+        _enemyEsCur(e) {
+            if (typeof e.currentEs === 'number') return e.currentEs;
+            if (typeof e.esCurrent === 'number') return e.esCurrent;
+            return num(e.energyShield, 0);
+        }
         buildEsBar(idPrefix, cur, max, isEnemy) {
             var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
             if (safeMax <= 0) return '';
@@ -97909,11 +97951,18 @@ window.HY = window.HY || {};
                             }) +
                             this.buildHpmpBar('hp', 'ally-hp-' + i, m.currentHp, md.maxHp, false) +
                             this.buildHpmpBar('mp', 'ally-mp-' + i, m.currentMp, md.maxMp, false) +
-                            /* ⭐ v57：能量護盾條（有護盾上限才顯示）
-                               必須放在 HP/MP 之後，讓「血 → 內 → 盾」的層次清楚 */
+                            /* ⭐ v469：罡氣條同步修正
+                               ──────────────────────────────────────────────────────────
+                               舊版：只讀 m.esCurrent / md.energyShield
+                               問題：機制層（wuxiaSectMechanicsPro）把罡氣存在
+                                    m.mx.qiCur / qiMax，而 esCurrent 在戰鬥中
+                                    不會即時更新 → 戰鬥面板顯示滿檔，
+                                    實際罡氣早已被打掉。
+                               解法：統一只讀 md.mx（derived 已從 c.mx 同步過來），
+                                    並保留 esCurrent 作為備援。 */
                             this.buildEsBar('ally-es-' + i,
-                                (typeof m.esCurrent === 'number') ? m.esCurrent : md.energyShield,
-                                md.energyShield, false) +
+                                this._esCurOf(m, md),
+                                this._esMaxOf(md), false) +
                             /* ⭐ 原本的「門派 ｜ 心法」改為「集氣條滿時下一招預告」 */
                             this.buildNextActionHtml(m, 'ally-next-' + i, false) +
                             this.buildFeatTableHtml(m, 'ally-feat-' + i) +
@@ -98106,10 +98155,12 @@ window.HY = window.HY || {};
                 setAtb('ally-head-' + idx, 'ally-atb-bar-' + idx, 'ally-atb-text-' + idx, isDead ? 0 : m.atb);
                 setBar('ally-hp-' + idx, m.currentHp, md.maxHp);
                 setBar('ally-mp-' + idx, m.currentMp, md.maxMp);
-                /* ⭐ v57：護盾即時更新（沒護盾的角色會自動跳過） */
+                /* ⭐ v469：護盾／罡氣即時更新（統一只讀 md.mx）
+                   舊版只讀 m.esCurrent，戰鬥中不會更新 → 條永遠滿的。
+                   現在與主面板、狀態面板共用同一份資料（c.mx → md.mx）。 */
                 setEsBar('ally-es-' + idx,
-                    (typeof m.esCurrent === 'number') ? m.esCurrent : md.energyShield,
-                    md.energyShield);
+                    this._esCurOf(m, md),
+                    this._esMaxOf(md));
                 // ⭐ v56：戰力每 tick 更新
                 var pwEl = document.getElementById('ally-pw-' + idx);
                 if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
