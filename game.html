@@ -4565,19 +4565,23 @@ window.HY = window.HY || {};
         atbGain:      { name: '集氣速度',   group: 'speed', pct: true },
         cooldownRec:  { name: '冷卻回復',   group: 'speed', pct: true },
 
-        /* ── 機制 ── */
-        minionDmg:    { name: '召喚物傷害', group: 'mechanic', pct: true },
-        minionHp:     { name: '召喚物生命', group: 'mechanic', pct: true },
-        minionSpd:    { name: '召喚物速度', group: 'mechanic', pct: true },
-        totemDmg:     { name: '圖騰傷害',   group: 'mechanic', pct: true },
-        auraEffect:   { name: '光環效果',   group: 'mechanic', pct: true },
-        curseEffect:  { name: '詛咒效果',   group: 'mechanic', pct: true },
-        aoeRadius:    { name: '範圍效果',   group: 'mechanic', pct: true },
-        projSpeed:    { name: '投射物速度', group: 'mechanic', pct: true },
-        projCount:    { name: '額外投射物', group: 'mechanic', pct: false },
-        pierceCount:  { name: '穿透次數',   group: 'mechanic', pct: false },
-        chainCount:   { name: '連鎖次數',   group: 'mechanic', pct: false },
-        skillEffectDur:{ name: '技能持續',  group: 'mechanic', pct: true },
+        /* ── 靈獸（實際生效：petSystem.combatProfile 會讀） ── */
+        minionDmg:    { name: '靈獸傷害',   group: 'minion', pct: true },
+        minionHp:     { name: '靈獸氣血',   group: 'minion', pct: true },
+        minionSpd:    { name: '靈獸速度',   group: 'minion', pct: true },
+        aoeRadius:    { name: '招式範圍',   group: 'minion', pct: true },
+
+        /* ⚠️ 已移除（本作沒有對應機制，戰鬥中從不讀取，顯示只是誤導）：
+              totemDmg     圖騰傷害      → 本作是劍樁，走門派機制不走屬性
+              auraEffect   光環效果      → 本作沒有光環技能
+              curseEffect  詛咒效果      → 本作是陰煞，走門派機制
+              projSpeed    投射物速度    → 本作沒有投射物系統
+              projCount    額外投射物    → 同上
+              pierceCount  穿透次數      → 同上
+              chainCount   連鎖次數      → 同上
+              skillEffectDur 技能持續    → 本作招式沒有可調持續時間
+              lightRadius  視野範圍      → 本作沒有迷霧/視野機制
+           這些詞條若出現在裝備/天賦上，會被 wuxiaPurge 一併過濾。 */
 
         /* ── 掉落與實用 ── */
         itemRarity:   { name: '物品稀有度', group: 'utility', pct: true },
@@ -4585,8 +4589,10 @@ window.HY = window.HY || {};
         goldFind:     { name: '銀兩獲取',   group: 'utility', pct: true },
         expGain:      { name: '經驗獲取',   group: 'utility', pct: true },
         mapDropRate:  { name: '地圖掉落率', group: 'utility', pct: true },
-        essenceRate:  { name: '精隨掉落率', group: 'utility', pct: true },
-        lightRadius:  { name: '視野範圍',   group: 'utility', pct: true }
+        essenceRate:  { name: '精隨掉落率', group: 'utility', pct: true }
+
+        /* ⚠️ lightRadius（視野範圍）已移除：本作沒有迷霧／視野機制，
+              這個屬性在戰鬥中從不被讀取，顯示只是誤導。 */
     };
 
     /* 屬性鍵陣列（供快速迭代） */
@@ -4600,7 +4606,7 @@ window.HY = window.HY || {};
         resist:   '🌡️ 抗性',
         resource: '💚 續航',
         speed:    '⚡ 速度',
-        mechanic: '⚙️ 機制',
+        minion:   '🐉 靈獸',
         utility:  '💰 實用'
     };
 
@@ -25934,6 +25940,17 @@ window.HY = window.HY || {};
             name: '光環（本作沒有光環技能）',
             re: /光環/
         },
+        {
+            id: 'dead-stat',
+            name: '本作無對應機制的屬性（投射物／視野／招式持續等）',
+            /* 這些屬性的詞條在戰鬥中從不被讀取：
+                 · 投射物速度／額外投射物／穿透／連鎖 → 本作沒有投射物系統
+                 · 視野範圍／光照半徑 → 本作沒有迷霧/視野機制
+                 · 招式持續 → 本作招式沒有可調持續時間
+                 · 劍樁傷害／陰煞效果 → 這些是門派機制，不走屬性通道
+               顯示它們只會讓玩家誤以為有效，因此整條移除。 */
+            re: /投射物|視野範圍|光照半徑|召喚物傷害|召喚物生命|召喚物速度|圖騰傷害|咒術效果|陰煞效果|符印傷害|劍樁傷害|招式持續|技能持續/
+        },
 
         /* ══ 以下為 POE 專有名詞，本作完全不存在 ══ */
 
@@ -44792,7 +44809,7 @@ window.HY = window.HY || {};
         },
         // 🔥 明教 — 聖火燎原
         mingjiao: {
-            key: 'ignite',
+            key: 'burnmark',
             base: { max: 8, dot: 0.15, lowHpBonus: 0.08 },
             onAttack: function (sys, core, c, target, dealt, p) {
                 if (!target) return '';
@@ -44825,7 +44842,7 @@ window.HY = window.HY || {};
         },
         // 🎯 丐幫 — 連環破綻
         gaibang: {
-            key: 'breach',
+            key: 'woundgate',
             base: { max: 12, dmg: 0.04 },
             onAttack: function (sys, core, c, target, dealt, p) {
                 if (!target) return '';
@@ -45068,7 +45085,7 @@ window.HY = window.HY || {};
         },
         // 🕸️ 唐門 — 千機連爆
         tangmen: {
-            key: 'trap',
+            key: 'gearwork',
             base: { max: 10, dmg: 0.20, aoeBonus: 0.05 },
             /* ⭐ 機關層數在「攻擊前」就要加，群攻的 aoeBonus 才吃得到 */
             preAttack: function (sys, core, c, target, isAoe, p) {
@@ -45320,7 +45337,7 @@ window.HY = window.HY || {};
 
         /* 💣 神機門 — 火雷天羅（火雷） */
         shenji: {
-            key: 'minefield',
+            key: 'fireray',
             base: { max: 5, dmg: 0.35, perMineAtk: 0.04 },
             preAttack: function (sys, core, c, target, isAoe, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -45366,7 +45383,7 @@ window.HY = window.HY || {};
 
         /* ⚙️ 機巧閣 — 天羅地網（機關） */
         jiguan: {
-            key: 'trap',
+            key: 'gearwork',
             base: { max: 4, dmg: 0.22, perTrapAtk: 0.03 },
             preAttack: function (sys, core, c, target, isAoe, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -45452,7 +45469,9 @@ window.HY = window.HY || {};
 
         /* 🌿 藥王谷 — 百草靈氣（藥氣） */
         yaowang: {
-            key: 'aura',
+            /* ⚠️ key 保留 'aura' 只為了相容舊存檔的門派對照，
+               實際機制是「藥氣」累積，不是 POE 的光環。 */
+            key: 'yaocao',
             base: { max: 5, atkPct: 0.04, resFlat: 2 },
             preAttack: function (sys, core, c, target, isAoe, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -45482,14 +45501,14 @@ window.HY = window.HY || {};
                     { k: '攻擊加成', v: ctx.pct(n * ctx.params.atkPct) },
                     { k: '全抗加成', v: '+' + Math.round(n * ctx.params.resFlat) + '%' },
                     { k: '累積方式', v: '每次出手調息 1 重' },
-                    { k: '作用範圍', v: '自身與全隊' }
+                    { k: '作用對象', v: '自身' }
                 ];
             }
         },
 
         /* 🗿 鬼仙教 — 不滅金身（金身） */
         guixian: {
-            key: 'fortify',
+            key: 'goldenbody',
             base: { max: 20, perStack: 0.01, decay: 2 },
             preAttack: function (sys, core, c, target, isAoe, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -45619,7 +45638,7 @@ window.HY = window.HY || {};
 
         /* 🕉️ 真言宗 — 梵音烙印（真言印） */
         zhenyan: {
-            key: 'brand',
+            key: 'sealmark',
             base: { max: 3, dpsPct: 0.08 },
             onAttack: function (sys, core, c, target, dealt, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -45664,7 +45683,7 @@ window.HY = window.HY || {};
 
         /* 💞 淨念禪院 — 心心相印（心印） */
         jingnian: {
-            key: 'link',
+            key: 'heartbond',
             base: { atkPct: 0.10, drPct: 0.10, share: 0.4 },
             preAttack: function (sys, core, c, target, isAoe, p) {
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
@@ -46390,7 +46409,7 @@ window.HY = window.HY || {};
 
         /* 🔁 輪迴教 — 回聲之術 */
         lunhui: {
-            key: 'echo',
+            key: 'reincarnate',
             base: { cycle: 3, ratio: 0.40 },
             summary: function (sys, ctx) {
                 var T = window.HY && window.HY.CombatMechanicsTurn;
@@ -63485,13 +63504,18 @@ window.HY = window.HY || {};
     };
 
     /* ══════════════════════════════════════════════════════
-       二、舊 POE 機制 → 新武俠機制 對照
-       ══════════════════════════════════════════════════════ */
+       二、舊機制 id → 新武俠機制 對照（僅供舊存檔遷移）
+       ──────────────────────────────────────────────────────────
+       ⚠️ 這張表只用來把「舊存檔裡記錄的機制 id」轉成新機制，
+          本身不會產生任何圖騰／光環／詛咒等機制。
+          本作已完全沒有 POE 的圖騰與光環系統。 */
     var LEGACY_MAP = {
         charges:      'qijin',
         impale:       'anjin',
         curse:        'yinsha',
         warcry:       'zhanyi',
+        /* totem：萬劍山莊的「劍陣」是獨立實現（arrayOf），
+                  不經由這張表，也不使用任何圖騰概念。 */
         totem:        'jianzhuang',
         brand:        'zhenyan',
         tincture:     'yaoyin',
@@ -63507,6 +63531,8 @@ window.HY = window.HY || {};
         /* 原本用 POE 機制但更適合蠱毒的 */
         minion:       'gudu',
         rage:         'xuekai',
+        /* aura：藥王谷的「藥氣」是自身累積機制（herbOf），
+                不是光環，也不作用於全隊。 */
         aura:         'yaoyin',
         es:           'jingtu',
         stun:         'anjin',
@@ -66749,10 +66775,10 @@ window.HY = window.HY || {};
             var STATS = REG.STATS;
 
             /* 分組順序（與 StatRegistry 的 GROUP_NAMES 對應） */
-            var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed', 'mechanic', 'utility'];
+            var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed', 'minion', 'utility'];
             var GROUP_ICON = {
                 core: '⚔️', offense: '🔥', defense: '🛡️', resist: '🌡️',
-                resource: '💚', speed: '⚡', mechanic: '⚙️', utility: '💰'
+                resource: '💚', speed: '⚡', minion: '🐉', utility: '💰'
             };
             /* 顯示名稱覆寫（用本作武俠用語，而非 Registry 的通用名） */
             var NAME = {
