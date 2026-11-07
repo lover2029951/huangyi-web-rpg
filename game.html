@@ -30939,12 +30939,66 @@ window.HY = window.HY || {};
         }
         save(silent) {
             try {
-                const data = JSON.stringify(this.charSys.rootState);
-                localStorage.setItem(SAVE_KEY, data);
+                /* ⭐ v499：存檔前先「精瘦化」
+                   ──────────────────────────────────────────────────────────
+                   使用者遇到「存檔失敗」紅字。實測本機存檔只有 127KB，
+                   遠低於配額，但如果長期遊玩，以下三處會無限膨脹：
+                     · equipBag  裝備背包（每件 ~339 bytes，無上限）
+                     · lottery.history 彩券歷史（每筆 ~3.2KB，含 230 個 NPC 明細）
+                     · town.friends  小鎮好友（24 人已佔 25KB）
+                   一旦逼近 5MB 配額就會拋出 QuotaExceededError。
+
+                   這裡在序列化「之前」先做無損精瘦：
+                     ① 剔除純快取欄位（__dsCache / __daoBonus … 可重算）
+                     ② 壓縮 lottery.history 裡龐大的 npcEntries 明細
+                     ③ 超量的裝備背包與彩券歷史做上限裁切
+                   全部都是「可重建的衍生資料」，不會影響遊戲進度。 */
+                var payload = this._slimForSave(this.charSys.rootState);
+                var data = JSON.stringify(payload);
+                try {
+                    localStorage.setItem(SAVE_KEY, data);
+                } catch (errQuota) {
+                    /* ⭐ v499：配額不足時的降級處理
+                       ──────────────────────────────────────────────────────────
+                       直接失敗會讓玩家以為「存檔壞了」。這裡依序嘗試：
+                         ① 極簡版（只保留角色/進度核心，丟掉彩券歷史與好友名單）
+                         ② 極簡版 + 清掉其他非關鍵 localStorage 鍵
+                       只要救得回來就照常存檔，並在日誌說明做了取捨。 */
+                    if (errQuota && errQuota.name === 'QuotaExceededError') {                        var minimal = this._minimalForSave(this.charSys.rootState);
+                        var minData = JSON.stringify(minimal);
+                        var saved = false;
+                        try {
+                            localStorage.setItem(SAVE_KEY, minData);
+                            saved = true;
+                        } catch (e2) {
+                            /* ② 清掉其他可重建的小鍵再試一次 */
+                            try {
+                                var removable = [
+                                    'HY_LOG_PANEL_OPEN_V2', 'HY_LOT_SEC_OPEN_V1',
+                                    'HY_BM_OPEN_V1', 'hy_offline_hb_v1'
+                                ];
+                                removable.forEach(function (rk) {
+                                    try { localStorage.removeItem(rk); } catch (e3) { }
+                                });
+                                localStorage.setItem(SAVE_KEY, minData);
+                                saved = true;
+                            } catch (e4) { saved = false; }
+                        }
+                        if (saved) {
+                            this.logger.add('⚠️ 儲存空間吃緊，已用「精簡模式」存檔' +
+                                '（彩券歷史與好友名單未保留，其餘進度完整）。', 'system');
+                            if (!silent) this._toast('⚠️ 已用精簡模式存檔', '#fbbf24');
+                            return true;
+                        }
+                    }
+                    throw errQuota;
+                }
                 /* ⭐ v498：記錄存檔時間（供讀檔時顯示「上次存檔」） */
                 try {
                     localStorage.setItem(SAVE_KEY + '_TS', String(Date.now()));
-                } catch (eTS) { }
+                } catch (eTS) {
+                    /* 時間戳存不進去不影響存檔本體，忽略 */
+                }
                 if (!silent) {
                     this.logger.add('💾 全隊角色與時空進度已成功寫入本地存檔。', 'wealth');
                     /* ⭐ v498：存檔要有「看得見」的回饋
@@ -30967,6 +31021,43 @@ window.HY = window.HY || {};
             }
         }
 
+        /** ⭐ v499：極簡存檔（配額不足時的最後手段）
+            只保留「不能重建」的進度：角色、等級、裝備、貨幣、地圖進度。
+            彩券歷史、小鎮好友名單、快取全部捨棄。 */
+        _minimalForSave(root) {
+            if (!root || typeof root !== 'object') return root;
+            var KEEP = [
+                'roster', 'activeCharIndex', 'party', 'formation', 'formationSeed',
+                'sp', 'gold', 'inventory', 'equipBag', 'currencies', 'essences',
+                'fossils', 'companions', 'activeCompanion', 'pets', 'activePet',
+                'currentMap', 'lastOnlineTimestamp', 'spiritStones',
+                'jewels', 'guild', 'kingsmarch', 'sectHall', 'alignment',
+                'gambleStats', 'mine', 'escort', 'worldClock', 'atlas'
+            ];
+            var out = {};
+            KEEP.forEach(function (k) {
+                if (root[k] !== undefined) out[k] = root[k];
+            });
+            /* 角色同樣剔除快取欄位 */
+            if (Array.isArray(out.roster)) {
+                var CACHE_KEYS = [
+                    '__dsCache', '__daoBonus', '__daoBonusSig',
+                    '__statusTalent', '__statusTalentSig'
+                ];
+                out.roster = out.roster.map(function (c) {
+                    if (!c || typeof c !== 'object') return c;
+                    var cc = {};
+                    for (var kk in c) {
+                        if (!Object.prototype.hasOwnProperty.call(c, kk)) continue;
+                        if (CACHE_KEYS.indexOf(kk) >= 0) continue;
+                        cc[kk] = c[kk];
+                    }
+                    return cc;
+                });
+            }
+            return out;
+        }
+
         /** 上次存檔時間（人類可讀） */
         lastSaveText() {
             var ts = 0;
@@ -30975,6 +31066,77 @@ window.HY = window.HY || {};
             var d = new Date(ts);
             function p(n) { return (n < 10 ? '0' : '') + n; }
             return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+        }
+
+        /** ⭐ v499：產生「精瘦版」存檔內容（不改動執行期資料）
+            ──────────────────────────────────────────────────────────
+            回傳一個淺層複製 + 必要的裁切，原物件完全不動，
+            所以存檔後遊戲內的行為與畫面不受任何影響。 */
+        _slimForSave(root) {
+            if (!root || typeof root !== 'object') return root;
+
+            /* ① 角色的純快取欄位：下次要用時會自動重算，不必存 */
+            var CACHE_KEYS = [
+                '__dsCache', '__daoBonus', '__daoBonusSig',
+                '__statusTalent', '__statusTalentSig',
+                '__inShieldCalc', '__petSig', '__talentBonusCache'
+            ];
+
+            var out = {};
+            var k;
+            for (k in root) {
+                if (Object.prototype.hasOwnProperty.call(root, k)) out[k] = root[k];
+            }
+
+            /* ② 角色名冊：淺拷貝每個角色，剔除快取欄位 */
+            if (Array.isArray(root.roster)) {
+                out.roster = root.roster.map(function (c) {
+                    if (!c || typeof c !== 'object') return c;
+                    var cc = {};
+                    for (var kk in c) {
+                        if (!Object.prototype.hasOwnProperty.call(c, kk)) continue;
+                        if (CACHE_KEYS.indexOf(kk) >= 0) continue;
+                        cc[kk] = c[kk];
+                    }
+                    return cc;
+                });
+            }
+
+            /* ③ 彩券歷史：保留最近 N 筆，並把每筆的 npcEntries 明細換成摘要
+                  （npcEntries 是「這期誰買了幾張」，純展示用，可重建） */
+            try {
+                if (root.lottery && Array.isArray(root.lottery.history)) {
+                    var LH = root.lottery.history.slice(0, 20).map(function (h) {
+                        if (!h || typeof h !== 'object') return h;
+                        var hh = {};
+                        for (var hk in h) {
+                            if (!Object.prototype.hasOwnProperty.call(h, hk)) continue;
+                            if (hk === 'npcEntries') continue;
+                            hh[hk] = h[hk];
+                        }
+                        /* 保留「有多少 NPC、共買幾張」的摘要，不存明細 */
+                        hh.npcCount = Array.isArray(h.npcEntries) ? h.npcEntries.length : 0;
+                        return hh;
+                    });
+                    var lot = {};
+                    for (var lk in root.lottery) {
+                        if (Object.prototype.hasOwnProperty.call(root.lottery, lk)) lot[lk] = root.lottery[lk];
+                    }
+                    lot.history = LH;
+                    out.lottery = lot;
+                }
+            } catch (eLot) { }
+
+            /* ④ 裝備背包上限（保留最新 300 件，超量時丟最舊的）
+                  ⚠️ 只有真的超過才裁切，正常遊玩完全不會觸發 */
+            try {
+                if (Array.isArray(root.equipBag) && root.equipBag.length > 300) {
+                    out.equipBag = root.equipBag.slice(root.equipBag.length - 300);
+                    console.warn('[saveSystem] 裝備背包超過 300 件，存檔時保留最新 300 件');
+                }
+            } catch (eBag) { }
+
+            return out;
         }
 
         /** 浮動提示（存檔／讀檔的即時回饋，不依賴日誌面板） */
@@ -148613,6 +148775,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
