@@ -106427,6 +106427,53 @@ window.HY = window.HY || {};
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
     var SNAPSHOT = {};
 
+    /* ⭐ v513：特效物件池（避免每幀建立／移除 DOM） */
+    var POOL = [];
+    var POOL_MAX = 40;
+
+    function takeNode(className) {
+        for (var i = POOL.length - 1; i >= 0; i--) {
+            var n = POOL[i];
+            if (n.__cls === className) {
+                POOL.splice(i, 1);
+                n.className = className;
+                n.style.cssText = '';
+                n.textContent = '';
+                return n;
+            }
+        }
+        var d = document.createElement('div');
+        d.className = className;
+        d.__cls = className;
+        return d;
+    }
+
+    function giveNode(node) {
+        if (!node) return;
+        try {
+            if (node.parentNode) node.parentNode.removeChild(node);
+            if (POOL.length < POOL_MAX) POOL.push(node);
+        } catch (e) { }
+    }
+
+    /* ⭐ v513：每場統計（DPS / 傷害佔比 / 連擊） */
+    var STATS = {};
+
+    function statsOf(id) {
+        if (!STATS[id]) {
+            STATS[id] = {
+                startTs: Date.now(),
+                dmgByAlly: {},   /* 我方各角色造成的傷害 */
+                dmgToAlly: 0,    /* 我方承受 */
+                healTotal: 0,
+                combo: 0,
+                comboTs: 0,
+                maxCombo: 0
+            };
+        }
+        return STATS[id];
+    }
+
     /* ══════════════════════════════════════════════════════
        元素配色（軌跡線 / 技能名 / AOE 依屬性變色）
        ══════════════════════════════════════════════════════ */
@@ -106611,7 +106658,13 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.heal{color:#6ee7b7;font-size:1.02rem;' +
             'text-shadow:0 2px 4px #000,0 0 12px rgba(52,211,153,.9);}',
         '.hy-fx-dmg.miss{color:#cbd5e1;font-size:.9rem;letter-spacing:1px;}',
-        '.hy-fx-dmg.shield{color:#93c5fd;font-size:.95rem;}',
+        '.hy-fx-dmg.miss{font-style:italic;}',
+        /* ⭐ v513：閃避殘影 */
+        '.hy-stage-img.dodge{animation:hy-dodge .38s ease-out;}',
+        '@keyframes hy-dodge{0%{transform:translateX(0);opacity:1;}' +
+            '30%{transform:translateX(9px);opacity:.55;filter:blur(1px);}' +
+            '60%{transform:translateX(-5px);opacity:.8;}' +
+            '100%{transform:translateX(0);opacity:1;}}',        '.hy-fx-dmg.shield{color:#93c5fd;font-size:.95rem;}',
         '@keyframes hy-fx-rise{0%{opacity:0;transform:translate(-50%,6px) scale(.7);}' +
             '16%{opacity:1;transform:translate(-50%,-2px) scale(1.1);}' +
             '30%{transform:translate(-50%,-6px) scale(1);}' +
@@ -106722,6 +106775,121 @@ window.HY = window.HY || {};
         '@keyframes hy-order-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}',
         '.hy-stage-order .od-sep{font-size:.55rem;color:#334155;}',
 
+        /* ⭐ v513：DPS / 本場統計（舞台右上角） */
+        '.hy-stage-dps{position:absolute;right:8px;top:8px;z-index:8;display:flex;gap:5px;' +
+            'padding:3px 8px;border-radius:8px;pointer-events:none;' +
+            'background:rgba(4,8,14,.82);border:1px solid rgba(51,65,85,.9);' +
+            'box-shadow:0 2px 10px rgba(0,0,0,.7);font-size:.6rem;white-space:nowrap;}',
+        '.hy-stage-dps .dp{display:inline-flex;align-items:center;gap:2px;color:#94a3b8;}',
+        '.hy-stage-dps .dp b{color:#fbbf24;font-variant-numeric:tabular-nums;font-weight:bold;}',
+        '.hy-stage-dps .dp.heal b{color:#6ee7b7;}',
+        '.hy-stage-dps .dp.best b{color:#f87171;}',
+        '.hy-stage-dps .dp-sep{color:#334155;}',
+
+        /* ⭐ v513：Combo 連擊計數（右側浮現） */
+        '.hy-stage-combo{position:absolute;right:14px;top:38%;z-index:9;pointer-events:none;' +
+            'text-align:right;transform-origin:right center;' +
+            'animation:hy-combo-in .22s cubic-bezier(.2,1.4,.4,1) both;}',
+        '.hy-stage-combo .cb-n{display:block;font-size:1.9rem;font-weight:900;line-height:1;' +
+            'font-variant-numeric:tabular-nums;letter-spacing:-1px;' +
+            'color:#fbbf24;' +
+            'text-shadow:0 2px 6px #000,0 0 18px rgba(251,191,36,.95),0 0 34px rgba(251,191,36,.6);}',
+        '.hy-stage-combo .cb-l{display:block;font-size:.62rem;font-weight:bold;letter-spacing:3px;' +
+            'color:#fde68a;text-shadow:0 1px 4px #000,0 0 10px rgba(251,191,36,.7);margin-top:1px;}',
+        '.hy-stage-combo.boost .cb-n{font-size:2.5rem;color:#fef08a;' +
+            'text-shadow:0 2px 8px #000,0 0 24px rgba(254,240,138,1),0 0 44px rgba(251,191,36,.85);}',
+        '@keyframes hy-combo-in{from{opacity:0;transform:scale(1.6) translateX(18px);}' +
+            'to{opacity:1;transform:scale(1) translateX(0);}}',
+
+        /* ⭐ v513：立繪進場動畫 */
+        '.hy-stage-unit.slide-in.ally{animation:hy-slide-r .52s cubic-bezier(.16,.9,.3,1) both;}',
+        '.hy-stage-unit.slide-in.foe{animation:hy-slide-l .52s cubic-bezier(.16,.9,.3,1) both;}',
+        '@keyframes hy-slide-r{from{opacity:0;transform:translateX(-64px);}' +
+            '60%{opacity:1;}to{opacity:1;transform:translateX(0);}}',
+        '@keyframes hy-slide-l{from{opacity:0;transform:translateX(64px);}' +
+            '60%{opacity:1;}to{opacity:1;transform:translateX(0);}}',
+
+        /* ⭐ v513：技能圖示光效（旋轉符文環） */
+        '.hy-stage-rune{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none;' +
+            'width:calc(var(--h,270px) * .95);height:calc(var(--h,270px) * .95);' +
+            'margin:calc(var(--h,270px) * -.475) 0 0 calc(var(--h,270px) * -.475);' +
+            'border-radius:50%;' +
+            'border:2px dashed var(--rune-col,#a78bfa);' +
+            'box-shadow:0 0 20px var(--rune-col,#a78bfa),inset 0 0 26px var(--rune-col,#a78bfa);' +
+            'animation:hy-rune-spin 1.05s linear;opacity:0;}',
+        '.hy-stage-rune::before{content:"";position:absolute;inset:12%;border-radius:50%;' +
+            'border:1px solid var(--rune-col,#a78bfa);opacity:.55;' +
+            'animation:hy-rune-spin 1.6s linear reverse;}',
+        '@keyframes hy-rune-spin{0%{opacity:0;transform:rotate(0deg) scale(.72);}' +
+            '16%{opacity:1;}' +
+            '74%{opacity:.85;}' +
+            '100%{opacity:0;transform:rotate(300deg) scale(1.12);}}',
+
+        /* ⭐ v513：受擊部位局部爆閃（比整體紅閃更精準） */
+        '.hy-fx-hitspot{position:absolute;z-index:6;pointer-events:none;' +
+            'width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;' +
+            'background:radial-gradient(circle,var(--hs-col,#fff) 0%,' +
+            'rgba(248,113,113,.9) 34%,transparent 70%);' +
+            'animation:hy-hitspot .34s ease-out forwards;}',
+        '@keyframes hy-hitspot{0%{opacity:1;transform:scale(.3) rotate(0deg);}' +
+            '40%{opacity:1;transform:scale(1.5) rotate(30deg);}' +
+            '100%{opacity:0;transform:scale(2.3) rotate(60deg);}}',
+        /* 爆閃十字星芒 */
+        '.hy-fx-hitstar{position:absolute;z-index:6;pointer-events:none;' +
+            'width:46px;height:46px;margin:-23px 0 0 -23px;' +
+            'background:conic-gradient(from 0deg,transparent 0deg,' +
+            'var(--hs-col,#fff) 8deg,transparent 22deg,' +
+            'transparent 78deg,var(--hs-col,#fff) 96deg,transparent 110deg,' +
+            'transparent 168deg,var(--hs-col,#fff) 186deg,transparent 200deg,' +
+            'transparent 258deg,var(--hs-col,#fff) 276deg,transparent 290deg,' +
+            'transparent 360deg);' +
+            'clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);' +
+            'animation:hy-hitstar .32s ease-out forwards;}',
+        '@keyframes hy-hitstar{0%{opacity:1;transform:scale(.2) rotate(0deg);}' +
+            '50%{opacity:.95;transform:scale(1.3) rotate(16deg);}' +
+            '100%{opacity:0;transform:scale(1.7) rotate(28deg);}}',
+
+        /* ⭐ v513：敵方情報面板（點立繪浮出） */
+        '.hy-stage-info{position:absolute;z-index:12;min-width:212px;max-width:290px;' +
+            'padding:8px 11px;border-radius:9px;pointer-events:none;' +
+            'background:rgba(6,10,18,.96);border:1px solid #2e4a5e;' +
+            'box-shadow:0 10px 34px rgba(0,0,0,.9);' +
+            'animation:hy-info-in .16s ease-out both;}',
+        '@keyframes hy-info-in{from{opacity:0;transform:translateY(6px) scale(.96);}' +
+            'to{opacity:1;transform:none;}}',
+        '.hy-stage-info .if-nm{display:block;font-size:.78rem;font-weight:bold;color:#fca5a5;' +
+            'margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+        '.hy-stage-info .if-lv{font-size:.62rem;color:#fbbf24;margin-left:5px;}',
+        '.hy-stage-info .if-row{display:flex;flex-wrap:wrap;gap:3px 5px;margin-top:4px;}',
+        '.hy-stage-info .if-chip{font-size:.6rem;color:#94a3b8;' +
+            'background:#0d1520;border:1px solid #26313f;border-radius:4px;padding:0 5px;' +
+            'white-space:nowrap;}',
+        '.hy-stage-info .if-chip b{color:#e2e8f0;font-variant-numeric:tabular-nums;' +
+            'margin-left:2px;}',
+        '.hy-stage-info .if-sk{font-size:.6rem;color:#c084fc;margin-top:4px;' +
+            'line-height:1.5;word-break:break-all;}',
+        '.hy-stage-info .if-bar{height:4px;margin-top:4px;border-radius:2px;overflow:hidden;' +
+            'background:#0a1220;border:1px solid #26313f;}',
+        '.hy-stage-info .if-bar i{display:block;height:100%;' +
+            'background:linear-gradient(90deg,#b91c1c,#f87171);}',
+
+        /* ⭐ v513：傷害佔比條（舞台左下角，戰鬥中即時顯示） */
+        '.hy-stage-share{position:absolute;left:8px;bottom:6px;z-index:7;width:132px;' +
+            'padding:4px 7px;border-radius:7px;pointer-events:none;' +
+            'background:rgba(4,8,14,.8);border:1px solid rgba(51,65,85,.85);' +
+            'font-size:.55rem;color:#94a3b8;}',
+        '.hy-stage-share .sh-t{display:block;font-size:.52rem;color:#64748b;' +
+            'letter-spacing:.5px;margin-bottom:2px;}',
+        '.hy-stage-share .sh-row{display:flex;align-items:center;gap:3px;margin-top:1px;}',
+        '.hy-stage-share .sh-nm{flex:0 0 40px;overflow:hidden;text-overflow:ellipsis;' +
+            'white-space:nowrap;color:#cbd5e1;}',
+        '.hy-stage-share .sh-bar{flex:1 1 auto;height:5px;border-radius:3px;overflow:hidden;' +
+            'background:#0a1220;}',
+        '.hy-stage-share .sh-bar i{display:block;height:100%;' +
+            'background:linear-gradient(90deg,#0e7490,#22d3ee);transition:width .3s;}',
+        '.hy-stage-share .sh-pc{flex:0 0 24px;text-align:right;color:#7dd3fc;' +
+            'font-variant-numeric:tabular-nums;}',
+
         /* ⭐ v510：立繪上方的 buff / debuff 圖示 */
         '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;' +
             'max-width:118px;margin-bottom:3px;z-index:4;}',
@@ -106778,18 +106946,7 @@ window.HY = window.HY || {};
             'background:rgba(6,12,20,.86);border:1px solid #1e3a4c;' +
             'text-shadow:0 0 8px rgba(34,211,238,.6);}',
 
-        /* ⭐ v510：底部戰鬥字幕條 */
-        '.hy-stage-ticker{position:absolute;left:0;right:0;bottom:0;z-index:7;height:24px;' +
-            'display:flex;align-items:center;gap:6px;padding:0 12px;' +
-            'background:linear-gradient(90deg,rgba(4,8,14,.96),rgba(10,18,28,.92),rgba(4,8,14,.96));' +
-            'border-top:1px solid rgba(34,211,238,.22);' +
-            'font-size:.72rem;color:#cbd5e1;overflow:hidden;' +
-            'text-shadow:0 1px 2px #000;white-space:nowrap;}',
-        '.hy-stage-ticker .tk-ico{flex:0 0 auto;font-size:.7rem;opacity:.85;}',
-        '.hy-stage-ticker .tk-txt{flex:1 1 auto;min-width:0;overflow:hidden;' +
-            'text-overflow:ellipsis;display:block;}',
-        '.hy-stage-ticker .tk-txt.swap{animation:hy-tk-in .28s ease-out;}',
-        '@keyframes hy-tk-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
+        /* ⭐ v510：底部戰鬥字幕條（v514 已移除，改為純日誌掃描） */
 
         /* 空場提示 */
         '.hy-stage-empty{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);' +
@@ -106894,6 +107051,42 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════
+       立繪預載（避免第一擊時圖片才載入造成空白）
+       ══════════════════════════════════════════════════════ */
+    var PRELOADED = {};
+
+    /** 預載單張圖片（帶快取，重複呼叫不會重下載） */
+    function preload(src) {
+        if (!src || PRELOADED[src]) return;
+        PRELOADED[src] = true;
+        try {
+            var im = new Image();
+            im.decoding = 'async';
+            im.src = src;
+        } catch (e) { }
+    }
+
+    /** 預載整個地圖的怪物立繪（進戰鬥前先跑） */
+    function preloadForMap(mapId) {
+        try {
+            var MA = HY.MonsterArt;
+            if (!MA || !mapId) return 0;
+            var list = MA.byMap ? MA.byMap(mapId) : [];
+            list.forEach(function (m) {
+                var nn = (m.index < 10 ? '0' : '') + m.index;
+                preload(SPRITE_DIR + nn + '_stage.png');
+            });
+            return list.length;
+        } catch (e) { return 0; }
+    }
+
+    /** 預載指定單位（在 render 前呼叫最有效） */
+    function preloadUnits(party, enemies) {
+        (party || []).forEach(function (u) { if (u && u.sprite) preload(u.sprite); });
+        (enemies || []).forEach(function (u) { if (u && u.sprite) preload(u.sprite); });
+    }
+
+    /* ══════════════════════════════════════════════════════
        建立／更新
        ══════════════════════════════════════════════════════ */
 
@@ -106904,7 +107097,7 @@ window.HY = window.HY || {};
      *   opts.enemies [同上，另可帶 avatar]
      *   opts.id      容器 id（多個面板共用時避免衝突）
      *   opts.scene   場景 key（地圖 id / 'delve' / 'boss'）
-     *   opts.ticker  字幕文字（不給就自動讀戰鬥日誌）
+     *   opts.ticker  （可選）指定要掃描的日誌文字；不給就自動讀戰鬥日誌
      *   opts.onTarget(side, index, unit) 點擊敵方立繪的回呼
      */
     function render(host, opts) {
@@ -106914,6 +107107,9 @@ window.HY = window.HY || {};
         var party = opts.party || [];
         var enemies = opts.enemies || [];
         var id = opts.id || 'hy-battle-stage';
+
+        /* ⭐ v513：先預載立繪，避免首次出現時空白 */
+        preloadUnits(party, enemies);
 
         var el = document.getElementById(id);
         if (!el) {
@@ -106943,12 +107139,22 @@ window.HY = window.HY || {};
             el.innerHTML = buildHtml(party, enemies);
             rebuilt = true;
             SNAPSHOT[id] = null;   /* 重建後不做血量差異比對 */
+            /* ⭐ v513：新陣容 → 進場動畫（雙方從畫面外滑入） */
+            var su = el.querySelectorAll('.hy-stage-unit');
+            for (var si = 0; si < su.length; si++) {
+                su[si].classList.add('slide-in');
+                (function (nd) {
+                    setTimeout(function () { nd.classList.remove('slide-in'); }, 560);
+                })(su[si]);
+            }
         }
 
         applySide(el, party, 'ally', id, rebuilt);
         applySide(el, enemies, 'foe', id, rebuilt);
         updateOrder(el, party, enemies);
-        updateTicker(el, opts);
+        updateDps(el, id);
+        updateShare(el, id, party);
+        scanMissLog(el, opts);
     }
 
     function buildHtml(party, enemies) {
@@ -106962,7 +107168,6 @@ window.HY = window.HY || {};
         if (party.length && enemies.length) {
             h += '<div class="hy-stage-vs">⚔ VS ⚔</div>';
         }
-
         h += '<div class="hy-stage-side ally">';
         if (!party.length) {
             h += '<div class="hy-stage-empty" style="position:static;transform:none;width:100%;">尚未編入隊員</div>';
@@ -106977,8 +107182,6 @@ window.HY = window.HY || {};
         enemies.forEach(function (u, i) { h += unitHtml(u, 'foe', i); });
         h += '</div>';
 
-        h += '<div class="hy-stage-ticker" style="display:none;">' +
-            '<span class="tk-ico">⚔️</span><span class="tk-txt"></span></div>';
         return h;
     }
 
@@ -106990,10 +107193,10 @@ window.HY = window.HY || {};
         var img = '';
         if (u.sprite) {
             img = '<img class="hy-stage-img" src="' + u.sprite + '" alt="" ' +
-                'decoding="async" loading="lazy" data-i="' + i + '" data-side="' + side + '">';
+                'decoding="async" data-i="' + i + '" data-side="' + side + '">';
         } else if (u.avatar) {
             img = '<img class="hy-stage-fallback" src="' + u.avatar + '" alt="" ' +
-                'decoding="async" loading="lazy" data-i="' + i + '" data-side="' + side + '">';
+                'decoding="async" data-i="' + i + '" data-side="' + side + '">';
         } else {
             img = '<div class="hy-stage-fallback" style="display:flex;align-items:center;' +
                 'justify-content:center;font-size:1.4rem;background:#0b1220;">' +
@@ -107054,8 +107257,12 @@ window.HY = window.HY || {};
                     var dmg = Math.abs(d);
                     var crit = dmg >= Math.max(1, (Number(p.max) || 0) * 0.18);
                     playHit(el, node, side, i, dmg, crit, null, u.element);
+                    /* ⭐ v513：我方打敵方 → 累積連擊 */
+                    if (side === 'foe') bumpCombo(el, stageId);
                 } else if (d > 0.5) {
                     playHeal(node, d);
+                    /* ⭐ v513：補血統計 */
+                    try { statsOf(stageId).healTotal += d; } catch (e0) { }
                 }
                 /* 存活 → 倒地 */
                 if (p.alive !== false && u.alive === false) playDeath(node);
@@ -107173,12 +107380,63 @@ window.HY = window.HY || {};
     /* ══════════════════════════════════════════════════════
        特效
        ══════════════════════════════════════════════════════ */
+
+    /** ⭐ v513：飄字（改用物件池） */
     function floatText(node, text, kind) {
-        var d = document.createElement('div');
-        d.className = 'hy-fx-dmg ' + kind;
+        if (!node) return;
+        var d = takeNode('hy-fx-dmg ' + kind);
         d.textContent = text;
         node.appendChild(d);
-        setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 960);
+        setTimeout(function () { giveNode(d); }, 960);
+    }
+
+    /** ⭐ v513：命中/閃避回饋
+        命中 → 白色十字星芒 + 局部爆閃（屬性色）
+        閃避 → 灰白「閃避」斜體飄字 + 殘影偏移 */
+    function playMiss(node) {
+        if (!node) return;
+        floatText(node, '閃避', 'miss');
+        var img = node.querySelector('.hy-stage-img');
+        if (img) {
+            img.classList.remove('dodge');
+            void img.offsetWidth;
+            img.classList.add('dodge');
+            setTimeout(function () { img.classList.remove('dodge'); }, 400);
+        }
+    }
+
+    /** ⭐ v513：受擊部位局部爆閃（在立繪 42% 高度處） */
+    function playHitSpot(node, element) {
+        if (!node) return;
+        var es = elemStyle(element);
+        var col = es ? es.core : '#ffffff';
+
+        var spot = takeNode('hy-fx-hitspot');
+        spot.style.setProperty('--hs-col', es ? es.glow : '#ffffff');
+        var lx = 50 + (Math.random() * 26 - 13);
+        var ly = 42 + (Math.random() * 20 - 10);
+        spot.style.left = lx + '%';
+        spot.style.top = ly + '%';
+        node.appendChild(spot);
+        setTimeout(function () { giveNode(spot); }, 360);
+
+        var star = takeNode('hy-fx-hitstar');
+        star.style.setProperty('--hs-col', col);
+        star.style.left = lx + '%';
+        star.style.top = ly + '%';
+        node.appendChild(star);
+        setTimeout(function () { giveNode(star); }, 340);
+    }
+
+    /** ⭐ v513：技能符文光效（施放大招時立繪周圍旋轉光環） */
+    function playRune(node, element) {
+        if (!node) return;
+        var es = elemStyle(element);
+        var col = es ? es.core : '#a78bfa';
+        var r = takeNode('hy-stage-rune');
+        r.style.setProperty('--rune-col', col);
+        node.appendChild(r);
+        setTimeout(function () { giveNode(r); }, 1100);
     }
 
     function playHit(el, node, side, i, dmg, crit, actorNode, element) {
@@ -107202,15 +107460,17 @@ window.HY = window.HY || {};
             setTimeout(function () { attacker.classList.remove('lunge'); }, 440);
         }
 
-        /* 紅閃 */
-        var fl = document.createElement('div');
-        fl.className = 'hy-stage-flash';
+        /* ⭐ v513：受擊部位局部爆閃（比整體紅閃更精準） */
+        playHitSpot(node, element);
+
+        /* 整體紅閃（保留，作為大範圍鋪墊） */
+        var fl = takeNode('hy-stage-flash');
         fl.style.width = '70px';
         fl.style.height = '70px';
         fl.style.left = 'calc(50% - 35px)';
         fl.style.top = 'calc(50% - 35px)';
         node.appendChild(fl);
-        setTimeout(function () { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 320);
+        setTimeout(function () { giveNode(fl); }, 320);
 
         /* 震動 */
         node.classList.remove('hit');
@@ -107224,11 +107484,128 @@ window.HY = window.HY || {};
 
         /* 暴擊衝擊環 */
         if (crit) {
-            var ring = document.createElement('div');
-            ring.className = 'hy-fx-ring';
+            var ring = takeNode('hy-fx-ring');
             node.appendChild(ring);
-            setTimeout(function () { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 500);
+            setTimeout(function () { giveNode(ring); }, 500);
         }
+
+        /* ⭐ v513：技能符文光效（暴擊時一併亮起） */
+        if (crit) playRune(node, element);
+
+        /* ⭐ v513：統計（傷害佔比 / DPS） */
+        try {
+            var sid = el.id || 'hy-battle-stage';
+            var st = statsOf(sid);
+            if (side === 'foe') {
+                /* 我方打敵方 → 記在出手者身上 */
+                if (attacker) {
+                    var ai = parseInt(attacker.getAttribute('data-i'), 10) || 0;
+                    var nm = (attacker.querySelector('.hy-stage-nm') || {}).textContent || ('#' + ai);
+                    st.dmgByAlly[nm] = (st.dmgByAlly[nm] || 0) + dmg;
+                }
+            } else {
+                st.dmgToAlly += dmg;
+            }
+        } catch (e) { }
+    }
+
+    /* ⭐ v513：Combo 連擊（我方連續命中不被打斷） */
+    function bumpCombo(el, stageId) {
+        try {
+            var st = statsOf(stageId);
+            var now = Date.now();
+            /* 3 秒內連續命中才算連擊 */
+            if (now - st.comboTs > 3000) st.combo = 0;
+            st.combo++;
+            st.comboTs = now;
+            if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+            if (st.combo < 2) return;
+
+            var box = el.querySelector('.hy-stage-combo');
+            if (!box) {
+                box = document.createElement('div');
+                box.className = 'hy-stage-combo';
+                el.appendChild(box);
+            }
+            box.innerHTML = '<span class="cb-n">×' + st.combo + '</span>' +
+                '<span class="cb-l">COMBO</span>';
+            box.classList.toggle('boost', st.combo >= 5);
+            /* 重播進場動畫 */
+            box.style.animation = 'none';
+            void box.offsetWidth;
+            box.style.animation = '';
+
+            clearTimeout(box.__t);
+            box.__t = setTimeout(function () {
+                if (box && box.parentNode) box.parentNode.removeChild(box);
+                st.combo = 0;
+            }, 2600);
+        } catch (e) { }
+    }
+
+    /* ⭐ v513：DPS / 統計條（右上角） */
+    function updateDps(el, stageId) {
+        try {
+            var st = statsOf(stageId);
+            var box = el.querySelector('.hy-stage-dps');
+            if (!box) {
+                box = document.createElement('div');
+                box.className = 'hy-stage-dps';
+                el.appendChild(box);
+            }
+            var secs = Math.max(1, (Date.now() - st.startTs) / 1000);
+            var total = 0;
+            Object.keys(st.dmgByAlly).forEach(function (k) { total += st.dmgByAlly[k]; });
+            var dps = total / secs;
+
+            /* 單體最高傷害者（MVP） */
+            var best = '', bestV = 0;
+            Object.keys(st.dmgByAlly).forEach(function (k) {
+                if (st.dmgByAlly[k] > bestV) { bestV = st.dmgByAlly[k]; best = k; }
+            });
+
+            var h = '<span class="dp">DPS <b>' + Math.round(dps).toLocaleString() + '</b></span>' +
+                '<span class="dp-sep">·</span>' +
+                '<span class="dp">總傷 <b>' + Math.round(total).toLocaleString() + '</b></span>';
+            if (best) {
+                h += '<span class="dp-sep">·</span>' +
+                    '<span class="dp best" title="最高輸出">👑 <b>' +
+                    esc(best.length > 5 ? best.slice(0, 5) + '…' : best) + '</b></span>';
+            }
+            if (box.innerHTML !== h) box.innerHTML = h;
+        } catch (e) { }
+    }
+
+    /* ⭐ v513：傷害佔比條（左下角） */
+    function updateShare(el, stageId, party) {
+        try {
+            var st = statsOf(stageId);
+            var keys = Object.keys(st.dmgByAlly);
+            var total = 0;
+            keys.forEach(function (k) { total += st.dmgByAlly[k]; });
+            if (total <= 0) {
+                var old = el.querySelector('.hy-stage-share');
+                if (old && old.parentNode) old.parentNode.removeChild(old);
+                return;
+            }
+            var box = el.querySelector('.hy-stage-share');
+            if (!box) {
+                box = document.createElement('div');
+                box.className = 'hy-stage-share';
+                el.appendChild(box);
+            }
+            keys.sort(function (a, b) { return st.dmgByAlly[b] - st.dmgByAlly[a]; });
+            var h = '<span class="sh-t">傷害佔比</span>';
+            keys.slice(0, 4).forEach(function (k) {
+                var pct = Math.round((st.dmgByAlly[k] / total) * 100);
+                h += '<div class="sh-row">' +
+                    '<span class="sh-nm" title="' + esc(k) + '">' + esc(k) + '</span>' +
+                    '<span class="sh-bar"><i style="width:' + pct + '%"></i></span>' +
+                    '<span class="sh-pc">' + pct + '%</span>' +
+                    '</div>';
+            });
+            if (box.innerHTML !== h) box.innerHTML = h;
+        } catch (e) { }
     }
 
     /* ⭐ v511：攻擊軌跡線
@@ -107422,22 +107799,34 @@ window.HY = window.HY || {};
     /* ══════════════════════════════════════════════════════
        字幕條（自動讀戰鬥日誌最新一行）
        ══════════════════════════════════════════════════════ */
-    function updateTicker(el, opts) {
-        var box = el.querySelector('.hy-stage-ticker');
-        if (!box) return;
-        var txt = opts.ticker;
-        if (txt === undefined || txt === null) txt = readLatestLog();
-        if (!txt) { box.style.display = 'none'; return; }
-        box.style.display = 'flex';
 
-        var span = box.querySelector('.tk-txt');
-        if (!span) return;
-        if (span.getAttribute('data-last') === txt) return;
-        span.setAttribute('data-last', txt);
-        span.textContent = txt;
-        span.classList.remove('swap');
-        void span.offsetWidth;
-        span.classList.add('swap');
+    /** ⭐ v514：字幕條已移除，改為純「閃避偵測」
+        每 tick 讀最新一行日誌，若含閃避字樣就對該目標播放閃避演出。
+        不會顯示任何文字，純粹驅動特效。 */
+    function scanMissLog(el, opts) {
+        try {
+            var txt = opts.ticker;
+            if (txt === undefined || txt === null) txt = readLatestLog();
+            if (!txt) return;
+
+            var last = el.getAttribute('data-lastlog');
+            if (last === txt) return;
+            el.setAttribute('data-lastlog', txt);
+
+            if (!/閃避|未命中|落空|避開了|躲開|格擋|化解/.test(txt)) return;
+
+            var m = /對【([^】]+)】/.exec(txt);
+            if (!m) return;
+            var tgtName = m[1];
+            var all = el.querySelectorAll('.hy-stage-unit:not(.dead)');
+            for (var i = 0; i < all.length; i++) {
+                var nmEl = all[i].querySelector('.hy-stage-nm');
+                if (nmEl && nmEl.textContent === tgtName) {
+                    playMiss(all[i]);
+                    break;
+                }
+            }
+        } catch (eM) { }
     }
 
     /** 從戰鬥日誌容器讀取最新一行（去掉 HTML 標籤） */
@@ -107455,6 +107844,95 @@ window.HY = window.HY || {};
         } catch (e) { return ''; }
     }
 
+    /* ⭐ v513：敵方情報面板（點立繪浮出，5 秒後自動關閉） */
+    var INFO_TIMER = {};
+
+    function showInfo(el, node, unit) {
+        if (!el || !node || !unit) return;
+        hideInfo(el);
+
+        var box = document.createElement('div');
+        box.className = 'hy-stage-info';
+
+        var pct = 100;
+        if (typeof unit.cur === 'number' && typeof unit.max === 'number' && unit.max > 0) {
+            pct = Math.max(0, Math.min(100, (unit.cur / unit.max) * 100));
+        }
+
+        var elem = unit.element ? String(unit.element) : '';
+        var elemName = '';
+        try {
+            var D = HY.Data || {};
+            if (elem && D.ELEMENTS && D.ELEMENTS[elem]) {
+                elemName = D.ELEMENTS[elem].icon + D.ELEMENTS[elem].name;
+            }
+        } catch (e) { }
+
+        var h = '<span class="if-nm">' + esc(unit.name) +
+            (unit.lv ? '<b class="if-lv">Lv.' + esc(unit.lv) + '</b>' : '') + '</span>';
+        h += '<div class="if-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>';
+        h += '<div class="if-chip" style="margin-top:4px;">氣血 <b>' +
+            Math.round(Number(unit.cur) || 0).toLocaleString() + ' / ' +
+            Math.round(Number(unit.max) || 0).toLocaleString() + '</b></div>';
+        h += '<div class="if-row">';
+        if (elemName) {
+            h += '<span class="if-chip" style="color:' +
+                (ELEM_STYLE[elem] ? ELEM_STYLE[elem].core : '#94a3b8') + ';">' +
+                elemName + '</span>';
+        }
+        if (unit.rarityName) {
+            h += '<span class="if-chip" style="color:' +
+                (unit.rarityColor || '#e2e8f0') + ';">[' + esc(unit.rarityName) + ']</span>';
+        }
+        if (unit.atk) h += '<span class="if-chip">攻 <b>' + esc(unit.atk) + '</b></span>';
+        if (unit.def) h += '<span class="if-chip">防 <b>' + esc(unit.def) + '</b></span>';
+        if (unit.hit) h += '<span class="if-chip">命 <b>' + esc(unit.hit) + '%</b></span>';
+        if (unit.eva) h += '<span class="if-chip">閃 <b>' + esc(unit.eva) + '%</b></span>';
+        h += '</div>';
+        if (unit.skill) {
+            h += '<div class="if-sk">⚡ 下一招：《' + esc(unit.skill) + '》</div>';
+        }
+        if (unit.buffs && unit.buffs.length) {
+            h += '<div class="if-row" style="margin-top:4px;">';
+            unit.buffs.slice(0, 6).forEach(function (b) {
+                h += '<span class="if-chip" style="color:' + (b.color || '#94a3b8') + ';">' +
+                    b.icon + evt(b.stacks) + '</span>';
+            });
+            h += '</div>';
+        }
+
+        box.innerHTML = h;
+        el.appendChild(box);
+
+        /* 定位：貼在立繪右側（避免超出舞台） */
+        try {
+            var er = el.getBoundingClientRect();
+            var nr = node.getBoundingClientRect();
+            var bw = box.offsetWidth || 230;
+            var left = nr.left - er.left - bw - 12;
+            if (left < 6) left = nr.left - er.left + nr.width + 12;
+            if (left + bw > er.width - 6) left = Math.max(6, er.width - bw - 6);
+            var top = nr.top - er.top + nr.height * 0.12;
+            if (top + 130 > er.height) top = Math.max(4, er.height - 140);
+            box.style.left = left + 'px';
+            box.style.top = top + 'px';
+        } catch (e) { }
+
+        el.__infoBox = box;
+        var sid = el.id || 'hy-battle-stage';
+        clearTimeout(INFO_TIMER[sid]);
+        INFO_TIMER[sid] = setTimeout(function () { hideInfo(el); }, 5200);
+    }
+
+    function evt(n) { return n && n > 1 ? '<b>' + n + '</b>' : ''; }
+
+    function hideInfo(el) {
+        if (!el) return;
+        var b = el.__infoBox;
+        if (b && b.parentNode) b.parentNode.removeChild(b);
+        el.__infoBox = null;
+    }
+
     /* ══════════════════════════════════════════════════════
        點擊敵方立繪 → 集火
        ══════════════════════════════════════════════════════ */
@@ -107464,10 +107942,21 @@ window.HY = window.HY || {};
         el.addEventListener('click', function (ev) {
             var node = ev.target && ev.target.closest
                 ? ev.target.closest('.hy-stage-unit.foe') : null;
-            if (!node) return;
+            if (!node) {
+                /* ⭐ v513：點空白處 → 關閉情報面板 */
+                hideInfo(el);
+                return;
+            }
             if (node.classList.contains('dead')) return;
             var idx = parseInt(node.getAttribute('data-i'), 10);
             if (isNaN(idx)) return;
+
+            /* ⭐ v513：同時顯示敵方情報面板 */
+            try {
+                var o0 = el.__opts || {};
+                showInfo(el, node, (o0.enemies || [])[idx]);
+            } catch (eI) { }
+
             var o = el.__opts || {};
             if (typeof o.onTarget === 'function') {
                 o.onTarget('foe', idx, (o.enemies || [])[idx]);
@@ -107510,6 +107999,26 @@ window.HY = window.HY || {};
         monAvatar: monAvatar,
         buffIconsOf: buffIconsOf,
         sceneClass: sceneClass,
+        /* ⭐ v513：預載 */
+        preload: preload,
+        preloadForMap: preloadForMap,
+        preloadUnits: preloadUnits,
+        /* ⭐ v513：統計 */
+        stats: function (id) { return statsOf(id || 'hy-battle-stage'); },
+        resetStats: function (id) {
+            var k = id || 'hy-battle-stage';
+            if (STATS[k]) delete STATS[k];
+            var el = document.getElementById(k);
+            if (el) {
+                var a = el.querySelector('.hy-stage-dps');
+                if (a && a.parentNode) a.parentNode.removeChild(a);
+                var b = el.querySelector('.hy-stage-share');
+                if (b && b.parentNode) b.parentNode.removeChild(b);
+                var c = el.querySelector('.hy-stage-combo');
+                if (c && c.parentNode) c.parentNode.removeChild(c);
+            }
+        },
+        hideInfo: hideInfo,
         /* 對外手動觸發（給特殊技能表現用） */
         fx: {
             hit: function (id, side, index, dmg, crit, actorIndex, element) {
@@ -107521,7 +108030,11 @@ window.HY = window.HY || {};
                     actor = el.querySelector('.hy-stage-unit[data-side="' +
                         (side === 'foe' ? 'ally' : 'foe') + '"][data-i="' + actorIndex + '"]');
                 }
-                if (n) playHit(el, n, side, index, dmg || 0, !!crit, actor, element);
+                if (n) {
+                    playHit(el, n, side, index, dmg || 0, !!crit, actor, element);
+                    /* ⭐ v513：我方打敵方 → 累積連擊 */
+                    if (side === 'foe') bumpCombo(el, id || 'hy-battle-stage');
+                }
             },
             heal: function (id, side, index, amount) {
                 var el = document.getElementById(id || 'hy-battle-stage');
@@ -107540,7 +108053,10 @@ window.HY = window.HY || {};
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
-                if (n) showSkillName(n, name, side, /回|療|補|治|癒/.test(String(name)), element);
+                if (n) {
+                    showSkillName(n, name, side, /回|療|補|治|癒/.test(String(name)), element);
+                    playRune(n, element);
+                }
             },
             /* ⭐ v511：手動畫軌跡線（from → to，兩邊都是 index） */
             trail: function (id, fromSide, fromIndex, toSide, toIndex, crit, element) {
@@ -107550,7 +108066,7 @@ window.HY = window.HY || {};
                 var b = el.querySelector('.hy-stage-unit[data-side="' + toSide + '"][data-i="' + toIndex + '"]');
                 if (a && b) drawTrail(el, a, b, fromSide, !!crit, element);
             },
-            /* ⭐ v512：AOE 全體特效（自動對該側所有活著的單位拉線） */
+            /* ⭐ v512：AOE 全體特效 */
             aoe: function (id, fromSide, targetSide, element) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
@@ -107558,11 +108074,31 @@ window.HY = window.HY || {};
                 var atk = atkList.length ? atkList[0] : null;
                 var tgts = el.querySelectorAll('.hy-stage-unit.' + targetSide + ':not(.dead)');
                 if (tgts.length) playAoe(el, atk, fromSide, [].slice.call(tgts), element);
+            },
+            /* ⭐ v513：閃避演出 */
+            miss: function (id, side, index) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) playMiss(n);
+            },
+            /* ⭐ v513：符文光效 */
+            rune: function (id, side, index, element) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+                if (n) playRune(n, element);
+            },
+            /* ⭐ v513：Combo */
+            combo: function (id) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                bumpCombo(el, id || 'hy-battle-stage');
             }
         }
     };
 
-    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台 v3 已載入（軌跡線 / 招式名 / 出手順序 / 殘血警示）');
+    console.log('[HY BattleStage] ✓ 戰鬥畫面舞台 v4 已載入（屬性變色 / AOE / 預載 / Combo / DPS / 情報面板）');
 })(window.HY);
 
 
