@@ -29385,10 +29385,68 @@ window.HY = window.HY || {};
                 const parsed = JSON.parse(raw);
                 this.charSys.rootState = Object.assign(this.charSys.getDefaultRootState(), parsed);
                 this.charSys.syncActivePointer();
+                /* ⭐ v472：載入後修復所有角色的氣血／內力
+                   ──────────────────────────────────────────────────────────
+                   症狀：氣血條顯示 NaN / 9621。
+
+                   根因：舊存檔裡可能存了 NaN / null / 字串，
+                        載入後直接被 UI 讀到，再經 Math.min / 加法傳播，
+                        變成永久 NaN（因為 NaN + 任何數還是 NaN）。
+
+                   解法：載入後立刻逐角色驗證，無效值一律補滿。
+                        這樣「舊存檔」也能自動修好，不需要玩家重開角色。 */
+                this._repairVitals();
+
                 this.logger.add('📂 成功讀取上次的時空小隊歷練紀錄！', 'system');
                 return true;
             } catch (err) {
                 return false;
+            }
+        }
+        /** ⭐ v472：修復所有角色的氣血／內力為有效數字 */
+        _repairVitals() {
+            var cs = this.charSys;
+            if (!cs || typeof cs.getDerivedStatsForChar !== 'function') return;
+            var list = (cs.rootState && cs.rootState.roster) ? cs.rootState.roster : [];
+            var fixed = 0;
+            list.forEach(function (c) {
+                if (!c) return;
+                var d = null;
+                try { d = cs.getDerivedStatsForChar(c); } catch (e) { d = null; }
+                if (!d) return;
+                var maxHp = Number(d.maxHp);
+                var maxMp = Number(d.maxMp);
+                if (!isFinite(maxHp) || maxHp <= 0) maxHp = 1;
+                if (!isFinite(maxMp) || maxMp < 0) maxMp = 0;
+
+                var hp = Number(c.currentHp);
+                var mp = Number(c.currentMp);
+                var needFix = false;
+                /* ⚠️ JSON.stringify(NaN) → null，載入後是 null 而非 NaN。
+                   Number(null) 會得到 0，被誤判為「有效」——
+                   所以必須先檢查原始型別，null / undefined / 非數字字串都要修。 */
+                if (c.currentHp === null || c.currentHp === undefined ||
+                    typeof c.currentHp !== 'number' || !isFinite(hp)) {
+                    hp = maxHp;
+                    needFix = true;
+                }
+                if (c.currentMp === null || c.currentMp === undefined ||
+                    typeof c.currentMp !== 'number' || !isFinite(mp)) {
+                    mp = maxMp;
+                    needFix = true;
+                }
+                if (hp > maxHp) { hp = maxHp; needFix = true; }
+                if (mp > maxMp) { mp = maxMp; needFix = true; }
+                if (hp < 0) { hp = 0; needFix = true; }
+                if (mp < 0) { mp = 0; needFix = true; }
+                if (needFix) {
+                    c.currentHp = hp;
+                    c.currentMp = mp;
+                    fixed++;
+                }
+            });
+            if (fixed > 0) {
+                console.log('[saveSystem] ✓ 修復了 ' + fixed + ' 名角色的氣血/內力無效值');
             }
         }
         reset() {
@@ -30785,9 +30843,43 @@ window.HY = window.HY || {};
             }
             restoreVitals(hp, mp, targetChar) {
                 var c = targetChar || this.state;
+                if (!c) return;
                 var d = this.getDerivedStatsForChar(c);
-                c.currentHp = Math.min(d.maxHp, c.currentHp + hp);
-                c.currentMp = Math.min(d.maxMp, c.currentMp + mp);
+                /* ⭐ v472：NaN 防護
+                   ──────────────────────────────────────────────────────────
+                   症狀：角色氣血條顯示 NaN / 9621（maxHp 正常、currentHp 是 NaN）。
+
+                   根因：這裡原本直接寫
+                       c.currentHp = Math.min(d.maxHp, c.currentHp + hp)
+                   若 hp 傳入 undefined（呼叫端漏參數、或算式中某項是 undefined），
+                   c.currentHp + undefined → NaN，Math.min 會把 NaN 繼續傳出去，
+                   之後所有加減都維持 NaN，永遠無法恢復。
+
+                   解法：對「舊值」與「增量」都做 isFinite 檢查，
+                        任一無效就視為 0（不改變現值 / 不補血），
+                        確保 currentHp 永遠是有限數字。 */
+                var curHp = Number(c.currentHp);
+                var curMp = Number(c.currentMp);
+                if (c.currentHp === null || c.currentHp === undefined || !isFinite(curHp)) {
+                    curHp = (isFinite(d.maxHp) ? d.maxHp : 1);
+                }
+                if (c.currentMp === null || c.currentMp === undefined || !isFinite(curMp)) {
+                    curMp = (isFinite(d.maxMp) ? d.maxMp : 0);
+                }
+
+                var addHp = Number(hp);
+                var addMp = Number(mp);
+                if (!isFinite(addHp)) addHp = 0;
+                if (!isFinite(addMp)) addMp = 0;
+
+                var maxHp = isFinite(d.maxHp) ? d.maxHp : curHp;
+                var maxMp = isFinite(d.maxMp) ? d.maxMp : curMp;
+
+                c.currentHp = Math.min(maxHp, curHp + addHp);
+                c.currentMp = Math.min(maxMp, curMp + addMp);
+                /* 最後再保險一次（避免 maxHp 本身異常時把值弄壞） */
+                if (!isFinite(c.currentHp)) c.currentHp = maxHp;
+                if (!isFinite(c.currentMp)) c.currentMp = maxMp;
             }
             restoreAllPartyVitals(ratio) {
                 var self = this;
@@ -30804,9 +30896,32 @@ window.HY = window.HY || {};
             }
             clampVitals(derived, targetChar) {
                 var c = targetChar || this.state;
+                if (!c) return;
                 derived = derived || this.getDerivedStatsForChar(c);
-                c.currentHp = Math.min(derived.maxHp, Math.max(0, c.currentHp));
-                c.currentMp = Math.min(derived.maxMp, Math.max(0, c.currentMp));
+                /* ⭐ v472：NaN 自癒
+                   ──────────────────────────────────────────────────────────
+                   舊版：Math.max(0, c.currentHp) —— 若 currentHp 是 undefined
+                        或 NaN，這裡會算出 NaN 並永久寫回去。
+
+                   新版：先驗證，遇到無效值直接「補滿」（而不是留著 NaN）。
+                        這樣舊存檔載入時就能自動修復，不需要玩家重開角色。 */
+                var maxHp = Number(derived.maxHp);
+                var maxMp = Number(derived.maxMp);
+                if (!isFinite(maxHp) || maxHp <= 0) maxHp = 1;
+                if (!isFinite(maxMp) || maxMp < 0) maxMp = 0;
+
+                var curHp = Number(c.currentHp);
+                var curMp = Number(c.currentMp);
+                /* ⚠️ null 也要視為無效（JSON 會把 NaN 存成 null） */
+                if (c.currentHp === null || c.currentHp === undefined || !isFinite(curHp)) {
+                    curHp = maxHp;
+                }
+                if (c.currentMp === null || c.currentMp === undefined || !isFinite(curMp)) {
+                    curMp = maxMp;
+                }
+
+                c.currentHp = Math.min(maxHp, Math.max(0, curHp));
+                c.currentMp = Math.min(maxMp, Math.max(0, curMp));
             }
         }
         window.HY.CharacterSystem = CharacterSystem;
@@ -49539,9 +49654,22 @@ window.HY = window.HY || {};
         enemyState(e) { if (!e._sect) e._sect = {}; return e._sect; }
         persistent(c, k) { if (!c.sectFeature) c.sectFeature = {}; return c.sectFeature[k]; }
         setPersistent(c, k, v) { if (!c.sectFeature) c.sectFeature = {}; c.sectFeature[k] = v; }
-        maxHpOf(c) { return this.app.charSys.getDerivedStatsForChar(c).maxHp; }
-        mpOf(c) { return this.app.charSys.getDerivedStatsForChar(c).maxMp; }
-        atkOf(c) { return this.app.charSys.getDerivedStatsForChar(c).atk; }
+        /* ⭐ v472：這三個取值的函式是全機制共用的基礎，
+           若 derived stats 異常（例如某個屬性算出 NaN），
+           所有機制都會把 NaN 帶進 currentHp / currentMp。
+           這裡統一加 isFinite 檢查，確保回傳永遠是有限數字。 */
+        maxHpOf(c) {
+            var v = Number(this.app.charSys.getDerivedStatsForChar(c).maxHp);
+            return (isFinite(v) && v > 0) ? v : 1;
+        }
+        mpOf(c) {
+            var v = Number(this.app.charSys.getDerivedStatsForChar(c).maxMp);
+            return (isFinite(v) && v >= 0) ? v : 0;
+        }
+        atkOf(c) {
+            var v = Number(this.app.charSys.getDerivedStatsForChar(c).atk);
+            return (isFinite(v) && v > 0) ? v : 1;
+        }
         getDef(sectId) { return (sectId && this.FEATURES[sectId]) ? this.FEATURES[sectId] : null; }
         getFeatMeta(sectId) {
             var Data = window.HY.Data;
@@ -69882,12 +70010,34 @@ window.HY = window.HY || {};
             setText('char-lv', st.lv);
             setText('char-exp', st.exp + ' / ' + st.maxExp);
             setText('char-power', d.powerScore);
-            setText('hp-text', st.currentHp + ' / ' + d.maxHp);
-            setText('mp-text', st.currentMp + ' / ' + d.maxMp);
+            /* ⭐ v472：NaN 兜底顯示
+               ──────────────────────────────────────────────────────────
+               即使資料層已經修好，仍可能在「舊存檔第一次渲染」時讀到 NaN。
+               這裡做最後一道防線：顯示前把無效值轉成合理數字，
+               確保玩家永遠不會看到「NaN」三個字。 */
+            var _hpCur = Number(st.currentHp);
+            var _hpMax = Number(d.maxHp);
+            if (!isFinite(_hpMax) || _hpMax <= 0) _hpMax = 1;
+            /* ⚠️ null 也要視為無效（JSON 會把 NaN 存成 null） */
+            if (st.currentHp === null || st.currentHp === undefined || !isFinite(_hpCur)) {
+                _hpCur = _hpMax;
+            }
+            _hpCur = Math.min(_hpMax, Math.max(0, _hpCur));
+
+            var _mpCur = Number(st.currentMp);
+            var _mpMax = Number(d.maxMp);
+            if (!isFinite(_mpMax) || _mpMax < 0) _mpMax = 0;
+            if (st.currentMp === null || st.currentMp === undefined || !isFinite(_mpCur)) {
+                _mpCur = _mpMax;
+            }
+            _mpCur = Math.min(_mpMax, Math.max(0, _mpCur));
+
+            setText('hp-text', Math.floor(_hpCur) + ' / ' + Math.floor(_hpMax));
+            setText('mp-text', Math.floor(_mpCur) + ' / ' + Math.floor(_mpMax));
             const hpBar = document.getElementById('hp-bar');
-            if (hpBar) hpBar.style.width = Math.min(100, (st.currentHp / d.maxHp) * 100) + '%';
+            if (hpBar) hpBar.style.width = Math.min(100, (_hpCur / _hpMax) * 100) + '%';
             const mpBar = document.getElementById('mp-bar');
-            if (mpBar) mpBar.style.width = Math.min(100, (st.currentMp / d.maxMp) * 100) + '%';
+            if (mpBar) mpBar.style.width = Math.min(100, (_mpMax > 0 ? (_mpCur / _mpMax) * 100 : 0)) + '%';
 
             /* ⭐ v423：罡氣條（有罡氣上限才顯示）
                ──────────────────────────────────────────────────────────
@@ -99744,8 +99894,15 @@ window.HY = window.HY || {};
             '</div>';
         }
         buildHpmpBar(kind, idPrefix, cur, max, isEnemy) {
-            var safeMax = (typeof max === 'number' && max > 0) ? max : 0;
-            var safeCur = Math.max(0, Math.min(cur || 0, safeMax));
+            /* ⭐ v472：NaN 防護
+               `cur || 0` 只擋得住 undefined/null，擋不住 NaN（NaN 是 truthy）。
+               一旦 currentHp 變成 NaN，Math.min(NaN, max) → NaN，
+               寬度變成「NaN%」、文字變成「NaN / 9621」。 */
+            var safeMax = (typeof max === 'number' && isFinite(max) && max > 0) ? max : 0;
+            var nCur = Number(cur);
+            /* ⚠️ null 也要視為無效（JSON 把 NaN 存成 null） */
+            if (cur === null || cur === undefined || !isFinite(nCur)) nCur = safeMax;
+            var safeCur = Math.max(0, Math.min(nCur, safeMax));
             var pct = safeMax > 0 ? (safeCur / safeMax) * 100 : 0;
             var isHp = (kind === 'hp');
             var cls = isHp
@@ -100318,8 +100475,11 @@ window.HY = window.HY || {};
             var _inMapNow = !!(_atlasS && typeof _atlasS.isInMap === 'function' && _atlasS.isInMap());
             var partyMembers = _inMapNow ? [] : app.partySys.getPartyMembers();
             function setBar(prefix, cur, max) {
-                var safeMax = (typeof max === 'number' && max > 0) ? max : 0;
-                var safeCur = Math.max(0, Math.min(cur || 0, safeMax));
+                /* ⭐ v472：NaN / null 防護（同 buildHpmpBar 的理由） */
+                var safeMax = (typeof max === 'number' && isFinite(max) && max > 0) ? max : 0;
+                var nCur = Number(cur);
+                if (cur === null || cur === undefined || !isFinite(nCur)) nCur = safeMax;
+                var safeCur = Math.max(0, Math.min(nCur, safeMax));
                 var pct = safeMax > 0 ? (safeCur / safeMax) * 100 : 0;
                 var fill = document.getElementById(prefix + '-fill');
                 var txt = document.getElementById(prefix + '-text');
