@@ -147405,11 +147405,31 @@ window.HY = window.HY || {};
     var DEFS = [
         { k: 'top', sel: '#top-bar', label: '☰ 系統列', icon: '☰', vert: false },
         { k: 'left', sel: '#character-panel', label: '👥 角色', icon: '👥', vert: true },
-        { k: 'right', sel: '#log-panel', label: '📜 日誌', icon: '📜', vert: true }
+        { k: 'right', sel: '#log-panel', label: '📜 日誌', icon: '📜', vert: true },
+        /* ⭐ v493：底部抽屜（預留）
+           ──────────────────────────────────────────────────────────
+           使用者要求「下方也增加一個抽屜標籤，名稱暫定，待日後新增」。
+           目前下方沒有可收納的既有面板，所以：
+             · 標籤照樣建立、照樣彈出、照樣可點
+             · 但沒有 sel（panels 不會有 bottom 項目）
+             · 點擊時走「佔位面板」，顯示「功能待新增」的說明
+           日後只要把 sel 換成實際面板的選擇器（例如 '#bottom-bar'），
+           它就會自動變成真正的抽屜，其餘邏輯完全不用改。 */
+        {
+            k: 'bottom',
+            sel: null,
+            label: '🧩 暫定功能',
+            icon: '🧩',
+            vert: false,
+            placeholder: true
+        }
     ];
 
+    /* 抽屜方向清單（用於「一次只開一個」等迴圈） */
+    var KEYS = ['top', 'left', 'right', 'bottom'];
+
     function EdgeDrawerSystem() {
-        this.state = { top: false, left: false, right: false };
+        this.state = { top: false, left: false, right: false, bottom: false };
         this.panels = {};
         this.tabs = {};
         this._timers = {};
@@ -147649,16 +147669,45 @@ window.HY = window.HY || {};
                 'transform:translate(-50%,-110%);' +
             '}',
 
+            /* ⭐ v493：底部標籤（同樣 198 × 42，貼齊下緣、圓角朝上） */
+            '.hy-edge-tab[data-k="bottom"]{' +
+                'bottom:0;left:50%;' +
+                'width:198px;height:42px;' +
+                'border-bottom:none;border-radius:13px 13px 0 0;' +
+                'transform:translate(-50%,110%);' +
+            '}',
+
             /* 彈出狀態（滑鼠靠近邊緣） */
             '.hy-edge-tab.hy-edge-peek[data-k="left"]{opacity:1;pointer-events:auto;transform:translate(0,-50%);}',
             '.hy-edge-tab.hy-edge-peek[data-k="right"]{opacity:1;pointer-events:auto;transform:translate(0,-50%);}',
             '.hy-edge-tab.hy-edge-peek[data-k="top"]{opacity:1;pointer-events:auto;transform:translate(-50%,0);}',
+            '.hy-edge-tab.hy-edge-peek[data-k="bottom"]{opacity:1;pointer-events:auto;transform:translate(-50%,0);}',
 
             /* 面板展開時：標籤常駐並移到面板外緣 */
             '.hy-edge-tab.hy-edge-stuck{opacity:1;pointer-events:auto;}',
             '.hy-edge-tab.hy-edge-stuck[data-k="left"]{transform:translate(0,-50%);}',
             '.hy-edge-tab.hy-edge-stuck[data-k="right"]{transform:translate(0,-50%);}',
             '.hy-edge-tab.hy-edge-stuck[data-k="top"]{transform:translate(-50%,0);}',
+            '.hy-edge-tab.hy-edge-stuck[data-k="bottom"]{transform:translate(-50%,0);}',
+
+            /* ── ⭐ v493：底部佔位抽屜 ── */
+            '.hy-edge-bottom-panel{' +
+                'position:fixed !important;' +
+                'left:0;right:0;bottom:0;' +
+                'z-index:9000;' +
+                'max-height:46vh;' +
+                'overflow-y:auto;' +
+                'padding:14px 20px 20px;' +
+                'border-radius:14px 14px 0 0;' +
+                'box-shadow:0 -10px 34px rgba(0,0,0,.7);' +
+                'transform:translateY(104%);' +
+                'transition:transform .24s cubic-bezier(.2,.8,.25,1);' +
+                'will-change:transform;' +
+            '}',
+            '.hy-edge-bottom-panel.hy-edge-open{transform:translateY(0);}',
+
+            /* 底部提示文字移到左側，避免與底部標籤重疊 */
+            '.hy-edge-footnote{left:24px !important;transform:none !important;}',
 
             /* 窄視窗：面板寬度自適應 */
             '@media (max-width: 900px){' +
@@ -147712,9 +147761,9 @@ window.HY = window.HY || {};
         var self = this;
 
         DEFS.forEach(function (d) {
-            var panel = document.querySelector(d.sel);
-            if (!panel) return;
-            self.panels[d.k] = panel;
+            var panel = d.sel ? document.querySelector(d.sel) : null;
+            if (d.sel && !panel) return;    /* 有指定面板但找不到 → 跳過 */
+            if (panel) self.panels[d.k] = panel;
 
             var hint = document.createElement('div');
             hint.className = 'hy-edge-hint';
@@ -147742,7 +147791,7 @@ window.HY = window.HY || {};
                 self.toggle(d.k);
             });
 
-            panel.classList.remove('hy-edge-open');
+            if (panel) panel.classList.remove('hy-edge-open');
         });
 
         /* ⭐ v491：常駐外框 + 四角定位括號 + 底部邊界
@@ -147785,8 +147834,7 @@ window.HY = window.HY || {};
 
         var note = document.createElement('div');
         note.className = 'hy-edge-footnote';
-        note.textContent = '▲ ◀ 滑鼠靠近邊緣　▶ 面板';
-        document.body.appendChild(note);
+        note.textContent = '▲ ◀ 滑鼠靠近邊緣　▶ 面板';        document.body.appendChild(note);
         this.elFootNote = note;
 
         this._built = true;
@@ -147827,15 +147875,18 @@ window.HY = window.HY || {};
             document.body.classList.toggle('hy-edge-hover-left', nearLeft && !nearTop);
             document.body.classList.toggle('hy-edge-hover-right', nearRight && !nearTop);
 
-            /* 底部沒有面板，只讓下緣光條亮一下作為「這裡是邊界」的回饋 */
+            /* 底部：⭐ v493 現在有抽屜了，所以也要參與「彈出」判斷。
+               光條與提示文字仍保留（提示文字會在下緣附近淡出，
+               避免和底部標籤視覺打架）。 */
             if (self.elBottomHint) self.elBottomHint.style.opacity = nearBottom ? '1' : '';
             if (self.elFootNote) self.elFootNote.style.opacity = nearBottom ? '0' : '';
 
-            /* 角落優先序：上 → 左 → 右（上方面積最小，優先讓給它）
+            /* 角落優先序：上 → 左 → 右 → 下
                ⚠️ 游標停在已彈出的標籤上時要維持該方向，不可被收起。 */
             if (nearTop || onTab('top')) self._peek('top');
             else if (nearLeft || onTab('left')) self._peek('left');
             else if (nearRight || onTab('right')) self._peek('right');
+            else if (nearBottom || onTab('bottom')) self._peek('bottom');
             else self._scheduleHideAll();
         }, { passive: true });
 
@@ -147856,7 +147907,6 @@ window.HY = window.HY || {};
                 if (p) ro.observe(p);
             });
         }
-
         /* ⭐ 全螢幕子頁面偵測：那些頁面（z-index 9000+）會蓋住抽屜標籤。
            這裡用 MutationObserver 監看它們的顯示狀態，開啟時自動讓位。 */
         this._watchFullscreenLayers();
@@ -147944,7 +147994,7 @@ window.HY = window.HY || {};
 
     EdgeDrawerSystem.prototype._scheduleHideAll = function () {
         var self = this;
-        ['top', 'left', 'right'].forEach(function (k) {
+        KEYS.forEach(function (k) {
             /* 尚未彈出的延遲計時也要取消，否則滑鼠離開後標籤還會冒出來 */
             if (self._timers['show_' + k]) {
                 clearTimeout(self._timers['show_' + k]);
@@ -147970,15 +148020,19 @@ window.HY = window.HY || {};
         var self = this;
         var panel = this.panels[k];
         var tab = this.tabs[k];
-        if (!panel || !tab) return;
+        if (!tab) return;
+
+        /* ⭐ v493：佔位抽屜（沒有實際面板，例如底部「暫定功能」）
+           仍然要能展開、標籤要移到外緣，只是內容是說明文字。 */
+        if (!panel && k === 'bottom') panel = this._ensurePlaceholderPanel();
 
         this.state[k] = true;
-        panel.classList.add('hy-edge-open');
+        if (panel) panel.classList.add('hy-edge-open');
         tab.classList.add('hy-edge-peek', 'hy-edge-stuck');
         this._positionTabs();
 
-        /* 一次只開一個方向，避免三個面板同時擠在畫面上 */
-        ['top', 'left', 'right'].forEach(function (o) {
+        /* 一次只開一個方向，避免多個面板同時擠在畫面上 */
+        KEYS.forEach(function (o) {
             if (o !== k && self.state[o]) self.close(o);
         });
 
@@ -147988,8 +148042,37 @@ window.HY = window.HY || {};
         } catch (e) { }
     };
 
+    /* 建立底部佔位面板（僅一次）
+       日後要換成真正的內容時，只要改 DEFS 的 sel 指向實際元素，
+       這裡就完全不會被用到。 */
+    EdgeDrawerSystem.prototype._ensurePlaceholderPanel = function () {
+        if (this._placeholder) return this._placeholder;
+        var el = document.createElement('div');
+        el.id = 'hy-edge-bottom-panel';
+        el.className = 'panel hy-edge-bottom-panel';
+        el.innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                'border-bottom:1px solid #2e3b4e;padding-bottom:8px;margin-bottom:10px;">' +
+                '<h3 style="margin:0;color:#fbbf24;font-size:1rem;">🧩 暫定功能</h3>' +
+                '<span style="font-size:.75rem;color:#64748b;letter-spacing:.1em;">預留抽屜</span>' +
+            '</div>' +
+            '<div style="font-size:.85rem;color:#94a3b8;line-height:1.9;">' +
+                '這個抽屜已接好，內容待日後新增。<br>' +
+                '目前可以拿來放：<b style="color:#7dd3fc;">快捷列</b>、' +
+                '<b style="color:#7dd3fc;">戰鬥統計</b>、' +
+                '<b style="color:#7dd3fc;">掛機摘要</b> 等常駐資訊。<br>' +
+                '<span style="color:#475569;font-size:.78rem;">' +
+                    '（要換成正式內容，只需把 uiEdgeDrawer 的 DEFS 中 bottom 的 sel ' +
+                    '改成實際面板的選擇器）' +
+                '</span>' +
+            '</div>';
+        document.body.appendChild(el);
+        this._placeholder = el;
+        return el;
+    };
+
     EdgeDrawerSystem.prototype.close = function (k) {
-        var panel = this.panels[k];
+        var panel = this.panels[k] || (k === 'bottom' ? this._placeholder : null);
         var tab = this.tabs[k];
         this.state[k] = false;
         if (panel) panel.classList.remove('hy-edge-open');
@@ -148010,7 +148093,7 @@ window.HY = window.HY || {};
 
     EdgeDrawerSystem.prototype.closeAll = function () {
         var self = this;
-        ['top', 'left', 'right'].forEach(function (k) { if (self.state[k]) self.close(k); });
+        KEYS.forEach(function (k) { if (self.state[k]) self.close(k); });
     };
 
     EdgeDrawerSystem.prototype.isOpen = function (k) { return !!this.state[k]; };
@@ -148038,6 +148121,13 @@ window.HY = window.HY || {};
             var th = (this.state.top && topPanel) ? topPanel.offsetHeight : 0;
             topTab.style.top = th + 'px';
         }
+        /* ⭐ v493：底部標籤 — 面板展開時移到面板上緣 */
+        var bottomTab = this.tabs.bottom;
+        if (bottomTab) {
+            var bp = this.panels.bottom || this._placeholder;
+            var bh = (this.state.bottom && bp) ? bp.offsetHeight : 0;
+            bottomTab.style.bottom = bh + 'px';
+        }
     };
 
     /* ══════════════════════════════════════════════════════
@@ -148051,7 +148141,7 @@ window.HY = window.HY || {};
         this._bound = true;
         this._bind();
         this._positionTabs();
-        console.log('[HY EdgeDrawer] ✓ 上方／左側／右側面板改為邊緣抽屜（預設隱藏）');
+        console.log('[HY EdgeDrawer] ✓ 上／左／右／下 四向抽屜已啟用（預設隱藏）');
         return true;
     };
 
@@ -148116,5 +148206,6 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
