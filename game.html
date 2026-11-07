@@ -28350,10 +28350,34 @@ window.HY = window.HY || {};
                    讓 % 加成有東西可以放大（等同 POE 的護盾型裝備基底）。
                    只有當「天賦確實有護盾相關加成」時才給，
                    避免沒點護盾天賦的角色也冒出護盾條。 */
-                var _hasEsTalent = (_tmMaxEsBonus > 0) || (_esTotal > 0);
-                if (_hasEsTalent) {
-                    var _esBaseFloor = Math.round(8 + lv * 2.2);   /* Lv.1≈10、Lv.100≈228 */
-                    if (_esTotal < _esBaseFloor) _esTotal = _esBaseFloor;
+                /* ⭐⭐ v67 修正：罡氣／護盾數值虛胖 BUG
+                   ──────────────────────────────────────────────────
+                   症狀：天賦寫「罡氣 +3.1」，實際護盾卻從 0 暴增到 235。
+                   實測 Lv.100：應得 4，實得 235，虛胖 231 點。
+
+                   原因：舊版只要「有任何護盾相關加成」就套用等級基底地板
+                        _esBaseFloor = 8 + lv*2.2（Lv.100 ≈ 228），
+                        並且是無條件「抬到地板」，不管玩家實際上點了多少。
+                        於是點一個 +3.1 罡氣小點，護盾就變成 228 起跳。
+
+                   修正原則：地板只用來「讓 % 加成有東西可放大」，
+                        因此只在「完全沒有 flat 護盾、卻有 % 加成」時才給，
+                        而且只給最小值（不覆蓋玩家實際累積的值）。
+
+                     ① 有 flat 護盾（maxEs / esShield / energyShield）
+                        → 直接用實際值，不套地板
+                     ② 沒有 flat、但有 % 加成
+                        → 給一個小基底，讓 % 有意義（保留原設計目的）
+                     ③ 兩者都沒有 → 護盾 0，不冒出不存在的護盾條 */
+                var _hasEsFlat = (_esTotal > 0);
+                var _hasEsPct = (_tmMaxEsBonus > 0);
+                if (_hasEsFlat) {
+                    /* ① 有實際 flat 值：完全照實計算，不套任何地板 */
+                } else if (_hasEsPct) {
+                    /* ② 只有百分比加成：給一個與等級掛鉤但保守的基底，
+                         讓「+11% 護盾」看得到效果，又不會憑空生出一大條護盾。
+                         Lv.100 約 22（舊版 228 的十分之一）。 */
+                    _esTotal = Math.round(2 + lv * 0.2);
                 }
                 if (_esTotal > 0) {
                     out.energyShield = num2(out.energyShield, 0) + _esTotal;
@@ -108339,9 +108363,14 @@ window.HY = window.HY || {};
             h += row('護體防禦', fmt(st.def || 0), 'up');
             h += row('最大氣血', fmt(st.maxHp || 0), 'up');
             h += row('最大內力', fmt(st.maxMp || 0), 'up');
-            /* ⭐ 能量護盾：有護盾時才顯示（與左側護盾條一致） */
+            /* ⭐ v67：罡氣（內部鍵 energyShield / maxEs）
+               ──────────────────────────────────────────────
+               天賦樹寫的是「罡氣 +3.1」，但面板原本顯示「能量護盾」，
+               同一個屬性兩個名字，玩家會以為天賦沒生效或是兩種不同東西。
+               依使用者要求統一為「罡氣」（符合仙俠風格）。
+               括號保留內部概念，方便對照舊資料。 */
             if (num(st.energyShield, 0) > 0) {
-                h += row('🔵 能量護盾', fmt(st.energyShield), 'up');
+                h += row('🔵 罡氣', fmt(st.energyShield), 'up');
             }
             h += row('命中', fmt(st.hit || 0) + '%');
             h += row('閃避', fmt(st.eva || 0) + '%');
@@ -108462,7 +108491,8 @@ window.HY = window.HY || {};
             if (tb) {
                 var hasAny = false;
                 var LBL = {
-                    maxHp: '最大氣血', maxMp: '最大內力', maxEs: '最大能量護盾',
+                    /* ⭐ v67：maxEs 顯示為「罡氣」，與天賦樹用詞一致 */
+                    maxHp: '最大氣血', maxMp: '最大內力', maxEs: '罡氣',
                     atk: '外功攻擊', def: '護體防禦',
                     hit: '命中', eva: '閃避', crit: '爆擊', critRes: '暴擊抵抗'
                 };
@@ -134206,6 +134236,13 @@ HY.Data.STAT_CODEX = {
                     formula: '實際受傷 = 計算後傷害 × (1 - 傷害減免%)',
                     note: '護體防禦是「先減固定值」，傷害減免是「最後乘算」，兩者會疊加。',
                     tags: ['生存', '防禦']
+                },
+                {
+                    key: 'maxEs', name: '罡氣', abbr: 'ES', unit: '點',
+                    desc: '額外的護體能量，戰鬥中優先於氣血吸收傷害。罡氣耗盡後才開始扣氣血。',
+                    formula: '罡氣上限 = 天賦加成 × (1 + 罡氣上限%)',
+                    note: '天賦樹的「罡氣 +N」是固定值，「罡氣上限 +N%」才是百分比放大。兩者分開計算，不會互相膨脹。',
+                    tags: ['生存', '護體']
                 },
                 {
                     key: 'thorns', name: '反傷', abbr: 'Thorns', unit: '%',
