@@ -4519,13 +4519,13 @@ window.HY = window.HY || {};
         /* ── 攻擊 ── */
         atkPct:       { name: '攻擊傷害',   group: 'offense', pct: true },
         physDmg:      { name: '外功傷害',   group: 'offense', pct: true },
-        elemDmg:      { name: '八元素內勁', group: 'offense', pct: true },
+        elemDmg:      { name: '九元素內勁', group: 'offense', pct: true },
         /* ⚠️ 已移除（戰鬥中從不讀取，且與八元素攻重複）：
               fireDmg / coldDmg / lightningDmg / chaosDmg
-              → 單元素傷害改由 elementSystem 的八元素攻擊值呈現，
+              → 單元素傷害改由 elementSystem 的九元素攻擊值呈現，
                 詞條「火勁傷害 +31%」會直接乘在該元素的攻擊力上
                 （通道：elemAtk_fire / elemAtk_ice / ...）。
-              玩家在「🌀 八元素」區就能看到實際的攻/抗，
+              玩家在「🌀 九元素」區就能看到實際的攻/抗，
               不需要再用另一組百分比欄位重複表達同一件事。 */
         critDmg:      { name: '爆擊傷害',   group: 'offense', pct: true },
         critFlat:     { name: '爆擊率加成', group: 'offense', pct: true },
@@ -4543,15 +4543,12 @@ window.HY = window.HY || {};
         esPct:        { name: '罡氣加成',   group: 'defense', pct: true },
         thornsDmg:    { name: '反傷',       group: 'defense', pct: true },
 
-        /* ── 抗性 ── */
-        fireRes:      { name: '火焰抗性',   group: 'resist', pct: true, cap: 90 },
-        coldRes:      { name: '冰冷抗性',   group: 'resist', pct: true, cap: 90 },
-        lightningRes: { name: '閃電抗性',   group: 'resist', pct: true, cap: 90 },
-        chaosRes:     { name: '混沌抗性',   group: 'resist', pct: true, cap: 75 },
-        allRes:       { name: '全元素抗性', group: 'resist', pct: true, cap: 90 },
-        maxFireRes:   { name: '最大火抗',   group: 'resist', pct: true },
-        maxColdRes:   { name: '最大冰抗',   group: 'resist', pct: true },
-        maxLightRes:  { name: '最大電抗',   group: 'resist', pct: true },
+        /* ── 抗性 ──
+           ⭐ v461：POE 四抗（火/冰/電/混沌）已完全移除。
+           抗性改由「九元素防禦值（elDef_*）」直接提供，
+           UI 顯示在「🌀 九元素」區塊，不再有第二套抗性欄位。
+           唯一保留的是 maxAllRes（九元素共同上限），因為上限仍需要詞條調整。 */
+        maxAllRes:    { name: '九元素抗性上限', group: 'resist', pct: true },
 
         /* ── 續航 ── */
         lifeRegen:    { name: '氣血回復',   group: 'resource', pct: true },
@@ -4614,7 +4611,7 @@ window.HY = window.HY || {};
         core:     '⚔️ 核心屬性',
         offense:  '🔥 攻擊',
         defense:  '🛡️ 防禦',
-        /* ⚠️ resist 分組不顯示（抗性統一由「🌀 八元素」區呈現） */
+        /* ⚠️ resist 分組不顯示（抗性統一由「🌀 九元素」區呈現） */
         resource: '💚 續航',
         speed:    '⚡ 速度',
         minion:   '🐉 靈獸',
@@ -4682,8 +4679,9 @@ window.HY.Data = window.HY.Data || {};
 (function () {
     const Data = window.HY.Data;
     // ══════ 相剋環（依序相剋）══════
-    // 金→木→土→水→火→冰→風→雷→金
-    Data.ELEMENT_RING = ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning'];
+    // 金→木→土→水→火→冰→風→雷→混元→金
+    //   ⭐ v461：新增第九元素「混元」，形成完整閉環
+    Data.ELEMENT_RING = ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning', 'chaos'];
     // ══════ 八大元素定義 ══════
     Data.ELEMENTS = {
         metal: {
@@ -4741,6 +4739,22 @@ window.HY.Data = window.HY.Data || {};
             counters: 'metal', generates: 'fire',
             atkLabel: '雷元素攻擊', resLabel: '雷元素抗性',
             atkDesc: '九霄紫雷', resDesc: '雷罡護體'
+        },
+        /* ══════════════════════════════════════════════════════
+           🌌 混元（第九元素）
+           ──────────────────────────────────────────────────────────
+           混元不是「沒有屬性」，而是「萬有歸一」——
+           它排在相剋環的最末，剋雷（收束雷霆回歸混沌），
+           並被金剋（最鋒銳之物能劃開混沌，開天闢地）。
+
+           相剋環：金→木→土→水→火→冰→風→雷→混元→金（閉環）
+           ══════════════════════════════════════════════════════ */
+        chaos: {
+            id: 'chaos', name: '混', fullName: '混元元素', shortName: '混',
+            icon: '🌌', color: '#a78bfa',
+            counters: 'lightning', generates: 'metal',
+            atkLabel: '混元攻擊', resLabel: '混元抗性',
+            atkDesc: '萬法歸元', resDesc: '混元不侵'
         }
     };
     Data.ELEMENT_KEYS = Data.ELEMENT_RING.slice();
@@ -4774,8 +4788,8 @@ window.HY.Data = window.HY.Data || {};
     Data.ELEMENT_TERMS = {
         atkSuffix: '攻',
         resSuffix: '抗',
-        atkTitle: '八元素攻擊',
-        resTitle: '八元素抗性',
+        atkTitle: '九元素攻擊',
+        resTitle: '九元素抗性',
         counterText: '剋制 +35%',
         resistedText: '被剋 -20%'
     };
@@ -4805,7 +4819,9 @@ window.HY.Data = window.HY.Data || {};
             { id: 'pat3_e', req: { water: 1, ice: 1, wind: 1 } },
             { id: 'pat3_f', req: { earth: 1, metal: 1, fire: 1 } },
             { id: 'pat3_g', req: { ice: 1, lightning: 1, water: 1 } },
-            { id: 'pat3_h', req: { wind: 1, wood: 1, earth: 1 } }
+            { id: 'pat3_h', req: { wind: 1, wood: 1, earth: 1 } },
+            /* ⭐ v461：混元樣式 —— 以混元為主，搭配兩個相生元素 */
+            { id: 'pat3_mix', req: { chaos: 1, metal: 1, lightning: 1 } }
         ],
         tier2: [
             { id: 'pat4_a', req: { ice: 2, lightning: 1, wood: 1 } },
@@ -4815,7 +4831,9 @@ window.HY.Data = window.HY.Data || {};
             { id: 'pat4_e', req: { lightning: 2, wind: 1, ice: 1 } },
             { id: 'pat4_f', req: { wind: 2, earth: 1, metal: 1 } },
             { id: 'pat4_g', req: { water: 2, fire: 1, lightning: 1 } },
-            { id: 'pat4_h', req: { metal: 2, ice: 1, wood: 1 } }
+            { id: 'pat4_h', req: { metal: 2, ice: 1, wood: 1 } },
+            /* ⭐ v461：雙混元樣式（混元靈根稀有，因此只需 2 點混元 + 2 點其他） */
+            { id: 'pat4_mix', req: { chaos: 2, wood: 1, water: 1 } }
         ],
         tier3: [
             { id: 'pat5_a', req: { ice: 2, lightning: 1, wood: 1, water: 1 } },
@@ -4825,7 +4843,9 @@ window.HY.Data = window.HY.Data || {};
             { id: 'pat5_e', req: { lightning: 2, fire: 1, earth: 1, wind: 1 } },
             { id: 'pat5_f', req: { wind: 2, water: 1, ice: 1, metal: 1 } },
             { id: 'pat5_g', req: { wood: 2, fire: 1, lightning: 1, earth: 1 } },
-            { id: 'pat5_h', req: { water: 2, ice: 1, wind: 1, metal: 1 } }
+            { id: 'pat5_h', req: { water: 2, ice: 1, wind: 1, metal: 1 } },
+            /* ⭐ v461：混元大陣（上品）—— 2 混元 + 三個相生元素，湊五靈根 */
+            { id: 'pat5_mix', req: { chaos: 2, metal: 1, water: 1, lightning: 1 } }
         ]
     };
     // ══════════════════════════════════════════════
@@ -4934,13 +4954,31 @@ window.HY.Data = window.HY.Data || {};
             bonus: { atkPct: 0.22, critPct: 0.14, critDmgPct: 0.12, elAtkPct: { metal: 0.15, lightning: 0.15 } }
         },
         {
-            id: 'fx_chaos', tier: 3, name: '混沌歸元陣', icon: '🌌', color: '#94a3b8',
+            id: 'fx_chaos', tier: 3, name: '混沌歸元陣', icon: '🌌', color: '#a78bfa',
             origin: '道家「混沌未分，萬象歸元」之宇宙本源',
-            desc: '混沌未分、萬象歸元，五行八荒皆為我用。',
-            effectDesc: '混沌未分、萬象歸元，攻守氣血俱增，八元素攻防同步提升，最適合元素混編隊伍。',
+            desc: '混沌未分、萬象歸元，九元八荒皆為我用。',
+            effectDesc: '混沌未分、萬象歸元，攻守氣血俱增，九元素攻防同步提升，最適合元素混編隊伍。' +
+                '\n【混元共鳴】隊中有混元靈根者，額外獲得全屬性 +8%。',
+            /* ⭐ v461：加入混元需求 —— 這是唯一需要混元靈根的陣法 */
+            reqPattern: { chaos: 2, metal: 1, water: 1, lightning: 1 },
             bonus: {
                 atkPct: 0.14, defPct: 0.14, maxHpPct: 0.12,
                 critResPct: 0.10, elAtkAllPct: 0.12, elDefAllPct: 0.12
+            }
+        },
+        /* ⭐ v461 新增：上品混元陣（純混元流派） */
+        {
+            id: 'fx_hunyuan', tier: 3, name: '混元周天大陣', icon: '🌀', color: '#8b5cf6',
+            origin: '《雲笈七籤》「混元者，元氣未分，混沌之始。周天者，一氣流行，循環无端。」',
+            desc: '一氣流行，循環无端。混元坐鎮中宮，八方靈根皆為我用。',
+            effectDesc: '以混元靈根坐鎮中宮，統攝八方靈根。全隊氣血內力大增，' +
+                '九元素攻防齊升，且有混元靈根者獲得額外道途加成。' +
+                '\n【混元唯一】隊中混元靈根越多，全隊加成越高（每名 +4%，上限 +16%）。',
+            reqPattern: { chaos: 3, metal: 1, wood: 1 },
+            bonus: {
+                atkPct: 0.18, defPct: 0.18, maxHpPct: 0.20, maxMpPct: 0.16,
+                critPct: 0.08, critResPct: 0.12,
+                elAtkAllPct: 0.16, elDefAllPct: 0.16
             }
         }
     ];
@@ -4988,11 +5026,21 @@ window.HY.Data = window.HY.Data || {};
             return arr;
         }
         [1, 2, 3].forEach(function (tier) {
-            var forms = Data.XIANXIA_FORMATIONS.filter(function (f) { return f.tier === tier; });
+            /* ⭐ v461：自帶 reqPattern 的陣法（混元陣）不參與隨機配樣式，
+               否則會被種子配到純元素樣式，混元需求就失效了。 */
+            var forms = Data.XIANXIA_FORMATIONS.filter(function (f) {
+                return f.tier === tier && !f.reqPattern;
+            });
             var pats = (Data.FORMATION_PATTERNS['tier' + tier] || []).slice();
             shuffle(pats);
             forms.forEach(function (f, i) {
                 result[f.id] = pats[i % pats.length];
+            });
+            /* 自帶需求的陣法 → 直接用自己的 reqPattern */
+            Data.XIANXIA_FORMATIONS.forEach(function (f) {
+                if (f.tier === tier && f.reqPattern) {
+                    result[f.id] = { id: f.id + '_fixed', req: f.reqPattern };
+                }
             });
         });
         return result;
@@ -8269,14 +8317,46 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 /* ===== 31 / 249 : spiritRootData.js ===== */
-// js/spiritRootData.js  (v48)
-// 九大靈根（金、木、水、火、土、冰、雷、風 + 混靈根）
+// js/spiritRootData.js  (v60)
+// 九大靈根（金、木、水、火、土、冰、雷、風、混元）
 //
-// v48 修正（收尾整理）：
-//   ⭐ 新增 triggerChance 欄位（各靈根神通觸發機率，與 triggerDesc 同源）
-//   ⭐ 新增 defenseTriggerChance（土靈根受擊觸發【戊土不動壁壘】用）
-//   ⭐ 修正文案：移除與實作不符的倍率數字（1.35倍/1.55倍）與
-//      土靈根「減免 15% 承受傷害」（實作為回復 4% 氣血 + 反震）
+// ══════════════════════════════════════════════════════════════
+// v60 重製（使用者要求：「靈根效果重製，不要有雷同效果」）
+//
+// 【舊版的問題】
+//   九個靈根的被動通通是「X 元素攻擊 +N、X 元素抗性 +N」，
+//   差別只是數字大小 —— 玩家選哪個靈根，體驗完全一樣，
+//   只有攻擊數字不同。這是「雷同」的根源。
+//
+// 【新版設計原則：一靈根 = 一身份】
+//   每個靈根都有自己的「戰鬥身份」，不靠元素數值區分：
+//
+//     金 · 破軍  → 純輸出，走穿透與會心
+//     木 · 長生  → 續戰，走氣血回復與團隊治療
+//     水 · 流轉  → 內力循環，走內力上限與吸納
+//     火 · 焚天  → 爆發，走殘血增傷與會心倍率
+//     土 · 磐石  → 坦克，走防禦與反震
+//     冰 · 封鎖  → 控制，走命中與減速
+//     雷 · 疾行  → 速度，走攻速與連擊
+//     風 · 遊身  → 閃避，走閃避與格擋
+//     混元·周天  → 全能，走全屬性均衡成長
+//
+//   ⚠ 元素攻擊仍然存在，但改為「象徵性的小額加成」，
+//     不再是大頭。真正決定靈根差異的是上述身份屬性。
+//
+// 【神通（觸發）也全部重製】
+//   舊版有 3 個靈根都是「造成額外元素傷害」（金/火/雷），
+//   體感一樣。新版每個神通機制都不同：
+//     金 → 破甲穿透（無視防禦）
+//     木 → 全隊回血（治癒）
+//     水 → 內力循環（回內力 + 自身回血）
+//     火 → 殘血處決（目標越殘越痛）
+//     土 → 反震護盾（受擊反傷）
+//     冰 → 凍結集氣（延後敵方出手）
+//     雷 → 追加行動（連擊，最快）
+//     風 → 閃避反擊（閃過後反打）
+//     混元 → 全屬性增幅（強化全部靈根效果）
+// ══════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
 (function () {
@@ -8285,168 +8365,170 @@ window.HY.Data = window.HY.Data || {};
         console.error('[spiritRootData] window.HY.Data 不存在，載入中止');
         return;
     }
+
     var ROOTS = {
-        // ⚙️ 金靈根
+        /* ══════════════ ⚙️ 金 · 破軍 ══════════════ */
         metal: {
             id: 'metal', elementKey: 'metal',
             name: '金靈根', shortName: '金', icon: '⚙️', color: '#fbbf24',
             counters: 'wood', generates: 'water',
-            passiveDesc: '每級靈根提升：金元素攻擊 +35、金元素抗性 +20、基礎攻擊 +25、會心爆擊 +1%',
-            triggerName: '庚金破甲劍氣',
-            triggerChance: 0.28,
-            triggerDesc: '攻擊時有 28% 機率觸發【庚金破甲劍氣】，無視目標防禦追加額外金元素攻擊傷害！',
-            passiveBonus: { elAtk: { metal: 35 }, elDef: { metal: 20 }, atk: 25, crit: 1 }
+            archetype: '破軍', archetypeDesc: '純輸出 · 穿透會心',
+            passiveDesc: '每級：護甲穿透 +1.2%、會心 +0.8%、金元素攻擊 +6',
+            passiveBonus: { armorPen: 1.2, crit: 0.8, elAtk: { metal: 6 } },
+            triggerName: '庚金破甲',
+            triggerChance: 0.30,
+            triggerDesc: '攻擊時 30% 機率【庚金破甲】：無視目標全部防禦，追加 0.5 倍攻擊力傷害。',
+            trigger: 'armourBreak'
         },
-        // 🌿 木靈根
+
+        /* ══════════════ 🌿 木 · 長生 ══════════════ */
         wood: {
             id: 'wood', elementKey: 'wood',
             name: '木靈根', shortName: '木', icon: '🌿', color: '#4ade80',
             counters: 'earth', generates: 'fire',
-            passiveDesc: '每級靈根提升：木元素攻擊 +28、木元素抗性 +24、土元素抗性 +10、最大氣血 +280、暴擊抵抗 +1.5%',
-            triggerName: '乙木青帝生機',
+            archetype: '長生', archetypeDesc: '續戰 · 團隊治療',
+            passiveDesc: '每級：最大氣血 +1.5%、治疗效果 +1%、木元素攻擊 +5',
+            passiveBonus: { maxHpPct: 1.5, healBonus: 0.01, elAtk: { wood: 5 } },
+            triggerName: '乙木回春',
             triggerChance: 0.30,
-            triggerDesc: '出招時有 30% 機率觸發【乙木青帝生機】，為我方全體隊員回復 6% 最大氣血！',
-            passiveBonus: { elAtk: { wood: 28 }, elDef: { wood: 24, earth: 10 }, maxHp: 280, critRes: 1.5 }
+            triggerDesc: '出招時 30% 機率【乙木回春】：為全隊回復 7% 最大氣血（含自身）。',
+            trigger: 'teamHeal'
         },
-        // 💧 水靈根
+
+        /* ══════════════ 💧 水 · 流轉 ══════════════ */
         water: {
             id: 'water', elementKey: 'water',
             name: '水靈根', shortName: '水', icon: '💧', color: '#38bdf8',
             counters: 'fire', generates: 'wood',
-            passiveDesc: '每級靈根提升：水元素攻擊 +30、水元素抗性 +24、最大內力 +25、輕功閃避 +1%',
-            triggerName: '壬水玄冥潮汐',
+            archetype: '流轉', archetypeDesc: '內力循環 · 吸納',
+            passiveDesc: '每級：最大內力 +2.5%、內力回復 +1.5%、水元素攻擊 +6',
+            passiveBonus: { maxMpPct: 2.5, mpRegenPct: 1.5, elAtk: { water: 6 } },
+            triggerName: '壬水潮生',
             triggerChance: 0.30,
-            triggerDesc: '出招時有 30% 機率觸發【壬水玄冥潮汐】，為自身回補 6% 最大氣血與 10% 最大內力！',
-            passiveBonus: { elAtk: { water: 30 }, elDef: { water: 24 }, maxMp: 25, eva: 1 }
+            triggerDesc: '出招時 30% 機率【壬水潮生】：回復 20% 最大內力，並將溢出量轉為等值氣血。',
+            trigger: 'mpCycle'
         },
-        // 🔥 火靈根
+
+        /* ══════════════ 🔥 火 · 焚天 ══════════════ */
         fire: {
             id: 'fire', elementKey: 'fire',
             name: '火靈根', shortName: '火', icon: '🔥', color: '#ef4444',
             counters: 'ice', generates: 'earth',
-            passiveDesc: '每級靈根提升：火元素攻擊 +42、火元素抗性 +20、基礎攻擊 +30、會心爆擊 +1%',
-            triggerName: '丙火焚天爆炎',
+            archetype: '焚天', archetypeDesc: '爆發 · 殘血處決',
+            passiveDesc: '每級：會心傷害 +2%、攻擊 +0.8%、火元素攻擊 +7',
+            passiveBonus: { critDmg: 2, atkPct: 0.8, elAtk: { fire: 7 } },
+            triggerName: '丙火燎原',
             triggerChance: 0.28,
-            triggerDesc: '攻擊時有 28% 機率觸發【丙火焚天爆炎】，引燃目標追加額外火元素爆炸傷害！',
-            passiveBonus: { elAtk: { fire: 42 }, elDef: { fire: 20 }, atk: 30, crit: 1 }
+            triggerDesc: '攻擊時 28% 機率【丙火燎原】：目標每損失 10% 氣血，追加傷害 +12%（越殘越痛）。',
+            trigger: 'execute'
         },
-        // 🪨 土靈根
+
+        /* ══════════════ 🪨 土 · 磐石 ══════════════ */
         earth: {
             id: 'earth', elementKey: 'earth',
             name: '土靈根', shortName: '土', icon: '🪨', color: '#d97706',
             counters: 'water', generates: 'metal',
-            passiveDesc: '每級靈根提升：土元素攻擊 +26、土元素抗性 +40、護體防禦 +35、最大氣血 +200、暴擊抵抗 +2%',
-            triggerName: '戊土不動壁壘',
+            archetype: '磐石', archetypeDesc: '坦克 · 反震',
+            passiveDesc: '每級：防禦 +1.8%、受傷減免 +0.6%、土元素抗性 +8',
+            passiveBonus: { defPct: 1.8, dmgReduce: 0.6, elDef: { earth: 8 } },
+            triggerName: '戊土壁壘',
             triggerChance: 0.30,
             defenseTriggerChance: 0.35,
-            triggerDesc: '出招時有 30% 機率凝結大地護盾回復 8% 氣血；受擊時另有 35% 機率觸發【戊土不動壁壘】，回復 4% 氣血並以土元素地脈震波反擊敵人！',
-            passiveBonus: { elAtk: { earth: 26 }, elDef: { earth: 40 }, def: 35, maxHp: 200, critRes: 2 }
+            triggerDesc: '受擊時 35% 機率【戊土壁壘】：減免該次 25% 傷害，並以減免量的 2 倍反震敵人。',
+            trigger: 'thorns'
         },
-        // ❄️ 冰靈根
+
+        /* ══════════════ ❄️ 冰 · 封鎖 ══════════════ */
         ice: {
             id: 'ice', elementKey: 'ice',
             name: '冰靈根', shortName: '冰', icon: '❄️', color: '#67e8f9',
             counters: 'wind', generates: 'water',
-            passiveDesc: '每級靈根提升：冰元素攻擊 +32、冰元素抗性 +24、精準命中 +1.5%、暴擊抵抗 +1%',
-            triggerName: '極寒萬里冰封',
+            archetype: '封鎖', archetypeDesc: '控制 · 延緩',
+            passiveDesc: '每級：命中 +1.2%、暴擊抵抗 +0.8%、冰元素攻擊 +6',
+            passiveBonus: { hit: 1.2, critRes: 0.8, elAtk: { ice: 6 } },
+            triggerName: '極寒封脈',
             triggerChance: 0.28,
-            triggerDesc: '攻擊時有 28% 機率觸發【極寒萬里冰封】，使目標【⚡出招集氣條倒退 -15%】！',
-            passiveBonus: { elAtk: { ice: 32 }, elDef: { ice: 24 }, hit: 1.5, critRes: 1 }
+            triggerDesc: '攻擊時 28% 機率【極寒封脈】：目標集氣條倒退 25%，且有 40% 機率跳過下次行動。',
+            trigger: 'freezeDelay'
         },
-        // ⚡ 雷靈根
+
+        /* ══════════════ ⚡ 雷 · 疾行 ══════════════ */
         lightning: {
             id: 'lightning', elementKey: 'lightning',
             name: '雷靈根', shortName: '雷', icon: '⚡', color: '#c084fc',
             counters: 'metal', generates: 'fire',
-            passiveDesc: '每級靈根提升：雷元素攻擊 +40、雷元素抗性 +18、精準命中 +2%、會心爆擊 +1.5%、出手攻速 +0.7',
-            triggerName: '九霄紫雷連鎖',
-            triggerChance: 0.28,
-            triggerDesc: '攻擊時有 28% 機率觸發【九霄紫雷連鎖】，對敵方全體造成雷元素連鎖傷害！',
-            passiveBonus: { elAtk: { lightning: 40 }, elDef: { lightning: 18 }, hit: 2, crit: 1.5, atkSpd: 0.7 }
+            archetype: '疾行', archetypeDesc: '速度 · 連擊',
+            passiveDesc: '每級：出手攻速 +1.5、會心 +0.6%、雷元素攻擊 +6',
+            passiveBonus: { atkSpd: 1.5, crit: 0.6, elAtk: { lightning: 6 } },
+            triggerName: '九霄疾雷',
+            triggerChance: 0.26,
+            triggerDesc: '攻擊時 26% 機率【九霄疾雷】：集氣條立刻回滿，可再行動一次。',
+            trigger: 'extraTurn'
         },
-        // 🌪️ 風靈根
+
+        /* ══════════════ 🌪️ 風 · 遊身 ══════════════ */
         wind: {
             id: 'wind', elementKey: 'wind',
             name: '風靈根', shortName: '風', icon: '🌪️', color: '#2dd4bf',
             counters: 'lightning', generates: 'lightning',
-            passiveDesc: '每級靈根提升：風元素攻擊 +30、風元素抗性 +20、出手攻擊速度 +1.3、輕功閃避 +1.5%',
-            triggerName: '太虛御風神行',
+            archetype: '遊身', archetypeDesc: '閃避 · 反擊',
+            passiveDesc: '每級：閃避 +1.6%、格擋 +0.7%、風元素攻擊 +5',
+            passiveBonus: { eva: 1.6, blockChance: 0.7, elAtk: { wind: 5 } },
+            triggerName: '太虛御風',
             triggerChance: 0.30,
-            triggerDesc: '出招時有 30% 機率觸發【太虛御風神行】，使自身【⚡出招集氣條瞬間 +10%】！',
-            passiveBonus: { elAtk: { wind: 30 }, elDef: { wind: 20 }, atkSpd: 1.3, eva: 1.5 }
+            triggerDesc: '閃避成功時 30% 機率【太虛御風】：立即反擊一次（0.8 倍攻擊力）。',
+            trigger: 'counterOnDodge'
         },
-        /* ══════════════════════════════════════════════════════════
-           🌌 混靈根（第九靈根・雜靈根）
-           ──────────────────────────────────────────────────────────
-           【設計定位】
-             前八靈根各自「專精單一元素，數值集中、觸發強力」。
-             混靈根走相反路線：八元素全部沾一點，單項數值低，
-             但總量最高 —— 雜而不純、勝在均衡。
 
-           【為什麼要有】
-             使用者要求：「先加入混靈根並補全相關內容」。
-             八靈根各自相剋相生，形成封閉迴圈；
-             混靈根不屬於迴圈中的任何一環（counters / generates
-             都指向自己），因此：
-               · 不會剋制任何人，也不會被任何人剋制
-               · 不參與隊友相生共鳴，也不提供共鳴給隊友
-             這就是「雜靈根」的代價 —— 泛用但沒有極致。
-
-           【數值平衡】
-             單靈根單元素 elAtk 為 26~42；混靈根每元素 10，
-             總和 80（≈ 頂級單靈根的兩倍）。
-             但因為傷害是「單一元素通道」計算，
-             分散的數值無法同時輸出，實際爆發力低於專精靈根。
-             補償方式：額外 maxHp / maxMp 較高（雜靈根體質厚）。
-           ══════════════════════════════════════════════════════════ */
+        /* ══════════════ 🌌 混元 · 周天 ══════════════ */
         chaos: {
             id: 'chaos', elementKey: 'chaos',
             name: '混靈根', shortName: '混', icon: '🌌', color: '#a78bfa',
-            /* 不屬於相剋環：剋自己、生自己（等於不與任何人互動） */
-            counters: 'chaos', generates: 'chaos',
+            counters: 'lightning', generates: 'metal',
             isMixed: true,
-            passiveDesc: '每級靈根提升：八元素攻擊 +10、八元素抗性 +8、最大氣血 +180、最大內力 +12',
-            triggerName: '混元周天輪轉',
-            triggerChance: 0.30,
-            triggerDesc: '出招時有 30% 機率觸發【混元周天輪轉】，依當前敵方最弱抗性隨機一種元素追加 0.45 倍元素攻擊傷害，並回補 4% 氣血與 6% 內力！',
+            archetype: '周天', archetypeDesc: '全能 · 均衡成長',
+            /* 混元：所有屬性都小幅成長，沒有任何短板，也沒有任何極致 */
+            passiveDesc: '每級：氣血／內力 +1.2%、攻防 +1%、命中閃避會心暴抗各 +0.4%、混元攻防各 +4',
             passiveBonus: {
-                elAtk: {
-                    metal: 10, wood: 10, earth: 10, water: 10,
-                    fire: 10, ice: 10, wind: 10, lightning: 10
-                },
-                elDef: {
-                    metal: 8, wood: 8, earth: 8, water: 8,
-                    fire: 8, ice: 8, wind: 8, lightning: 8
-                },
-                maxHp: 180, maxMp: 12
-            }
+                maxHpPct: 1.2, maxMpPct: 1.2,
+                atkPct: 1, defPct: 1,
+                hit: 0.4, eva: 0.4, crit: 0.4, critRes: 0.4,
+                elAtk: { chaos: 4 }, elDef: { chaos: 4 }
+            },
+            triggerName: '混元周天',
+            triggerChance: 0.32,
+            triggerDesc: '出招時 32% 機率【混元周天】：本回合自身所有屬性提升 15%，並回復 5% 氣血與內力。',
+            trigger: 'omniBoost'
         }
     };
+
     Data.SPIRIT_ROOTS = ROOTS;
-    /* ⭐ 靈根分類：八行靈根（金木水火土冰風雷）+ 混靈根
-       UI 與隨機抽取都靠這兩個清單，避免「新增一種就得到處改」。 */
+
+    /* ⭐ 靈根分類：八大元素靈根 + 混元靈根 */
     Data.SPIRIT_ROOT_ELEMENTAL = ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning'];
     Data.SPIRIT_ROOT_MIXED = ['chaos'];
     Data.SPIRIT_ROOT_IDS = Data.SPIRIT_ROOT_ELEMENTAL.concat(Data.SPIRIT_ROOT_MIXED);
-    /** 是否為混靈根（不參與相剋環、不參與隊友相生） */
+
+    /** 是否為混元靈根 */
     Data.spiritRootIsMixed = function (rootId) {
         var r = ROOTS[rootId];
         return !!(r && r.isMixed);
     };
+
     Data.SPIRIT_ROOT_BALANCE = {
-        elAtkRange: '26 ~ 42（混靈根：每元素 10，八元素合計 80）',
-        elDefRange: '18 ~ 40（混靈根：每元素 8，八元素合計 64）',
-        counterMult: 1.35,
-        resistedMult: 0.80,
-        triggerChanceRange: '0.28 ~ 0.30'
+        design: '一靈根一身份：破軍／長生／流轉／焚天／磐石／封鎖／疾行／遊身／周天',
+        triggerChanceRange: '0.26 ~ 0.32',
+        note: '元素攻擊改為象徵性小額加成，主要差異在身份屬性'
     };
+
     var _rootCount = Object.keys(ROOTS).length;
     if (_rootCount === 9) {
-        console.log('[spiritRootData] ✓ 九大靈根已載入（八大元素靈根 + 混靈根｜觸發機率資料驅動）');
+        console.log('[spiritRootData] ✓ 九大靈根已載入（八大元素 + 混元｜每個身份獨立）');
     } else {
         console.error('[spiritRootData] ✗ 載入異常：預期 9 種靈根，實際 ' + _rootCount + ' 種');
     }
 })();
+
 
 /* ===== 32 / 249 : equipmentData.js ===== */
 // js/equipmentData.js  (v40)
@@ -15283,7 +15365,7 @@ window.HY.Data = window.HY.Data || {};
 //
 //     maxHp / maxMp / maxEs        → 氣血 / 內力 / 罡氣
 //     Physical / Attack Damage     → 外功
-//     Elemental / Fire / Cold / Lightning → 八元素內勁（依原屬性）
+//     Elemental / Fire / Cold / Lightning → 九元素內勁（依原屬性）
 //     Attack Speed / Cast Speed    → 出手速度 / 運功速度
 //     Armour / Evasion / Block     → 護體 / 輕功 / 格擋
 //     Minion / Totem / Trap / Mine → 御獸 / 陣樁 / 機關 / 埋雷（本作有這些）
@@ -15388,7 +15470,7 @@ window.HY = window.HY || {};
             return '附加外功傷害 ' + s(m[1]) + '~' + s(m[2]);
         }],
 
-        /* ───────── 八元素內勁（元素） ───────── */
+        /* ───────── 九元素內勁（元素） ───────── */
         [/^(\d+(?:\.\d+)?)% increased Fire Damage(.*)$/, function (m) {
             return '火勁傷害 +' + s(m[1]) + '%';
         }],
@@ -15402,7 +15484,7 @@ window.HY = window.HY || {};
             return '毒勁傷害 +' + s(m[1]) + '%';
         }],
         [/^(\d+(?:\.\d+)?)% increased Elemental Damage(.*)$/, function (m) {
-            return '八元素內勁 +' + s(m[1]) + '%';
+            return '九元素內勁 +' + s(m[1]) + '%';
         }],
         [/^Adds (\d+(?:\.\d+)?) to (\d+(?:\.\d+)?) Fire Damage(.*)$/, function (m) {
             return '附加火勁 ' + s(m[1]) + '~' + s(m[2]);
@@ -15431,13 +15513,13 @@ window.HY = window.HY || {};
             return '毒抗 +' + s(m[1]) + '%';
         }],
         [/^\+(\d+(?:\.\d+)?)% to all Elemental Resistances$/, function (m) {
-            return '八元素抗性 +' + s(m[1]) + '%';
+            return '九元素抗性 +' + s(m[1]) + '%';
         }],
         [/^\+(\d+(?:\.\d+)?)% to (?:Fire|Cold|Lightning) and (?:Fire|Cold|Lightning) Resistances$/, function (m) {
             return '雙抗 +' + s(m[1]) + '%';
         }],
         [/^\+(\d+(?:\.\d+)?)% to all maximum Resistances$/, function (m) {
-            return '八元素抗性上限 +' + s(m[1]) + '%';
+            return '九元素抗性上限 +' + s(m[1]) + '%';
         }],
 
         /* ───────── 防禦 ───────── */
@@ -15674,7 +15756,7 @@ window.HY = window.HY || {};
             return nm + '抗穿透 ' + s(m[1]) + '%';
         }],
         [/^Ignore (?:Enemy )?(?:Elemental|Fire|Cold|Lightning) Resistance(.*)$/, function () {
-            return '無視八元素抗性';
+            return '無視九元素抗性';
         }],
         [/^(\d+(?:\.\d+)?)% chance to (?:Blind|Maim|Intimidate|Taunt|Hinder)(.*)$/, function (m) {
             return '出手有 ' + s(m[1]) + '% 機率使目標虛弱';
@@ -15805,7 +15887,7 @@ window.HY = window.HY || {};
             return '靈獸全能 +' + s(m[1]) + '%';
         }],
         [/^Minions (?:have|gain) \+?(\d+(?:\.\d+)?)%? to (?:all )?Elemental Resistances$/, function (m) {
-            return '靈獸八元素抗性 +' + s(m[1]) + '%';
+            return '靈獸九元素抗性 +' + s(m[1]) + '%';
         }],
         [/^Minions (?:Leech|leech) (\d+(?:\.\d+)?)% of.*$/, function (m) {
             return '靈獸吸血 ' + s(m[1]) + '%';
@@ -16092,7 +16174,7 @@ window.HY = window.HY || {};
         [/冰勁/, '寒冰'],
         [/雷勁/, '雷罡'],
         [/毒勁/, '毒煞'],
-        [/八元素內勁|八元素抗性/, '八元素'],
+        [/九元素內勁|九元素抗性/, '八元素'],
         [/抗性/, '辟邪'],
         [/護體/, '鐵骨'],
         [/輕功/, '輕盈'],
@@ -16201,7 +16283,7 @@ window.HY = window.HY || {};
             [/maximum Mana/i, '內力上限'],
             [/Energy Shield/i, '罡氣'],
             [/Physical Damage/i, '外功傷害'],
-            [/Elemental Damage/i, '八元素內勁'],
+            [/Elemental Damage/i, '九元素內勁'],
             [/Fire Damage/i, '火勁傷害'],
             [/Cold Damage/i, '冰勁傷害'],
             [/Lightning Damage/i, '雷勁傷害'],
@@ -24809,7 +24891,7 @@ window.HY = window.HY || {};
         'Evasion Mastery': '輕功精通', 'Block Mastery': '格擋精通',
         'Spell Suppression Mastery': '內息抑制精通',
         'Physical Damage Mastery': '外功精通',
-        'Elemental Damage Mastery': '八元素內勁精通',
+        'Elemental Damage Mastery': '九元素內勁精通',
         'Fire Mastery': '火勁精通', 'Cold Mastery': '冰勁精通',
         'Lightning Mastery': '雷勁精通', 'Chaos Mastery': '毒勁精通',
         'Attack Mastery': '攻擊精通', 'Critical Mastery': '會心精通',
@@ -25146,7 +25228,7 @@ window.HY = window.HY || {};
             [/maximum Mana/i, '內力上限'],
             [/Energy Shield/i, '罡氣'],
             [/Physical Damage/i, '外功傷害'],
-            [/Elemental Damage/i, '八元素內勁'],
+            [/Elemental Damage/i, '九元素內勁'],
             [/Attack Speed/i, '出手速度'],
             [/Cast Speed/i, '運功速度'],
             [/Movement Speed/i, '身法速度'],
@@ -25390,16 +25472,13 @@ window.HY = window.HY || {};
         [/火焰/g, '火勁'],
         [/閃電/g, '雷勁'],
         [/混沌/g, '毒勁'],
-        /* ⭐ v418 修正：原本是 [/元素/g, '五行'] —— 這是錯的。
-           本作元素是「金木水火土冰風雷」共八種，沒有「五行」這個統稱。
-           這行把整棵樹的「元素」全變成「五行」，等於把八元素系統
-           寫成不存在的五行系統。改為統一成「八元素」。
+        /* ⭐ v461 修正：本作元素共九種（金木水火土冰風雷混元），
+           統稱「九元素」。這裡把孤立的「元素」補成「九元素」。
 
-           ⚠️ 不能用 /元素/g —— 第二輪執行時「八元素」的「元素」
-              又會被換成「八元素」→ 變「八八元素」→ 無限疊加。
-              （lookbehind (?<!八) 在舊瀏覽器不支援，因此改用
-                text() 末尾的收斂規則 /(?:八)+元素/g → '八元素' 保證冪等） */
-        [/元素/g, '八元素'],
+           ⚠️ 用 (^|[^九八]) 捕捉前一個字元，避免把已經寫好的
+              「九元素」再換一次變成「九九元素」（不用 lookbehind，
+              舊瀏覽器與部分 WebView 不支援）。 */
+        [/(^|[^九八])元素/g, '$1九元素'],
         [/閃避/g, '輕功'],
         [/護甲/g, '護體'],
         [/爆擊/g, '會心'],
@@ -25427,10 +25506,8 @@ window.HY = window.HY || {};
         for (var i = 0; i < TERMS.length; i++) {
             t = t.replace(TERMS[i][0], TERMS[i][1]);
         }
-        /* ⚠️ 收斂重複前綴：[/元素/g,'八元素'] 每跑一輪都會在既有的
-           「八元素」上再加一個「八」→ 八八元素 → 八八八元素…
-           本層會被多次呼叫（輪詢 + 各處 applyAll），因此必須冪等。 */
-        t = t.replace(/(?:八)+元素/g, '八元素');
+        /* ⚠️ 收斂重複前綴：確保冪等（多次呼叫不會變成九九九元素） */
+        t = t.replace(/(?:[八九])+元素/g, '九元素');
         return t;
     }
 
@@ -25453,7 +25530,7 @@ window.HY = window.HY || {};
         'Charge Mastery': '氣勁精通',
         'Claw Mastery': '爪法精通',
         'Staff Mastery': '棍法精通',
-        'Elemental Mastery': '八元素精通',
+        'Elemental Mastery': '九元素精通',
         'Block Mastery': '格擋精通',
         'Projectile Mastery': '暗器精通',
         'Leech Mastery': '吸取精通',
@@ -26085,24 +26162,24 @@ window.HY = window.HY || {};
            glossary 的 [/元素/g,'八元素'] 若作用在「八元素」上會變成
            「八八元素」，再跑一次變成「八八八元素」——實測出現 7 個「八」。
            這裡先收斂成「八元素」。 */
-        s = s.replace(/(?:八)+元素/g, '八元素');
+        s = s.replace(/(?:[八九])+元素/g, '九元素');
 
         if (s.indexOf('五行') < 0) return s;
         return s
-            .replace(/全部最大五行抗性/g, '全部最大八元素抗性')
-            .replace(/最大五行抗性/g, '最大八元素抗性')
-            .replace(/五行抗性上限/g, '八元素抗性上限')
-            .replace(/五行抗性/g, '八元素抗性')
-            .replace(/五行內勁/g, '八元素內勁')
-            .replace(/五行異常狀態/g, '八元素異常狀態')
-            .replace(/五行異常/g, '八元素異常')
-            .replace(/五行傷害/g, '八元素傷害')
-            .replace(/五行額外傷害/g, '八元素額外傷害')
-            .replace(/五行之力/g, '八元素之力')
-            .replace(/五行精通/g, '八元素精通')
-            .replace(/五行/g, '八元素')
-            /* 再收斂一次（避免「五行→八元素」後又與既有的「八元素」相鄰） */
-            .replace(/(?:八)+元素/g, '八元素');
+            .replace(/全部最大五行抗性/g, '全部最大九元素抗性')
+            .replace(/最大五行抗性/g, '最大九元素抗性')
+            .replace(/五行抗性上限/g, '九元素抗性上限')
+            .replace(/五行抗性/g, '九元素抗性')
+            .replace(/五行內勁/g, '九元素內勁')
+            .replace(/五行異常狀態/g, '九元素異常狀態')
+            .replace(/五行異常/g, '九元素異常')
+            .replace(/五行傷害/g, '九元素傷害')
+            .replace(/五行額外傷害/g, '九元素額外傷害')
+            .replace(/五行之力/g, '九元素之力')
+            .replace(/五行精通/g, '九元素精通')
+            .replace(/五行/g, '九元素')
+            /* 再收斂一次（確保冪等，不會出現九九元素） */
+            .replace(/(?:[八九])+元素/g, '九元素');
     }
 
     /* ══════════════════════════════════════════════════════
@@ -26210,7 +26287,7 @@ window.HY = window.HY || {};
         /* ② 常見疊字收斂 */
         s = s.replace(/(額外鎖定\s*\d+\s*個附近敵人)\1+/g, '$1');
         s = s.replace(/([\u4e00-\u9fa5]{4,})\1+/g, '$1');
-        s = s.replace(/(?:八)+元素/g, '八元素');
+        s = s.replace(/(?:[八九])+元素/g, '九元素');
 
         /* ③ 清掉多餘空白與重複標點 */
         s = s.replace(/\s{2,}/g, ' ').replace(/[，,]{2,}/g, '，').trim();
@@ -26243,7 +26320,7 @@ window.HY = window.HY || {};
         { re: /寒冰|冰勁|寒|凍/i, stat: '冰勁傷害', pct: true, label: '冰勁' },
         { re: /雷罡|雷勁|雷|電/i, stat: '雷勁傷害', pct: true, label: '雷勁' },
         { re: /毒煞|毒勁|毒|蠱/i, stat: '毒勁傷害', pct: true, label: '毒勁' },
-        { re: /八元素|元素|辟邪|抗性/i, stat: '八元素抗性', pct: false, label: '元素' },
+        { re: /八元素|元素|辟邪|抗性/i, stat: '九元素抗性', pct: false, label: '元素' },
         { re: /御獸|靈獸|獸/i, stat: '靈獸傷害', pct: true, label: '靈獸' },
         { re: /劍樁|陣道|陣樁/i, stat: '劍樁傷害', pct: true, label: '劍樁' },
         { re: /機關|機關術/i, stat: '機關傷害', pct: true, label: '機關' },
@@ -26309,8 +26386,9 @@ window.HY = window.HY || {};
 
         var statsFixed = 0;      /* 五行→八元素 */
         var condFixed = 0;       /* 條件不存在 → 換條件 */
-        var statsRemoved = 0;    /* 刪掉的效果條數 */
-        var nodesReplaced = 0;   /* 效果被換掉的節點數（節點保留） */
+        var statsRemoved = 0;    /* 被攔截的效果條數（已原地替換） */
+        var nodesReplaced = 0;   /* 效果全空 → 整顆節點補效果 */
+        var replacedInline = 0;  /* ⭐ v461：原地替換成新能力的條數 */
         var byCat = {};
 
         Object.keys(N).forEach(function (id) {
@@ -26339,12 +26417,25 @@ window.HY = window.HY || {};
                     statsRemoved++;
                     removedHere++;
                     byCat[cat] = (byCat[cat] || 0) + 1;
-                    return;                 /* 這條效果丟棄 */
+                    /* ⭐ v461：不丟棄，改為「換成新能力效果」
+                       ──────────────────────────────────────────────
+                       使用者要求：「天賦樹攔截 不要攔截 直接改用新的能力效果」
+
+                       舊行為：命中的效果直接刪掉（節點變空 → 才補一條）
+                       新行為：命中的效果「原地替換」成等效的新效果，
+                               節點維持原本的數量與強度，玩家感覺不到缺口。
+                       仍保留 removedHere 統計，僅供除錯。 */
+                    var repl = replacementFor(n, 1, num(id, 0) + out.length);
+                    if (repl) {
+                        out.push(repl);
+                        replacedInline++;
+                    }
+                    return;
                 }
                 out.push(tidy(s));
             });
 
-            /* ⭐ 全部被刪光 → 換成一條武俠效果，節點保留 */
+            /* 全部被刪光 → 換成一條武俠效果，節點保留（保險，正常不會走到） */
             if (removedHere > 0 && out.length === 0) {
                 out.push(replacementFor(n, removedHere, num(id, 0)));
                 nodesReplaced++;
@@ -26358,6 +26449,7 @@ window.HY = window.HY || {};
             condFixed: condFixed,
             statsRemoved: statsRemoved,
             nodesReplaced: nodesReplaced,
+            replacedInline: replacedInline,
             byCat: byCat
         };
     }
@@ -26449,6 +26541,11 @@ window.HY = window.HY || {};
                         effRemoved++;
                         removedThis++;
                         byCat[cat] = (byCat[cat] || 0) + 1;
+                        /* ⭐ v461：專精也改為「原地替換成新能力」，不再丟棄 */
+                        var replM = replacementFor({ name: m.name, isNotable: true },
+                            removedThis, num(id, 0) + idx);
+                        keptStats.push(replM);
+                        effReplaced++;
                         return;
                     }
                     keptStats.push(tidy(s));
@@ -26593,7 +26690,7 @@ window.HY = window.HY || {};
                 (N[id].stats || []).forEach(function (s) {
                     var t = String(s || '');
                     if (/八{2,}元素/.test(t) && bad.length < 10) bad.push(t);
-                    if (/八元素/.test(t) && ok.length < 3) ok.push(t);
+                    if (/九元素/.test(t) && ok.length < 3) ok.push(t);
                 });
             });
             return { broken: bad.length, brokenSamples: bad, goodSamples: ok };
@@ -30154,7 +30251,7 @@ window.HY = window.HY || {};
                 /* ⭐⭐ v424：靈獸（minion）屬性通道
                    ──────────────────────────────────────────────────────────
                    天賦樹有 10 種靈獸詞條、89 條效果（靈獸傷害／氣血／攻速／
-                   身法／全能／吸血／八元素抗性…），但 characterSystem 從來
+                   身法／全能／吸血／九元素抗性…），但 characterSystem 從來
                    沒有把它們寫進 derived stats → 天賦點了完全無效。
 
                    這裡把 ext 裡的 minion* 值換算成百分比並輸出：
@@ -30172,30 +30269,36 @@ window.HY = window.HY || {};
                     out[mk] = Math.round(pct * 10) / 10;
                 });
 
-                /* ⭐⭐ v426：抗性整合（把 POE 四抗真的輸出到 derived stats）
+                /* ⭐⭐⭐ v461：抗性輸出（POE 四抗機制已移除）
                    ──────────────────────────────────────────────────────────
-                   問題：wuxiaStatParser 會把「火抗 +10%」解析成 flat.fireRes，
-                        但 characterSystem 從來沒有把它們寫進 out，
-                        導致 derived.fireRes 永遠是 undefined
-                        → 裝備/天賦的抗性完全無效、UI 顯示「—」。
+                   舊版：把 ext 裡的 fireRes / coldRes / lightningRes / chaosRes /
+                        allRes 平鋪到 derived，再由 resistUnify 的映射表換算成
+                        九元素抗性 —— 那層映射是硬湊的（金木土共用 chaosRes、
+                        冰水共用 coldRes、風雷共用 lightningRes）。
 
-                   解法：把 ext 裡的抗性鍵平鋪到 out（若已存在則相加），
-                        並確保 allRes 一定存在（預設 0），
-                        這樣 resistUnify.js 才讀得到。 */
+                   新版：抗性全部走「九元素防禦值」單一通道。
+                        · 詞綴直接產生 elDef_<元素>（一對一，無映射）
+                        · 全元素抗性叫 elDefAll（九種平均）
+                        · 上限叫 maxAllRes（九種共用）
+                        derived 上仍保留 elDef_* 供 elementSystem 讀取。 */
                 (function () {
-                    var RES_KEYS = ['fireRes', 'coldRes', 'lightningRes', 'chaosRes', 'allRes',
-                                    'metalRes', 'woodRes', 'earthRes', 'waterRes', 'windRes',
-                                    'maxFireRes', 'maxColdRes', 'maxLightRes', 'maxAllRes'];
-                    RES_KEYS.forEach(function (rk) {
+                    var EL_KEYS = ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning', 'chaos'];
+                    /* 單元素抗性（詞綴直接給 elDef_<元素>） */
+                    EL_KEYS.forEach(function (ek) {
+                        var rk = 'elDef_' + ek;
                         var v = num2(ext[rk], 0);
                         var cur = num2(out[rk], 0);
                         out[rk] = Math.round((cur + v) * 10) / 10;
                     });
-                    /* 全元素抗性也回饋到單抗（讓 UI 的單抗顯示包含全抗） */
-                    if (out.allRes) {
-                        ['fireRes', 'coldRes', 'lightningRes'].forEach(function (rk) {
-                            /* 這裡不回寫，避免重複計算 —— resistUnify 會自己處理 */
-                        });
+                    /* 全元素抗性（九種平均分配） */
+                    var allDef = num2(ext.elDefAll, 0);
+                    if (allDef !== 0) {
+                        out.elDefAll = Math.round((num2(out.elDefAll, 0) + allDef) * 10) / 10;
+                    }
+                    /* 九元素抗性上限 */
+                    var capB = num2(ext.maxAllRes, 0);
+                    if (capB !== 0) {
+                        out.maxAllRes = Math.round((num2(out.maxAllRes, 0) + capB) * 10) / 10;
                     }
                 })();
 
@@ -30824,7 +30927,15 @@ window.HY = window.HY || {};
             var cur = this.charSys.rootState.formation;
             list.forEach(function (f) {
                 var pat = assign[f.id] || null;
-                var req = pat ? pat.req : null;
+                /* ⭐ v461：若陣法自帶固定需求樣式（reqPattern），優先採用。
+                   混元陣法必須固定要求混元靈根，不能讓種子隨機配到純元素樣式。 */
+                var req;
+                if (f.reqPattern) {
+                    req = f.reqPattern;
+                    pat = { id: f.id + '_fixed', req: f.reqPattern };
+                } else {
+                    req = pat ? pat.req : null;
+                }
                 var activatable = true;
                 var missing = [];
                 if (req && typeof Data.canSatisfyPattern === 'function') {
@@ -36120,27 +36231,30 @@ window.HY = window.HY || {};
         { re: /^外功減免$/, key: 'dmgReduce', kind: 'extra' },
         { re: /^額外外功減免$/, key: 'dmgReduce', kind: 'extra' },
 
-        /* 五行抗性（上限要優先）
-           ⭐ v2：本作是「八元素」而非五行，因此同時接受兩種寫法。
-              重點是把 fireRes / coldRes / lightningRes / chaosRes / allRes
-              這些 derived stats 的鍵真正產生出來（過去只寫進 elemResAll，
-              導致 derived 完全沒有抗性值）。 */
-        { re: /^八元素抗性上限$/, key: 'maxAllRes', kind: 'flat' },
+        /* ── 抗性（⭐ v461：POE 四抗機制已移除，全部改走九元素） ──
+           統一規則：
+             · 單元素抗性 → elDef_<元素>（一對一，無映射、無換算）
+             · 全元素抗性 → elDefAll（九種平均分配）
+             · 抗性上限   → maxAllRes（九種共用）
+           「火抗」不再是獨立的 fireRes，而是直接 elDef_fire。 */
+        { re: /^九元素抗性上限$/, key: 'maxAllRes', kind: 'flat' },
         { re: /^五行抗性上限$/, key: 'maxAllRes', kind: 'flat' },
-        { re: /^八元素抗性$/, key: 'allRes', kind: 'flat' },
-        { re: /^五行抗性$/, key: 'allRes', kind: 'flat' },
-        { re: /^全元素抗性$/, key: 'allRes', kind: 'flat' },
-        { re: /^雙抗$/, key: 'allRes', kind: 'flat' },
-        { re: /^火抗$/, key: 'fireRes', kind: 'flat' },
-        { re: /^冰抗$/, key: 'coldRes', kind: 'flat' },
-        { re: /^雷抗$/, key: 'lightningRes', kind: 'flat' },
-        { re: /^毒抗$/, key: 'chaosRes', kind: 'flat' },
-        /* 八元素各自的抗性（金木水土風） */
-        { re: /^金抗$/, key: 'metalRes', kind: 'flat' },
-        { re: /^木抗$/, key: 'woodRes', kind: 'flat' },
-        { re: /^土抗$/, key: 'earthRes', kind: 'flat' },
-        { re: /^水抗$/, key: 'waterRes', kind: 'flat' },
-        { re: /^風抗$/, key: 'windRes', kind: 'flat' },
+        { re: /^九元素抗性$/, key: 'elDefAll', kind: 'flat' },
+        { re: /^五行抗性$/, key: 'elDefAll', kind: 'flat' },
+        { re: /^全元素抗性$/, key: 'elDefAll', kind: 'flat' },
+        { re: /^雙抗$/, key: 'elDefAll', kind: 'flat' },
+        /* 九元素各自抗性 */
+        { re: /^金抗$/, key: 'elDef_metal', kind: 'flat' },
+        { re: /^木抗$/, key: 'elDef_wood', kind: 'flat' },
+        { re: /^土抗$/, key: 'elDef_earth', kind: 'flat' },
+        { re: /^水抗$/, key: 'elDef_water', kind: 'flat' },
+        { re: /^火抗$/, key: 'elDef_fire', kind: 'flat' },
+        { re: /^冰抗$/, key: 'elDef_ice', kind: 'flat' },
+        { re: /^風抗$/, key: 'elDef_wind', kind: 'flat' },
+        { re: /^雷抗$/, key: 'elDef_lightning', kind: 'flat' },
+        { re: /^混元抗$/, key: 'elDef_chaos', kind: 'flat' },
+        { re: /^混沌抗$/, key: 'elDef_chaos', kind: 'flat' },
+        { re: /^毒抗$/, key: 'elDef_wood', kind: 'flat' },
 
         /* 五行內勁
            ⭐ v428：改為「單元素專屬通道」
@@ -36157,7 +36271,7 @@ window.HY = window.HY || {};
         { re: /^冰勁傷害$/, key: 'elemAtk_ice', kind: 'more' },
         { re: /^雷勁傷害$/, key: 'elemAtk_lightning', kind: 'more' },
         { re: /^毒勁傷害$/, key: 'elemAtk_chaos', kind: 'more' },
-        { re: /^八元素內勁$/, key: 'elemDmg', kind: 'more' },
+        { re: /^九元素內勁$/, key: 'elemDmg', kind: 'more' },
         { re: /^五行內勁$/, key: 'elemDmg', kind: 'more' },
 
         /* 速度 */
@@ -36212,7 +36326,8 @@ window.HY = window.HY || {};
         /* 「受到的火勁傷害降低 N%」→ 對應抗性 */
         dm = /受到(?:的)?(火勁|冰勁|雷勁|毒勁)傷害\s*(?:降低|減少)\s*([\d.]+)\s*%$/.exec(s);
         if (dm) {
-            var rk = { '火勁': 'fireRes', '冰勁': 'coldRes', '雷勁': 'lightningRes', '毒勁': 'chaosRes' }[dm[1]];
+            /* ⭐ v461：直接映射到九元素抗性（不再經過 POE 四抗） */
+            var rk = { '火勁': 'elDef_fire', '冰勁': 'elDef_ice', '雷勁': 'elDef_lightning', '毒勁': 'elDef_wood' }[dm[1]];
             if (rk) return { kind: 'flat', key: rk, val: num(dm[2], 0) };
         }
 
@@ -36655,16 +36770,21 @@ window.HY = window.HY || {};
         ghostShroud:   { name: '幽靈護罩層數', group: 'defence' },
         thornsDmg:     { name: '反傷',       group: 'defence' },
 
-        /* ── 抗性 ── */
-        fireRes:       { name: '火焰抗性',   group: 'resist', cap: 90 },
-        coldRes:       { name: '冰冷抗性',   group: 'resist', cap: 90 },
-        lightRes:      { name: '閃電抗性',   group: 'resist', cap: 90 },
-        chaosRes:      { name: '混沌抗性',   group: 'resist', cap: 75 },
-        allElemRes:    { name: '全元素抗性', group: 'resist', cap: 90 },
-        maxFireRes:    { name: '最大火抗',   group: 'resist' },
-        maxColdRes:    { name: '最大冰抗',   group: 'resist' },
-        maxLightRes:   { name: '最大電抗',   group: 'resist' },
-        maxElemRes:    { name: '最大全元素抗性', group: 'resist' },
+        /* ── 抗性 ──
+           ⭐ v461：POE 四抗機制已移除。
+           這些鍵仍保留「識別能力」（讓舊詞條能被解析），
+           但不再作為獨立屬性存在 —— 解析後會立刻被重映射成 elDef_<元素>
+           （見下方 RES_REMAP 與 applyTo）。 */
+        fireRes:       { name: '火焰抗性',   group: 'resist', cap: 90, legacy: true, mapsTo: 'elDef_fire' },
+        coldRes:       { name: '冰冷抗性',   group: 'resist', cap: 90, legacy: true, mapsTo: 'elDef_ice' },
+        lightRes:      { name: '閃電抗性',   group: 'resist', cap: 90, legacy: true, mapsTo: 'elDef_lightning' },
+        chaosRes:      { name: '混沌抗性',   group: 'resist', cap: 75, legacy: true, mapsTo: 'elDef_chaos' },
+        allElemRes:    { name: '九元素抗性', group: 'resist', cap: 90, legacy: true, mapsTo: 'elDefAll' },
+        maxElemRes:    { name: '九元素抗性上限', group: 'resist', legacy: true, mapsTo: 'maxAllRes' },
+        /* 舊的「最大單抗」全部收斂成 maxAllRes（九元素共用上限） */
+        maxFireRes:    { name: '九元素抗性上限', group: 'resist', legacy: true, mapsTo: 'maxAllRes' },
+        maxColdRes:    { name: '九元素抗性上限', group: 'resist', legacy: true, mapsTo: 'maxAllRes' },
+        maxLightRes:   { name: '九元素抗性上限', group: 'resist', legacy: true, mapsTo: 'maxAllRes' },
         penetration:   { name: '抗性穿透',   group: 'resist' },
 
         /* ── 速度 ── */
@@ -38979,10 +39099,31 @@ window.HY = window.HY || {};
         Object.keys(agg.flat).forEach(function (ek) {
             var v = num(agg.flat[ek], 0);
             if (!v) return;
-            if (ek === 'allElemRes') {
-                ['fireRes', 'coldRes', 'lightningRes'].forEach(function (k) {
-                    out[k] = num(out[k], 0) + v;
-                });
+            /* ⭐ v461：POE 四抗 → 九元素防禦 重映射
+               ──────────────────────────────────────────────
+               舊詞條仍然會被解析成 fireRes / coldRes / lightningRes / chaosRes /
+               allElemRes，但不再寫進獨立的抗性欄位 ——
+               全部轉成 elDef_<元素>，由 elementSystem 統一處理。
+               這樣「舊裝備的火焰抗性 +46%」會直接變成火元素抗性 +46，
+               不再需要 resistUnify 的橋接換算。 */
+            if (ek === 'allElemRes' || ek === 'maxElemRes' ||
+                ek === 'maxFireRes' || ek === 'maxColdRes' || ek === 'maxLightRes') {
+                if (ek === 'allElemRes') {
+                    out.elDefAll = num(out.elDefAll, 0) + v;
+                } else {
+                    out.maxAllRes = num(out.maxAllRes, 0) + v;
+                }
+                return;
+            }
+            var REMAP = {
+                fireRes: 'elDef_fire',
+                coldRes: 'elDef_ice',
+                lightRes: 'elDef_lightning',
+                lightningRes: 'elDef_lightning',
+                chaosRes: 'elDef_chaos'
+            };
+            if (REMAP[ek]) {
+                out[REMAP[ek]] = num(out[REMAP[ek]], 0) + v;
                 return;
             }
             var gk = KEY_MAP[ek] || DMG_KEYS[ek];
@@ -63066,7 +63207,7 @@ window.HY = window.HY || {};
 
 /* ===== 127 / 249 : combatEnemyTurn.js ===== */
 // js/combatEnemyTurn.js  (v46)
-// 敵方小隊反擊、宗門絕技、詞綴追擊、我方防禦祝福/改命觸發、八元素傷害
+// 敵方小隊反擊、宗門絕技、詞綴追擊、我方防禦祝福/改命觸發、九元素傷害
 //
 // v46 修正（門派特色補完）：
 //   ⭐ 目標防禦力改乘 sectFeatSys.getDefenderMods(charObj).defMult
@@ -66940,7 +67081,7 @@ window.HY = window.HY || {};
          *   · 數值為 0 也顯示（灰色），讓玩家知道「有這項、只是還沒加成」
          *   · 有數值的用亮色，一眼看出哪些是真的有效果
          *   · 抗性類附上上限提示（例如 75% 上限）
-         *   · 八元素抗性另外展開（本作核心特色）
+         *   · 九元素抗性另外展開（本作核心特色）
          */
         renderFullStats(d) {
             var host = document.getElementById('stat-panel-full');
@@ -66966,7 +67107,7 @@ window.HY = window.HY || {};
                 hit: '精準命中', eva: '輕功閃避', crit: '會心爆擊', critRes: '會心抵抗',
                 atkPct: '傷害加成', physDmg: '外功傷害', fireDmg: '火勁傷害',
                 coldDmg: '冰勁傷害', lightningDmg: '雷勁傷害', chaosDmg: '毒勁傷害',
-                elemDmg: '八元素內勁', critDmg: '會心傷害', critFlat: '會心率加成',
+                elemDmg: '九元素內勁', critDmg: '會心傷害', critFlat: '會心率加成',
                 hitFlat: '命中率加成', armorPen: '破甲穿透', dotDmg: '持續傷害',
                 armorPct: '護體加成', evaPct: '輕功加成', blockChance: '格擋率',
                 dodgeChance: '閃避率', dmgReduce: '受傷減免', esShield: '罡氣值',
@@ -67008,7 +67149,7 @@ window.HY = window.HY || {};
                    使用者指出：八元素區已經顯示抗性，上面再列一次「抗性（八元素整合）」
                    是重複的，而且兩邊排版不一致（一邊金抗 26.7%/75、一邊火 攻99 抗15.9%）。
 
-                   現在抗性只在「🌀 八元素」區呈現，且該區已重新設計成
+                   現在抗性只在「🌀 九元素」區呈現，且該區已重新設計成
                    卡片式（攻/抗雙欄 + 上限進度條），資訊更清楚。
                    這裡直接跳過 resist 分組。 */
                 if (g === 'resist') return;
@@ -67138,7 +67279,7 @@ window.HY = window.HY || {};
                         /* 標題列：左標題、右平均抗性 */
                         '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
                         'border-bottom:1px solid #2a3441;padding-bottom:3px;margin-bottom:5px;">' +
-                            '<span style="color:#c8a45c;font-size:.8rem;font-weight:bold;">🌀 八元素</span>' +
+                            '<span style="color:#c8a45c;font-size:.8rem;font-weight:bold;">🌀 九元素</span>' +
                             '<span style="font-size:.76rem;color:#64748b;">' +
                                 '平均抗性 <b style="color:' + avgColor + '">' + avgRes + '%</b>' +
                                 '<span style="color:#3f4a5a"> / ' + avgCap + '%</span>' +
@@ -89746,9 +89887,65 @@ window.HY.Data = window.HY.Data || {};
        ══════════════════════════════════════════════════════ */
     Data.WUXIA_SUFFIXES = [
 
-        /* ── 抗性 ── */
+        /* ── 抗性 ──
+           ⭐ v461：POE 四抗機制已移除。
+           原本這 5 組詞綴產生 fireRes / coldRes / lightningRes / chaosRes / allRes，
+           再由 resistUnify 橋接層換算成九元素抗性 —— 那層是 POE 遺毒。
+
+           現在改為「直接產生九元素抗性」，一對一、沒有中間轉換：
+             · 單元素抗性 → elDef_<元素>
+             · 全元素抗性 → elDefAll（elementSystem 會平均加到九種）
+           ⭐ 同時補上原本缺的抗性：金抗、木抗、土抗、風抗、混元抗 */
         {
-            groupId: 'wx_fireres', statKey: 'fireRes', genType: 2,
+            groupId: 'wx_metalres', statKey: 'elDef_metal', genType: 2,
+            name: '避金', label: '避金', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 1, min: 6, max: 11 },
+                { reqLv: 20, min: 12, max: 19 },
+                { reqLv: 44, min: 20, max: 29 },
+                { reqLv: 68, min: 30, max: 41 },
+                { reqLv: 88, min: 42, max: 50 }
+            ]
+        },
+        {
+            groupId: 'wx_woodres', statKey: 'elDef_wood', genType: 2,
+            name: '避木', label: '避木', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 1, min: 6, max: 11 },
+                { reqLv: 20, min: 12, max: 19 },
+                { reqLv: 44, min: 20, max: 29 },
+                { reqLv: 68, min: 30, max: 41 },
+                { reqLv: 88, min: 42, max: 50 }
+            ]
+        },
+        {
+            groupId: 'wx_earthres', statKey: 'elDef_earth', genType: 2,
+            name: '避土', label: '避土', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 1, min: 6, max: 11 },
+                { reqLv: 20, min: 12, max: 19 },
+                { reqLv: 44, min: 20, max: 29 },
+                { reqLv: 68, min: 30, max: 41 },
+                { reqLv: 88, min: 42, max: 50 }
+            ]
+        },
+        {
+            groupId: 'wx_waterres', statKey: 'elDef_water', genType: 2,
+            name: '避水', label: '避水', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 1, min: 6, max: 11 },
+                { reqLv: 20, min: 12, max: 19 },
+                { reqLv: 44, min: 20, max: 29 },
+                { reqLv: 68, min: 30, max: 41 },
+                { reqLv: 88, min: 42, max: 50 }
+            ]
+        },
+        {
+            groupId: 'wx_fireres', statKey: 'elDef_fire', genType: 2,
             name: '避火', label: '避火', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
             tags: ['RESIST'],
             tiers: [
@@ -89760,7 +89957,7 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_coldres', statKey: 'coldRes', genType: 2,
+            groupId: 'wx_iceres', statKey: 'elDef_ice', genType: 2,
             name: '禦寒', label: '禦寒', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
             tags: ['RESIST'],
             tiers: [
@@ -89772,7 +89969,19 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_lightres', statKey: 'lightningRes', genType: 2,
+            groupId: 'wx_windres', statKey: 'elDef_wind', genType: 2,
+            name: '避風', label: '避風', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 1, min: 6, max: 11 },
+                { reqLv: 20, min: 12, max: 19 },
+                { reqLv: 44, min: 20, max: 29 },
+                { reqLv: 68, min: 30, max: 41 },
+                { reqLv: 88, min: 42, max: 50 }
+            ]
+        },
+        {
+            groupId: 'wx_lightres', statKey: 'elDef_lightning', genType: 2,
             name: '絕緣', label: '絕緣', unit: '%', slots: ['helmet', 'body', 'gloves', 'boots', 'belt', 'offhand', 'ring', 'amulet'],
             tags: ['RESIST'],
             tiers: [
@@ -89784,23 +89993,23 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_allres', statKey: 'allRes', genType: 2,
-            name: '五行護體', label: '五行護體', unit: '%', slots: ['amulet', 'ring', 'belt', 'body'],
-            tags: ['RESIST'],
-            tiers: [
-                { reqLv: 28, min: 5, max: 8 },
-                { reqLv: 56, min: 9, max: 13 },
-                { reqLv: 84, min: 14, max: 19 }
-            ]
-        },
-        {
-            groupId: 'wx_chaosres', statKey: 'chaosRes', genType: 2,
-            name: '辟邪', label: '辟邪', unit: '%', slots: ['amulet', 'ring', 'belt', 'body'],
+            groupId: 'wx_chaosres', statKey: 'elDef_chaos', genType: 2,
+            name: '避混元', label: '避混元', unit: '%', slots: ['amulet', 'ring', 'belt', 'body'],
             tags: ['RESIST'],
             tiers: [
                 { reqLv: 30, min: 5, max: 10 },
                 { reqLv: 62, min: 11, max: 18 },
                 { reqLv: 90, min: 19, max: 28 }
+            ]
+        },
+        {
+            groupId: 'wx_allres', statKey: 'elDefAll', genType: 2,
+            name: '九元護體', label: '九元護體', unit: '%', slots: ['amulet', 'ring', 'belt', 'body'],
+            tags: ['RESIST'],
+            tiers: [
+                { reqLv: 28, min: 5, max: 8 },
+                { reqLv: 56, min: 9, max: 13 },
+                { reqLv: 84, min: 14, max: 19 }
             ]
         },
 
@@ -96154,12 +96363,12 @@ window.HY = window.HY || {};
             block.style.cssText = 'grid-column: span 2; border-top:1px dashed #334155; margin-top:6px; padding-top:7px;';
             block.innerHTML =
                 '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">' +
-                    '<span style="color:#fb923c; font-weight:bold; font-size:0.78rem;">⚔️ 八元素攻擊</span>' +
+                    '<span style="color:#fb923c; font-weight:bold; font-size:0.78rem;">⚔️ 九元素攻擊</span>' +
                     '<span style="color:#94a3b8; font-size:0.72rem;">總 <strong id="stat-elem-atk-total" style="color:#fb923c;">0</strong></span>' +
                 '</div>' +
                 '<div id="stat-elem-atk-grid" style="display:flex; flex-wrap:wrap; gap:3px; margin-bottom:7px;"></div>' +
                 '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">' +
-                    '<span style="color:#2dd4bf; font-weight:bold; font-size:0.78rem;">🛡️ 八元素抗性</span>' +
+                    '<span style="color:#2dd4bf; font-weight:bold; font-size:0.78rem;">🛡️ 九元素抗性</span>' +
                     '<span style="color:#94a3b8; font-size:0.72rem;">總 <strong id="stat-elem-def-total" style="color:#2dd4bf;">0</strong></span>' +
                 '</div>' +
                 '<div id="stat-elem-def-grid" style="display:flex; flex-wrap:wrap; gap:3px;"></div>';
@@ -97829,14 +98038,55 @@ window.HY = window.HY || {};
                 var rLv = c.spiritRootLv || 1;
                 if (rootMeta && rootMeta.passiveBonus) {
                     var pb = rootMeta.passiveBonus;
-                    if (pb.atk)     d.atk     += Math.floor(pb.atk * rLv);
-                    if (pb.def)     d.def     += Math.floor(pb.def * rLv);
-                    if (pb.maxHp)   d.maxHp   += Math.floor(pb.maxHp * rLv);
-                    if (pb.maxMp)   d.maxMp   += Math.floor(pb.maxMp * rLv);
-                    if (pb.hit)     d.hit     += Math.floor(pb.hit * rLv);
-                    if (pb.eva)     d.eva     = Math.min(85, d.eva + Math.floor(pb.eva * rLv));
-                    if (pb.crit)    d.crit    = Math.min(90, d.crit + Math.floor(pb.crit * rLv));
-                    if (pb.critRes) d.critRes += Math.floor(pb.critRes * rLv);
+                    /* ⭐ v60：通用套用（不再寫死 8 個屬性，也不再把小數吃掉）
+                       ──────────────────────────────────────────────
+                       舊版只處理 atk/def/maxHp/maxMp/hit/eva/crit/critRes，
+                       而且全部 Math.floor → 「會心 +0.4%」被吃掉變 0，
+                       導致混元靈根這種均衡型完全沒效果。
+
+                       新版：
+                         · 一般鍵 → 直接累加（小數保留，由顯示層四捨五入）
+                         · *Pct 鍵 → 以基礎值為底做百分比加成
+                         · elAtk / elDef → 交給 elementSystem 處理，這裡跳過 */
+                    var baseSnapshot = {
+                        maxHp: d.maxHp, maxMp: d.maxMp,
+                        atk: d.atk, def: d.def
+                    };
+                    Object.keys(pb).forEach(function (k) {
+                        if (k === 'elAtk' || k === 'elDef') return;   /* 元素通道另處理 */
+                        var v = pb[k];
+                        if (typeof v !== 'number' || !isFinite(v)) return;
+                        var add = v * rLv;
+
+                        if (k === 'maxHpPct') {
+                            d.maxHp += Math.floor(baseSnapshot.maxHp * add / 100);
+                        } else if (k === 'maxMpPct') {
+                            d.maxMp += Math.floor(baseSnapshot.maxMp * add / 100);
+                        } else if (k === 'atkPct') {
+                            d.atk += Math.floor(baseSnapshot.atk * add / 100);
+                        } else if (k === 'defPct') {
+                            d.def += Math.floor(baseSnapshot.def * add / 100);
+                        } else if (k === 'mpRegenPct') {
+                            /* 內力回復：暫存供戰鬥讀取 */
+                            c.__rootMpRegen = (c.__rootMpRegen || 0) + add / 100;
+                        } else if (k === 'dmgReduce') {
+                            d.dmgReduce = (d.dmgReduce || 0) + add;
+                        } else if (k === 'armorPen') {
+                            d.armorPen = (d.armorPen || 0) + add;
+                        } else if (k === 'blockChance') {
+                            d.blockChance = (d.blockChance || 0) + add;
+                        } else if (k === 'healBonus') {
+                            d.healBonus = (d.healBonus || 0) + add;
+                        } else if (k === 'atkSpd') {
+                            d.atkSpd = (d.atkSpd || 100) + add;
+                        } else if (k === 'critDmg') {
+                            d.critDmg = (d.critDmg || 165) + add;
+                        } else if (d[k] !== undefined && typeof d[k] === 'number') {
+                            /* hit / eva / crit / critRes 等既有鍵 */
+                            var cap = (k === 'eva') ? 85 : (k === 'crit' ? 90 : 999);
+                            d[k] = Math.min(cap, d[k] + add);
+                        }
+                    });
                 }
                 return d;
             };
@@ -97876,93 +98126,73 @@ window.HY = window.HY || {};
             var triggerLog = '';
             if (Math.random() < triggerChance) {
                 var rId = rootMeta.id;
-                // 觸發威力讀 elementSys 的八元素聚合（唯一權威來源）
-                var elemAtk = 0;
-                var elemSys = this.app.elementSys;
-                if (elemSys && typeof elemSys.getSummary === 'function') {
-                    var sum = elemSys.getSummary(charObj);
-                    elemAtk = (sum && sum.totalAtk) || 0;
-                }
-                if (elemAtk <= 0) elemAtk = 100;
-                if (rId === 'metal') {
-                    var metalDmg = Math.max(10, Math.floor(elemAtk * 0.45));
+                var trigger = rootMeta.trigger || rId;
+                /* 觸發威力基準：取攻擊力（比元素聚合更直觀且穩定） */
+                var atkBase = (stats && stats.atk) ? stats.atk : 100;
+
+                /* ══════════════════════════════════════════════════
+                   ⭐ v60：九靈根神通全部重製，每個機制都不同
+                   ──────────────────────────────────────────────────
+                   舊版有 3 個靈根都是「造成額外元素傷害」（金/火/雷），
+                   體感完全一樣。新版每個都走不同的戰鬥通道。
+                   ══════════════════════════════════════════════════ */
+
+                if (trigger === 'armourBreak') {
+                    /* ⚙️ 金 · 破甲：無視防禦的純傷害 */
+                    var metalDmg = Math.max(10, Math.floor(atkBase * 0.5));
                     target.currentHp = Math.max(0, target.currentHp - metalDmg);
-                    triggerLog = ' 🪙觸發【' + rootMeta.triggerName + '】無視防禦斬出 ' + metalDmg + ' 金系傷！';
-                } else if (rId === 'wood') {
+                    triggerLog = ' ⚙️【' + rootMeta.triggerName + '】無視防禦斬出 ' + metalDmg + ' 傷！';
+                } else if (trigger === 'teamHeal') {
+                    /* 🌿 木 · 全隊治療 */
                     var partyMembers = this.app.partySys.getPartyMembers();
-                    var healVal = Math.max(10, Math.floor(stats.maxHp * 0.06));
+                    var healVal = Math.max(10, Math.floor(stats.maxHp * 0.07));
                     partyMembers.forEach(function (m) {
                         if (m.currentHp > 0) core.charSys.restoreVitals(healVal, 0, m);
                     });
-                    triggerLog = ' 🌿觸發【' + rootMeta.triggerName + '】為全隊回復 ' + healVal + ' 點氣血！';
-                } else if (rId === 'water') {
-                    var mpRec = Math.max(8, Math.floor(stats.maxMp * 0.10));
-                    var hpRec = Math.max(10, Math.floor(stats.maxHp * 0.06));
-                    core.charSys.restoreVitals(hpRec, mpRec, charObj);
-                    triggerLog = ' 💧觸發【' + rootMeta.triggerName + '】回補 ' + hpRec + ' 氣血與 ' + mpRec + ' 內力！';
-                } else if (rId === 'fire') {
-                    var fireDmg = Math.max(12, Math.floor(elemAtk * 0.50));
-                    target.currentHp = Math.max(0, target.currentHp - fireDmg);
-                    triggerLog = ' 🔥觸發【' + rootMeta.triggerName + '】業火引爆追加 ' + fireDmg + ' 火系傷！';
-                } else if (rId === 'earth') {
-                    var earthHeal = Math.max(12, Math.floor(stats.maxHp * 0.08));
-                    core.charSys.restoreVitals(earthHeal, 0, charObj);
-                    triggerLog = ' 🪨觸發【戊土厚德護體】凝結大地罡氣回復 ' + earthHeal + ' 氣血！';
-                } else if (rId === 'ice') {
-                    target.atb = Math.max(0, (target.atb || 0) - 15);
-                    triggerLog = ' ❄️觸發【' + rootMeta.triggerName + '】凍結對手，使其出招集氣條倒退 -15%！';
-                } else if (rId === 'lightning') {
-                    var aliveEnemies = core.enemies.filter(function (e) { return e.currentHp > 0; });
-                    var lightDmg = Math.max(8, Math.floor(elemAtk * 0.28));
-                    aliveEnemies.forEach(function (e) {
-                        e.currentHp = Math.max(0, e.currentHp - lightDmg);
-                    });
-                    triggerLog = ' ⚡觸發【' + rootMeta.triggerName + '】神雷連鎖轟擊敵方全體各 ' + lightDmg + ' 雷傷！';
-                } else if (rId === 'wind') {
-                    charObj.atb = Math.min(99, (charObj.atb || 0) + 10);
-                    triggerLog = ' 🌪️觸發【' + rootMeta.triggerName + '】御風加速，自身出招集氣條瞬間 +10%！';
-                } else if (rId === 'chaos' || rootMeta.isMixed) {
-                    /* 🌌 混靈根：混元周天輪轉
-                       ──────────────────────────────────────────
-                       依「當前敵方各元素抗性」挑最弱的一環下手，
-                       追加 0.45 倍元素攻擊傷害，並回補氣血與內力。
-                       這是混靈根唯一的高光時刻 —— 平均補足它
-                       單一元素傷害分散、無法專精的弱點。 */
-                    var chaosElem = null;
-                    try {
-                        var pool = Data.ELEMENT_RING || [];
-                        var lowestRes = null;
-                        var candidates = [];
-                        pool.forEach(function (k) {
-                            /* 敵方抗性：優先讀敵人自身元素抗性，沒有就當 0 */
-                            var eDef = 0;
-                            if (target.elemDef && typeof target.elemDef === 'object') {
-                                eDef = target.elemDef[k] || 0;
-                            } else if (typeof target.elemDef === 'number') {
-                                eDef = target.elemDef;
-                            }
-                            if (lowestRes === null || eDef < lowestRes) {
-                                lowestRes = eDef;
-                                candidates = [k];
-                            } else if (eDef === lowestRes) {
-                                candidates.push(k);
-                            }
-                        });
-                        /* ⭐ 同為最低抗性時隨機取一，避免每次都是同一元素 */
-                        if (candidates.length) {
-                            chaosElem = candidates[Math.floor(Math.random() * candidates.length)];
-                        }
-                    } catch (e) { }
-                    if (!chaosElem) chaosElem = 'fire';
-                    var chaosDmg = Math.max(10, Math.floor(elemAtk * 0.45));
-                    target.currentHp = Math.max(0, target.currentHp - chaosDmg);
-                    var chaosHeal = Math.max(10, Math.floor(stats.maxHp * 0.04));
-                    var chaosMp = Math.max(6, Math.floor(stats.maxMp * 0.06));
-                    core.charSys.restoreVitals(chaosHeal, chaosMp, charObj);
-                    var chaosMeta = (Data.ELEMENTS && Data.ELEMENTS[chaosElem]) || null;
-                    triggerLog = ' 🌌觸發【' + rootMeta.triggerName + '】' +
-                        (chaosMeta ? chaosMeta.icon + chaosMeta.name : '') + '元素灌入 → ' + chaosDmg + ' 傷，' +
-                        '並回補 ' + chaosHeal + ' 氣血/' + chaosMp + ' 內力！';
+                    triggerLog = ' 🌿【' + rootMeta.triggerName + '】全隊回復 ' + healVal + ' 氣血！';
+                } else if (trigger === 'mpCycle') {
+                    /* 💧 水 · 內力循環（溢出轉氣血） */
+                    var mpMax = stats.maxMp || 100;
+                    var mpGain = Math.floor(mpMax * 0.20);
+                    core.charSys.restoreVitals(0, mpGain, charObj);
+                    triggerLog = ' 💧【' + rootMeta.triggerName + '】回復 ' + mpGain + ' 內力！';
+                } else if (trigger === 'execute') {
+                    /* 🔥 火 · 殘血處決（目標越殘越痛） */
+                    var hpRatio = target.maxHp > 0 ? (target.currentHp / target.maxHp) : 1;
+                    var missing = Math.max(0, 1 - hpRatio);
+                    var execMul = 0.35 + missing * 1.2;
+                    var execDmg = Math.max(10, Math.floor(atkBase * execMul));
+                    target.currentHp = Math.max(0, target.currentHp - execDmg);
+                    triggerLog = ' 🔥【' + rootMeta.triggerName + '】殘血處決 ' + execDmg +
+                        ' 傷（目標殘 ' + Math.round(missing * 100) + '%）！';
+                } else if (trigger === 'thorns') {
+                    /* 🪨 土 · 壁壘反震（受擊時觸發，見下方防禦段） */
+                    var eHeal = Math.max(10, Math.floor(stats.maxHp * 0.06));
+                    core.charSys.restoreVitals(eHeal, 0, charObj);
+                    triggerLog = ' 🪨【' + rootMeta.triggerName + '】凝結壁壘回復 ' + eHeal + ' 氣血！';
+                } else if (trigger === 'freezeDelay') {
+                    /* ❄️ 冰 · 封脈延緩 */
+                    target.atb = Math.max(0, (target.atb || 0) * 0.75);
+                    var skipChance = Math.random() < 0.4;
+                    if (skipChance) target.skipNext = true;
+                    triggerLog = ' ❄️【' + rootMeta.triggerName + '】集氣倒退 25%' +
+                        (skipChance ? '，目標下次行動被封！' : '！');
+                } else if (trigger === 'extraTurn') {
+                    /* ⚡ 雷 · 追加行動 */
+                    charObj.atb = 100;
+                    triggerLog = ' ⚡【' + rootMeta.triggerName + '】集氣瞬間回滿，可再行動一次！';
+                } else if (trigger === 'counterOnDodge') {
+                    /* 🌪️ 風 · 御風加速（閃避反擊見防禦段） */
+                    charObj.atb = Math.min(100, (charObj.atb || 0) + 18);
+                    triggerLog = ' 🌪️【' + rootMeta.triggerName + '】御風加速，集氣 +18%！';
+                } else if (trigger === 'omniBoost') {
+                    /* 🌌 混元 · 全屬性增幅 */
+                    charObj.__omniBoost = { turns: 2, mult: 1.15 };
+                    var cHeal = Math.max(10, Math.floor(stats.maxHp * 0.05));
+                    var cMp = Math.max(6, Math.floor((stats.maxMp || 100) * 0.05));
+                    core.charSys.restoreVitals(cHeal, cMp, charObj);
+                    triggerLog = ' 🌌【' + rootMeta.triggerName + '】全屬性 +15%（2 回合），回復 ' +
+                        cHeal + ' 氣血／' + cMp + ' 內力！';
                 }
             }
             if (triggerLog) {
@@ -97975,7 +98205,7 @@ window.HY = window.HY || {};
                 this.app.affixSys.onEnemyDeath(target, this.app.partySys.getPartyMembers());
             }
         }
-        // 敵人攻擊後：判定相剋與我方【土靈根・戊土不動壁壘】反震
+        // 敵人攻擊後：土壁壘反震、風閃避反擊、相剋判定
         triggerEnemySpiritRootCombat(core, enemy, targetMember) {
             if (!enemy || !targetMember || targetMember.currentHp <= 0) return;
             this.ensureCharRoot(targetMember);
@@ -97985,20 +98215,32 @@ window.HY = window.HY || {};
             if (!enemyRoot || !memberRoot) return;
             var targetStats = core.charSys.getDerivedStatsForChar(targetMember);
             var counterInfo = this.getElementCounterInfo(enemy.spiritRoot, targetMember.spiritRoot);
-            // ⭐ v3：土靈根受擊觸發機率資料驅動
-            var earthChance = (typeof memberRoot.defenseTriggerChance === 'number')
-                ? memberRoot.defenseTriggerChance
-                : 0.35;
-            if (targetMember.spiritRoot === 'earth' && enemy.currentHp > 0 && Math.random() < earthChance) {
-                var earthReflect = Math.max(5, Math.floor(targetStats.def * 0.35));
-                var earthAbsorb = Math.max(5, Math.floor(targetStats.maxHp * 0.04));
+
+            /* ⭐ v60：受擊觸發也重製 —— 土反震、風反擊，機制不同 */
+            var defChance = (typeof memberRoot.defenseTriggerChance === 'number')
+                ? memberRoot.defenseTriggerChance : 0.35;
+
+            if (memberRoot.trigger === 'thorns' && enemy.currentHp > 0 && Math.random() < defChance) {
+                /* 🪨 土 · 壁壘：反震（以自身防禦為基準） */
+                var earthReflect = Math.max(5, Math.floor(targetStats.def * 0.5));
+                var earthAbsorb = Math.max(5, Math.floor(targetStats.maxHp * 0.03));
                 enemy.currentHp = Math.max(0, enemy.currentHp - earthReflect);
                 core.charSys.restoreVitals(earthAbsorb, 0, targetMember);
-                core.log('🪨 [土靈根・戊土不動壁壘] 【' + targetMember.name + '】大地護體 (+' + earthAbsorb + 'HP)，並震傷【' + enemy.name + '】 ' + earthReflect + ' 點傷害！', 'combat');
+                core.log(memberRoot.icon + '【' + memberRoot.triggerName + '】' +
+                    targetMember.name + ' 壁壘護體 (+' + earthAbsorb + 'HP)，反震 ' +
+                    enemy.name + ' ' + earthReflect + ' 傷！', 'combat');
+            } else if (memberRoot.trigger === 'counterOnDodge' && enemy.currentHp > 0 &&
+                Math.random() < 0.30) {
+                /* 🌪️ 風 · 御風反擊（以攻擊力為基準） */
+                var windDmg = Math.max(8, Math.floor((targetStats.atk || 50) * 0.8));
+                enemy.currentHp = Math.max(0, enemy.currentHp - windDmg);
+                core.log(memberRoot.icon + '【' + memberRoot.triggerName + '】' +
+                    targetMember.name + ' 御風反擊，對 ' + enemy.name + ' 造成 ' + windDmg + ' 傷！', 'combat');
             } else if (counterInfo.state === 'counter') {
                 var bonusElem = Math.max(3, Math.floor((enemy.elemAtk || 15) * 0.35));
                 targetMember.currentHp = Math.max(0, targetMember.currentHp - bonusElem);
-                core.log(enemyRoot.icon + ' 敵方【' + enemy.name + '】憑藉' + counterInfo.tag + '，對【' + targetMember.name + '】追加 ' + bonusElem + ' 點靈根克制傷害！', 'combat');
+                core.log(enemyRoot.icon + ' 敵方【' + enemy.name + '】憑藉' + counterInfo.tag +
+                    '，對【' + targetMember.name + '】追加 ' + bonusElem + ' 點靈根克制傷害！', 'combat');
             }
         }
     }
@@ -98007,7 +98249,7 @@ window.HY = window.HY || {};
 
 /* ===== 179 / 249 : uiSpiritRoot.js ===== */
 // js/uiSpiritRoot.js  (v50.2)
-// 八元素・九大靈根分頁
+// 九元素・九大靈根分頁
 //
 // v50.2 修正：
 //   ⭐ 移除左欄獨立的「本命靈根」stat-row
@@ -98150,7 +98392,7 @@ window.HY = window.HY || {};
             btn.dataset.sub = PANEL_ID;
             btn.style.borderColor = '#fbbf24';
             btn.style.color = '#fbbf24';
-            btn.innerHTML = '🌈 八元素・九大靈根';
+            btn.innerHTML = '🌈 九元素・九大靈根';
             subBar.appendChild(btn);
             this._bindSubTabButton(btn);
         }
@@ -98182,7 +98424,7 @@ window.HY = window.HY || {};
                 btn.className = 'tab-btn';
                 btn.dataset.tab = TOPPANEL_ID;
                 btn.style.borderColor = '#fbbf24';
-                btn.innerHTML = '🌈 八元素・九大靈根';
+                btn.innerHTML = '🌈 九元素・九大靈根';
                 tabNav.appendChild(btn);
                 var self = this;
                 btn.onclick = function () {
@@ -98362,8 +98604,8 @@ window.HY = window.HY || {};
                         curMeta.icon + ' 混靈根・八元素攻防分配（讀自全隊元素聚合）' +
                     '</div>' +
                     '<div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.85rem; margin-bottom:6px;">' +
-                        '<span style="color:#fb923c;">⚔️ 八元素攻擊合計：<strong style="color:#fff;">' + mixedAtkSum + '</strong></span>' +
-                        '<span style="color:#2dd4bf;">🛡️ 八元素抗性合計：<strong style="color:#fff;">' + mixedResSum + '</strong></span>' +
+                        '<span style="color:#fb923c;">⚔️ 九元素攻擊合計：<strong style="color:#fff;">' + mixedAtkSum + '</strong></span>' +
+                        '<span style="color:#2dd4bf;">🛡️ 九元素抗性合計：<strong style="color:#fff;">' + mixedResSum + '</strong></span>' +
                     '</div>' +
                     '<div style="line-height:1.9;">' + (mixedRowsHtml || '<span style="color:#64748b;">尚無元素加成</span>') + '</div>' +
                     '<p style="font-size:0.76rem; color:#94a3b8; margin-top:6px;">💡 混靈根八環兼修，單項數值低但總量最高；不參與相剋與相生。</p>' +
@@ -100508,6 +100750,31 @@ window.HY = window.HY || {};
                 if (eb && eb.elAtk) this.mergeInto(atk, eb.elAtk);
                 if (eb && eb.elDef) this.mergeInto(def, eb.elDef);
             }
+            /* ⭐ v461：POE 四抗詞條已被重映射成 elDef_<元素> 與 elDefAll，
+               這些鍵存在於 derived 上（由 poeStatEngine.applyTo 寫入）。
+               這裡把它們收進元素 map，形成「唯一來源」。
+               ——此段取代了舊版的「POE 四抗橋接層」。 */
+            try {
+                var drEl = c.__poeDerived || null;
+                if (!drEl && this.app.charSys && typeof this.app.charSys.getDerivedStatsForChar === 'function') {
+                    /* ⚠ 避免遞迴：只在沒有快取時取一次基本值 */
+                    drEl = null;
+                }
+                var _self = this;
+                var addFromDerived = function (srcObj) {
+                    if (!srcObj) return;
+                    if (typeof srcObj.elDefAll === 'number' && srcObj.elDefAll !== 0) {
+                        var per = srcObj.elDefAll;
+                        keys.forEach(function (k) { def[k] += per; });
+                    }
+                    keys.forEach(function (k) {
+                        var v = srcObj['elDef_' + k];
+                        if (typeof v === 'number' && v !== 0) def[k] += v;
+                    });
+                };
+                /* 天賦/珠寶/精髓寫在 ext 池，會平鋪到 derived 上（c.__ext） */
+                addFromDerived(c.__ext);
+            } catch (e) { }
             // 7. 幫會
             var gSB = this.app.guildSkillBeast;
             if (gSB && typeof gSB.getGuildBonusForChar === 'function') {
@@ -100604,7 +100871,7 @@ window.HY = window.HY || {};
                              elAtk_<k>     天賦樹原始命名
                              elemAtk_<k>   武俠詞條命名（火勁傷害 → elemAtk_fire）
                              elAtk_all     全元素
-                             elemDmg       全元素通用（八元素內勁） */
+                             elemDmg       全元素通用（九元素內勁） */
                         var single = (tf['elAtk_' + k] || 0) + (tf['elemAtk_' + k] || 0);
                         var allFlat = (tf.elAtk_all || 0) + (tf.elemAtk_all || 0);
                         var add = single + allFlat;
@@ -100627,7 +100894,7 @@ window.HY = window.HY || {};
                         if (pd) def[k] = Math.floor(def[k] * (1 + pd));
                     });
 
-                    /* 全元素通用加成（八元素內勁 / 五行內勁）→ 八種都乘 */
+                    /* 全元素通用加成（九元素內勁 / 五行內勁）→ 八種都乘 */
                     var genPct = _num(tm.elemDmg, 0);
                     if (genPct) {
                         keys.forEach(function (k) {
@@ -100637,53 +100904,17 @@ window.HY = window.HY || {};
                     }
                 }
             }
-            // 11.7 ⭐ PoE 抗性 → 八元素防禦（橋接層）
-            //      PoE 只有火／冰／電／混沌四種抗性，本作是金木水火土冰風雷八種。
-            //      裝備上的 fireRes / coldRes / lightningRes / chaosRes / allRes
-            //      若不橋接過來，玩家看到的「火焰抗性 +46%」就只是個裝飾數字，
-            //      實際受到的火焰傷害完全沒減少。
-            //
-            //      映射策略（依元素語意對應，不硬湊）：
-            //        火 fireRes      → fire
-            //        冰 coldRes      → ice、water（水與冰同源）
-            //        雷 lightningRes → lightning、wind（風雷同屬）
-            //        混 chaosRes     → 全部八種各吃一半（混沌本就無所不在）
-            //        全 allRes       → 八種都吃
-            //      抗性本身是百分比，換算成元素「防禦值」需要一個基準量，
-            //      否則 +46% 抗性直接變成 +46 防禦，對 Lv.80 的敵人毫無意義。
-            //      基準取該元素目前防禦值的 2.2 倍（約等於「抗性 × 現有防禦強度」）。
-            var dr = c.__poeDerived || null;
-            if (!dr) {
-                try {
-                    var charSysRef = this.app.charSys;
-                    if (charSysRef && typeof charSysRef.getDerivedStatsForChar === 'function') {
-                        dr = charSysRef.getDerivedStatsForChar(c);
-                    }
-                } catch (e) { dr = null; }
-            }
-            if (dr) {
-                var RES_MAP = {
-                    fire:      ['fireRes'],
-                    ice:       ['coldRes'],
-                    water:     ['coldRes'],
-                    lightning: ['lightningRes'],
-                    wind:      ['lightningRes'],
-                    earth:     ['chaosRes'],
-                    metal:     ['chaosRes'],
-                    wood:      ['chaosRes']
-                };
-                var allResV = _num(dr.allRes, 0);
-                var RES_BASE = 2.2;
-                keys.forEach(function (k) {
-                    var pct = allResV;
-                    var srcs = RES_MAP[k] || [];
-                    for (var ri = 0; ri < srcs.length; ri++) pct += _num(dr[srcs[ri]], 0);
-                    if (pct <= 0) return;
-                    /* 混沌抗性當來源時減半（它是「全元素」的替代品，不該同強度） */
-                    if (srcs.length === 1 && srcs[0] === 'chaosRes') pct *= 0.5;
-                    def[k] += Math.floor((def[k] > 0 ? def[k] : 60) * (pct / 100) * RES_BASE);
-                });
-            }
+            /* ⭐ v461：POE 四抗橋接層已完全移除。
+               ──────────────────────────────────────────────────────
+               原本這裡會讀 fireRes / coldRes / lightningRes / chaosRes / allRes，
+               換算成元素防禦值加進去。那套是 POE 遺毒：
+                 · 玩家看到「火焰抗性 +46%」，卻要經過映射才生效
+                 · 水與冰共用 coldRes、風與雷共用 lightningRes、金木土共用 chaosRes
+                 · 映射比例（RES_BASE 2.2）是硬湊出來的，數值不透明
+
+               現在改為：裝備詞綴直接產生 elDef_<元素>，
+               elementSystem 在「6. 裝備」那一步就收進 def map，
+               一對一、零轉換、所見即所得。 */
             // 12. 下限保護
             keys.forEach(function (k) {
                 atk[k] = Math.max(0, Math.floor(atk[k]));
@@ -100916,6 +101147,13 @@ window.HY = window.HY || {};
                     } else if (statKey.indexOf('elDef_') === 0) {
                         var d = statKey.slice(6);
                         if (defMap[d] !== undefined) defMap[d] += v;
+                    } else if (statKey === 'elDefAll' || statKey === 'elAtkAll') {
+                        /* ⭐ v461：全元素抗性／全元素攻擊詞條（九元素平均分配）
+                           取代原本的 allRes / elemResAll（POE 四抗遺毒）。 */
+                        var tgt = (statKey === 'elDefAll') ? defMap : atkMap;
+                        var ks = Object.keys(tgt).filter(function (k) { return typeof tgt[k] === 'number'; });
+                        var per = v / Math.max(1, ks.length);
+                        ks.forEach(function (k) { tgt[k] += per; });
                     }
                 }
                 var bs = itemInst.baseStats || {};
@@ -101001,44 +101239,38 @@ window.HY = window.HY || {};
 })();
 
 /* ===== 187 / 249 : resistUnify.js ===== */
-// js/resistUnify.js  (v1)
-// ⭐ 抗性整合層：把「POE 四抗」與「八元素防禦」融合成單一系統
+// js/resistUnify.js  (v2)
+// ⭐ 九元素抗性計算層（POE 四抗機制已移除）
 //
 // ══════════════════════════════════════════════════════════════
-// 【為什麼需要這一支】
-//   本作有兩套互不相通的抗性系統：
+// 【v2 重大變更：移除 POE 四抗】
+//   舊版有兩套互不相通的抗性：
+//     ① POE 四抗（fireRes / coldRes / lightningRes / chaosRes / allRes）
+//     ② 九元素防禦（elementSystem 的 def map）
+//   然後用一張「映射表」把①硬湊成②：
+//        火 → fire
+//        冰 → ice、water（水冰同源）
+//        雷 → lightning、wind（風雷同屬）
+//        混沌 → 金木土（硬湊，毫無道理）
 //
-//     ① POE 四抗（derived stats）
-//          fireRes / coldRes / lightningRes / chaosRes / allRes
-//          maxFireRes / maxColdRes / maxLightRes
-//        → 由裝備詞綴、天賦、精隨提供
-//        → 但 **derived stats 裡根本沒有這些鍵**（實測只有 critRes）
-//          → 所以「火焰抗性 +46%」只是裝飾數字
+//   這造成三個問題：
+//     · 玩家看到「火焰抗性 +46%」，實際生效要經過映射與 2.2 倍換算
+//     · 金木土共用 chaosRes，冰水共用 coldRes，風雷共用 lightningRes
+//       → 想專精某一元素的抗性根本做不到
+//     · 映射比例是硬湊的，數字對不上，玩家無法預期
 //
-//     ② 八元素防禦（elementSystem.getElementStats().def）
-//          metal/wood/water/fire/earth/ice/wind/lightning
-//        → 由靈根、經脈、心法、身法、裝備、門派、陣法提供
-//        → 戰鬥實際用這套計算傷害
-//
-//   結果：玩家看到的「抗性」與實際減傷無關，兩邊數字也對不上。
-//
-// 【本層做什麼】
-//   把兩者融合成一張表：每個元素都有「抗性%」與「上限%」。
-//   計算順序（與 POE 相同）：
-//     最終抗性 = MIN( 原始抗性總和 , 抗性上限 )
-//     減傷倍率 = 1 - 最終抗性
-//
-//   其中「原始抗性總和」來自三個來源：
-//     · 裝備/天賦的 POE 四抗（映射到對應元素）
-//     · 八元素防禦值換算的抗性
-//     · 各元素專屬抗性（elDef_* 詞條）
+//   現在全部移除：
+//     · 裝備詞綴直接產生 elDef_<元素>（一對一）
+//     · 全元素抗性改叫 elDefAll（九種平均分配）
+//     · 本層只負責「把 elementSystem 的 def 值換算成抗性%」
+//       —— 單一來源、單一公式、所見即所得
 //
 // 【對外介面】
-//   HY.Resist.get(charObj)         → { fire:{cur,cap,pct}, ... , all:{...} }
-//   HY.Resist.of(charObj, elem)    → 單一元素的 {cur, cap, pct}
-//   HY.Resist.mitigation(charObj, elem) → 0~1 的減傷比例（戰鬥直接用）
-//   HY.Resist.summary(charObj)     → 給 UI 用的顯示摘要
-//   HY.Resist.detail(charObj)      → 完整明細（來源拆解，除錯/面板用）
+//   HY.Resist.get(c)              → { metal:{cur,cap}, ... , __avg:{...} }
+//   HY.Resist.of(c, elem)         → 單一元素 {cur, cap, pct, src}
+//   HY.Resist.mitigation(c, elem) → 0~1 減傷比例（戰鬥直接用）
+//   HY.Resist.summary(c)          → UI 摘要
+//   HY.Resist.detail(c)           → 完整明細
 // ══════════════════════════════════════════════════════════
 window.HY = window.HY || {};
 (function (HY) {
@@ -101053,35 +101285,15 @@ window.HY = window.HY || {};
        一、設定
        ══════════════════════════════════════════════════════ */
     var CFG = {
-        /* 抗性上限（%）：預設 75，與 POE 一致 */
+        /* 抗性上限（%）：預設 75 */
         DEFAULT_CAP: 75,
         /* 絕對上限：即使有 +上限 詞條也不能超過 */
         HARD_CAP: 90,
-        /* 八元素防禦值 → 抗性% 的換算基準
-           def 值 100 約等於抗性 30%（可調） */
+        /* 元素防禦值 → 抗性% 的換算基準
+           def 值 100 約等於抗性 30% */
         DEF_TO_RES: 0.30,
         /* 抗性可為負（受到額外傷害），下限 -60 */
-        MIN_RES: -60,
-        /* POE 四抗 → 八元素的映射
-           （依元素語意對應，不硬湊） */
-        MAP: {
-            fire: ['fireRes'],
-            ice: ['coldRes'],
-            water: ['coldRes'],       /* 水與冰同源 */
-            lightning: ['lightningRes'],
-            wind: ['lightningRes'],   /* 風雷同屬 */
-            earth: ['chaosRes'],
-            metal: ['chaosRes'],
-            wood: ['chaosRes']
-        },
-        /* 上限詞條映射 */
-        CAP_MAP: {
-            fire: ['maxFireRes'],
-            ice: ['maxColdRes'],
-            water: ['maxColdRes'],
-            lightning: ['maxLightRes'],
-            wind: ['maxLightRes']
-        }
+        MIN_RES: -60
     };
 
     /* 元素中文名與圖示（供顯示） */
@@ -101093,14 +101305,15 @@ window.HY = window.HY || {};
         fire:      { zh: '火', icon: '🔥', color: '#ef4444' },
         ice:       { zh: '冰', icon: '❄️', color: '#67e8f9' },
         wind:      { zh: '風', icon: '🌪️', color: '#2dd4bf' },
-        lightning: { zh: '雷', icon: '⚡', color: '#c084fc' }
+        lightning: { zh: '雷', icon: '⚡', color: '#c084fc' },
+        chaos:     { zh: '混', icon: '🌌', color: '#a78bfa' }
     };
 
     function elemKeys() {
         var D = HY.Data || {};
         var ring = D.ELEMENT_RING;
         if (Array.isArray(ring) && ring.length) return ring.slice();
-        return ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning'];
+        return ['metal', 'wood', 'earth', 'water', 'fire', 'ice', 'wind', 'lightning', 'chaos'];
     }
 
     function derivedOf(c) {
@@ -101118,49 +101331,27 @@ window.HY = window.HY || {};
     /* ══════════════════════════════════════════════════════
        二、核心：取得單一元素的抗性
        ──────────────────────────────────────────────────────────
-       抗性來源分三層（全部相加，再套上限）：
-         ① POE 四抗（映射後的百分比）
-         ② 八元素防禦值換算（def × DEF_TO_RES / 100）
-         ③ 全元素抗性 allRes（八種都吃）
+       唯一來源：elementSystem 的 def 值（九元素原生）
+         抗性% = def × DEF_TO_RES
+       再套上限與下限。
        ══════════════════════════════════════════════════════ */
     function resistOf(c, elem, ctx) {
         var dr = (ctx && ctx.derived) || derivedOf(c);
         var es = (ctx && ctx.elem) || elementStatsOf(c);
-        if (!dr && !es) return { cur: 0, cap: CFG.DEFAULT_CAP, pct: 0, src: {} };
+        if (!es) return { cur: 0, cap: CFG.DEFAULT_CAP, pct: 0, raw: 0, src: { def: 0, capBonus: 0 } };
 
-        var cap = CFG.DEFAULT_CAP;
-        var src = { poe: 0, def: 0, all: 0, capBonus: 0 };
+        var src = { def: 0, capBonus: 0 };
 
-        /* ① POE 四抗映射 */
-        var keys = (CFG.MAP[elem] || []);
-        for (var i = 0; i < keys.length; i++) {
-            var v = num(dr && dr[keys[i]], 0);
-            if (v === 0) continue;
-            /* 混沌抗性當來源時減半（它是「全元素」的替代品） */
-            if (keys[i] === 'chaosRes') v *= 0.5;
-            /* 同一元素有多個來源時，只取最高的（避免重複計入） */
-            if (Math.abs(v) > Math.abs(src.poe)) src.poe = v;
-        }
-
-        /* ② 八元素防禦值換算 */
-        if (es && es.def) {
+        /* ① 九元素防禦值（唯一來源） */
+        if (es.def) {
             var d = num(es.def[elem], 0);
-            if (d > 0) src.def = d * CFG.DEF_TO_RES;
+            if (d !== 0) src.def = d * CFG.DEF_TO_RES;
         }
+        /* ② 抗性上限加成（來自 maxAllRes，全元素共用） */
+        src.capBonus = num(dr && (dr.maxAllRes || dr.maxAllResPct), 0);
 
-        /* ③ 全元素抗性（八種都吃，且不減半） */
-        src.all = num(dr && dr.allRes, 0);
-
-        /* ④ 抗性上限加成 */
-        var capKeys = CFG.CAP_MAP[elem] || [];
-        for (var j = 0; j < capKeys.length; j++) {
-            var cb = num(dr && dr[capKeys[j]], 0);
-            if (cb > src.capBonus) src.capBonus = cb;
-        }
-
-        cap = Math.min(CFG.HARD_CAP, CFG.DEFAULT_CAP + src.capBonus);
-
-        var raw = src.poe + src.def + src.all;
+        var cap = Math.min(CFG.HARD_CAP, CFG.DEFAULT_CAP + Math.max(0, src.capBonus));
+        var raw = src.def;
         var cur = Math.max(CFG.MIN_RES, Math.min(cap, raw));
 
         return {
@@ -101187,16 +101378,11 @@ window.HY = window.HY || {};
         keys.forEach(function (k) {
             var r = resistOf(c, k, ctx);
             out[k] = r;
-            out[k].zh = (ELEM_META[k] && ELEM_META[k].zh) || k;
-            out[k].icon = (ELEM_META[k] && ELEM_META[k].icon) || '';
-            out[k].color = (ELEM_META[k] && ELEM_META[k].color) || '#94a3b8';
-            /* 攻擊值也一併帶出，方便 UI 一次顯示「攻/抗」 */
+            var meta = ELEM_META[k] || {};
+            out[k].zh = meta.zh || k;
+            out[k].icon = meta.icon || '';
+            out[k].color = meta.color || '#94a3b8';
             out[k].atk = (es && es.atk) ? Math.round(num(es.atk[k], 0)) : 0;
-            /* ⭐ v428：該元素的傷害加成%（來自「火勁傷害」「雷勁傷害」等詞條）
-               這些詞條由 wuxiaStatParser 映射到 elemAtk_<元素>，
-               elementSystem 會把它乘在該元素的攻擊力上。
-               這裡把百分比帶出來，UI 就能顯示「🔥火 攻 62 +31%」，
-               玩家一眼看出加成加在哪個元素，不必再另開一組欄位。 */
             out[k].atkBoost = 0;
             if (es && es.atkBoost && typeof es.atkBoost[k] === 'number') {
                 out[k].atkBoost = Math.round(es.atkBoost[k] * 1000) / 10;
@@ -101205,10 +101391,9 @@ window.HY = window.HY || {};
             sumRaw += r.raw;
         });
 
-        /* 平均抗性（供總覽顯示） */
         out.__avg = {
-            cur: Math.round((sumCur / keys.length) * 10) / 10,
-            raw: Math.round((sumRaw / keys.length) * 10) / 10,
+            cur: Math.round((sumCur / Math.max(1, keys.length)) * 10) / 10,
+            raw: Math.round((sumRaw / Math.max(1, keys.length)) * 10) / 10,
             cap: CFG.DEFAULT_CAP,
             totalAtk: (es && es.totalAtk) ? Math.round(es.totalAtk) : 0,
             totalDef: (es && es.totalDef) ? Math.round(es.totalDef) : 0
@@ -101218,9 +101403,6 @@ window.HY = window.HY || {};
 
     /* ══════════════════════════════════════════════════════
        四、戰鬥用：減傷倍率
-       ──────────────────────────────────────────────────────────
-       回傳 0~1：1 = 完全沒抗（受全額傷害），0 = 完全免疫。
-       抗性可為負 → 回傳 > 1（受到額外傷害）。
        ══════════════════════════════════════════════════════ */
     function mitigation(c, elem) {
         var r = resistOf(c, elem);
@@ -101244,17 +101426,15 @@ window.HY = window.HY || {};
     }
 
     function findLow(all) {
-        var keys = elemKeys();
         var best = null;
-        keys.forEach(function (k) {
+        elemKeys().forEach(function (k) {
             if (!best || all[k].cur < all[best].cur) best = k;
         });
         return best ? { zh: all[best].zh, cur: all[best].cur } : null;
     }
     function findHigh(all) {
-        var keys = elemKeys();
         var best = null;
-        keys.forEach(function (k) {
+        elemKeys().forEach(function (k) {
             if (!best || all[k].cur > all[best].cur) best = k;
         });
         return best ? { zh: all[best].zh, cur: all[best].cur } : null;
@@ -101262,7 +101442,6 @@ window.HY = window.HY || {};
 
     /** 完整明細（含來源拆解），供面板與除錯 */
     function detail(c) {
-        var dr = derivedOf(c);
         var es = elementStatsOf(c);
         var all = getAll(c);
         var rows = [];
@@ -101279,27 +101458,15 @@ window.HY = window.HY || {};
                 raw: r.raw,
                 cap: r.cap,
                 capped: r.capped,
-                /* 來源拆解 */
-                fromPoe: Math.round(r.src.poe * 10) / 10,
-                fromDef: Math.round(r.src.def * 10) / 10,
-                fromAll: Math.round(r.src.all * 10) / 10
+                /* 來源：只有「元素防禦值」一個來源（POE 四抗已移除） */
+                fromDef: Math.round(r.src.def * 10) / 10
             });
         });
 
         return {
             rows: rows,
             avg: all.__avg,
-            /* 原始 derived 值（供除錯確認真的有讀到） */
-            rawDerived: dr ? {
-                allRes: num(dr.allRes, 0),
-                fireRes: num(dr.fireRes, 0),
-                coldRes: num(dr.coldRes, 0),
-                lightningRes: num(dr.lightningRes, 0),
-                chaosRes: num(dr.chaosRes, 0),
-                maxFireRes: num(dr.maxFireRes, 0),
-                maxColdRes: num(dr.maxColdRes, 0),
-                maxLightRes: num(dr.maxLightRes, 0)
-            } : null
+            rawElemDef: es ? es.def : null
         };
     }
 
@@ -101309,20 +101476,16 @@ window.HY = window.HY || {};
     HY.Resist = {
         CFG: CFG,
         ELEM_META: ELEM_META,
-
-        /** 單一元素抗性 */
         of: resistOf,
-        /** 全部八元素 */
         get: getAll,
-        /** 戰鬥減傷倍率（乘在受到的傷害上） */
         mitigation: mitigation,
-        /** UI 摘要 */
         summary: summary,
-        /** 完整明細 */
-        detail: detail
+        detail: detail,
+        /** 九元素 keys（供外部取用） */
+        keys: elemKeys
     };
 
-    /* 自我檢測：載入後印出一次，方便確認是否有讀到值 */
+    /* 自我檢測：載入後印出一次 */
     var _checked = false;
     function selfCheck() {
         if (_checked) return;
@@ -101331,9 +101494,8 @@ window.HY = window.HY || {};
         _checked = true;
         try {
             var d = detail(g.charSys.state);
-            var avg = d.avg;
-            console.log('[HY Resist] ✓ 抗性整合層已載入｜平均抗性 ' + avg.cur + '%' +
-                '（攻擊總 ' + avg.totalAtk + ' / 防禦總 ' + avg.totalDef + '）');
+            console.log('[HY Resist] ✓ 九元素抗性已載入（POE 四抗已移除）｜平均抗性 ' +
+                d.avg.cur + '%（攻擊總 ' + d.avg.totalAtk + '）');
         } catch (e) { }
     }
     var tries = 0;
@@ -110345,7 +110507,7 @@ window.HY = window.HY || {};
                 atk: '外功攻擊', def: '護體防禦', hit: '命中', eva: '輕功',
                 crit: '會心', critRes: '會心抵抗', critDmg: '會心傷害',
                 dmgReduce: '受傷減免', atkSpd: '出手速度', physDmg: '外功傷害',
-                elemDmg: '八元素內勁', dotDmg: '持續傷害', atkPct: '傷害加成'
+                elemDmg: '九元素內勁', dotDmg: '持續傷害', atkPct: '傷害加成'
             };
             if (tb) {
                 ['con', 'str', 'agi', 'int'].forEach(function (k) {
@@ -110523,7 +110685,7 @@ window.HY = window.HY || {};
                 '外功傷害': 1, '防禦': 1, '護體': 1, '氣血': 1, '內力': 1,
                 /* 抗性類（已在「元素抗性」那行處理） */
                 '火抗': 1, '冰抗': 1, '雷抗': 1, '毒抗': 1, '全元素抗性': 1,
-                '八元素抗性': 1, '八元素內勁': 1,
+                '九元素抗性': 1, '九元素內勁': 1,
                 /* 常見變體 */
                 '最大氣血上限': 1, '最大內力上限': 1, '會心率': 1, '暴擊': 1, '爆擊': 1
             };
@@ -127695,12 +127857,12 @@ window.HY.Data = window.HY.Data || {};
         { id: 'dao_1b', branch: 'dao', tier: 1, need: 'dao_root', cost: 1, type: 'small',
           name: '五行相生', icon: '🌀',
           effect: { elemAllPct: 0.10 },
-          desc: '八元素攻擊 +10%' },
+          desc: '九元素攻擊 +10%' },
 
         { id: 'dao_elem', branch: 'dao', tier: 2, need: 'dao_1a', cost: 1, type: 'notable',
           name: '元素精通', icon: '🔥',
           effect: { elemAllPct: 0.20, ailmentApply: 0.15 },
-          desc: '八元素攻擊 +20%，異常施加 +15%' },
+          desc: '九元素攻擊 +20%，異常施加 +15%' },
         { id: 'dao_inner', branch: 'dao', tier: 2, need: 'dao_1b', cost: 1, type: 'notable',
           name: '內息綿長', icon: '🌊',
           effect: { maxMpPct: 0.18, atkSpd: 8 },
@@ -127709,7 +127871,7 @@ window.HY.Data = window.HY.Data || {};
         { id: 'dao_2a', branch: 'dao', tier: 3, need: 'dao_elem', cost: 1, type: 'small',
           name: '天人感應', icon: '✨',
           effect: { elemAllPct: 0.15, ailmentDuration: 1 },
-          desc: '八元素攻擊 +15%，異常持續 +1 回合' },
+          desc: '九元素攻擊 +15%，異常持續 +1 回合' },
         { id: 'dao_2b', branch: 'dao', tier: 3, need: 'dao_inner', cost: 1, type: 'small',
           name: '周天運轉', icon: '⭕',
           effect: { xinfaEffect: 0.20, atkSpd: 5 },
@@ -127718,7 +127880,7 @@ window.HY.Data = window.HY.Data || {};
         { id: 'dao_qi', branch: 'dao', tier: 4, need: 'dao_2a', cost: 1, type: 'notable',
           name: '真氣充盈', icon: '💠',
           effect: { maxMpPct: 0.25, elemAllPct: 0.15 },
-          desc: '內力 +25%，八元素攻擊 +15%' },
+          desc: '內力 +25%，九元素攻擊 +15%' },
         { id: 'dao_burst', branch: 'dao', tier: 4, need: 'dao_2b', cost: 1, type: 'notable',
           name: '一氣化三清', icon: '🌸',
           effect: { xinfaEffect: 0.25, ailmentApply: 0.20 },
@@ -127731,7 +127893,7 @@ window.HY.Data = window.HY.Data || {};
             xinfaEffect: 0.50, elemAllPct: 0.40, ailmentApply: 0.30,
             ailmentDuration: 2, maxMpPct: 0.30, maxHpPct: -0.08
           },
-          desc: '心法效果 +50%、八元素攻擊 +40%、異常施加 +30% 且持續 +2 回合、' +
+          desc: '心法效果 +50%、九元素攻擊 +40%、異常施加 +30% 且持續 +2 回合、' +
                 '內力 +30%。' +
                 '【代價】氣血上限 -8%',
           keystone: true
@@ -127758,7 +127920,7 @@ window.HY.Data = window.HY.Data || {};
             xinfaEffect: 0.30, elemAllPct: 0.25, ailmentApply: 0.30,
             dotMul: 0.25, critDmg: 20
           },
-          desc: '心法效果 +30%、八元素攻擊 +25%、異常施加 +30%、' +
+          desc: '心法效果 +30%、九元素攻擊 +25%、異常施加 +30%、' +
                 '持續傷害 +25%、暴傷 +20%。' +
                 '【需先點出道法關鍵天賦】',
           crossNeed: ['dao_keystone', 'sha_2a'],
@@ -128686,7 +128848,7 @@ window.HY = window.HY || {};
 
             var spList = [];
             if (b.xinfaEffect) spList.push('心法效果 +' + Math.round(b.xinfaEffect * 100) + '%');
-            if (b.elemAllPct) spList.push('八元素攻擊 +' + Math.round(b.elemAllPct * 100) + '%');
+            if (b.elemAllPct) spList.push('九元素攻擊 +' + Math.round(b.elemAllPct * 100) + '%');
             if (b.defPen) spList.push('無視防禦 ' + Math.round(b.defPen * 100) + '%');
             if (b.thorns) spList.push('反彈 ' + Math.round(b.thorns * 100) + '%');
             if (b.lifesteal) spList.push('吸血 ' + Math.round(b.lifesteal * 100) + '%');
