@@ -71247,25 +71247,38 @@ window.HY = window.HY || {};
                 const locked = charLv < reqLv;
                 const bonusStr = app.equipSys.formatBonusText(sect.bonus);
                 const feat = sect.feature;
-                /* ⭐ v427：機制只顯示當前門派
+                /* ⭐ v471：機制說明「不需拜入即可查看」
                    ──────────────────────────────────────────────────────────
-                   舊版把 46 個門派的機制完整說明全部列出，玩家要讀 46 段
-                   機制描述才能找到自己的，而且容易誤以為自己能同時擁有這些機制。
+                   使用者要求：「門派機制加入說明，不用拜入才可以看效果」。
+
+                   舊版：
+                     · 當前門派 → 完整機制說明
+                     · 其他門派 → 只有名稱 +（拜入後可查看詳細效果）
 
                    新版：
-                     · 當前門派 → 完整機制說明（標題 + 效果描述）
-                     · 其他門派 → 只顯示機制「名稱」，不寫效果細節
-                   這樣一眼就知道「我擁有的是哪一個」，其餘當作圖鑑瀏覽。 */
+                     · 所有門派 → 都顯示完整機制說明
+                     · 非當前門派用 <details> 收納（點開才展開），
+                       避免 46 段說明同時展開導致頁面過長
+                     · 當前門派保持預設展開、加上「當前師門」樣式 */
                 const featHtml = feat
                     ? (isCurrent
                         ? '<div style="background:rgba(0,0,0,0.35); border-left:3px solid ' + feat.color + '; padding:8px; margin:8px 0; border-radius:4px;">' +
                             '<strong style="color:' + feat.color + '; font-size:0.9rem;">' + feat.icon + ' 專屬門派特色：【' + feat.name + '】</strong>' +
-                            '<div style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">' + feat.desc + '</div>' +
+                            '<div style="font-size:0.82rem; color:#cbd5e1; margin-top:4px; white-space:pre-wrap;">' + (feat.desc || '') + '</div>' +
                           '</div>'
-                        : '<div style="margin:8px 0; padding:5px 8px; border-left:2px solid ' + feat.color + '55; border-radius:3px;">' +
-                            '<span style="color:' + feat.color + '88; font-size:0.82rem;">' + feat.icon + ' 機制：' + feat.name + '</span>' +
-                            '<span style="color:#475569; font-size:0.76rem;">（拜入後可查看詳細效果）</span>' +
-                          '</div>')
+                        : '<details style="margin:8px 0; padding:5px 8px; border-left:2px solid ' + feat.color + '66; border-radius:3px; background:rgba(0,0,0,0.22);">' +
+                            '<summary style="cursor:pointer; color:' + feat.color + '; font-size:0.82rem; outline:none;">' +
+                                feat.icon + ' 機制：' + feat.name +
+                                '<span style="color:#64748b; font-size:0.74rem;">（點擊展開效果說明）</span>' +
+                            '</summary>' +
+                            '<div style="font-size:0.79rem; color:#cbd5e1; margin-top:6px; padding-left:4px; white-space:pre-wrap; line-height:1.7;">' +
+                                (feat.desc || '') +
+                            '</div>' +
+                            (feat.shortDesc
+                                ? '<div style="font-size:0.75rem; color:#94a3b8; margin-top:4px; padding-left:4px;">' +
+                                    '💡 ' + feat.shortDesc + '</div>'
+                                : '') +
+                          '</details>')
                     : '';
                 const card = document.createElement('div');
                 card.className = 'card-item';
