@@ -107152,8 +107152,75 @@ window.HY = window.HY || {};
             'animation:hy-fx-ring .48s ease-out forwards;}',
         '@keyframes hy-fx-ring{0%{opacity:1;transform:scale(.3);}100%{opacity:0;transform:scale(7);}}',
 
-        /* ⭐ v517：全舞台震動
-           ⭐ v521：已移除（使用者要求） */
+        /* ⭐ v525：動態立繪（方案 A+B 混合）
+           ──────────────────────────────────────────────────────────
+           核心手法：同一張 PNG 用 clip-path 切成三層疊加，
+           頭/身/腿各用不同週期與相位微動。
+           因為是同一張圖，物理上不可能出現「姿勢改變」的漂移。
+
+           動態構成：
+             ① 頭部：上下 1.5px、週期 3.4s（比身體慢，像延遲跟隨）
+             ② 身體：scale 1.006 呼吸、週期 4.2s
+             ③ 腿部：靜止（穩定地基）
+             ④ 整圖：0.6px 低頻水平微顫（模擬氣息）
+             ⑤ 光暈：依元素色脈動
+             ⑥ 腳下：光環呼吸 + 粒子飄升
+
+           ⚠️ clip-path 分界線放在頸部(26%)與腰部(74%)這種相對靜止處，
+              錯位量 ≤2px，避免硬切線露破綻。 */
+        '.dyn-wrap{position:relative;display:inline-block;line-height:0;' +
+            'height:var(--h,180px);flex:0 0 auto;}',
+        /* 所有層的 img 一律吃 --h，確保與靜態圖同高 */
+        '.dyn-wrap img{display:block;height:var(--h,180px);width:auto;' +
+            'object-fit:contain;object-position:bottom center;pointer-events:none;}',
+        '.dyn-layer{position:absolute;inset:0;pointer-events:none;' +
+            'will-change:transform;overflow:hidden;}',
+        /* 底座層：靜態定位（決定容器尺寸），不絕對定位 */
+        '.dyn-base{position:relative;z-index:1;}',
+        /* 身體層：26%~76% */
+        '.dyn-body{z-index:2;clip-path:inset(26% 0 24% 0);' +
+            'animation:hy-dyn-breathe 4.2s ease-in-out infinite;' +
+            'transform-origin:50% 100%;}',
+        /* 頭部層：0~27% */
+        '.dyn-head{z-index:3;clip-path:inset(0 0 73% 0);' +
+            'animation:hy-dyn-bob 3.4s ease-in-out infinite;' +
+            'transform-origin:50% 100%;}',
+        '@keyframes hy-dyn-breathe{0%,100%{transform:scale(1) translateY(0);}' +
+            '50%{transform:scale(1.006) translateY(-0.6px);}}',
+        '@keyframes hy-dyn-bob{0%,100%{transform:translateY(0);}' +
+            '46%{transform:translateY(-1.5px);}' +
+            '72%{transform:translateY(-0.4px);}}',
+        /* 整圖低頻微顫（氣息感） */
+        '.dyn-whole{animation:hy-dyn-sway 6.5s ease-in-out infinite;}',
+        '@keyframes hy-dyn-sway{0%,100%{transform:translateX(0) rotate(0deg);}' +
+            '33%{transform:translateX(0.6px) rotate(0.08deg);}' +
+            '66%{transform:translateX(-0.5px) rotate(-0.06deg);}}',
+        /* 光暈脈動（依 --aura 顏色） */
+        '.dyn-aura{position:absolute;left:50%;bottom:8%;z-index:0;pointer-events:none;' +
+            'width:86%;height:74%;transform:translateX(-50%);' +
+            'border-radius:50%;filter:blur(18px);opacity:.42;' +
+            'background:radial-gradient(ellipse at 50% 62%,var(--aura,rgba(56,189,248,.55)),transparent 70%);' +
+            'animation:hy-dyn-aura 5.2s ease-in-out infinite;}',
+        '@keyframes hy-dyn-aura{0%,100%{opacity:.30;transform:translateX(-50%) scale(1);}' +
+            '50%{opacity:.55;transform:translateX(-50%) scale(1.06);}}',
+        /* 腳下光環 */
+        '.dyn-ground{position:absolute;left:50%;bottom:6%;z-index:2;pointer-events:none;' +
+            'width:64%;height:11px;transform:translateX(-50%);border-radius:50%;' +
+            'background:radial-gradient(ellipse,var(--aura,rgba(56,189,248,.6)),transparent 72%);' +
+            'animation:hy-dyn-ground 3.8s ease-in-out infinite;}',
+        '@keyframes hy-dyn-ground{0%,100%{opacity:.45;width:60%;}' +
+            '50%{opacity:.85;width:70%;}}',
+        /* 粒子層（3 顆緩慢飄升） */
+        '.dyn-parts{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;}',
+        '.dyn-parts i{position:absolute;width:3px;height:3px;border-radius:50%;' +
+            'background:var(--aura,rgba(125,211,252,.9));' +
+            'box-shadow:0 0 6px var(--aura,rgba(56,189,248,.9));' +
+            'animation:hy-dyn-part 5.5s linear infinite;opacity:0;}',
+        '@keyframes hy-dyn-part{0%{transform:translateY(10px);opacity:0;}' +
+            '18%{opacity:.9;}' +
+            '80%{opacity:.35;}' +
+            '100%{transform:translateY(-70px);opacity:0;}}',
+
 
         /* ⭐ v517：集氣滿的蓄力呼吸（施放前預備動作） */
         '.hy-stage-unit.charging .hy-stage-img{' +
@@ -107204,6 +107271,24 @@ window.HY = window.HY || {};
             '16%{opacity:1;transform:translate(-50%,-50%) scale(1);}' +
             '74%{opacity:1;}' +
             '100%{opacity:0;transform:translate(-50%,-50%) scale(.94);}}',
+
+        /* ⭐ v525：動態立繪也套用同樣的狀態效果 */
+        '.hy-stage-unit.dead .dyn-wrap{opacity:.35;filter:grayscale(1) brightness(.8);' +
+            'transform:rotate(-4deg) translateY(4px);}',
+        '.hy-stage-unit.hit .dyn-wrap{animation:hy-dyn-hit .3s ease-out;' +
+            'filter:drop-shadow(0 0 14px rgba(248,113,113,.95)) brightness(1.4) saturate(1.4);}',
+        '@keyframes hy-dyn-hit{0%{transform:translateX(0);}' +
+            '18%{transform:translateX(-7px) rotate(-1.4deg);}' +
+            '36%{transform:translateX(6px) rotate(1.2deg);}' +
+            '54%{transform:translateX(-4px);}72%{transform:translateX(3px);}' +
+            '100%{transform:translateX(0);}}',
+        '.hy-stage-unit.lunge.ally .dyn-wrap{animation:hy-stage-lunge-r .42s ease-out;}',
+        '.hy-stage-unit.lunge.foe .dyn-wrap{animation:hy-stage-lunge-l .42s ease-out;}',
+        '.hy-stage-unit.dying .dyn-wrap{animation:hy-stage-die .62s ease-in forwards;}',
+        '.hy-stage-unit.lowhp .dyn-aura{animation:hy-dyn-aura-low .9s ease-in-out infinite;' +
+            'background:radial-gradient(ellipse at 50% 62%,rgba(239,68,68,.75),transparent 70%);}',
+        '@keyframes hy-dyn-aura-low{0%,100%{opacity:.4;}50%{opacity:.75;}}',
+        '.hy-stage-unit.ready .dyn-wrap{filter:drop-shadow(0 0 14px rgba(251,191,36,.9));}',
 
         /* ⭐ v517：戰鬥結算橫幅
            ⭐ v521：已移除（使用者要求），CSS 一併清除 */
@@ -107753,6 +107838,57 @@ window.HY = window.HY || {};
         return h;
     }
 
+    /* ⭐ v525：動態立繪可用的角色（先做 5 位，驗證效果後可擴展）
+       ⚠️ 只對「我方」角色啟用，敵方怪物維持靜態（省效能） */
+    var DYN_CHARS = {
+        'boy_01': 1, 'boy_02': 1, 'boy_03': 1, 'girl_01': 1, 'girl_02': 1
+    };
+
+    /** 依 sprite 路徑判斷是否套用動態立繪 */
+    function dynEnabled(sprite) {
+        if (!sprite) return false;
+        var m = /([a-z]+_\d+)_stage\.png$/i.exec(sprite);
+        if (!m) return false;
+        return !!DYN_CHARS[m[1]];
+    }
+
+    /** 元素 → 光暈色 */
+    function auraOf(element) {
+        var es = elemStyle(element);
+        if (es) {
+            return 'rgba(' + es.rgb + ',.55)';
+        }
+        return 'rgba(56,189,248,.5)';
+    }
+
+    /**
+     * ⭐ v525：動態立繪分層 HTML
+     * 同一張圖輸出三層（base/body/head），由 CSS 各自微動。
+     */
+    function dynHtml(src, i, side, element) {
+        var aura = auraOf(element);
+        /* ⚠️ 不要在這裡設 --h：讓它繼承 .hy-stage-side 的 --h（依人數自動縮放） */
+        var st = '--aura:' + aura + ';';
+        var imgCommon = 'src="' + src + '" alt="" decoding="async" draggable="false"';
+        return '<div class="dyn-wrap ' + (side === 'foe' ? 'foe' : 'ally') + '" style="' + st + '">' +
+            /* 底層：完整圖（腿與整體輪廓，靜止） */
+            '<div class="dyn-base dyn-whole"><img ' + imgCommon +
+                ' data-i="' + i + '" data-side="' + side + '"></div>' +
+            /* 身體層 */
+            '<div class="dyn-layer dyn-body"><img ' + imgCommon + '></div>' +
+            /* 頭部層 */
+            '<div class="dyn-layer dyn-head"><img ' + imgCommon + '></div>' +
+            /* 光暈 + 地面光環 + 粒子 */
+            '<div class="dyn-aura"></div>' +
+            '<div class="dyn-ground"></div>' +
+            '<div class="dyn-parts">' +
+                '<i style="left:28%;bottom:22%;animation-delay:0s;"></i>' +
+                '<i style="left:52%;bottom:18%;animation-delay:1.8s;"></i>' +
+                '<i style="left:72%;bottom:26%;animation-delay:3.4s;"></i>' +
+            '</div>' +
+        '</div>';
+    }
+
     function unitHtml(u, side, i) {
         var cls = 'hy-stage-unit ' + side +
             (u.alive === false ? ' dead' : '') +
@@ -107760,8 +107896,13 @@ window.HY = window.HY || {};
             (u.target ? ' is-target' : '');
         var img = '';
         if (u.sprite) {
-            img = '<img class="hy-stage-img" src="' + u.sprite + '" alt="" ' +
-                'decoding="async" data-i="' + i + '" data-side="' + side + '">';
+            /* ⭐ v525：我方且在白名單內 → 動態立繪；否則維持靜態 */
+            if (side === 'ally' && dynEnabled(u.sprite)) {
+                img = dynHtml(u.sprite, i, side, u.element);
+            } else {
+                img = '<img class="hy-stage-img" src="' + u.sprite + '" alt="" ' +
+                    'decoding="async" data-i="' + i + '" data-side="' + side + '">';
+            }
         } else if (u.avatar) {
             img = '<img class="hy-stage-fallback" src="' + u.avatar + '" alt="" ' +
                 'decoding="async" data-i="' + i + '" data-side="' + side + '">';
