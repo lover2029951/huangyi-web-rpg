@@ -29932,9 +29932,28 @@ window.HY = window.HY || {};
                    原本只檢查主天賦，昇華節點配置變動時快取不會失效
                    → 玩家點了昇華，屬性卻停在舊值（實測攻速永遠 100）。 */
                 var _ascSig = (c.asc && c.asc.allocated) ? Object.keys(c.asc.allocated).join(',') : '';
+                /* ⭐⭐ v476：罡氣（c.mx）必須納入簽章！
+                   ──────────────────────────────────────────────────────────
+                   這是「罡氣條沒有同步」的真正根因：
+                     · 罡氣目前值存在 c.mx.qiCur（機制層即時變化）
+                     · UI 讀的是 derived.esCurrent / derived.mx.qiCur
+                     · 但快取簽章完全沒包含 c.mx
+
+                   於是戰鬥中罡氣被打掉（1000 → 300 → 0），
+                   簽章卻完全沒變 → 50ms 內（實務上是「只要其他欄位不動就一直」）
+                   直接回傳戰鬥開始時的滿檔快照 →
+                   血條永遠顯示滿罡氣，玩家看到的和實際數值完全不同步。
+
+                   ⚠️ qiMax 也要納入：上限變動（升級、換裝）時要重算。
+                   ⚠️ 用 Math.round 避免浮點誤差造成每幀失效（效能）。 */
+                var _mx = c.mx || null;
+                var _mxSig = _mx
+                    ? (Math.round(Number(_mx.qiMax) || 0) + '/' + Math.round(Number(_mx.qiCur) || 0))
+                    : '';
                 var _sig = [
                     c.lv, c.sect, c.activeXinfa, c.activeQinggong,
                     c.currentHp, c.currentMp,
+                    _mxSig,
                     _ta,
                     _ascSig,
                     Object.keys(c.equipment || {}).length,
