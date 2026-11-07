@@ -30884,13 +30884,23 @@ window.HY = window.HY || {};
             restoreAllPartyVitals(ratio) {
                 var self = this;
                 this.rootState.roster.forEach(function (c) {
+                    if (!c) return;
                     var d = self.getDerivedStatsForChar(c);
+                    /* ⭐⭐ v473：NaN 防護（Math.max(NaN, x) 仍是 NaN）
+                       原本 d.maxHp 若為 NaN，這裡會把 NaN 寫進氣血，
+                       且因為是 Math.max，連原本正常的氣血也會被吃掉。 */
+                    var _mx = Number(d && d.maxHp);
+                    var _mm = Number(d && d.maxMp);
+                    if (!isFinite(_mx) || _mx < 0) _mx = 0;
+                    if (!isFinite(_mm) || _mm < 0) _mm = 0;
                     if (ratio >= 1) {
-                        c.currentHp = d.maxHp;
-                        c.currentMp = d.maxMp;
+                        c.currentHp = _mx;
+                        c.currentMp = _mm;
                     } else {
-                        c.currentHp = Math.max(c.currentHp, Math.floor(d.maxHp * ratio));
-                        c.currentMp = Math.max(c.currentMp, Math.floor(d.maxMp * ratio));
+                        var _curHp = (typeof c.currentHp === 'number' && isFinite(c.currentHp)) ? c.currentHp : 0;
+                        var _curMp = (typeof c.currentMp === 'number' && isFinite(c.currentMp)) ? c.currentMp : 0;
+                        c.currentHp = Math.min(_mx, Math.max(_curHp, Math.floor(_mx * ratio)));
+                        c.currentMp = Math.min(_mm, Math.max(_curMp, Math.floor(_mm * ratio)));
                     }
                 });
             }
@@ -47629,12 +47639,82 @@ window.HY = window.HY || {};
     };
 
     /* ══════════════════════════════════════════════════════
+       ⭐ v473：控制狀態查詢 API
+       ──────────────────────────────────────────────────────────
+       ⚠️ 這裡補的是一個嚴重的斷線：
+         V2 各派會把「暈眩／凍結／點穴」寫進 enemy._sect.__m_xxx，
+         但 ATB 系統從來沒有讀過這些欄位 ——
+         敵人被暈了照樣集氣、照樣出手，玩家只看到一行「暈眩 1 回合」的文字。
+
+       本函式把散落在各派命名空間的控制狀態統一彙整，
+       由 combatAtbSystem.executeEnemyFullAtbTurn() 在出手前查詢。
+       回傳 { blocked, reason, turns }
+       ══════════════════════════════════════════════════════ */
+    var CONTROL_KEYS = [
+        /* [命名空間, 欄位, 顯示名稱] */
+        ['thunder', 'stun', '⚡震懾'],
+        ['timestop', 'frozen', '🕸️時間停滯'],
+        ['frostbite', 'frozen', '❄️冰魄凍結'],
+        ['pressurepoint', 'sealed', '🔒點穴封脈'],
+        ['randomgate', 'stun', '🎴驚門暈眩'],
+        ['fireweb', 'root', '🕸️火網纏繞'],
+        ['silence', 'attack', '🔯禁言封印']
+    ];
+
+    function controlOf(enemy) {
+        if (!enemy || !enemy._sect) return { blocked: false, reason: '', turns: 0 };
+        var reason = '';
+        var turns = 0;
+        for (var i = 0; i < CONTROL_KEYS.length; i++) {
+            var k = CONTROL_KEYS[i];
+            var ns = enemy._sect['__m_' + k[0]];
+            if (!ns || typeof ns !== 'object') continue;
+            var n = Math.round(num(ns[k[1]], 0));
+            if (n > 0) {
+                reason = k[2];
+                turns = Math.max(turns, n);
+            }
+        }
+        return { blocked: turns > 0, reason: reason, turns: turns };
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ⭐ v473：控制狀態倒數（獨立於施術者是否存活）
+       ──────────────────────────────────────────────────────────
+       ⚠️ 為什麼不能只靠 FEATURES.onTurnEnd 倒數：
+          onTurnEnd 是「隊伍中某門派的人在場」才會被呼叫。
+          若施術者陣亡，onTurnEnd 不再執行 → 敵人身上的 stun/frozen
+          永遠停在原值 → 被永久鎖死，戰鬥無法結束。
+
+       所以由 ATB 在敵人被跳過行動時直接呼叫本函式倒數，
+       與施術者生死完全解耦。回傳倒數後剩餘回合。
+       ══════════════════════════════════════════════════════ */
+    function controlTick(enemy) {
+        if (!enemy || !enemy._sect) return 0;
+        var left = 0;
+        for (var i = 0; i < CONTROL_KEYS.length; i++) {
+            var k = CONTROL_KEYS[i];
+            var ns = enemy._sect['__m_' + k[0]];
+            if (!ns || typeof ns !== 'object') continue;
+            var n = Math.round(num(ns[k[1]], 0));
+            if (n > 0) {
+                n -= 1;
+                ns[k[1]] = n;
+                left = Math.max(left, n);
+            }
+        }
+        return left;
+    }
+
+    /* ══════════════════════════════════════════════════════
        掛載：取代舊 FEATURES
        ══════════════════════════════════════════════════════ */
     window.HY.SectMechanicsV2 = {
         FEATURES: FEATURES,
         count: Object.keys(FEATURES).length,
-        version: 2
+        version: 2,
+        controlOf: controlOf,
+        controlTick: controlTick
     };
 
     console.log('[sectMechanicsV2] ✓ 46 派全新機制已載入（' +
@@ -50277,11 +50357,20 @@ window.HY = window.HY || {};
             if (!enemy || enemy.currentHp <= 0) return;
             var self = this;
             var party = this.app.partySys ? this.app.partySys.getPartyMembers() : [];
+            /* ⭐⭐ v473：同一門派只結算一次。
+               原本是「每個隊員都跑一次 onTurnEnd」，若隊伍裡有兩名同派角色
+               （例如雙雷庭堡），敵人的震懾回合會一次掉 2 —— 控制時間直接腰斬；
+               反之五名同派隊員就是掉 5，機制完全失效。
+               機制是「門派」層級的效果，不是「角色」層級，必須去重。 */
+            var seenSect = {};
             party.forEach(function (c) {
+                if (!c || c.currentHp <= 0) return;
+                if (seenSect[c.sect]) return;
                 var def = self.getDef(c.sect);
                 if (!def || typeof def.onTurnEnd !== 'function') return;
                 var p = self.getParams(c);
                 if (!p) return;
+                seenSect[c.sect] = true;
                 var log = def.onTurnEnd(self, core, enemy, p) || '';
                 if (log) core.log('⚡ 【' + c.name + '】' + log, 'combat');
             });
@@ -65301,9 +65390,10 @@ window.HY = window.HY || {};
                 try {
                     var _sp = _sectP(charObj, 'jianxin');
                     var _sr = _PRO.swordOnSkill(charObj, skillId, _sp);
-                    if (_sr.broke) {
+                    /* ⭐ v473：機制函式可能回傳 null，先檢查避免靜默失效 */
+                    if (_sr && _sr.broke) {
                         _swordTag = ' [⚔️劍意斷鏈！連續同招 → 歸零]';
-                    } else if (_sr.stacks > 0) {
+                    } else if (_sr && _sr.stacks > 0) {
                         _swordTag = ' [⚔️劍意 ' + _sr.stacks + '/' + Math.round((_sp && _sp.max) || 5) + ']';
                     }
                 } catch (eSw) { }
@@ -65316,7 +65406,7 @@ window.HY = window.HY || {};
                 try {
                     var _bp = _sectP(charObj, 'xueji');
                     var _br = _PRO.bloodPay(charObj, _bp);
-                    if (_br.ok) {
+                    if (_br && _br.ok) {
                         _bloodMult = _br.mult;
                         _bloodTag = ' [🩸血祭 -' + _br.cost + '血 → 傷害×' + (Math.round(_br.mult * 100) / 100).toFixed(2) + ']';
                     }
@@ -65686,7 +65776,7 @@ window.HY = window.HY || {};
                 if (_PRO && _PRO.lockApply && charObj.sect === 'jingmai' && target.currentHp > 0) {
                     try {
                         var _lr = _PRO.lockApply(target, _sectP(charObj, 'jingmai'));
-                        if (_lr.locked) {
+                        if (_lr && _lr.locked) {
                             elemLogTotal += ' [🔒' + _lr.kindName + '（' + _lr.count + '/4）]';
                             if (_lr.full) elemLogTotal += ' [💀經脈盡斷！]';
                         }
@@ -65700,8 +65790,13 @@ window.HY = window.HY || {};
                         var _pr = _PRO.poisonApply(target, charObj, _pp);
                         if (_pr && _pr.full) {
                             var _burst = _PRO.poisonBurst(charObj, _pp);
-                            _burst.log.forEach(function (t) { core.log(t, 'combat'); });
-                            elemLogTotal += ' [💥毒爆連鎖→' + _burst.totalDmg + ' 傷]';
+                            /* ⭐ v473：poisonBurst 也可能回傳 null */
+                            if (_burst) {
+                                if (Array.isArray(_burst.log)) {
+                                    _burst.log.forEach(function (t) { core.log(t, 'combat'); });
+                                }
+                                elemLogTotal += ' [💥毒爆連鎖→' + (_burst.totalDmg || 0) + ' 傷]';
+                            }
                         }
                     } catch (ePz) { }
                 }
@@ -65711,7 +65806,7 @@ window.HY = window.HY || {};
                     try {
                         var _dp = _sectP(charObj, 'duoyuan');
                         var _dr = _PRO.drainAbsorb(charObj, _dp);
-                        if (_dr.drained) {
+                        if (_dr && _dr.drained) {
                             var _heal = Math.floor(stats.maxHp * ((_dp && _dp.healPerAbsorb) || 0.04));
                             if (_heal > 0) {
                                 charObj.currentHp = Math.min(stats.maxHp, charObj.currentHp + _heal);
@@ -65735,7 +65830,7 @@ window.HY = window.HY || {};
                 try {
                     var _sp2 = _sectP(charObj, 'jianxin');
                     var _rel = _PRO.swordRelease(charObj, _sp2);
-                    if (_rel.released) {
+                    if (_rel && _rel.released) {
                         var _relTgt = core.enemies.filter(function (e) { return e && e.currentHp > 0; })[0];
                         if (_relTgt) {
                             _relTgt.currentHp = Math.max(0, _relTgt.currentHp - _rel.dmg);
@@ -66263,8 +66358,12 @@ window.HY = window.HY || {};
             var esTag = '';
             var _ESX = window.HY && window.HY.CombatMechanicsExtra;
             if (_ESX && typeof _ESX.esAbsorb === 'function' && enemyDmg > 0) {
+                /* ⭐ v473：esAbsorb 在「無罡氣上限」或「罡氣已空」時回傳 null，
+                   原本直接讀 _esR.absorbed 會拋
+                   TypeError: Cannot read properties of null (reading 'absorbed')
+                   造成整個 ATB tick 中斷。必須先檢查回傳值。 */
                 var _esR = _ESX.esAbsorb(targetMember, enemyDmg);
-                if (_esR.absorbed > 0) {
+                if (_esR && _esR.absorbed > 0) {
                     enemyDmg = _esR.remaining;
                     esTag = ' [🔵罡氣吸收 ' + _esR.absorbed + '（餘 ' + _esR.current + '/' + _esR.max + '，' + _esR.pct + '%）]';
                     if (_esR.broke) esTag += ' [💔罡氣破裂]';
@@ -66281,7 +66380,8 @@ window.HY = window.HY || {};
                         var _ESX2 = window.HY && window.HY.CombatMechanicsExtra;
                         if (_ESX2 && typeof _ESX2.esAbsorb === 'function' && _elemDmg > 0) {
                             var _esR2 = _ESX2.esAbsorb(targetMember, _elemDmg);
-                            if (_esR2.absorbed > 0) {
+                            /* ⭐ v473：同上，esAbsorb 可能回傳 null */
+                            if (_esR2 && _esR2.absorbed > 0) {
                                 _elemDmg = _esR2.remaining;
                                 esTag += ' [🔵罡氣吸收內勁 ' + _esR2.absorbed + '（餘 ' + _esR2.current + '/' + _esR2.max + '）]';
                                 if (_esR2.broke) esTag += ' [💔罡氣破裂]';
@@ -67387,7 +67487,6 @@ window.HY = window.HY || {};
             var dealt = num(payload && payload.totalDealt, 0);
             var WA = window.HY.WuxiaArts;
             var EX = window.HY.CombatMechanicsExtra;
-            var PR = window.HY.CombatMechanicsPro;
             var TN = window.HY.CombatMechanicsTurn;
 
             var hits = (_core.enemies || []).filter(function (e) {
@@ -67409,62 +67508,24 @@ window.HY = window.HY || {};
             }
 
             /* ② 門派機制：命中後結算
-               ⚠️ 這些函式原本由已刪除的 combatMechanics 統一呼叫，
-                  移除後就沒有任何地方會呼叫它們 → 機制等於失效。
-                  這裡是唯一的接點，補齊全部「命中／出手後」結算。 */
-            if (EX) {
-                try {
-                    hits.forEach(function (e) {
-                        if (!e || e.currentHp <= 0) return;
+               ⭐⭐ v473：整段已移除（避免與 sectMechanicsV2 雙重觸發）
+               ──────────────────────────────────────────────────────────
+               原本這裡會呼叫舊機制層（wuxiaSectMechanicsPro）的
+               stunBuild / ailmentApply / sealApply / poisonApply / lockApply /
+               yinApply / debuffApply。
 
-                        /* 震脈累積（雷庭堡） */
-                        if (c.sect === 'leiting' && EX.stunBuild && dealt > 0) {
-                            var sr = EX.stunBuild(e, dealt, c);
-                            if (sr && sr.stunned) { /* 已在 stunBuild 內記錄 */ }
-                        }
+               但 46 派機制已於 v470 全部重製，改走 sectFeatureSystem 的
+               FEATURES[...].onAttack / onStruck / onTurnStart 等 hook。
+               若這裡繼續呼叫舊函式，同一派會被「新舊兩套」同時結算：
+                 · 雷庭堡震懾累積兩次
+                 · 毒爆幫中毒疊兩層
+                 · 陰癸派陰煞疊兩倍
+               機制強度直接翻倍，數值完全失控。
 
-                        /* 灼痕（冰火島） */
-                        if (c.sect === 'binghuo' && EX.ailmentApply && dealt > 0) {
-                            var root = c.spiritRoot || 'fire';
-                            var alr = EX.ailmentApply(e, null, c, dealt);
-                            if (alr) _core.log(' [' + alr.name + ' ' + alr.turns + '回合]', 'combat');
-                        }
+               停用後：機制只由 V2 的 FEATURES hook 負責，單一來源。 */
 
-                        /* 真言印灼燒（真言宗） */
-                        if (c.sect === 'zhenyan' && EX.sealApply && dealt > 0) {
-                            EX.sealApply(e, 3);
-                        }
-
-                        /* 毒爆（毒爆幫） */
-                        if (c.sect === 'dubao' && PR && PR.poisonApply && dealt > 0) {
-                            PR.poisonApply(e, c, { max: 5 });
-                        }
-
-                        /* 封脈（經脈門） */
-                        if (c.sect === 'jingmai' && PR && PR.lockApply && dealt > 0) {
-                            PR.lockApply(e, {});
-                        }
-
-                        /* 陰煞（陰癸派） */
-                        if (c.sect === 'yingui' && EX.yinApply && dealt > 0) {
-                            EX.yinApply(e, 2);
-                        }
-
-                        /* 減益（狂影門） */
-                        if (c.sect === 'kuangying' && EX.debuffApply && dealt > 0) {
-                            if (Math.random() < 0.45) {
-                                var kinds = ['maim', 'intimidate', 'taunt', 'crush'];
-                                EX.debuffApply(e, kinds[Math.floor(Math.random() * kinds.length)], 3);
-                            }
-                        }
-                    });
-                } catch (e2) { }
-            }
-
-            /* ③ 殘影累積（狂影門：命中即累積） */
-            if (EX && EX.shadowOnHit && c.sect === 'kuangying' && dealt > 0) {
-                try { EX.shadowOnHit(c); } catch (e3) { }
-            }
+            /* ③ 殘影累積（狂影門）
+               ⭐ v473 停用：V2 的 kuangying「殘影」機制已在 onStruck 處理。 */
 
             /* ④ 回合機制 tick
                ⚠️ 不可在這裡推進 c._battle.yyHits！
@@ -67475,63 +67536,35 @@ window.HY = window.HY || {};
                   絕情谷陰陽刀劍、鬼谷陣門、冰火島元素輪轉全部跳號錯亂。
                   本檔只負責「讀取」yyHits 做結算，不負責推進。 */
 
-            /* ⑤ 延遲型機制結算 */
+            /* ⑤ 延遲型機制結算
+               ⭐⭐ v473：舊機制 tick 全部移除
+               ──────────────────────────────────────────────────────────
+               V2 重製後，46 派機制改由 sectFeatureSystem 的
+               onTurnStart / onTurnEnd / onAttack / onStruck 驅動，
+               不再需要這裡逐一呼叫舊的 deferTick / tradeTick /
+               counterTick / bloodTick / drainTick / shadowTick。
+
+               若兩套並存，同一派會被結算兩次（例如衡天教每回合扣兩次血、
+               破招門反制兩次），數值直接翻倍。 */
             try {
-                if (TN) {
-                    if (c.sect === 'zhuiming' && TN.deferTick) {
-                        var dfr = TN.deferTick(c);
-                        if (dfr && dfr.fired) {
-                            _core.log('🗡️ 追命印發作 → 對【' + dfr.target + '】造成 ' + dfr.dmg + ' 傷害！', 'combat');
-                        }
-                    }
-                    if (c.sect === 'hengtian' && TN.tradeTick) TN.tradeTick(c);
-                    if (c.sect === 'changsheng') { /* 長生用出手次數，無需 tick */ }
-                }
-                if (PR) {
-                    if (c.sect === 'pozhao' && PR.counterTick) PR.counterTick(c);
-                    if (c.sect === 'xueji' && PR.bloodTick) PR.bloodTick(c, { lowHpThreshold: 0.3, lowHpDrainPct: 0.05 });
-                    if (c.sect === 'duoyuan' && PR.drainTick) PR.drainTick(c);
-                }
-                /* 殘影每回合消散（⚠️ 不能與本回合的累積互相抵消：
-                   這裡只在不屬於狂影門時處理，狂影門的消散交給
-                   shadowOnHit 之後的專屬節點，避免「加了又減」 */
-                if (EX && EX.shadowTick && c.sect === 'kuangying') {
-                    /* 本回合已有累積 → 不消散，避免同回合互相抵消 */
-                    if (!(dealt > 0)) EX.shadowTick(c);
-                }
-                /* 罡氣回復 */
+                /* 罡氣回復（通用，保留） */
                 if (EX && EX.esRecharge && c.sect === 'cihang') {
                     var got = EX.esRecharge(c);
                     if (got > 0) _core.log('🔵 罡氣回復 ' + got, 'combat');
                 }
             } catch (e4) { }
 
-            /* ⑥ 敵人身上的持續效果結算（灼痕／真言印／毒／閻羅印／凍結） */
+            /* ⑥ 敵人身上的持續效果結算
+               ⭐⭐ v473：舊機制 tick 全部停用（同 ⑤ 的理由）。
+               灼痕／真言印／毒／閻羅印／凍結 全部改由 V2 的
+               FEATURES[...].onTurnEnd 處理。 */
             try {
+                /* 保留：通用控制狀態的倒數／消散（凍結、減益、震脈）
+                   ⚠️ 這些是跨門派共用的狀態系統，不是門派專屬機制，
+                      必須保留，否則凍結永遠不會解、減益不會到期。 */
                 (_core.enemies || []).forEach(function (e) {
                     if (!e) return;
                     if (e.currentHp <= 0) return;
-
-                    /* 灼痕 */
-                    if (EX && EX.ailmentTick) {
-                        var at = EX.ailmentTick(e, c);
-                        if (at && at.dmg) _core.log(at.log, 'combat');
-                    }
-                    /* 真言印 */
-                    if (c.sect === 'zhenyan' && EX && EX.sealTick) {
-                        var stk = EX.sealTick(e, c);
-                        if (stk) _core.log('🕉️ 真言灼燒 ' + stk.dmg, 'combat');
-                    }
-                    /* 毒 */
-                    if (c.sect === 'dubao' && PR && PR.poisonTick) {
-                        var pt = PR.poisonTick(e, c);
-                        if (pt) _core.log('☠️ 毒發 ' + pt.dmg, 'combat');
-                    }
-                    /* 閻羅印 */
-                    if (c.sect === 'yanluo' && TN && TN.doomTick) {
-                        var dt = TN.doomTick(e);
-                        if (dt && dt.log) _core.log(dt.log, 'combat');
-                    }
                     /* 凍結 */
                     if (TN && TN.freezeTick) TN.freezeTick(e);
                     /* 減益倒數 */
@@ -69292,9 +69325,21 @@ window.HY = window.HY || {};
             var self = this;
             partyMembers.forEach(function (m) {
                 self.martialSys.purgeInvalidSectSkills(m);
+                /* ⭐⭐ v473：NaN 氣血必須先修，否則 m.currentHp <= 0 對 NaN 是 false，
+                   「復活」邏輯永遠不會觸發，NaN 會一路帶進戰鬥。
+                   先統一驗證一次，再判斷是否需要在開戰時復活。 */
+                if (typeof m.currentHp !== 'number' || !isFinite(m.currentHp)) {
+                    var _fix = self.charSys.getDerivedStatsForChar(m);
+                    var _fixMax = Number(_fix && _fix.maxHp);
+                    m.currentHp = (isFinite(_fixMax) && _fixMax > 0) ? _fixMax : 100;
+                }
                 if (m.currentHp <= 0) {
                     var d = self.charSys.getDerivedStatsForChar(m);
-                    m.currentHp = Math.floor(d.maxHp * 0.3);
+                    var _revMax = Number(d && d.maxHp);
+                    var _revHp = (isFinite(_revMax) && _revMax > 0)
+                        ? Math.floor(_revMax * 0.3)
+                        : 100;
+                    m.currentHp = _revHp;
                 }
             });
             this.enemies = [];
@@ -69385,6 +69430,34 @@ window.HY = window.HY || {};
         }
         handleVictory() {
             if (!this.enemies || this.enemies.length === 0) return;
+
+            /* ⭐⭐ v473：勝利結算前先清掃 NaN 氣血／內力。
+               角色氣血只要被寫成 NaN，後續所有 Math.min/Math.max 都會保持 NaN，
+               血條永久壞掉、勝負判定也會失效（NaN <= 0 永遠是 false）。
+               這裡在每場戰鬥結束時做一次權威修復。 */
+            try {
+                var _pms = (window.HY.game && window.HY.game.partySys)
+                    ? window.HY.game.partySys.getPartyMembers() : [];
+                var _self2 = this;
+                _pms.forEach(function (m) {
+                    if (!m) return;
+                    var _d = _self2.charSys.getDerivedStatsForChar(m);
+                    var _mx = Number(_d && _d.maxHp);
+                    if (!isFinite(_mx) || _mx <= 0) _mx = 100;
+                    if (typeof m.currentHp !== 'number' || !isFinite(m.currentHp)) {
+                        m.currentHp = _mx;
+                    } else {
+                        m.currentHp = Math.max(0, Math.min(_mx, m.currentHp));
+                    }
+                    var _mm = Number(_d && _d.maxMp);
+                    if (!isFinite(_mm) || _mm < 0) _mm = 0;
+                    if (typeof m.currentMp !== 'number' || !isFinite(m.currentMp)) {
+                        m.currentMp = _mm;
+                    } else {
+                        m.currentMp = Math.max(0, Math.min(_mm, m.currentMp));
+                    }
+                });
+            } catch (eNaN) { }
 
             /* ⭐ 異界地圖：採「殺 1 補 1」，可能只有部分敵人死亡。
                此時不走完整的勝利結算（會清空全部敵人 + 重複給獎勵），
@@ -99345,6 +99418,53 @@ window.HY = window.HY || {};
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;
             var affixSys = this.app.affixSys;
+
+            /* ⭐⭐ v473：控制狀態檢查（暈眩／凍結／點穴／禁言）
+               ──────────────────────────────────────────────────────────
+               原本這裡完全沒有檢查。V2 各派把控制狀態寫進
+               enemy._sect.__m_xxx，但沒有任何程式讀它 ——
+               敵人被「震懾」了照樣集氣出手，玩家只看到一行文字。
+
+               現在：被控場的敵人直接跳過本次行動（ATB 歸零，下回合重新集氣），
+               並在戰鬥紀錄寫明原因，讓玩家知道機制真的生效了。 */
+            try {
+                var _V2 = window.HY && window.HY.SectMechanicsV2;
+                if (_V2 && typeof _V2.controlOf === 'function') {
+                    var _ctl = _V2.controlOf(enemy);
+                    if (_ctl && _ctl.blocked) {
+                        combat.log('💫 【' + enemy.name + '】處於' + _ctl.reason +
+                            '，無法行動（剩 ' + _ctl.turns + ' 回合）', 'combat');
+                        enemy.atb = 0;
+                        /* ⚠️ 倒數的「唯一權威」是各派的 onTurnEnd（由
+                           affixSys.onEnemyTurnEnd 觸發），這裡不可再減一次，
+                           否則控制時間直接腰斬。
+
+                           但 onTurnEnd 需要「該門派的人還在場」才會執行 ——
+                           施術者一旦陣亡，倒數就永遠不會跑 → 敵人被永久鎖死。
+                           因此：先讓 onTurnEnd 有機會正常結算，再檢查是否真的
+                           遞減了；若沒有（施術者已死／該派已離場），才由
+                           controlTick 補上，保證一定能解控。 */
+                        var _before = _ctl.turns;
+                        try {
+                            if (affixSys && enemy.currentHp > 0) affixSys.onEnemyTurnEnd(enemy);
+                        } catch (eEnd) { }
+                        try {
+                            var _after = _V2.controlOf(enemy);
+                            if (_after && _after.blocked && _after.turns >= _before &&
+                                typeof _V2.controlTick === 'function') {
+                                _V2.controlTick(enemy);
+                            }
+                        } catch (eTick) { }
+                        combat.syncCurrentEnemyPointer();
+                        if (!combat.currentEnemy) { combat.handleVictory(); return; }
+                        var _alive2 = partyMembers.filter(function (m) { return m.currentHp > 0; });
+                        if (_alive2.length === 0) { combat.handleDefeat(); return; }
+                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+                        return;
+                    }
+                }
+            } catch (eCtl) { }
+
             combat._turnCounter = (combat._turnCounter || 0) + 1;
             combat.enemyTurn.executeSingleEnemyAction(enemy, partyMembers, null);
             combat.syncCurrentEnemyPointer();
@@ -100387,6 +100507,45 @@ window.HY = window.HY || {};
                         if (es.meridian) statusRows.push({ k: '👁️ 脈門', v: es.meridian + ' 層', hl: true });
                         if (es.frost)    statusRows.push({ k: '❄️ 寒冰', v: es.frost + ' 層', hl: true });
                         if (es.frozen)   statusRows.push({ k: '🧊 凍結', v: es.frozen + ' 回合', hl: true });
+                        /* ⭐⭐ v473：V2 機制的狀態全部寫在 e._sect.__m_<命名空間>，
+                           舊版這裡只讀 e._sect 的頂層欄位 → 玩家永遠看到「無」。
+                           以下逐一彙整 V2 各派真正在用的狀態欄位。 */
+                        try {
+                            var _v2n = function (ns) {
+                                var o = es['__m_' + ns];
+                                return (o && typeof o === 'object') ? o : null;
+                            };
+                            var _th = _v2n('thunder');
+                            if (_th && _th.stun > 0) statusRows.push({ k: '⚡ 震懾', v: _th.stun + ' 回合', hl: true });
+                            var _ts = _v2n('timestop');
+                            if (_ts && _ts.frozen > 0) statusRows.push({ k: '🕸️ 停滯', v: _ts.frozen + ' 回合', hl: true });
+                            var _fb = _v2n('frostbite');
+                            if (_fb && _fb.frost > 0) statusRows.push({ k: '❄️ 寒霜', v: _fb.frost + ' 層', hl: true });
+                            if (_fb && _fb.frozen > 0) statusRows.push({ k: '🧊 冰魄凍結', v: _fb.frozen + ' 回合', hl: true });
+                            var _pp = _v2n('pressurepoint');
+                            if (_pp && _pp.sealed > 0) statusRows.push({ k: '🔒 點穴', v: _pp.sealed + ' 回合', hl: true });
+                            var _rg = _v2n('randomgate');
+                            if (_rg && _rg.stun > 0) statusRows.push({ k: '🎴 驚門', v: _rg.stun + ' 回合', hl: true });
+                            var _si = _v2n('silence');
+                            if (_si) {
+                                var _sb = [];
+                                if (_si.attack > 0) _sb.push('攻' + _si.attack);
+                                if (_si.heal > 0) _sb.push('療' + _si.heal);
+                                if (_si.buff > 0) _sb.push('益' + _si.buff);
+                                if (_sb.length) statusRows.push({ k: '🔯 禁言', v: _sb.join('/') + ' 回合', hl: true });
+                            }
+                            var _bp = _v2n('bloodpact');
+                            if (_bp && _bp.pact) statusRows.push({ k: '🩸 血契', v: '已簽', hl: true });
+                            var _cb = _v2n('corrodebone');
+                            if (_cb && _cb.stacks > 0) statusRows.push({ k: '🦴 蝕骨', v: _cb.stacks + ' 層', hl: true });
+                            var _fw = _v2n('fireweb');
+                            if (_fw && _fw.lines > 0) statusRows.push({ k: '🕸️ 火線', v: _fw.lines + ' 條', hl: true });
+                            if (_fw && _fw.root > 0) statusRows.push({ k: '🕸️ 火網纏繞', v: _fw.root + ' 回合', hl: true });
+                            var _mk = _v2n('markedkill');
+                            if (_mk && _mk.marked) statusRows.push({ k: '🗡️ 追命', v: _mk.turns + ' 回合後', hl: true });
+                            var _ch = _v2n('charm');
+                            if (_ch && _ch.charmed > 0) statusRows.push({ k: '💋 媚惑', v: _ch.charmed + ' 回合', hl: true });
+                        } catch (eV2st) { }
                         if (statusRows.length === 0) statusRows.push({ k: '異常狀態', v: '無' });
                         var statusTableHtml = '<div class="feat-status-table" style="border-left-color:#f472b6;">' +
                             '<span class="fk" style="color:#f472b6; font-weight:bold;">異常狀態表</span><span class="fv"></span>' +
