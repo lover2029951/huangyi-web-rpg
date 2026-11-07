@@ -31488,8 +31488,40 @@ window.HY = window.HY || {};
                     } catch (e) { }
                     return o;
                 };
+                /* ⭐⭐⭐ v483：氣血上限顯示錯誤的真正根因
+                   ──────────────────────────────────────────────────────────
+                   症狀：角色面板顯示「1020 / 1020」，但實際 maxHp 是 1140。
+
+                   根因（實測確認）：
+                     · 本函式算出的原始結果是 1020，並以此寫入 c.__dsCache
+                     · 但外層有 6 支包裝函式（worldClock / realmSys / meridianMap /
+                       formationGrid / codexSys / daoHeartSys）會用 _applyToDerived()
+                       把 maxHp 加成（共 +120）套上去 → 回傳 1140
+                     · 快取命中時卻直接回傳「包裝前的 1020」
+                       → UI 讀 getDerivedStats() 拿到 1020，畫面就寫 1020/1020
+
+                   修法：快取命中時，也把「加成型」欄位重新套一次，
+                        確保快取路徑與重算路徑結果一致。
+                        （包裝層的加成是純加法 + 決定性，可安全重複套用） */
                 if (c.__dsCache && c.__dsCache.sig === _sig && (_nowT - c.__dsCache.t) < 50) {
-                    return _shallowCopy(c.__dsCache.d);
+                    var _cached = _shallowCopy(c.__dsCache.d);
+                    try {
+                        var _ce = _cached.__ext || {};
+                        /* maxHp / maxMp：把 ext 的加值補回去（與包裝層同語意） */
+                        if (typeof _ce.maxHp === 'number' && _ce.maxHp > 0) {
+                            _cached.maxHp = num2(_cached.maxHp, 0) + _ce.maxHp;
+                        }
+                        if (typeof _ce.maxMp === 'number' && _ce.maxMp > 0) {
+                            _cached.maxMp = num2(_cached.maxMp, 0) + _ce.maxMp;
+                        }
+                        if (typeof _ce.atkSpd === 'number' && _ce.atkSpd) {
+                            _cached.atkSpd = 100 + _ce.atkSpd;
+                        }
+                        if (typeof _ce.critDmg === 'number' && _ce.critDmg) {
+                            _cached.critDmg = 165 + _ce.critDmg;
+                        }
+                    } catch (eCache) { }
+                    return _cached;
                 }
                 var _result = this._computeDerivedStats(c, Data);
                 /* ⭐⭐ 最終保險：把 ext 的加成型數值「硬寫」進結果。
@@ -37760,11 +37792,16 @@ window.HY = window.HY || {};
         ['to Intelligence', 'int'],
         ['to maximum Life', 'maxHp'],
         ['to maximum Mana', 'maxMp'],
-        ['to maximum Energy Shield', 'maxEs'],
+        /* ⭐⭐⭐ v483：罡氣／護盾機制完整移除 → 護盾詞條一律轉為氣血上限
+           ⚠️ 這支是天賦樹專用解析器（與 wuxiaStatParser 不同）。
+              v482 只改了後者，天賦節點的護盾詞條仍然寫進 maxEs，
+              而 maxEs 已不再被 characterSystem 讀取 → 玩家點了天賦卻沒有收益。
+             這就是「天賦罡氣沒有移除修正」的根因。 */
+        ['to maximum Energy Shield', 'maxHp'],
         ['to Accuracy Rating', 'hit'],
         ['increased maximum Life', 'maxHp'],
         ['increased maximum Mana', 'maxMp'],
-        ['increased maximum Energy Shield', 'maxEs'],
+        ['increased maximum Energy Shield', 'maxHp'],
         ['increased Evasion Rating', 'eva'],
         ['increased Armour', 'def'],
         ['increased Armour and Evasion Rating', 'def'],
@@ -37848,7 +37885,8 @@ window.HY = window.HY || {};
             /* 資源與數值 */
             if (/^maximum life$/.test(target)) return { kind: 'flat', key: 'maxHp', val: v };
             if (/^maximum mana$/.test(target)) return { kind: 'flat', key: 'maxMp', val: v };
-            if (/^maximum energy shield$/.test(target)) return { kind: 'flat', key: 'maxEs', val: v };
+            /* ⭐ v483：護盾 → 氣血（罡氣機制已移除） */
+            if (/^maximum energy shield$/.test(target)) return { kind: 'flat', key: 'maxHp', val: v };
             if (/^accuracy rating$/.test(target)) return { kind: 'flat', key: 'hit', val: v };
             if (/^armour$/.test(target)) return { kind: 'flat', key: 'def', val: v };
             if (/^evasion rating$/.test(target)) return { kind: 'flat', key: 'eva', val: v };
@@ -37987,7 +38025,8 @@ window.HY = window.HY || {};
         /* 核心八維（百分比型） */
         if (/^maximum life$/.test(noun)) return { kind: 'more', key: 'maxHp', val: pct };
         if (/^maximum mana$/.test(noun)) return { kind: 'more', key: 'maxMp', val: pct };
-        if (/^maximum energy shield$/.test(noun)) return { kind: 'more', key: 'maxEs', val: pct };
+        /* ⭐ v483：護盾 % → 氣血 %（罡氣機制已移除） */
+        if (/^maximum energy shield$/.test(noun)) return { kind: 'more', key: 'maxHp', val: pct };
         if (/^evasion rating$/.test(noun)) return { kind: 'more', key: 'eva', val: pct };
         if (/^armour$/.test(noun)) return { kind: 'more', key: 'def', val: pct };
         if (/^armour and evasion rating$/.test(noun)) return { kind: 'more', key: 'def', val: pct };
@@ -72660,7 +72699,77 @@ window.HY = window.HY || {};
                 '</span>';
             }).join('') || '<span style="color:#64748b; font-size:0.78rem;">無靈根限制</span>';
         }
+        /* ⭐⭐⭐ v483：氣血／內力顯示的輕量同步
+           ──────────────────────────────────────────────────────────
+           問題：角色面板的 hp-text / mp-text 只在 renderCharacterPanel()
+                 被呼叫時才更新，而那個函式是「整塊重繪」（含門派、心法、
+                 裝備、靈根…數十個節點），成本高，不可能每幀跑。
+
+           於是出現：maxHp 因為升級／換裝／點天賦／罡氣轉換而變動後，
+                 面板仍顯示舊上限（實測 1020 / 1020，實際應為 1020 / 1140）。
+
+           解法：這個方法只更新「氣血與內力的數字與條寬」，
+                 成本極低（3 個 DOM 查詢 + 4 次寫入），
+                 由主迴圈每幀呼叫，確保永遠同步。 */
+        syncVitals() {
+            try {
+                var app = this.app;
+                if (!app || !app.charSys) return;
+                var st = app.charSys.state;
+                if (!st) return;
+                var d = app.charSys.getDerivedStats();
+                if (!d) return;
+
+                var hpMax = Number(d.maxHp);
+                if (!isFinite(hpMax) || hpMax <= 0) hpMax = 1;
+                var hpCur = Number(st.currentHp);
+                if (st.currentHp === null || st.currentHp === undefined || !isFinite(hpCur)) hpCur = hpMax;
+                hpCur = Math.min(hpMax, Math.max(0, hpCur));
+
+                var mpMax = Number(d.maxMp);
+                if (!isFinite(mpMax) || mpMax < 0) mpMax = 0;
+                var mpCur = Number(st.currentMp);
+                if (st.currentMp === null || st.currentMp === undefined || !isFinite(mpCur)) mpCur = mpMax;
+                mpCur = Math.min(mpMax, Math.max(0, mpCur));
+
+                var hpTxt = Math.floor(hpCur) + ' / ' + Math.floor(hpMax);
+                var mpTxt = Math.floor(mpCur) + ' / ' + Math.floor(mpMax);
+
+                var hpEl = document.getElementById('hp-text');
+                if (hpEl && hpEl.textContent !== hpTxt) hpEl.textContent = hpTxt;
+                var mpEl = document.getElementById('mp-text');
+                if (mpEl && mpEl.textContent !== mpTxt) mpEl.textContent = mpTxt;
+
+                var hpBar = document.getElementById('hp-bar');
+                if (hpBar) hpBar.style.width = Math.min(100, (hpCur / hpMax) * 100) + '%';
+                var mpBar = document.getElementById('mp-bar');
+                if (mpBar) mpBar.style.width = Math.min(100, (mpMax > 0 ? (mpCur / mpMax) * 100 : 0)) + '%';
+
+                /* 罡氣列永久隱藏（機制已移除） */
+                var esRow = document.getElementById('es-bar-row');
+                if (esRow) esRow.style.display = 'none';
+            } catch (e) { }
+        }
+
+        /* ⭐ v483：自律式氣血同步
+           ──────────────────────────────────────────────────────────
+           為什麼不靠外部呼叫：面板重繪路徑有好幾條（renderAll、
+           renderAllThrottled、各分頁切換…），任何一條沒被觸發，
+           氣血顯示就會停在舊值。實測就發生過「1020 / 1020」卡住。
+
+           這裡改用 250ms 定時器自己跑（成本極低：3 次 DOM 查詢，
+           且只有文字真的不同才會寫入），與任何外部流程完全解耦。 */
+        _startVitalsSync() {
+            if (this.__vitalsTimer) return;
+            var self = this;
+            this.__vitalsTimer = setInterval(function () {
+                self.syncVitals();
+            }, 250);
+        }
+
         renderCharacterPanel() {
+            /* ⭐ v483：啟動自律式氣血同步（只需啟動一次） */
+            try { this._startVitalsSync(); } catch (eSv) { }
             const Data = window.HY.Data;
             const app = this.app;
             const st = app.charSys.state;
@@ -73160,6 +73269,25 @@ window.HY = window.HY || {};
         }
     }
     window.HY.UICharacterParty = UICharacterParty;
+
+    /* ⭐ v483：全域氣血同步啟動
+       ──────────────────────────────────────────────────────────
+       不依賴 renderCharacterPanel 是否被呼叫 —— 只要遊戲物件與
+       角色系統就緒，就自己開始同步氣血／內力顯示。
+       這樣任何「maxHp 變動但面板沒重繪」的情況都會在 250ms 內自動修正。 */
+    try {
+        var _bootSync = function () {
+            var g = window.HY.game;
+            if (!g || !g.uiCharParty || !g.charSys) { setTimeout(_bootSync, 300); return; }
+            try { g.uiCharParty._startVitalsSync(); } catch (e) { }
+            try { g.uiCharParty.syncVitals(); } catch (e) { }
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(_bootSync, 400); });
+        } else {
+            setTimeout(_bootSync, 400);
+        }
+    } catch (eBoot) { }
 })();
 
 /* ===== 140 / 256 : uiCombatExplore.js ===== */
