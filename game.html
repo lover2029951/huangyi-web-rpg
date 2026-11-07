@@ -30557,6 +30557,8 @@ window.HY = window.HY || {};
                         out.maxEs = 0;
                         out.esCurrent = 0;
                         out.mx = { qiMax: 0, qiCur: 0 };
+                        /* ⭐ v466：同步回機制層，避免 c.mx 留存舊值 */
+                        if (c.mx) { c.mx.qiMax = 0; c.mx.qiCur = 0; }
                         return;
                     }
 
@@ -30564,6 +30566,12 @@ window.HY = window.HY || {};
                     var cur;
                     if (c.mx && num2(c.mx.qiCur, -1) >= 0 && fromMx > 0) {
                         cur = num2(c.mx.qiCur, max);
+                        /* ⭐ v466：若機制層的上限比最終上限小，當前值要按比例放大
+                           （例：c.mx.qiMax 957、最終 max 1010 → cur 357/957 應變 377/1010）
+                           否則會出現「當前值 / 上限」比例失真。 */
+                        if (fromMx > 0 && max > fromMx) {
+                            cur = Math.round(cur * max / fromMx);
+                        }
                     } else {
                         cur = max;
                     }
@@ -30573,6 +30581,21 @@ window.HY = window.HY || {};
                     out.maxEs = max;
                     out.esCurrent = cur;
                     out.mx = { qiMax: max, qiCur: cur };
+
+                    /* ⭐⭐ v466：把最終結果「寫回機制層」
+                       ──────────────────────────────────────────────────
+                       原本只有 out.mx 更新，c.mx 仍是機制層自己算的舊值。
+                       造成三個地方各讀各的：
+                         · 血條讀 out.mx（正確）
+                         · 機制層回復/吸收讀 c.mx（舊值）
+                         · 狀態面板讀 out.mx（但被快取卡住）
+                       現在統一：以 out.mx 為唯一權威，回寫 c.mx。
+                       ⚠️ 這是「derived → 機制層」的單向同步，
+                          不會反向污染（esInit 讀 energyShield 時已是最終值）。 */
+                    if (c.mx && typeof c.mx === 'object') {
+                        if (c.mx.qiMax !== max) c.mx.qiMax = max;
+                        if (c.mx.qiCur !== cur) c.mx.qiCur = cur;
+                    }
                 })();
 
                 /* ⭐⭐⭐ v54：把「武俠天賦」的元素／持續傷害加成寫進 out
@@ -65424,10 +65447,32 @@ window.HY = window.HY || {};
         var fromGear = num(st.esShield, 0);
         var computed = Math.floor(base + fromGear);
 
-        /* 若 derived stats 已經算出 energyShield（代表裝備/天賦有給罡氣），
-           以那個值為準，避免兩邊算出不同上限。 */
+        /* ⭐ v466：罡氣上限的唯一權威＝「天賦／裝備實際給的護盾」
+           ──────────────────────────────────────────────────────────
+           設計意圖（見慈航靜齋說明）：「上限隨天賦與裝備提升」——
+           罡氣不是人人都有，只有點了護盾天賦或穿護盾裝備才會有。
+
+           舊版的問題：max = esFromStats > 0 ? esFromStats : computed
+             · esFromStats 來自 derived.energyShield（天賦/裝備 flat 加總）
+             · computed 是「內力 45%」的備援公式
+           看似合理，但它讓 esInit 把 derived 的值讀回去寫進 c.mx，
+           下次 derived 又讀 c.mx → 上限在兩個地方各自累加，越滾越大。
+
+           現在改成：
+             · 有 derived 護盾（>0）→ 就用它，不做任何疊加
+             · 完全沒有（=0）→ 也不給 computed 備援（避免人人都有罡氣）
+           這樣上限只有一個來源：天賦／裝備。
+           ⚠️ computed 僅保留給「除錯／無 derived 環境」使用。 */
         var esFromStats = num(st.energyShield, 0);
-        var max = esFromStats > 0 ? esFromStats : computed;
+        var max = esFromStats > 0 ? Math.floor(esFromStats) : 0;
+        if (max <= 0) {
+            /* 沒有護盾天賦/裝備 → 沒有罡氣。清掉殘值避免顯示舊數字 */
+            if (mxs(c, 'qiMax', 0)) {
+                setMx(c, 'qiMax', 0);
+                setMx(c, 'qiCur', 0);
+            }
+            return 0;
+        }
 
         var prevMax = num(mxs(c, 'qiMax', 0), 0);
         setMx(c, 'qiMax', max);
