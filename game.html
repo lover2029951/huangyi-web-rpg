@@ -30347,12 +30347,22 @@ window.HY = window.HY || {};
                     Object.keys(this.state.xinfa || {}).forEach(function (xId) {
                         var xf = Data.XINFA[xId];
                         if (xf && xf.sectReq && xf.sectReq !== sectId) {
-                            /* ⭐ 跨門派典籍保留（藏書閣學到的東西不該因換門派而消失）
-                               同樣要求「藏書閣已集滿」，避免繞過收集流程 */
-                            var canonX = Data.canonOfXinfa ? Data.canonOfXinfa(xf.id) : null;
-                            var canonDoneX = !!(canonX && self.state.canon &&
-                                self.state.canon.learned && self.state.canon.learned[canonX.id]);
-                            if (canonDoneX) return;
+                            /* ⭐ v2：門派心法嚴格綁定門派。
+                               舊存的別派心法（v457 前靠藏書閣學的）在換派時
+                               換發成對應修仙功法，避免沒收玩家收集成果。 */
+                            var legacyC = (Data.canonOfLegacyXinfa ? Data.canonOfLegacyXinfa(xId) : null);
+                            var legacyDone = !!(legacyC && self.state.canon &&
+                                self.state.canon.learned && self.state.canon.learned[legacyC.id]);
+                            if (legacyDone && legacyC.gongfa && Data.gongfaById) {
+                                var migG = Data.gongfaById(legacyC.gongfa);
+                                if (migG) {
+                                    if (!self.state.gongfa || typeof self.state.gongfa !== 'object') self.state.gongfa = {};
+                                    if (!self.state.gongfa[migG.id]) {
+                                        self.state.gongfa[migG.id] = Math.max(1, Number(self.state.xinfa[xId]) || 1);
+                                        self.state.__gongfaMigrated = (self.state.__gongfaMigrated || 0) + 1;
+                                    }
+                                }
+                            }
                             delete self.state.xinfa[xId];
                             if (self.state.activeXinfa === xId) self.state.activeXinfa = null;
                         }
@@ -30984,6 +30994,8 @@ window.HY = window.HY || {};
             if (!c.meridians) c.meridians = {};
             if (!c.sectFeature) c.sectFeature = {};
             if (!c._battle) c._battle = {};
+            /* ⭐ v2：藏書閣修仙功法（獨立於門派心法） */
+            if (!c.gongfa || typeof c.gongfa !== 'object') c.gongfa = {};
             this.purgeInvalidSectSkills(c);
         }
         // 門派技能隔離：外功 / 心法 / 身法 三類皆檢查
@@ -31011,8 +31023,36 @@ window.HY = window.HY || {};
                     }
                     /* ⭐ v2：門派心法嚴格綁定門派。
                        藏書閣已改為獨立修仙功法，不再放行別派心法
-                       —— 這就是「門派機制不可外流」的收口點。 */
+                        —— 這就是「門派機制不可外流」的收口點。
+                       ──────────────────────────────────────
+                       ⭐ 舊存檔補償：v457 之前，玩家可能透過藏書閣
+                       學到別派心法。這些心法現在會被清除，若不補償，
+                       等於沒收玩家已投入的收集成果。
+                       補償方式：若該心法對應的典籍「已集滿」，
+                       換發對應的修仙功法（第 1 重），寫進 c.gongfa。 */
                     if (xf.sectReq && xf.sectReq !== charObj.sect) {
+                        /* ⭐ v2：門派心法嚴格綁定門派（藏書閣已改為獨立功法）。
+                           ──────────────────────────────────────────
+                           舊存檔補償：v457 前玩家可能靠藏書閣學到別派心法。
+                           清除時，若其典籍「已集滿」，換發對應修仙功法，
+                           避免沒收玩家已投入的收集成果。 */
+                        var legacyCanon = (Data.canonOfLegacyXinfa ? Data.canonOfLegacyXinfa(xId) : null);
+                        var canonDone = false;
+                        try {
+                            canonDone = !!(legacyCanon && charObj.canon &&
+                                charObj.canon.learned && charObj.canon.learned[legacyCanon.id]);
+                        } catch (e) { }
+                        if (canonDone && legacyCanon.gongfa && Data.gongfaById) {
+                            var migGf = Data.gongfaById(legacyCanon.gongfa);
+                            if (migGf) {
+                                if (!charObj.gongfa || typeof charObj.gongfa !== 'object') charObj.gongfa = {};
+                                if (!charObj.gongfa[migGf.id]) {
+                                    /* 沿用原心法等級作為功法重數（至少第 1 重） */
+                                    charObj.gongfa[migGf.id] = Math.max(1, Number(charObj.xinfa[xId]) || 1);
+                                    charObj.__gongfaMigrated = (charObj.__gongfaMigrated || 0) + 1;
+                                }
+                            }
+                        }
                         delete charObj.xinfa[xId];
                         if (charObj.activeXinfa === xId) charObj.activeXinfa = null;
                     }
@@ -31178,13 +31218,13 @@ window.HY = window.HY || {};
             var id = this.charSys.state.activeXinfa;
             if (!id || !Data.XINFA[id]) return null;
             var xf = Data.XINFA[id];
-            /* ⭐ 跨門派心法也要能查（效果已由 canonXinfaMul 打七折） */
             var lv = this.charSys.state.xinfa[id] || 1;
             return {
                 id: xf.id, name: xf.name, lv: lv,
                 effectType: xf.effectType,
                 activeEffectDesc: xf.activeEffectDesc,
-                crossSect: !!(Data.canonIsCrossSect && Data.canonIsCrossSect(xf, this.charSys.state))
+                /* ⭐ v2：門派心法只限本派，不存在跨門派折扣 */
+                crossSect: false
             };
         }
         // ================= 3. 輕功身法 =================
@@ -133270,6 +133310,58 @@ window.HY.Data = window.HY.Data || {};
      * 保留簽名是為了讓尚未改寫的呼叫端不會拋錯。
      */
     Data.canonXinfaMul = function () { return 1; };
+
+    /* ══════════════════════════════════════════════════════
+       ⭐ v2 舊存檔遷移表：典籍 ↔ 舊版 xinfaId
+       ──────────────────────────────────────────────────────────
+       v457 之前，典籍是「指向某派第 5 階心法」：
+           canon_yijin.xinfaId = 'xf_shaolin_5'
+       v457 之後改為指向獨立修仙功法：
+           canon_yijin.gongfa   = 'gf_yijin'
+
+       玩家舊存檔裡可能還留著靠藏書閣學來的別派心法。
+       那些心法會被清除（門派機制不可外流），
+       但必須把已投入的收集成果換發成修仙功法，
+       否則等於沒收玩家資產。
+
+       這張表就是「舊心法 id → 典籍」的反查，只在遷移時用。
+       ══════════════════════════════════════════════════════ */
+    Data.LEGACY_XINFA_TO_CANON = {
+        xf_shaolin_5: 'canon_yijin',
+        xf_mingjiao_5: 'canon_jiuyang',
+        xf_gaibang_5: 'canon_xianglong',
+        xf_wudang_5: 'canon_taiji',
+        xf_emei_5: 'canon_cihang',
+        xf_xingxiu_5: 'canon_huagong',
+        xf_tianlong_5: 'canon_liumai',
+        xf_tianshan_5: 'canon_bingpo',
+        xf_xiaoyao_5: 'canon_beiming',
+        xf_murong_5: 'canon_douzhuan',
+        xf_tangmen_5: 'canon_tangmen',
+        xf_guigu_5: 'canon_guigu',
+        xf_taohuadao_5: 'canon_taohua',
+        xf_jueqinggu_5: 'canon_jueqing',
+        xf_jianxin_5: 'canon_dugu',
+        xf_huanying_5: 'canon_jiuyin',
+        xf_xueyu_5: 'canon_xixing',
+        xf_yanluo_5: 'canon_tianmo',
+        xf_zhenyan_5: 'canon_ziwei',
+        xf_wudu_5: 'canon_wandu',
+        xf_jingnian_5: 'canon_jingnian',
+        xf_leiting_5: 'canon_leiting',
+        xf_binghuo_5: 'canon_binghuo',
+        xf_wanjian_5: 'canon_wanjian',
+        xf_yaowang_5: 'canon_yaowang',
+        xf_jingmai_5: 'canon_jingmai',
+        xf_changsheng_5: 'canon_changsheng',
+        xf_erengu_5: 'canon_erengu'
+    };
+
+    /** 反查：舊心法 id 對應哪一本典籍 */
+    Data.canonOfLegacyXinfa = function (xinfaId) {
+        var cid = Data.LEGACY_XINFA_TO_CANON[xinfaId];
+        return cid ? (Data.CANON_INDEX[cid] || null) : null;
+    };
 
     /** @deprecated 藏書閣功法不綁門派 → 永遠不是「跨門派」 */
     Data.canonIsCrossSect = function () { return false; };
