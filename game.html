@@ -85496,6 +85496,7 @@ window.HY = window.HY || {};
   var _observer = null;
   var _pollTimer = null;
   var _pollCount = 0;
+  var _lastNodeCount = -1;
   var _lastScan = null;
   function log() {
     if (!CFG.VERBOSE) return;
@@ -85621,17 +85622,15 @@ window.HY = window.HY || {};
     if (!document.body) return { found: 0, rows: 0, parent: false };
 
     /* ⭐ v2：先做「便宜的前置檢查」，避免每次都全 DOM 掃描。
-       findInnermost 會用 querySelectorAll('*') + 逐一讀 textContent，
-       在 3600 節點的頁面上要 18ms。若畫面上根本沒有目標標籤，
-       這次就完全不用掃。 */
-    var bodyText = String(document.body.textContent || '');
-    var anyMark = false;
-    for (var mi = 0; mi < CFG.MARKS.length; mi++) {
-      if (bodyText.indexOf(CFG.MARKS[mi]) !== -1) { anyMark = true; break; }
-    }
-    if (!anyMark && !_manual.length) {
+       ⚠️ 舊版用 body.textContent 當前置檢查，但那本身就要 100~400ms
+          （它會遞迴串接所有子節點的文字）。改用 getElementsByTagName
+          計數 + 已處理快取，成本接近 0。 */
+    var allNodes = document.body.getElementsByTagName('*');
+    if (allNodes.length === _lastNodeCount && _rows.length > 0) {
+      /* 節點數沒變且已處理過 → 直接跳過 */
       return { found: 0, rows: _rows.length, parent: false, skipped: true };
     }
+    _lastNodeCount = allNodes.length;
 
     /* 1) 手動指定優先 */
     _manual.forEach(function (sel) {
@@ -85707,16 +85706,14 @@ window.HY = window.HY || {};
       _pollCount += 1;
 
       /* ① 便宜的前置檢查：畫面上還有沒有目標標籤？
-            沒有就完全跳過全 DOM 掃描（省下 18ms）。 */
-      var body = document.body;
-      var needScan = false;
-      if (body) {
-        var hay = String(body.textContent || '');
-        for (var i = 0; i < CFG.MARKS.length; i++) {
-          if (hay.indexOf(CFG.MARKS[i]) !== -1) { needScan = true; break; }
-        }
-      }
-      if (needScan) {
+            ⚠️ 不可用 body.textContent（它會遞迴讀取全部子節點，
+               在 3600 節點的頁面上就要 100~400ms）。
+               改用「已處理過就直接跳過」＋「只在節點數變化時才掃」。 */
+      var nodeCount = document.body ? document.body.getElementsByTagName('*').length : 0;
+      var shouldScan = (_lastNodeCount === -1) || (nodeCount !== _lastNodeCount);
+      _lastNodeCount = nodeCount;
+
+      if (shouldScan) {
         try { run(); } catch (e) { }
       }
 
@@ -86589,58 +86586,183 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════
-       三、自動巡檢：把畫面上漏出的 id / 英文術語直接換掉
+       三、自動巡檢（v2：只掃新增節點，不再全 DOM 掃描）
        ──────────────────────────────────────────────────────────
-       這是「最後一道防線」。各模組若忘記翻譯，這裡會補上。
-       頻率低（每 2 秒），且只處理文字節點，成本可忽略。
+       ⚠️ 舊版為何會卡 3.4 秒：
+          setInterval 每 2 秒做一次 document.createTreeWalker(全 DOM)，
+          對「每一個」文字節點執行 looksLikeId + resolveId（12 種資料表查找）。
+          在靈獸分頁（200 張卡片、3600+ 節點）時，單次就要數百 ms。
+          更糟的是：它修改 nodeValue → MutationObserver 觸發 →
+          其他 UI 模組重繪 → DOM 再變 → 又進下一輪 → 自我累積。
+          實測：197ms → 519ms → 3249ms（越跑越慢）。
+
+       新設計：
+         ① 用 MutationObserver 只處理「新增的節點」，不碰既有 DOM
+         ② 每批新增節點最多處理 300 個，超過就延到下一輪
+         ③ 每輪時間上限 6ms，超過立刻停手
+         ④ 完全不做「定期全 DOM 掃描」
+         ⑤ 自己改文字時暫停 observer，避免自我觸發
        ══════════════════════════════════════════════════════ */
-    var ID_TAG_WORDS = { PoE: 1, AOE: 1, BUFF: 1, DEBUFF: 1, DPS: 1, JSON: 1, Console: 1 };
 
-    function patchTextNodes() {
-        if (!document.body) return 0;
-        var changed = 0;
-        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-        var n;
-        while ((n = walker.nextNode())) {
-            var raw = n.nodeValue;
-            if (!raw) continue;
-            var t = raw.trim();
-            if (!t) continue;
+    var _suppress = false;      /* 自己改 DOM 時暫停 */
+    var _queue = [];            /* 待處理的節點 */
+    var _queued = null;         /* 去重用的 WeakSet-like */
+    var _scheduled = false;
+    var _processed = 0;         /* 累計處理數（除錯用） */
 
-            var out = null;
+    var BATCH_LIMIT = 300;      /* 每批最多處理節點數 */
+    var TIME_LIMIT = 6;         /* 每批時間上限 ms */
 
-            /* ① 內部 id */
-            if (looksLikeId(t)) {
-                var nm = resolveId(t);
-                if (nm) out = raw.replace(t, nm);
-                /* 找不到也換成「未知項目」，避免玩家看到原始 id */
-                else out = raw.replace(t, '未知項目');
-            } else {
-                /* ② 英文術語（僅在含中文的句子裡處理，避免誤傷純英文資料） */
-                if (/[\u4e00-\u9fa5]/.test(t) && /PoE|AOE|BUFF|DEBUFF|localStorage|JSON|Console/.test(t)) {
-                    var nt = fixTerms(t);
-                    if (nt !== t) out = raw.replace(t, nt);
-                }
-            }
+    /** 處理單一文字節點（回傳是否有修改） */
+    function fixOneNode(n) {
+        if (!n || !n.parentNode) return false;
+        /* 跳過 script / style / 輸入框 */
+        var p = n.parentNode;
+        var pn = p.nodeName;
+        if (pn === 'SCRIPT' || pn === 'STYLE' || pn === 'TEXTAREA' ||
+            pn === 'INPUT' || pn === 'OPTION' || pn === 'TITLE') return false;
 
-            if (out !== null && out !== raw) {
-                n.nodeValue = out;
-                changed++;
-            }
+        var raw = n.nodeValue;
+        if (!raw) return false;
+        var t = raw.trim();
+        if (!t || t.length < 2) return false;
+
+        var out = null;
+
+        /* ① 內部 id（只在「看起來像 id」時才做資料表查找，成本較高） */
+        if (t.length <= 48 && t.indexOf('_') > 0 && !/[\u4e00-\u9fa5]/.test(t) &&
+            /^[a-z0-9_\-]+$/i.test(t)) {
+            var nm = resolveId(t);
+            if (nm) out = raw.replace(t, nm);
+            else out = raw.replace(t, '未知項目');
+        } else if (t.length <= 60 && /[\u4e00-\u9fa5]/.test(t) &&
+                   /PoE|AOE|BUFF|DEBUFF|localStorage|JSON|Console/.test(t)) {
+            /* ② 英文術語（僅限含中文的短句） */
+            var nt = fixTerms(t);
+            if (nt !== t) out = raw.replace(t, nt);
         }
-        return changed;
+
+        if (out !== null && out !== raw) {
+            n.nodeValue = out;
+            return true;
+        }
+        return false;
     }
 
-    /* 啟動巡檢（避開輸入框與程式碼區塊） */
-    var _guard = 0;
-    function tick() {
-        _guard++;
+    /** 收集節點下的所有文字節點（含自身） */
+    function collectTextNodes(root, out) {
+        if (!root) return;
+        if (root.nodeType === 3) { out.push(root); return; }
+        if (!root.childNodes || !root.childNodes.length) return;
+        for (var i = 0; i < root.childNodes.length; i++) {
+            var c = root.childNodes[i];
+            if (c.nodeType === 3) out.push(c);
+            else if (c.nodeType === 1) {
+                var tag = c.nodeName;
+                if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
+                collectTextNodes(c, out);
+            }
+        }
+    }
+
+    /** 處理佇列（分批、限時） */
+    function drainQueue() {
+        _scheduled = false;
+        if (_suppress) return;
+        if (!_queue.length) return;
+
+        var act = document.activeElement;
+        if (act && /^(INPUT|TEXTAREA)$/.test(act.tagName)) {
+            /* 使用者正在輸入 → 稍後再處理 */
+            schedule();
+            return;
+        }
+
+        var deadline = (window.performance && performance.now ? performance.now() : Date.now()) + TIME_LIMIT;
+        var processed = 0;
+        var changed = 0;
+
+        _suppress = true;
         try {
-            /* 不要動 input / textarea / pre / code 裡的內容 */
-            var act = document.activeElement;
-            if (act && /^(INPUT|TEXTAREA)$/.test(act.tagName)) return;
-            patchTextNodes();
-        } catch (e) { }
+            while (_queue.length && processed < BATCH_LIMIT) {
+                var n = _queue.shift();
+                processed++;
+                try {
+                    if (fixOneNode(n)) changed++;
+                } catch (e) { }
+                var nowT = (window.performance && performance.now ? performance.now() : Date.now());
+                if (nowT > deadline) break;
+            }
+        } finally {
+            _suppress = false;
+        }
+
+        _processed += processed;
+
+        /* 還有剩 → 下一輪繼續（用 setTimeout 讓瀏覽器有喘息機會） */
+        if (_queue.length) schedule();
+    }
+
+    function schedule() {
+        if (_scheduled) return;
+        _scheduled = true;
+        setTimeout(drainQueue, 120);
+    }
+
+    /** 把節點加入佇列（去重） */
+    function enqueue(root) {
+        if (!root) return;
+        var list = [];
+        collectTextNodes(root, list);
+        for (var i = 0; i < list.length; i++) {
+            var n = list[i];
+            if (n.__txtfix) continue;      /* 已處理過 */
+            n.__txtfix = 1;
+            _queue.push(n);
+            /* 佇列過長就停止收集（避免一次塞爆） */
+            if (_queue.length > 1200) break;
+        }
+    }
+
+    /* MutationObserver：只處理新增節點 */
+    var _mo = null;
+    function startObserver() {
+        if (!window.MutationObserver || !document.body) return;
+        if (_mo) return;
+        _mo = new MutationObserver(function (muts) {
+            if (_suppress) return;
+            for (var i = 0; i < muts.length; i++) {
+                var m = muts[i];
+                if (m.type === 'childList' && m.addedNodes && m.addedNodes.length) {
+                    for (var j = 0; j < m.addedNodes.length; j++) {
+                        var nd = m.addedNodes[j];
+                        if (nd.nodeType === 3 || nd.nodeType === 1) enqueue(nd);
+                    }
+                } else if (m.type === 'characterData' && m.target) {
+                    /* 文字內容被改（例如遊戲更新數值）→ 重新檢查 */
+                    if (!m.target.__txtfix) {
+                        m.target.__txtfix = 1;
+                        _queue.push(m.target);
+                    }
+                }
+            }
+            if (_queue.length) schedule();
+        });
+        try {
+            _mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+        } catch (e) { _mo = null; }
+    }
+
+    /** 手動全掃（僅供除錯用，不要在計時器裡呼叫） */
+    function patchAll() {
+        if (!document.body) return 0;
+        var list = [];
+        collectTextNodes(document.body, list);
+        var changed = 0;
+        for (var i = 0; i < list.length; i++) {
+            try { if (fixOneNode(list[i])) changed++; } catch (e) { }
+        }
+        return changed;
     }
 
     HY.UITextFix = {
@@ -86650,19 +86772,33 @@ window.HY = window.HY || {};
         resolveId: resolveId,
         fix: fix,
         fixAll: fixAll,
-        patch: patchTextNodes
+        patch: patchAll,
+        stats: function () {
+            return { queued: _queue.length, processed: _processed };
+        }
     };
 
-    /* 定期巡檢（第一次延後 1.5 秒，避開載入期） */
-    if (document.body) {
-        setTimeout(function () { tick(); }, 1500);
-        setInterval(tick, 2000);
-    } else {
-        window.addEventListener('DOMContentLoaded', function () {
-            setTimeout(function () { tick(); }, 1500);
-            setInterval(tick, 2000);
-        });
+    /* 啟動：只跑一次全掃（載入期），之後完全交給 observer */
+    function boot() {
+        startObserver();
+        /* 初次全掃一次，處理載入期已存在的節點 */
+        setTimeout(function () {
+            if (!document.body) return;
+            _suppress = true;
+            var ch = 0;
+            try { ch = patchAll(); } catch (e) { }
+            _suppress = false;
+            /* 標記所有既有節點為已處理，避免 observer 重複排入 */
+            try {
+                var list = [];
+                collectTextNodes(document.body, list);
+                for (var i = 0; i < list.length; i++) list[i].__txtfix = 1;
+            } catch (e2) { }
+        }, 1200);
     }
+
+    if (document.body) boot();
+    else window.addEventListener('DOMContentLoaded', boot);
 })(window.HY);
 
 
