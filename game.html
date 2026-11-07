@@ -1274,7 +1274,7 @@ setTimeout(function () {
   };
 })();
 
-/* ===== 1 / 254 : gameConfig.js ===== */
+/* ===== 1 / 256 : gameConfig.js ===== */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  黃易群俠傳 Web ｜ 遊戲總調節檔 — 【資料本體】
@@ -1624,7 +1624,7 @@ window.HY = window.HY || {};
         CFG.SECTION_KEYS.length + ' 個區段）');
 })();
 
-/* ===== 2 / 254 : gameConfigSpeed.js ===== */
+/* ===== 2 / 256 : gameConfigSpeed.js ===== */
 // js/gameConfigSpeed.js  (v3.3 · 2/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  速度引擎：攔截全域 setInterval / setTimeout
@@ -1822,7 +1822,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 2/5] ✓ 速度引擎已啟動');
 })();
 
-/* ===== 3 / 254 : gameConfigApply.js ===== */
+/* ===== 3 / 256 : gameConfigApply.js ===== */
 // js/gameConfigApply.js  (v3.3 · 3/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  套用器 A：元素／詞綴／掉落政策／武學／靈根／陣法／群俠靈獸
@@ -2019,7 +2019,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 3/5] ✓ 套用器 A 已註冊（目前 ' + CFG.__appliers.length + ' 個）');
 })();
 
-/* ===== 4 / 254 : gameConfigApply2.js ===== */
+/* ===== 4 / 256 : gameConfigApply2.js ===== */
 // js/gameConfigApply2.js  (v3.3 · 4/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  套用器 B：收益／掉落／屬性／幫會
@@ -2226,7 +2226,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 4/5] ✓ 套用器 B 已註冊 + API 就緒（共 ' + CFG.__appliers.length + ' 個套用器）');
 })();
 
-/* ===== 5 / 254 : gameConfigBoot.js ===== */
+/* ===== 5 / 256 : gameConfigBoot.js ===== */
 // js/gameConfigBoot.js  (v3.3 · 5/5)
 // ═══════════════════════════════════════════════════════════════════════
 //  啟動編排：統一執行所有套用器
@@ -2305,7 +2305,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 5/5] ✓ 啟動編排已就緒');
 })();
 
-/* ===== 6 / 254 : linkBus.js ===== */
+/* ===== 6 / 256 : linkBus.js ===== */
 // js/linkBus.js (v2)
 // ⭐ 統一連動匯流排（全遊戲通用）
 //    ① EffectBus   效果註冊與聚合（任何系統都能貢獻加成）
@@ -2878,7 +2878,7 @@ window.HY = window.HY || {};
   console.log('[Link] ✓ 統一連動匯流排已啟動（' + HOOK_NAMES.length + ' 種鉤子｜自動監看中）');
 })();
 
-/* ===== 7 / 254 : linkContent.js ===== */
+/* ===== 7 / 256 : linkContent.js ===== */
 // js/linkContent.js (v1)
 // ⭐ 全系統自建內容（正本，不再是後備）
 //    20 個系統的完整資料 + 互相關聯標記（synergy / tags）
@@ -3319,7 +3319,7 @@ window.HY = window.HY || {};
     '｜離線 ' + C.OFFLINE_MODES.length + '｜敵陣 ' + C.ENEMY_FORMATIONS.length + '｜名冊職能 ' + C.ROSTER_ROLES.length + '）');
 })();
 
-/* ===== 8 / 254 : linkSystems.js ===== */
+/* ===== 8 / 256 : linkSystems.js ===== */
 // js/linkSystems.js (v1)
 // ⭐ 20 個系統的自建實作 + 全部向匯流排註冊
 //    每個系統都是「native 正本」，外部系統存在時自動升級為 hybrid（取其數值）
@@ -3753,7 +3753,7 @@ window.HY = window.HY || {};
     Object.keys(L.effectsOf('formation')).length + '+ ｜鉤子 ' + L.hookCount() + ' 個');
 })();
 
-/* ===== 9 / 254 : systemBridge.js ===== */
+/* ===== 9 / 256 : systemBridge.js ===== */
 // js/systemBridge.js (v1)
 // ⭐ 原版系統 → 連動匯流排 的橋接層
 //    為原版 40+ 支系統註冊 HY_LINK 描述子，讓它們從「外部」升級為「已接軌／混合」
@@ -4406,7 +4406,7 @@ window.HY = window.HY || {};
   }, 1500);
 })();
 
-/* ===== 10 / 254 : uiConfigData.js ===== */
+/* ===== 10 / 256 : uiConfigData.js ===== */
 // js/uiConfigData.js  (v49)
 // 全域設定 + 裝備槽位 + 自動戰鬥預設 + 掉落政策
 //
@@ -4473,7 +4473,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 11 / 254 : statRegistry.js ===== */
+/* ===== 11 / 256 : statRegistry.js ===== */
 // js/statRegistry.js
 // 📊 屬性註冊表 —— 遊戲引擎支援的全部屬性鍵
 //
@@ -4667,7 +4667,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 12 / 254 : elementData.js ===== */
+/* ===== 12 / 256 : elementData.js ===== */
 // js/elementData.js  (v47)
 // 金木水火土冰風雷 八大元素系統核心資料
 //
@@ -4795,7 +4795,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 13 / 254 : formationData.js ===== */
+/* ===== 13 / 256 : formationData.js ===== */
 // js/formationData.js  (v52)
 // 修仙十五大陣法 + 靈根需求樣式池 + 種子式隨機分配
 //
@@ -5109,7 +5109,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 14 / 254 : mapData.js ===== */
+/* ===== 14 / 256 : mapData.js ===== */
 // js/mapData.js
 // 專門存放：7大時空紀元 (ERAS) 與 Lv.1~300 共 20 張時空地圖與怪物數據 (MAPS)
 window.HY = window.HY || {};
@@ -5282,7 +5282,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 15 / 254 : sectData.js ===== */
+/* ===== 15 / 256 : sectData.js ===== */
 // js/sectData.js  (v39)
 // 各大門派：各自擁有獨一無二的「專屬門派特色」機制
 window.HY = window.HY || {};
@@ -5478,7 +5478,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 16 / 254 : sectDataExtra.js ===== */
+/* ===== 16 / 256 : sectDataExtra.js ===== */
 // js/sectDataExtra.js  (v41)
 // ⭐ 擴充門派：4 大新門派，各自獨佔一套「天賦樹原本有詞條、本作卻沒有系統」的機制
 //
@@ -5688,7 +5688,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 17 / 254 : sectDataExtra2.js ===== */
+/* ===== 17 / 256 : sectDataExtra2.js ===== */
 // js/sectDataExtra2.js  (v43)
 // ⭐ 第 1 批「機制補完」門派：能量護盾／暈眩／元素異常
 //
@@ -5793,7 +5793,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 18 / 254 : sectDataExtra3.js ===== */
+/* ===== 18 / 256 : sectDataExtra3.js ===== */
 // js/sectDataExtra3.js  (v45)
 // ⭐ 原創機制門派：7 個完全自創的機制，不依賴 POE 天賦樹
 //
@@ -5954,7 +5954,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 19 / 254 : sectDataExtra4.js ===== */
+/* ===== 19 / 256 : sectDataExtra4.js ===== */
 // js/sectDataExtra4.js  (v47)
 // ⭐ 回合機制門派：10 套操作「時間軸與回合序列」的原創機制
 //
@@ -6163,7 +6163,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 20 / 254 : externalArtsData.js ===== */
+/* ===== 20 / 256 : externalArtsData.js ===== */
 // js/externalArtsData.js  (v32)
 // 每門派 × 10 式外功，每一式皆與該門派「專屬特色」對應
 window.HY = window.HY || {};
@@ -6425,7 +6425,7 @@ window.HY.Data = window.HY.Data || {};
     });
 })();
 
-/* ===== 21 / 254 : externalArtsExtra.js ===== */
+/* ===== 21 / 256 : externalArtsExtra.js ===== */
 // js/externalArtsExtra.js  (v41)
 // ⭐ 4 大新門派的 10 式外功（共 40 招）
 //
@@ -6770,7 +6770,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 22 / 254 : externalArtsExtra2.js ===== */
+/* ===== 22 / 256 : externalArtsExtra2.js ===== */
 // js/externalArtsExtra2.js  (v47)
 // ⭐ 回合機制門派的 10 式外功（10 派 × 10 式 = 100 招）
 //
@@ -6962,7 +6962,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 23 / 254 : xinfaData.js ===== */
+/* ===== 23 / 256 : xinfaData.js ===== */
 // js/xinfaData.js  (v39)
 // 每門派 × 5 階心法
 //   ⭐ 內力上限相關屬性統一降低 500%（÷6），數值直接寫入
@@ -7121,7 +7121,7 @@ window.HY.Data = window.HY.Data || {};
     });
 })();
 
-/* ===== 24 / 254 : xinfaExtra.js ===== */
+/* ===== 24 / 256 : xinfaExtra.js ===== */
 // js/xinfaExtra.js  (v41)
 // ⭐ 4 大新門派的 5 階心法（共 20 門）
 //
@@ -7454,7 +7454,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 25 / 254 : xinfaExtra2.js ===== */
+/* ===== 25 / 256 : xinfaExtra2.js ===== */
 // js/xinfaExtra2.js  (v47)
 // ⭐ 回合機制門派的 5 階心法（10 派 × 5 階 = 50 門）
 //
@@ -7589,7 +7589,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 26 / 254 : qinggongData.js ===== */
+/* ===== 26 / 256 : qinggongData.js ===== */
 // js/qinggongData.js  (v40)
 // 江湖共通輕功 + 每門派 × 3 門專屬身法
 //
@@ -7731,7 +7731,7 @@ window.HY.Data = window.HY.Data || {};
     Data.QINGGONG = list;
 })();
 
-/* ===== 27 / 254 : qinggongExtra.js ===== */
+/* ===== 27 / 256 : qinggongExtra.js ===== */
 // js/qinggongExtra.js  (v41)
 // ⭐ 4 大新門派的 3 階專屬身法（共 12 門）
 //
@@ -7972,7 +7972,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 28 / 254 : qinggongExtra2.js ===== */
+/* ===== 28 / 256 : qinggongExtra2.js ===== */
 // js/qinggongExtra2.js  (v47)
 // ⭐ 回合機制門派的 3 階專屬身法（10 派 × 3 階 = 30 門）
 window.HY = window.HY || {};
@@ -8108,7 +8108,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 29 / 254 : masteryData.js ===== */
+/* ===== 29 / 256 : masteryData.js ===== */
 // js/masteryData.js  (v47)
 // 武道專精 18 門
 //
@@ -8217,7 +8217,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 30 / 254 : meridianData.js ===== */
+/* ===== 30 / 256 : meridianData.js ===== */
 // js/meridianData.js  (v45)
 // 獨立人體十四經脈
 //
@@ -8316,7 +8316,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 31 / 254 : spiritRootData.js ===== */
+/* ===== 31 / 256 : spiritRootData.js ===== */
 // js/spiritRootData.js  (v60)
 // 九大靈根（金、木、水、火、土、冰、雷、風、混元）
 //
@@ -8530,7 +8530,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 32 / 254 : equipmentData.js ===== */
+/* ===== 32 / 256 : equipmentData.js ===== */
 // js/equipmentData.js  (v40)
 // PoE 裝備基底庫 + 傳奇暗金裝庫 + 黑市丹藥
 //
@@ -8733,7 +8733,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 33 / 254 : companionData.js ===== */
+/* ===== 33 / 256 : companionData.js ===== */
 // js/companionData.js  (v39)
 // 原著群俠助戰數據 (COMPANIONS)
 //   ⭐ 內力上限相關屬性統一降低 500%（÷6）
@@ -8805,7 +8805,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 34 / 254 : petData.js ===== */
+/* ===== 34 / 256 : petData.js ===== */
 // js/petData.js  (v3 — 200 隻靈獸，規則驅動生成)
 // ⭐ 多功能靈獸系統資料
 //
@@ -9043,7 +9043,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 35 / 254 : partyData.js ===== */
+/* ===== 35 / 256 : partyData.js ===== */
 // js/partyData.js
 // 五人角色預設稱號 (PRESET_NAMES)。
 //
@@ -9097,7 +9097,7 @@ window.HY.Data = window.HY.Data || {};
     Data.FORMATIONS = Data.LEGACY_FORMATIONS;
 })();
 
-/* ===== 36 / 254 : affixData.js ===== */
+/* ===== 36 / 256 : affixData.js ===== */
 // js/affixData.js
 // 專門存放：完整《打造工坊》28 種稀有怪物詞綴（宿敵詞、精髓詞 Essence、狩獵紅獸詞 Bestiary、譫妄/深淵/超越/先驅/罪魂季賽詞）
 window.HY = window.HY || {};
@@ -9393,7 +9393,7 @@ window.HY.Data = window.HY.Data || {};
     };
 })();
 
-/* ===== 37 / 254 : poeCraftData.js ===== */
+/* ===== 37 / 256 : poeCraftData.js ===== */
 // js/poeCraftData.js  (v45)
 // PoE 10 大通貨 / 前綴池 / 後綴池 / 瓦爾腐化詞綴
 //
@@ -9488,7 +9488,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 38 / 254 : essenceData.js ===== */
+/* ===== 38 / 256 : essenceData.js ===== */
 // js/essenceData.js  (v1)
 // PoE1 精隨（Essence）完整資料表
 //
@@ -9937,7 +9937,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 39 / 254 : fossilData.js ===== */
+/* ===== 39 / 256 : fossilData.js ===== */
 // js/fossilData.js  (v1)
 // PoE1 化石（Fossil）資料表
 //
@@ -10318,7 +10318,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 40 / 254 : delveData.js ===== */
+/* ===== 40 / 256 : delveData.js ===== */
 // js/delveData.js  (v1)
 // PoE1 礦坑（Delve）資料表：生物群系、節點類型、難度曲線、化石掉寶表
 //
@@ -10654,7 +10654,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 41 / 254 : delveMapGenerator.js ===== */
+/* ===== 41 / 256 : delveMapGenerator.js ===== */
 // js/delveMapGenerator.js  (v3)
 // ⭐ PoE 礦坑網格地圖生成器（1:1 復刻 Plan Souterrain）
 //
@@ -11077,7 +11077,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 42 / 254 : talentData.js ===== */
+/* ===== 42 / 256 : talentData.js ===== */
 // ══════════════════════════════════════════════════════════════════════════
 //  js/talentData.js —— 自製天賦樹（v3，400 節點）
 //
@@ -12005,7 +12005,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 43 / 254 : talentDataPoe.js ===== */
+/* ===== 43 / 256 : talentDataPoe.js ===== */
 // js/talentDataPoe.js  (auto-generated from GGG official skill tree export)
 //
 // 資料來源：https://github.com/grindinggear/skilltree-export (data.json)
@@ -15343,7 +15343,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 44 / 254 : wuxiaTalentRemap.js ===== */
+/* ===== 44 / 256 : wuxiaTalentRemap.js ===== */
 // js/wuxiaTalentRemap.js  (v1)
 // ⭐ POE 天賦節點 → 武俠天賦節點（就地把 2429 個節點的效果改寫）
 //
@@ -16459,7 +16459,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 45 / 254 : ascendancyData.js ===== */
+/* ===== 45 / 256 : ascendancyData.js ===== */
 // js/ascendancyData.js  (auto-generated v2)
 // 資料來源：GGG 官方 skilltree-export（data.json）
 //
@@ -16924,7 +16924,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 46 / 254 : ascendancySprites.js ===== */
+/* ===== 46 / 256 : ascendancySprites.js ===== */
 // js/ascendancySprites.js  (自動產生，請勿手改)
 // ⭐ POE 官方「昇華天賦」圖集座標（1:1 復刻用）
 //
@@ -16965,7 +16965,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 47 / 254 : ascendancyZhNames.js ===== */
+/* ===== 47 / 256 : ascendancyZhNames.js ===== */
 // js/ascendancyZhNames.js  (v1)
 // ⭐ 職業昇華：只改「名稱」為仙俠風，完全不動節點內容
 //
@@ -17142,7 +17142,1343 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 48 / 254 : talentMasteryData.js ===== */
+/* ===== 48 / 256 : ascendancyDataWuxia.js ===== */
+// js/ascendancyDataWuxia.js  (v1)
+// ══════════════════════════════════════════════════════════════════════
+// ⭐⭐ 昇華天賦・武俠重製（v478）
+// ──────────────────────────────────────────────────────────────────────
+// 設計目標：
+//   · 21 條昇華分支，每條固定 30 個節點（起點 1 + 核心機制 1 + 顯著 7 + 小天賦 21）
+//   · 每條分支都有「獨立專屬核心機制」（keystone），不是單純數值堆疊
+//   · 所有效果全部武俠化（移除 POE 的 Life Leech / Totem / Impale / Curse…）
+//   · 維持 POE 的「8 點取捨」：30 個節點只能點 8 個 → 每次選擇都有代價
+//
+// 【幾何設計】
+//   30 個節點排成三圈同心圓，保證可讀性與可點性：
+//     內圈（環 1，半徑 150）：6 點，核心機制置於正上方
+//     中圈（環 2，半徑 290）：10 點
+//     外圈（環 3，半徑 430）：13 點
+//   起點置於 (0, 0)，第一圈節點與起點直連。
+//
+// 【節點格式】與 ascendancyData.js 完全相同，可直接餵給 poeStatEngine：
+//   { id, name, icon, x, y, orbit, orbitIndex, type, out:[], stats:[], asc }
+//   type：0=小天賦 1=核心機制(keystone) 2=顯著(notable) 3=起點
+//
+// 【效果詞條】
+//   一律使用 wuxiaStatParser 認得的武俠詞條（氣血上限／外功傷害／會心／
+//   輕功／罡氣上限／九元素內抗…），確保掛上就真的算進屬性。
+//   核心機制的「敘述型」效果另外放進 KEYSTONES，由系統層解讀。
+// ══════════════════════════════════════════════════════════════════════
+window.HY = window.HY || {};
+window.HY.Data = window.HY.Data || {};
+(function () {
+    'use strict';
+    var D = window.HY.Data;
+
+    /* ══════════════════════════════════════════════════════════════
+       職業 → 昇華分支（沿用原本 21 條，名稱武俠化）
+       ══════════════════════════════════════════════════════════════ */
+    var BRANCHES = {
+        /* ── 聖堂（Templar）：內功、守護、審判 ── */
+        Templar: [
+            { id: 'Inquisitor', name: '裁決宗', icon: '⚖️', theme: '審判 · 破邪' },
+            { id: 'Hierophant', name: '天師道', icon: '📜', theme: '符籙 · 陣樞' },
+            { id: 'Guardian', name: '金剛門', icon: '🛡️', theme: '護體 · 承傷' }
+        ],
+        /* ── 野蠻人（Marauder）：剛猛、狂怒、圖騰 ── */
+        Marauder: [
+            { id: 'Juggernaut', name: '不動尊', icon: '🗿', theme: '不動 · 反震' },
+            { id: 'Berserker', name: '狂戰堂', icon: '🔥', theme: '狂怒 · 流血' },
+            { id: 'Chieftain', name: '蠻王寨', icon: '🪓', theme: '戰吼 · 圖騰' }
+        ],
+        /* ── 遊俠（Ranger）：身法、遠程、自然 ── */
+        Ranger: [
+            { id: 'Raider', name: '疾風堂', icon: '🌪️', theme: '疾行 · 連擊' },
+            { id: 'Deadeye', name: '神射樓', icon: '🎯', theme: '精準 · 暗器' },
+            { id: 'Pathfinder', name: '藥王谷', icon: '🌿', theme: '丹藥 · 續戰' }
+        ],
+        /* ── 女巫（Witch）：內息、虛實、陰煞 ── */
+        Witch: [
+            { id: 'Occultist', name: '陰煞教', icon: '🕯️', theme: '陰煞 · 奪元' },
+            { id: 'Elementalist', name: '五行宗', icon: '🌈', theme: '五行 · 引爆' },
+            { id: 'Necromancer', name: '馭屍門', icon: '💀', theme: '傀儡 · 血祭' }
+        ],
+        /* ── 決鬥者（Duelist）：劍術、格擋、決鬥 ── */
+        Duelist: [
+            { id: 'Slayer', name: '斷魂劍', icon: '⚔️', theme: '處決 · 吸血' },
+            { id: 'Gladiator', name: '鐵衛府', icon: '🛡️', theme: '格擋 · 破甲' },
+            { id: 'Champion', name: '戰神壇', icon: '👑', theme: '威壓 · 光環' }
+        ],
+        /* ── 暗影（Shadow）：暗器、毒、機關 ── */
+        Shadow: [
+            { id: 'Assassin', name: '影殺門', icon: '🗡️', theme: '會心 · 暗殺' },
+            { id: 'Trickster', name: '千面閣', icon: '🎭', theme: '閃避 · 幻術' },
+            { id: 'Saboteur', name: '機巧閣', icon: '⚙️', theme: '機關 · 火雷' }
+        ],
+        /* ── 貴族（Scion）：均衡、多變 ── */
+        Scion: [
+            { id: 'Ascendant', name: '至尊殿', icon: '🌟', theme: '萬法 · 兼修' },
+            { id: 'Reliquarian', name: '藏劍樓', icon: '📦', theme: '兵器 · 收藏' },
+            { id: 'Luminary', name: '明光台', icon: '✨', theme: '光環 · 護持' }
+        ]
+    };
+
+    /* ══════════════════════════════════════════════════════════════
+       核心機制（keystone）—— 21 條分支的專屬機制
+       ──────────────────────────────────────────────────────────────
+       這些不是數值，而是「會改變戰鬥行為」的機制。
+       由 ascendancyMechanics.js 在戰鬥層解讀。
+       ══════════════════════════════════════════════════════════════ */
+    var KEYSTONES = {
+        Inquisitor: {
+            name: '判罪', icon: '⚖️',
+            desc: '攻擊身上帶有負面狀態的敵人時，無視其 30% 防禦；' +
+                  '若目標氣血低於 35%，額外 +40% 傷害（必中）。',
+            mechanic: 'judgement',
+            params: { penVsDebuff: 0.30, execThreshold: 0.35, execBonus: 0.40 }
+        },
+        Hierophant: {
+            name: '符陣', icon: '📜',
+            desc: '每次出手在場上留下 1 道符陣（上限 5）；' +
+                  '隊友站在符陣上時，受到的傷害降低 12%，且每回合回復 4% 氣血。',
+            mechanic: 'sigilField',
+            params: { max: 5, drPct: 0.12, healPct: 0.04 }
+        },
+        Guardian: {
+            name: '承天', icon: '🛡️',
+            desc: '隊友受到傷害時，你代替承受其中 30%；' +
+                  '你每承受一次代傷，獲得 1 層「護念」（每層 +6% 減傷，上限 8 層）。',
+            mechanic: 'damageShare',
+            params: { sharePct: 0.30, maxStacks: 8, drPerStack: 0.06 }
+        },
+        Juggernaut: {
+            name: '不壞', icon: '🗿',
+            desc: '受到傷害時累積「罡勁」（傷害量的 40%）；' +
+                  '罡勁滿 100 後，下次攻擊釋放為額外真傷，並獲得 2 回合霸體（不會被控場）。',
+            mechanic: 'unyielding',
+            params: { storePct: 0.40, cap: 100, stunImmuneTurns: 2 }
+        },
+        Berserker: {
+            name: '浴血', icon: '🔥',
+            desc: '氣血越低攻擊越高（最多 +80%）；' +
+                  '每次擊殺立即回復 8% 氣血，且 3 回合內不再受到流血效果。',
+            mechanic: 'bloodRage',
+            params: { maxBonus: 0.80, killHealPct: 0.08, bleedImmuneTurns: 3 }
+        },
+        Chieftain: {
+            name: '戰嚎', icon: '🪓',
+            desc: '每 4 回合自動發出戰嚎：全隊攻擊 +25%、防禦 +20%，持續 3 回合；' +
+                  '戰嚎期間每次擊殺延長 1 回合。',
+            mechanic: 'warCry',
+            params: { interval: 4, atkPct: 0.25, defPct: 0.20, duration: 3 }
+        },
+        Raider: {
+            name: '疾影', icon: '🌪️',
+            desc: '每連續命中同一目標，攻速 +8%（上限 5 層）；' +
+                  '疊滿 5 層時，下一擊必定連擊兩次。',
+            mechanic: 'momentum',
+            params: { maxStacks: 5, spdPerStack: 0.08 }
+        },
+        Deadeye: {
+            name: '穿雲', icon: '🎯',
+            desc: '距離越遠傷害越高（最多 +50%）；' +
+                  '暗器與遠程招式必定命中，且會心傷害 +35%。',
+            mechanic: 'farShot',
+            params: { maxBonus: 0.50, critDmgPct: 0.35 }
+        },
+        Pathfinder: {
+            name: '百草', icon: '🌿',
+            desc: '每回合自動調配 1 劑丹藥（上限 3）；' +
+                  '服用時效果 +50%，並清除身上 1 個負面狀態。',
+            mechanic: 'herbalism',
+            params: { max: 3, effectPct: 1.50, cleanse: 1 }
+        },
+        Occultist: {
+            name: '奪魄', icon: '🕯️',
+            desc: '擊殺敵人時吸取其魂魄：永久累積 +2% 傷害（上限 20 層）；' +
+                  '每層同時使敵方受到陰煞效果 +1%。',
+            mechanic: 'soulHarvest',
+            params: { maxStacks: 20, dmgPerStack: 0.02, cursePerStack: 0.01 }
+        },
+        Elementalist: {
+            name: '五行輪轉', icon: '🌈',
+            desc: '每次出手自動輪轉五行（金→水→木→火→土）；' +
+                  '對「被當前五行剋制」的敵人造成 +60% 傷害，並附加該元素灼痕。',
+            mechanic: 'elementCycle',
+            params: { counterBonus: 0.60 }
+        },
+        Necromancer: {
+            name: '血契', icon: '💀',
+            desc: '每擊殺 1 名敵人召喚 1 具傀儡（上限 4）；' +
+                  '傀儡每回合撲擊敵人，並把你的 20% 受傷轉移給它們。',
+            mechanic: 'minionPact',
+            params: { max: 4, sharePct: 0.20 }
+        },
+        Slayer: {
+            name: '斷魂', icon: '⚔️',
+            desc: '對氣血低於 25% 的敵人直接處決（首領改為重創 35%）；' +
+                  '擊殺後 2 回合內攻擊 +40%、吸血 15%。',
+            mechanic: 'executioner',
+            params: { threshold: 0.25, bossPct: 0.35, afterKillAtk: 0.40, afterKillLeech: 0.15 }
+        },
+        Gladiator: {
+            name: '鐵壁', icon: '🛡️',
+            desc: '格擋成功時立即反擊（150% 攻擊力）；' +
+                  '每次格擋使目標護甲 -8%（上限 5 層），疊滿時目標防禦歸零 2 回合。',
+            mechanic: 'riposte',
+            params: { counterMult: 1.50, armorBreakPerStack: 0.08, maxStacks: 5 }
+        },
+        Champion: {
+            name: '威壓', icon: '👑',
+            desc: '場上每個敵人使你 +5% 攻擊、每個隊友使你 +5% 防禦；' +
+                  '敵人死亡時，其餘敵人攻擊 -10%（上限 30%）。',
+            mechanic: 'intimidate',
+            params: { atkPerEnemy: 0.05, defPerAlly: 0.05, fearPerKill: 0.10, fearCap: 0.30 }
+        },
+        Assassin: {
+            name: '暗影', icon: '🗡️',
+            desc: '戰鬥第一擊必定會心且傷害 +200%；' +
+                  '每次會心後進入 1 回合「隱匿」，期間受到的傷害降低 50%。',
+            mechanic: 'shadowStrike',
+            params: { openingMult: 3.0, vanishTurns: 1, vanishDr: 0.50 }
+        },
+        Trickster: {
+            name: '幻形', icon: '🎭',
+            desc: '閃避成功時留下幻影（上限 3）；' +
+                  '幻影會複製你的下一次攻擊（每個幻影 40% 傷害），並在受擊時替你承受傷害。',
+            mechanic: 'mirage',
+            params: { max: 3, copyPct: 0.40 }
+        },
+        Saboteur: {
+            name: '機樞', icon: '⚙️',
+            desc: '每 2 回合自動佈下 1 個機關（上限 4）；' +
+                  '機關在敵人出手時引爆，造成 80% 攻擊力傷害並使其攻速 -25%（2 回合）。',
+            mechanic: 'trapGear',
+            params: { interval: 2, max: 4, dmgPct: 0.80, slowPct: 0.25 }
+        },
+        Ascendant: {
+            name: '萬法', icon: '🌟',
+            desc: '你獲得「副修」：可從另外兩條昇華分支各挑 1 個顯著節點免費獲得；' +
+                  '同時每點 1 個昇華節點額外 +1 全屬性。',
+            mechanic: 'multiMastery',
+            params: { bonusNodes: 2, attrPerNode: 1 }
+        },
+        Reliquarian: {
+            name: '藏鋒', icon: '📦',
+            desc: '每裝備 1 件不同部位的兵器/防具，+3% 全屬性（上限 30%）；' +
+                  '湊滿 8 部位時，攻擊附帶 20% 真實傷害（無視防禦）。',
+            mechanic: 'arsenal',
+            params: { pctPerSlot: 0.03, cap: 0.30, trueDmgPct: 0.20 }
+        },
+        Luminary: {
+            name: '明光', icon: '✨',
+            desc: '常駐光環：全隊 +12% 全元素內抗、+10% 氣血上限；' +
+                  '你每存活 1 回合，光環效果 +2%（上限 +20%）。',
+            mechanic: 'aura',
+            params: { resPct: 0.12, hpPct: 0.10, rampPerTurn: 0.02, rampCap: 0.20 }
+        }
+    };
+
+    /* ══════════════════════════════════════════════════════════════
+       節點內容池 —— 每條分支從這裡挑選並微調
+       ──────────────────────────────────────────────────────────────
+       全部使用 wuxiaStatParser 認得的武俠詞條。
+       ══════════════════════════════════════════════════════════════ */
+    /* 通用小天賦（type 0）—— 每條分支從中挑 21 個
+       ⚠️ isPct: false 表示「屬性或固定值」，詞條不能帶 %（例：力道 +15） */
+    var MINOR_POOL = {
+        offense: [
+            { n: '外功傷害', v: [10, 12, 14, 16], isPct: true },
+            { n: '會心', v: [8, 10, 12, 15], isPct: true },
+            { n: '會心傷害', v: [10, 14, 18, 22], isPct: true },
+            { n: '命中', v: [6, 8, 10, 12], isPct: true },
+            { n: '出手速度', v: [4, 5, 6, 8], isPct: true },
+            { n: '力道', v: [8, 10, 12, 15], isPct: false }
+        ],
+        defense: [
+            { n: '氣血上限', v: [10, 12, 14, 18], isPct: true },
+            { n: '血鎧值', v: [12, 15, 18, 22], isPct: true },
+            { n: '外功減免', v: [3, 4, 5, 6], isPct: true },
+            { n: '格擋', v: [3, 4, 5, 6], isPct: true },
+            { n: '體魄', v: [8, 10, 12, 15], isPct: false },
+            { n: '九元素抗性', v: [4, 5, 6, 8], isPct: true }
+        ],
+        resource: [
+            { n: '內力上限', v: [10, 12, 14, 18], isPct: true },
+            { n: '內力回復', v: [12, 15, 18, 22], isPct: true },
+            { n: '氣血回復', v: [12, 15, 18, 22], isPct: true },
+            { n: '罡氣上限', v: [8, 10, 12, 15], isPct: true },
+            { n: '內息', v: [8, 10, 12, 15], isPct: false }
+        ],
+        utility: [
+            { n: '輕功', v: [5, 6, 8, 10], isPct: true },
+            { n: '身法', v: [8, 10, 12, 15], isPct: false },
+            { n: '招式範圍', v: [8, 10, 12, 15], isPct: true },
+            { n: '物品稀有度', v: [10, 12, 15, 18], isPct: true },
+            { n: '物品數量', v: [6, 8, 10, 12], isPct: true }
+        ],
+        elem: [
+            { n: '九元素內勁', v: [8, 10, 12, 15], isPct: true },
+            { n: '火勁傷害', v: [12, 15, 18, 22], isPct: true },
+            { n: '冰勁傷害', v: [12, 15, 18, 22], isPct: true },
+            { n: '雷勁傷害', v: [12, 15, 18, 22], isPct: true },
+            { n: '毒勁傷害', v: [12, 15, 18, 22], isPct: true }
+        ]
+    };
+
+    /* 各分支的「顯著節點」（type 2）—— 7 個，帶明確流派定位 */
+    var NOTABLES = {
+        Inquisitor: [
+            { n: '破邪之刃', st: ['外功傷害 +48%', '命中 +15%'] },
+            { n: '罪業昭彰', st: ['會心 +30%', '會心傷害 +40%'] },
+            { n: '天理昭昭', st: ['九元素內勁 +35%'] },
+            { n: '聖裁', st: ['外功傷害 +30%', '出手速度 +12%'] },
+            { n: '淨化', st: ['九元素抗性 +25%', '外功減免 +10%'] },
+            { n: '審判之眼', st: ['命中 +25%', '會心 +18%'] },
+            { n: '贖罪', st: ['氣血上限 +22%', '氣血回復 +35%'] }
+        ],
+        Hierophant: [
+            { n: '符籙精通', st: ['招式範圍 +30%', '真元效果 +30%'] },
+            { n: '陣樞之心', st: ['內力上限 +30%', '內力回復 +40%'] },
+            { n: '天師印', st: ['九元素內勁 +40%'] },
+            { n: '太乙玄門', st: ['罡氣上限 +35%', '罡氣效果 +25%'] },
+            { n: '符火', st: ['火勁傷害 +40%', '招式範圍 +20%'] },
+            { n: '萬象歸元', st: ['內息 +24', '內力上限 +25%'] },
+            { n: '護法', st: ['氣血上限 +25%', '外功減免 +12%'] }
+        ],
+        Guardian: [
+            { n: '不動之軀', st: ['氣血上限 +35%', '外功減免 +15%'] },
+            { n: '守護誓約', st: ['格擋 +18%', '血鎧值 +40%'] },
+            { n: '承天之志', st: ['氣血回復 +45%', '九元素抗性 +20%'] },
+            { n: '鐵壁', st: ['血鎧值 +50%'] },
+            { n: '庇護', st: ['氣血上限 +25%', '格擋 +10%'] },
+            { n: '不屈', st: ['外功減免 +18%'] },
+            { n: '聖域', st: ['九元素抗性 +35%', '氣血上限 +15%'] }
+        ],
+        Juggernaut: [
+            { n: '不壞金身', st: ['氣血上限 +40%', '外功減免 +18%'] },
+            { n: '罡勁貫體', st: ['血鎧值 +55%', '外功傷害 +20%'] },
+            { n: '山岳不動', st: ['格擋 +20%', '氣血上限 +20%'] },
+            { n: '反震玄功', st: ['外功傷害 +35%', '血鎧值 +30%'] },
+            { n: '金鐘罩', st: ['外功減免 +20%'] },
+            { n: '鐵布衫', st: ['氣血上限 +30%'] },
+            { n: '震山勁', st: ['外功傷害 +40%'] }
+        ],
+        Berserker: [
+            { n: '浴血狂戰', st: ['外功傷害 +45%', '出手速度 +15%'] },
+            { n: '嗜血', st: ['氣血回復 +50%', '外功傷害 +25%'] },
+            { n: '狂怒', st: ['會心 +28%', '會心傷害 +45%'] },
+            { n: '血怒', st: ['外功傷害 +35%', '力道 +20'] },
+            { n: '暴戾', st: ['會心 +22%', '出手速度 +12%'] },
+            { n: '殘暴', st: ['外功傷害 +30%', '命中 +18%'] },
+            { n: '不屈鬥志', st: ['氣血上限 +25%', '氣血回復 +30%'] }
+        ],
+        Chieftain: [
+            { n: '戰吼宗師', st: ['外功傷害 +30%', '氣血上限 +25%'] },
+            { n: '先祖庇佑', st: ['九元素抗性 +30%', '氣血回復 +35%'] },
+            { n: '圖騰之力', st: ['外功傷害 +40%', '招式範圍 +25%'] },
+            { n: '烈焰圖騰', st: ['火勁傷害 +45%'] },
+            { n: '戰意', st: ['出手速度 +15%', '外功傷害 +25%'] },
+            { n: '蠻力', st: ['力道 +24', '外功傷害 +20%'] },
+            { n: '部族守護', st: ['氣血上限 +30%', '外功減免 +12%'] }
+        ],
+        Raider: [
+            { n: '疾風步', st: ['身法速度 +30%', '輕功 +25%'] },
+            { n: '連環打擊', st: ['出手速度 +20%', '外功傷害 +30%'] },
+            { n: '身法如風', st: ['輕功 +30%', '身法 +24'] },
+            { n: '迅捷', st: ['出手速度 +18%', '命中 +15%'] },
+            { n: '閃電手', st: ['出手速度 +22%'] },
+            { n: '疾影', st: ['輕功 +35%'] },
+            { n: '殘像', st: ['輕功 +20%', '格擋 +12%'] }
+        ],
+        Deadeye: [
+            { n: '穿雲箭', st: ['暗器傷害 +45%', '命中 +22%'] },
+            { n: '神射', st: ['會心 +30%', '會心傷害 +50%'] },
+            { n: '鷹眼', st: ['命中 +30%', '會心 +18%'] },
+            { n: '致命一擊', st: ['會心傷害 +60%'] },
+            { n: '遠程專精', st: ['暗器傷害 +35%', '暗器速度 +25%'] },
+            { n: '精準', st: ['命中 +25%'] },
+            { n: '獵殺', st: ['會心 +22%', '暗器傷害 +25%'] }
+        ],
+        Pathfinder: [
+            { n: '百草精通', st: ['氣血回復 +50%', '內力回復 +40%'] },
+            { n: '丹道', st: ['氣血上限 +30%', '氣血回復 +35%'] },
+            { n: '毒性專精', st: ['毒勁傷害 +50%'] },
+            { n: '續戰', st: ['內力回復 +45%', '罡氣上限 +25%'] },
+            { n: '藥理', st: ['氣血回復 +40%'] },
+            { n: '自然之友', st: ['九元素抗性 +28%'] },
+            { n: '堅韌', st: ['氣血上限 +28%'] }
+        ],
+        Occultist: [
+            { n: '陰煞精通', st: ['陰煞效果 +45%', '九元素內勁 +25%'] },
+            { n: '奪元', st: ['內力回復 +45%', '陰煞效果 +30%'] },
+            { n: '詛咒宗師', st: ['陰煞效果 +50%'] },
+            { n: '暗影之力', st: ['九元素內勁 +40%'] },
+            { n: '魂魄', st: ['內息 +24', '內力上限 +28%'] },
+            { n: '虛無', st: ['罡氣上限 +30%', '九元素抗性 +20%'] },
+            { n: '腐蝕', st: ['毒勁傷害 +40%', '陰煞效果 +20%'] }
+        ],
+        Elementalist: [
+            { n: '五行精通', st: ['九元素內勁 +50%'] },
+            { n: '元素爆發', st: ['九元素內勁 +35%', '會心傷害 +35%'] },
+            { n: '烈焰之心', st: ['火勁傷害 +55%'] },
+            { n: '寒冰之心', st: ['冰勁傷害 +55%'] },
+            { n: '雷霆之心', st: ['雷勁傷害 +55%'] },
+            { n: '元素抗性', st: ['九元素抗性 +40%'] },
+            { n: '內勁貫通', st: ['九元素內勁 +30%', '命中 +15%'] }
+        ],
+        Necromancer: [
+            { n: '傀儡精通', st: ['靈獸傷害 +50%', '靈獸氣血 +40%'] },
+            { n: '血祭', st: ['氣血上限 +30%', '外功傷害 +30%'] },
+            { n: '馭屍', st: ['靈獸傷害 +45%'] },
+            { n: '亡者之志', st: ['靈獸氣血 +45%', '靈獸攻速 +25%'] },
+            { n: '血池', st: ['氣血回復 +45%'] },
+            { n: '陰魂', st: ['九元素內勁 +35%'] },
+            { n: '骨甲', st: ['血鎧值 +45%'] }
+        ],
+        Slayer: [
+            { n: '斷魂斬', st: ['外功傷害 +48%', '會心 +20%'] },
+            { n: '嗜血狂徒', st: ['氣血回復 +40%', '外功傷害 +30%'] },
+            { n: '處決者', st: ['會心傷害 +55%', '命中 +18%'] },
+            { n: '無情', st: ['外功傷害 +40%'] },
+            { n: '屠戮', st: ['會心 +25%', '出手速度 +12%'] },
+            { n: '血債', st: ['外功傷害 +32%', '氣血上限 +20%'] },
+            { n: '終結', st: ['會心傷害 +45%'] }
+        ],
+        Gladiator: [
+            { n: '鐵衛精通', st: ['格擋 +25%', '血鎧值 +45%'] },
+            { n: '破甲', st: ['外功傷害 +40%', '命中 +20%'] },
+            { n: '反擊宗師', st: ['外功傷害 +35%', '格擋 +15%'] },
+            { n: '盾牆', st: ['血鎧值 +50%', '外功減免 +15%'] },
+            { n: '決鬥者', st: ['外功傷害 +30%', '出手速度 +15%'] },
+            { n: '堅甲', st: ['外功減免 +18%'] },
+            { n: '破勢', st: ['命中 +25%', '外功傷害 +25%'] }
+        ],
+        Champion: [
+            { n: '戰神威壓', st: ['外功傷害 +40%', '會心 +22%'] },
+            { n: '統御', st: ['氣血上限 +28%', '外功傷害 +25%'] },
+            { n: '鼓舞', st: ['出手速度 +18%', '外功傷害 +28%'] },
+            { n: '無畏', st: ['外功減免 +15%', '氣血上限 +22%'] },
+            { n: '霸氣', st: ['外功傷害 +35%'] },
+            { n: '軍魂', st: ['九元素抗性 +25%'] },
+            { n: '光輝', st: ['氣血回復 +35%', '外功傷害 +20%'] }
+        ],
+        Assassin: [
+            { n: '暗殺術', st: ['會心 +35%', '會心傷害 +50%'] },
+            { n: '致命', st: ['會心傷害 +60%'] },
+            { n: '影襲', st: ['出手速度 +20%', '會心 +25%'] },
+            { n: '毒刃', st: ['毒勁傷害 +45%', '會心 +15%'] },
+            { n: '潛行', st: ['輕功 +30%'] },
+            { n: '銳利', st: ['外功傷害 +35%'] },
+            { n: '無聲', st: ['命中 +22%', '會心 +18%'] }
+        ],
+        Trickster: [
+            { n: '幻術精通', st: ['輕功 +35%', '格擋 +15%'] },
+            { n: '千面', st: ['輕功 +40%'] },
+            { n: '欺詐', st: ['外功傷害 +35%', '輕功 +20%'] },
+            { n: '虛實', st: ['格擋 +20%', '外功減免 +12%'] },
+            { n: '迷蹤', st: ['輕功 +30%', '身法 +20'] },
+            { n: '詭譎', st: ['出手速度 +15%', '輕功 +18%'] },
+            { n: '影分身', st: ['輕功 +25%', '外功傷害 +22%'] }
+        ],
+        Saboteur: [
+            { n: '機關精通', st: ['機關傷害 +55%'] },
+            { n: '火雷宗師', st: ['火雷傷害 +55%'] },
+            { n: '陷阱大師', st: ['機關傷害 +40%', '招式範圍 +25%'] },
+            { n: '爆裂', st: ['火勁傷害 +45%', '機關傷害 +25%'] },
+            { n: '巧妙', st: ['命中 +20%', '機關傷害 +25%'] },
+            { n: '工程學', st: ['機關傷害 +35%'] },
+            { n: '爆破專家', st: ['火雷傷害 +40%', '會心傷害 +25%'] }
+        ],
+        Ascendant: [
+            { n: '萬法歸一', st: ['外功傷害 +30%', '九元素內勁 +30%'] },
+            { n: '兼修', st: ['氣血上限 +25%', '內力上限 +25%'] },
+            { n: '全才', st: ['命中 +18%', '輕功 +18%'] },
+            { n: '至尊', st: ['外功傷害 +35%', '會心 +20%'] },
+            { n: '洞察', st: ['九元素抗性 +30%'] },
+            { n: '天賦異稟', st: ['會心傷害 +40%'] },
+            { n: '均衡', st: ['力道 +15', '身法 +15', '內息 +15', '體魄 +15'] }
+        ],
+        Reliquarian: [
+            { n: '兵器通', st: ['外功傷害 +40%', '命中 +20%'] },
+            { n: '藏鋒', st: ['會心 +25%', '會心傷害 +35%'] },
+            { n: '百兵', st: ['外功傷害 +35%', '出手速度 +12%'] },
+            { n: '寶庫', st: ['物品稀有度 +40%'] },
+            { n: '鑑賞', st: ['物品數量 +25%', '物品稀有度 +20%'] },
+            { n: '銳鋒', st: ['外功傷害 +45%'] },
+            { n: '珍藏', st: ['九元素抗性 +28%', '氣血上限 +20%'] }
+        ],
+        Luminary: [
+            { n: '明光普照', st: ['九元素抗性 +35%', '氣血上限 +25%'] },
+            { n: '護持', st: ['氣血回復 +40%', '外功減免 +12%'] },
+            { n: '光環宗師', st: ['真元效果 +40%', '罡氣效果 +30%'] },
+            { n: '聖輝', st: ['氣血上限 +28%'] },
+            { n: '恩澤', st: ['氣血回復 +35%'] },
+            { n: '純淨', st: ['九元素抗性 +30%'] },
+            { n: '榮光', st: ['外功減免 +15%', '氣血回復 +25%'] }
+        ]
+    };
+
+    /* ══════════════════════════════════════════════════════════════
+       幾何：三圈同心圓
+       ══════════════════════════════════════════════════════════════ */
+    var RING = [
+        { r: 150, n: 6 },    /* 環 1：6 點 */
+        { r: 290, n: 10 },   /* 環 2：10 點 */
+        { r: 430, n: 13 }    /* 環 3：13 點 */
+    ];
+
+    function buildBranch(ascId, meta) {
+        var nodes = {};
+        var order = [];
+        var seq = 0;
+
+        function mk(node) {
+            node.id = 'ascw_' + ascId + '_' + (seq++);
+            node.asc = ascId;
+            /* ⚠️ ascendancySystem 用 isAscStart / isKeystone / isNotable 判斷節點類型，
+               不是讀 type 欄位。少了這些旗標，系統會找不到起點 → pickBranch 失敗。 */
+            node.isKeystone = (node.type === 1);
+            node.isNotable = (node.type === 2);
+            node.isAscStart = (node.type === 3);
+            nodes[node.id] = node;
+            order.push(node.id);
+            return node;
+        }
+
+        /* ① 起點（type 3） */
+        var start = mk({
+            name: meta.name, icon: meta.icon,
+            x: 0, y: 0, orbit: 0, orbitIndex: 0, type: 3,
+            out: [], stats: []
+        });
+
+        /* ② 核心機制（type 1）—— 置於內圈正上方 */
+        var ks = KEYSTONES[ascId] || { name: '核心', icon: '⭐', desc: '', mechanic: '', params: {} };
+        var keystone = mk({
+            name: ks.name, icon: ks.icon,
+            x: 0, y: -RING[0].r, orbit: 1, orbitIndex: 0, type: 1,
+            out: [], stats: [],
+            keystone: ks.mechanic,
+            kdesc: ks.desc,
+            kparams: ks.params
+        });
+        start.out.push(keystone.id);
+        keystone.__back = start.id;
+
+        /* ③ 內圈剩下的 5 點（type 2 顯著），與核心互相連通成環 */
+        var innerRing = [keystone];
+        var notables = NOTABLES[ascId] || [];
+        var nIdx = 0;
+        for (var i = 1; i < RING[0].n; i++) {
+            var ang = -Math.PI / 2 + (Math.PI * 2 * i) / RING[0].n;
+            var nt = notables[nIdx % notables.length];
+            nIdx++;
+            var nNode = mk({
+                name: nt ? nt.n : ('顯著' + i), icon: meta.icon,
+                x: Math.cos(ang) * RING[0].r,
+                y: Math.sin(ang) * RING[0].r,
+                orbit: 1, orbitIndex: i, type: 2,
+                out: [], stats: (nt ? nt.st.slice() : [])
+            });
+            start.out.push(nNode.id);
+            innerRing.push(nNode);
+        }
+        /* 內圈串成環（可互相連通，但不繞回起點） */
+        for (var k = 0; k < innerRing.length; k++) {
+            var cur = innerRing[k];
+            var nxt = innerRing[(k + 1) % innerRing.length];
+            if (cur.out.indexOf(nxt.id) === -1) cur.out.push(nxt.id);
+            if (nxt.out.indexOf(cur.id) === -1) nxt.out.push(cur.id);
+        }
+
+        /* ④ 中圈 10 點（type 2 顯著 + type 0 小天賦混合） */
+        var mid = [];
+        for (var m = 0; m < RING[1].n; m++) {
+            var mAng = -Math.PI / 2 + (Math.PI * 2 * m) / RING[1].n;
+            var isNotable = (m % 2 === 0);
+            var node;
+            if (isNotable && nIdx < (notables.length + 7)) {
+                var nt2 = notables[nIdx % notables.length];
+                nIdx++;
+                node = mk({
+                    name: nt2 ? nt2.n : ('顯著' + m), icon: meta.icon,
+                    x: Math.cos(mAng) * RING[1].r,
+                    y: Math.sin(mAng) * RING[1].r,
+                    orbit: 2, orbitIndex: m, type: 2,
+                    out: [], stats: (nt2 ? nt2.st.slice() : [])
+                });
+            } else {
+                node = mk({
+                    name: '', icon: meta.icon,
+                    x: Math.cos(mAng) * RING[1].r,
+                    y: Math.sin(mAng) * RING[1].r,
+                    orbit: 2, orbitIndex: m, type: 0,
+                    out: [], stats: []
+                });
+            }
+            mid.push(node);
+        }
+        /* 中圈串成環 */
+        for (var q = 0; q < mid.length; q++) {
+            var a1 = mid[q], b1 = mid[(q + 1) % mid.length];
+            if (a1.out.indexOf(b1.id) === -1) a1.out.push(b1.id);
+            if (b1.out.indexOf(a1.id) === -1) b1.out.push(a1.id);
+        }
+        /* 內圈 → 中圈：每個內圈點連到最近的中圈點 */
+        innerRing.forEach(function (inn) {
+            var best = null, bestD = Infinity;
+            mid.forEach(function (mm) {
+                var d = Math.hypot((inn.x || 0) - (mm.x || 0), (inn.y || 0) - (mm.y || 0));
+                if (d < bestD) { bestD = d; best = mm; }
+            });
+            if (best && inn.out.indexOf(best.id) === -1) inn.out.push(best.id);
+        });
+
+        /* ⑤ 外圈 13 點（全 type 0 小天賦） */
+        var outer = [];
+        for (var o = 0; o < RING[2].n; o++) {
+            var oAng = -Math.PI / 2 + (Math.PI * 2 * o) / RING[2].n;
+            var on = mk({
+                name: '', icon: meta.icon,
+                x: Math.cos(oAng) * RING[2].r,
+                y: Math.sin(oAng) * RING[2].r,
+                orbit: 3, orbitIndex: o, type: 0,
+                out: [], stats: []
+            });
+            outer.push(on);
+        }
+        for (var w = 0; w < outer.length; w++) {
+            var a2 = outer[w], b2 = outer[(w + 1) % outer.length];
+            if (a2.out.indexOf(b2.id) === -1) a2.out.push(b2.id);
+            if (b2.out.indexOf(a2.id) === -1) b2.out.push(a2.id);
+        }
+        /* 中圈 → 外圈 */
+        mid.forEach(function (mm) {
+            var best2 = null, bestD2 = Infinity;
+            outer.forEach(function (oo) {
+                var d2 = Math.hypot((mm.x || 0) - (oo.x || 0), (mm.y || 0) - (oo.y || 0));
+                if (d2 < bestD2) { bestD2 = d2; best2 = oo; }
+            });
+            if (best2 && mm.out.indexOf(best2.id) === -1) mm.out.push(best2.id);
+        });
+
+        return { order: order, nodes: nodes };
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       小天賦：為 type 0 節點填入具體數值（依索引輪替屬性池）
+       ══════════════════════════════════════════════════════════════ */
+    var POOL_GROUPS = ['offense', 'defense', 'resource', 'utility', 'elem'];
+    var POOL_NAMES = {
+        offense: ['銳意', '破軍', '疾擊', '會元', '精準', '迅捷'],
+        defense: ['磐石', '堅守', '鐵壁', '厚土', '守拙', '禦敵'],
+        resource: ['納息', '週天', '養氣', '聚元', '罡生', '流轉'],
+        utility: ['輕身', '遊龍', '洞察', '財機', '巧手', '靈動'],
+        elem: ['金鳴', '木華', '水潤', '火烈', '雷動', '冰凝']
+    };
+
+    /* ══════════════════════════════════════════════════════════════
+       輸出
+       ══════════════════════════════════════════════════════════════ */
+    var OUT_CLASSES = {};
+    var OUT_NODES = {};
+    var OUT_BY_BRANCH = {};
+    var OUT_GEO = {};
+
+    Object.keys(BRANCHES).forEach(function (cls) {
+        OUT_CLASSES[cls] = BRANCHES[cls].map(function (b) {
+            return { id: b.id, name: b.name };
+        });
+        BRANCHES[cls].forEach(function (b) {
+            var built = buildBranch(b.id, b);
+
+            /* 填入小天賦數值 */
+            var poolIdx = 0;
+            built.order.forEach(function (nid) {
+                var nd = built.nodes[nid];
+                if (nd.type !== 0) return;
+                var g = POOL_GROUPS[poolIdx % POOL_GROUPS.length];
+                var pool = MINOR_POOL[g];
+                var pick = pool[poolIdx % pool.length];
+                var tier = poolIdx % pick.v.length;
+                var names = POOL_NAMES[g];
+                nd.name = pick.n + '・' + names[poolIdx % names.length];
+                /* ⚠️ 詞條格式必須是「名稱 +N%」或「名稱 +N」（wuxiaStatParser 的規則），
+                   寫成「名稱%N」解析器認不得 → 掛上去等於沒有效果。
+                   屬性類（力道/身法/內息/體魄）不帶 %，否則會被當成百分比。 */
+                nd.stats = [pick.n + ' +' + pick.v[tier] + (pick.isPct ? '%' : '')];
+                poolIdx++;
+            });
+
+            OUT_BY_BRANCH[b.id] = built.order;
+            built.order.forEach(function (nid) {
+                OUT_NODES[nid] = built.nodes[nid];
+            });
+
+            /* 幾何 */
+            var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            built.order.forEach(function (nid) {
+                var nd = built.nodes[nid];
+                if (nd.x < minX) minX = nd.x;
+                if (nd.x > maxX) maxX = nd.x;
+                if (nd.y < minY) minY = nd.y;
+                if (nd.y > maxY) maxY = nd.y;
+            });
+            OUT_GEO[b.id] = {
+                w: Math.round((maxX - minX) * 10) / 10,
+                h: Math.round((maxY - minY) * 10) / 10,
+                n: built.order.length,
+                cx: Math.round((minX + maxX) / 2 * 10) / 10,
+                cy: Math.round((minY + maxY) / 2 * 10) / 10
+            };
+        });
+    });
+
+    /* 分支 meta（UI 顯示用：圖示、主題）
+       ⚠️ 必須定義在 applyNames() 之前 —— 它會用到 META。 */
+    var META = {};
+    Object.keys(BRANCHES).forEach(function (cls) {
+        BRANCHES[cls].forEach(function (b) {
+            META[b.id] = { id: b.id, name: b.name, icon: b.icon, theme: b.theme, cls: cls, keystone: KEYSTONES[b.id] || null };
+        });
+    });
+
+    /* ══════════════════════════════════════════════════════════════
+       覆寫分支顯示名
+       ──────────────────────────────────────────────────────────────
+       ⚠️ 這裡不靠「比誰跑得晚」的 setTimeout 競速 ——
+          ascendancyZhNames.js 是用 setInterval 每 200ms 輪詢，
+          時間點不確定，任何固定的延遲都可能輸。
+
+       正確做法：直接把它的 BRANCH_NAMES 表改掉。
+          它的 apply() 會讀 BRANCH_NAMES[b.id].name 寫進資料，
+          所以只要換掉那張表，無論它何時執行，套用的都是我們的名稱。
+       ══════════════════════════════════════════════════════════════ */
+    function applyNames() {
+        /* ① 直接寫入資料（若 zhNames 已執行過，這一步就生效） */
+        Object.keys(OUT_CLASSES).forEach(function (cls) {
+            var list = D.ASCENDANCY_CLASSES && D.ASCENDANCY_CLASSES[cls];
+            if (!Array.isArray(list)) return;
+            OUT_CLASSES[cls].forEach(function (nb) {
+                list.forEach(function (ex) {
+                    if (ex.id === nb.id) {
+                        ex.name = nb.name;
+                        ex.icon = nb.icon;
+                    }
+                });
+            });
+        });
+
+        /* ② 改寫 zhNames 的名稱表 —— 治本，讓它之後每次套用都用我們的名稱 */
+        try {
+            var Z = HY.AscendancyZhNames;
+            if (Z && Z.BRANCH_NAMES) {
+                Object.keys(OUT_CLASSES).forEach(function (cls) {
+                    OUT_CLASSES[cls].forEach(function (nb) {
+                        var meta = META[nb.id];
+                        if (!meta) return;
+                        Z.BRANCH_NAMES[nb.id] = {
+                            name: nb.name,
+                            icon: nb.icon,
+                            color: (Z.BRANCH_NAMES[nb.id] && Z.BRANCH_NAMES[nb.id].color) || '#94a3b8'
+                        };
+                    });
+                });
+            }
+        } catch (e) { }
+    }
+    applyNames();
+    /* 保險：zhNames 可能在稍後才建立 BRANCH_NAMES，再套幾次 */
+    [300, 800, 1500].forEach(function (ms) {
+        try { setTimeout(applyNames, ms); } catch (e) { }
+    });
+
+    D.ASCENDANCY_CLASSES = OUT_CLASSES;
+    D.ASCENDANCY_NODES = OUT_NODES;
+    D.ASCENDANCY_BY_BRANCH = OUT_BY_BRANCH;
+    D.ASCENDANCY_GEO = OUT_GEO;
+    D.ASCENDANCY_META = META;
+
+    /* 核心機制表（戰鬥層解讀用） */
+    D.ASCENDANCY_KEYSTONES = KEYSTONES;
+
+    var totalNodes = Object.keys(OUT_NODES).length;
+    console.log('[ascendancyWuxia] ✓ 21 條昇華分支已載入（' + totalNodes + ' 節點，每條 ' +
+        (OUT_BY_BRANCH[Object.keys(OUT_BY_BRANCH)[0]] || []).length + ' 點）');
+})();
+
+
+/* ===== 49 / 256 : ascendancyMechanics.js ===== */
+// js/ascendancyMechanics.js  (v1)
+// ══════════════════════════════════════════════════════════════════════
+// ⭐⭐ 昇華核心機制引擎（v478）
+// ──────────────────────────────────────────────────────────────────────
+// 21 條昇華分支各有一個「核心機制」（keystone），不是單純數值，而是會
+// 改變戰鬥行為的規則。本檔負責把這些機制接進戰鬥流程。
+//
+// 【設計原則】
+//   ① 只影響「已點該核心節點」的角色 —— 沒點就完全不生效
+//   ② 全部走現有戰鬥接點（plugin hook），不另外開新的戰鬥流程
+//   ③ 每個機制都獨立，互不干擾
+//   ④ 任何異常都吞掉（機制壞掉不該讓整場戰鬥崩）
+//
+// 【對外 API】
+//   HY.AscMechanics.has(charObj, mechanicId)
+//   HY.AscMechanics.active(charObj)          → 目前啟用的核心機制 id
+//   HY.AscMechanics.keystoneOf(charObj)      → { id, name, desc, params }
+//   HY.AscMechanics.attackMods(c, target, core)  → { atkMult, critFlat, penPct, ... }
+//   HY.AscMechanics.onAttack(c, target, dealt, core) → 額外效果（字串記錄）
+//   HY.AscMechanics.onStruck(c, enemy, dmg, core)    → 回傳實際減免量
+//   HY.AscMechanics.onTurnStart(c, core)
+//   HY.AscMechanics.onKill(c, enemy, core)
+// ══════════════════════════════════════════════════════════════════════
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+    var HY = window.HY;
+
+    function num(v, d) {
+        var n = Number(v);
+        return isFinite(n) ? n : (typeof d === 'number' ? d : 0);
+    }
+    function app() { return HY.game || {}; }
+    function core() { return (HY.game && HY.game.combatSys) || null; }
+    function aliveFoes(c) {
+        var co = c || core();
+        return ((co && co.enemies) || []).filter(function (e) {
+            return e && e.currentHp > 0;
+        });
+    }
+    function partyMembers() {
+        var g = app();
+        return (g.partySys && g.partySys.getPartyMembers) ? g.partySys.getPartyMembers() : [];
+    }
+    function derived(c) {
+        var g = app();
+        try { return g.charSys ? g.charSys.getDerivedStatsForChar(c) : null; } catch (e) { return null; }
+    }
+    function maxHpOf(c) { var d = derived(c); return num(d && d.maxHp, 100); }
+    function atkOf(c) { var d = derived(c); return num(d && d.atk, 10); }
+    function battleState(c) {
+        if (!c._ascMech) c._ascMech = {};
+        return c._ascMech;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       查詢：該角色是否點了自己的核心機制
+       ══════════════════════════════════════════════════════════════ */
+    function keystoneOf(c) {
+        if (!c) return null;
+        var D = HY.Data;
+        if (!D) return null;
+        var nodes = D.ASCENDANCY_NODES || {};
+        var st = c.asc;
+        if (!st || !st.branch || !st.allocated) return null;
+        var found = null;
+        Object.keys(st.allocated).forEach(function (id) {
+            var n = nodes[id];
+            if (n && n.type === 1 && n.asc === st.branch && n.keystone) found = n;
+        });
+        return found;
+    }
+
+    function active(c) {
+        var n = keystoneOf(c);
+        return n ? n.keystone : null;
+    }
+
+    function has(c, mechId) {
+        return active(c) === mechId;
+    }
+
+    /* 取參數（節點上的 kparams） */
+    function paramsOf(c) {
+        var n = keystoneOf(c);
+        return (n && n.kparams) ? n.kparams : {};
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       攻擊修正（在傷害計算前套用）
+       ══════════════════════════════════════════════════════════════ */
+    function attackMods(c, target) {
+        var out = { atkMult: 1, critFlat: 0, penPct: 0, forceHit: false };
+        var m = active(c);
+        if (!m) return out;
+        var p = paramsOf(c);
+        var b = battleState(c);
+
+        try {
+            switch (m) {
+                /* 裁決宗・判罪：對帶負面狀態的敵人穿甲；低血追殺 */
+                case 'judgement': {
+                    if (!target) break;
+                    var debuffed = !!(target._debuff && Object.keys(target._debuff).length) ||
+                        !!(target._sect && Object.keys(target._sect).some(function (k) {
+                            var o = target._sect[k];
+                            return o && typeof o === 'object' &&
+                                (num(o.stun, 0) > 0 || num(o.frozen, 0) > 0 || num(o.sealed, 0) > 0);
+                        }));
+                    if (debuffed) out.penPct += num(p.penVsDebuff, 0.30);
+                    var mx = num(target.maxHp, 0);
+                    if (mx > 0 && (target.currentHp / mx) < num(p.execThreshold, 0.35)) {
+                        out.atkMult *= (1 + num(p.execBonus, 0.40));
+                        out.forceHit = true;
+                    }
+                    break;
+                }
+                /* 狂戰堂・浴血：血越低攻擊越高 */
+                case 'bloodRage': {
+                    var myMax = maxHpOf(c);
+                    var ratio = myMax > 0 ? (c.currentHp / myMax) : 1;
+                    var missing = Math.max(0, 1 - ratio);
+                    out.atkMult *= (1 + missing * num(p.maxBonus, 0.80));
+                    break;
+                }
+                /* 神射樓・穿雲：必定命中 + 會心傷害 */
+                case 'farShot': {
+                    out.forceHit = true;
+                    out.critDmgPct = num(p.critDmgPct, 0.35);
+                    break;
+                }
+                /* 疾風堂・疾影：連擊層數換攻速 */
+                case 'momentum': {
+                    var st = num(b.momentum, 0);
+                    out.atkMult *= (1 + st * num(p.spdPerStack, 0.08));
+                    break;
+                }
+                /* 影殺門・暗影：開場必爆 */
+                case 'shadowStrike': {
+                    if (num(b.hits, 0) === 0) {
+                        out.critFlat += 100;
+                        out.atkMult *= num(p.openingMult, 3.0);
+                    }
+                    break;
+                }
+                /* 至尊殿・萬法：每點節點額外全屬性 */
+                case 'multiMastery': {
+                    var st2 = c.asc && c.asc.allocated ? Object.keys(c.asc.allocated).length : 0;
+                    out.atkMult *= (1 + st2 * 0.01);
+                    break;
+                }
+                /* 明光台・明光：存活回合數堆疊 */
+                case 'aura': {
+                    var turns = num(b.turns, 0);
+                    var ramp = Math.min(num(p.rampCap, 0.20), turns * num(p.rampPerTurn, 0.02));
+                    out.atkMult *= (1 + ramp);
+                    break;
+                }
+                /* 陰煞教・奪魄：擊殺累積 */
+                case 'soulHarvest': {
+                    out.atkMult *= (1 + num(b.souls, 0) * num(p.dmgPerStack, 0.02));
+                    break;
+                }
+                /* 五行宗・五行輪轉：對被剋制目標增傷 */
+                case 'elementCycle': {
+                    if (target && target.spiritRoot) {
+                        var D2 = HY.Data || {};
+                        var ROOTS = D2.SPIRIT_ROOTS || {};
+                        var idx = num(b.elemIdx, 0);
+                        var CYCLE = ['metal', 'water', 'wood', 'fire', 'earth'];
+                        var cur = CYCLE[idx % CYCLE.length];
+                        var r = ROOTS[cur];
+                        if (r && r.counters === target.spiritRoot) {
+                            out.atkMult *= (1 + num(p.counterBonus, 0.60));
+                        }
+                    }
+                    break;
+                }
+                /* 藏劍樓・藏鋒：裝備部位數 */
+                case 'arsenal': {
+                    var slots = c.equipment ? Object.keys(c.equipment).filter(function (k) {
+                        return c.equipment[k];
+                    }).length : 0;
+                    var bonus = Math.min(num(p.cap, 0.30), slots * num(p.pctPerSlot, 0.03));
+                    out.atkMult *= (1 + bonus);
+                    out.trueDmgPct = (slots >= 8) ? num(p.trueDmgPct, 0.20) : 0;
+                    break;
+                }
+                /* 斬龍劍・斷魂：斬殺期增傷 */
+                case 'executioner': {
+                    if (num(b.execWindow, 0) > 0) {
+                        out.atkMult *= (1 + num(p.afterKillAtk, 0.40));
+                    }
+                    break;
+                }
+            }
+        } catch (e) { }
+
+        /* 威壓：場上敵人越多攻擊越高 */
+        try {
+            if (m === 'intimidate') {
+                var n = aliveFoes().length;
+                out.atkMult *= (1 + n * num(p.atkPerEnemy, 0.05));
+            }
+        } catch (e2) { }
+
+        return out;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       攻擊命中後
+       ══════════════════════════════════════════════════════════════ */
+    function onAttack(c, target, dealt) {
+        var m = active(c);
+        if (!m || !target) return '';
+        var p = paramsOf(c);
+        var b = battleState(c);
+        b.hits = num(b.hits, 0) + 1;
+        var msg = '';
+
+        try {
+            switch (m) {
+                /* 斷魂劍・處決 */
+                case 'executioner': {
+                    var mx = num(target.maxHp, 0);
+                    if (mx > 0 && target.currentHp > 0) {
+                        var ratio = target.currentHp / mx;
+                        if (ratio <= num(p.threshold, 0.25)) {
+                            var isBoss = !!(target.isBoss || target.isElite);
+                            if (isBoss) {
+                                var d = Math.floor(mx * num(p.bossPct, 0.35));
+                                target.currentHp = Math.max(1, target.currentHp - d);
+                                msg += ' [⚔️斷魂重創 ' + d + ']';
+                            } else {
+                                target.currentHp = 0;
+                                msg += ' [⚔️斷魂處決！]';
+                            }
+                        }
+                    }
+                    break;
+                }
+                /* 五行宗：輪轉五行 */
+                case 'elementCycle': {
+                    var CYCLE = ['金', '水', '木', '火', '土'];
+                    b.elemIdx = (num(b.elemIdx, 0) + 1) % 5;
+                    msg += ' [🌈五行輪轉→' + CYCLE[b.elemIdx] + ']';
+                    break;
+                }
+                /* 影殺門：會心後進入隱匿 */
+                case 'shadowStrike': {
+                    if (num(b.hits, 0) === 1) {
+                        b.vanish = num(p.vanishTurns, 1);
+                        msg += ' [🗡️暗影隱匿]';
+                    }
+                    break;
+                }
+                /* 狂戰堂：擊殺回血（由 onKill 處理，這裡只記流血免疫） */
+                case 'bloodRage': {
+                    b.bleedImmune = num(p.bleedImmuneTurns, 3);
+                    break;
+                }
+                /* 疾風堂：連擊層數（同目標才累積） */
+                case 'momentum': {
+                    var cap = Math.round(num(p.maxStacks, 5));
+                    if (b.lastTarget === target.uid) {
+                        b.momentum = Math.min(cap, num(b.momentum, 0) + 1);
+                    } else {
+                        b.lastTarget = target.uid;
+                        b.momentum = 1;
+                    }
+                    if (b.momentum >= cap && !b.doubleReady) {
+                        b.doubleReady = true;
+                        msg += ' [🌪️疾影疊滿→下一擊雙擊]';
+                    }
+                    break;
+                }
+                /* 傀儡術・血契 */
+                case 'minionPact': {
+                    if (num(b.minions, 0) < Math.round(num(p.max, 4))) {
+                        b.minions = num(b.minions, 0) + 1;
+                    }
+                    var mAtk = Math.floor(atkOf(c) * 0.35);
+                    if (mAtk > 0 && target.currentHp > 0) {
+                        target.currentHp = Math.max(0, target.currentHp - mAtk);
+                        msg += ' [💀傀儡撲擊 ' + mAtk + ']';
+                    }
+                    break;
+                }
+                /* 機巧閣：佈機關 */
+                case 'trapGear': {
+                    var capT = Math.round(num(p.max, 4));
+                    if (num(b.traps, 0) < capT) {
+                        b.traps = num(b.traps, 0) + 1;
+                    }
+                    break;
+                }
+                /* 神射樓：遠程增傷（已於 mods 處理） */
+                case 'farShot':
+                    break;
+            }
+        } catch (e) { }
+
+        return msg;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       受擊（回傳「實際抵銷的傷害量」）
+       ══════════════════════════════════════════════════════════════ */
+    function onStruck(c, enemy, dmg) {
+        var m = active(c);
+        if (!m || dmg <= 0) return 0;
+        var p = paramsOf(c);
+        var b = battleState(c);
+        var reduce = 0;
+
+        try {
+            switch (m) {
+                /* 不動尊・不壞：累積罡勁 */
+                case 'unyielding': {
+                    b.gang = Math.min(num(p.cap, 100),
+                        num(b.gang, 0) + dmg * num(p.storePct, 0.40));
+                    break;
+                }
+                /* 影殺門：隱匿期間減傷 */
+                case 'shadowStrike': {
+                    if (num(b.vanish, 0) > 0) {
+                        reduce = Math.floor(dmg * num(p.vanishDr, 0.50));
+                    }
+                    break;
+                }
+                /* 千面閣・幻形：幻影分擔 */
+                case 'mirage': {
+                    if (num(b.mirage, 0) > 0) {
+                        reduce = Math.floor(dmg * 0.40);
+                        b.mirage = num(b.mirage, 0) - 1;
+                    }
+                    break;
+                }
+                /* 金剛門・承天：代隊友承受（這裡是自身受擊，改為累積護念） */
+                case 'damageShare': {
+                    b.guard = Math.min(Math.round(num(p.maxStacks, 8)),
+                        num(b.guard, 0) + 1);
+                    reduce = Math.floor(dmg * num(b.guard, 0) * num(p.drPerStack, 0.06));
+                    break;
+                }
+                /* 傀儡術：受傷轉移給傀儡 */
+                case 'minionPact': {
+                    if (num(b.minions, 0) > 0) {
+                        reduce = Math.floor(dmg * num(p.sharePct, 0.20));
+                    }
+                    break;
+                }
+            }
+        } catch (e) { }
+
+        return Math.max(0, Math.min(dmg, reduce));
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       回合開始
+       ══════════════════════════════════════════════════════════════ */
+    function onTurnStart(c) {
+        var m = active(c);
+        if (!m) return '';
+        var p = paramsOf(c);
+        var b = battleState(c);
+        b.turns = num(b.turns, 0) + 1;
+        var msg = '';
+
+        try {
+            /* 隱匿倒數 */
+            if (num(b.vanish, 0) > 0) b.vanish -= 1;
+            if (num(b.execWindow, 0) > 0) b.execWindow -= 1;
+            if (num(b.bleedImmune, 0) > 0) b.bleedImmune -= 1;
+
+            switch (m) {
+                /* 不動尊：罡勁滿→釋放 */
+                case 'unyielding': {
+                    if (num(b.gang, 0) >= num(p.cap, 100)) {
+                        var foes = aliveFoes();
+                        var atk = atkOf(c);
+                        var dmg = Math.floor(atk * 1.5);
+                        if (foes.length) {
+                            foes[0].currentHp = Math.max(0, foes[0].currentHp - dmg);
+                            msg += ' [🗿罡勁爆發 ' + dmg + ']';
+                        }
+                        b.gang = 0;
+                        b.stunImmune = Math.round(num(p.stunImmuneTurns, 2));
+                    }
+                    break;
+                }
+                /* 符陣：每回合鋪符 */
+                case 'sigilField': {
+                    var capS = Math.round(num(p.max, 5));
+                    if (num(b.sigils, 0) < capS) b.sigils = num(b.sigils, 0) + 1;
+                    /* 隊友回血 */
+                    var heal = Math.floor(maxHpOf(c) * num(p.healPct, 0.04));
+                    partyMembers().forEach(function (mm) {
+                        if (!mm || mm.currentHp <= 0) return;
+                        var mx2 = maxHpOf(mm);
+                        mm.currentHp = Math.min(mx2, mm.currentHp + heal);
+                    });
+                    break;
+                }
+                /* 明光台：光環回血 */
+                case 'aura': {
+                    var h2 = Math.floor(maxHpOf(c) * 0.03);
+                    c.currentHp = Math.min(maxHpOf(c), c.currentHp + h2);
+                    break;
+                }
+                /* 藥王谷・百草：配丹 */
+                case 'herbalism': {
+                    var capH = Math.round(num(p.max, 3));
+                    if (num(b.pills, 0) < capH) b.pills = num(b.pills, 0) + 1;
+                    break;
+                }
+                /* 蠻王寨・戰嚎 */
+                case 'warCry': {
+                    b.cryCd = num(b.cryCd, 0) + 1;
+                    if (b.cryCd >= Math.round(num(p.interval, 4))) {
+                        b.cryCd = 0;
+                        b.cryTurns = Math.round(num(p.duration, 3));
+                        msg += ' [🪓戰嚎！全隊攻防提升]';
+                    }
+                    if (num(b.cryTurns, 0) > 0) b.cryTurns -= 1;
+                    break;
+                }
+                /* 機巧閣：每 N 回合佈機關 */
+                case 'trapGear': {
+                    b.trapCd = num(b.trapCd, 0) + 1;
+                    if (b.trapCd >= Math.round(num(p.interval, 2))) {
+                        b.trapCd = 0;
+                        var capT2 = Math.round(num(p.max, 4));
+                        if (num(b.traps, 0) < capT2) b.traps = num(b.traps, 0) + 1;
+                    }
+                    break;
+                }
+                /* 千面閣：恢復幻影 */
+                case 'mirage': {
+                    var capM = Math.round(num(p.max, 3));
+                    if (num(b.mirage, 0) < capM) b.mirage = num(b.mirage, 0) + 1;
+                    break;
+                }
+            }
+        } catch (e) { }
+
+        return msg;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       擊殺
+       ══════════════════════════════════════════════════════════════ */
+    function onKill(c, enemy) {
+        var m = active(c);
+        if (!m) return '';
+        var p = paramsOf(c);
+        var b = battleState(c);
+        var msg = '';
+
+        try {
+            switch (m) {
+                /* 狂戰堂：擊殺回血 */
+                case 'bloodRage': {
+                    var heal = Math.floor(maxHpOf(c) * num(p.killHealPct, 0.08));
+                    c.currentHp = Math.min(maxHpOf(c), c.currentHp + heal);
+                    msg += ' [🔥浴血回復 ' + heal + ']';
+                    break;
+                }
+                /* 陰煞教：吸取魂魄 */
+                case 'soulHarvest': {
+                    var cap = Math.round(num(p.maxStacks, 20));
+                    b.souls = Math.min(cap, num(b.souls, 0) + 1);
+                    msg += ' [🕯️奪魄 ' + b.souls + '/' + cap + ']';
+                    break;
+                }
+                /* 斬龍劍：開啟處決窗口 */
+                case 'executioner': {
+                    b.execWindow = 2;
+                    var lh = Math.floor(num(p.afterKillLeech, 0.15) * maxHpOf(c));
+                    c.currentHp = Math.min(maxHpOf(c), c.currentHp + lh);
+                    msg += ' [⚔️斷魂收割，回 ' + lh + ']';
+                    break;
+                }
+                /* 傀儡術：擊殺後傀儡+1 */
+                case 'minionPact': {
+                    var cap2 = Math.round(num(p.max, 4));
+                    b.minions = Math.min(cap2, num(b.minions, 0) + 1);
+                    break;
+                }
+                /* 威壓：恐懼蔓延 */
+                case 'intimidate': {
+                    b.fear = Math.min(num(p.fearCap, 0.30), num(b.fear, 0) + num(p.fearPerKill, 0.10));
+                    msg += ' [👑威壓蔓延 ' + Math.round(b.fear * 100) + '%]';
+                    break;
+                }
+                /* 蠻王寨：戰嚎延長 */
+                case 'warCry': {
+                    if (num(b.cryTurns, 0) > 0) b.cryTurns += 1;
+                    break;
+                }
+            }
+        } catch (e) { }
+
+        return msg;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       摘要（UI 顯示目前機制狀態）
+       ══════════════════════════════════════════════════════════════ */
+    function statusRows(c) {
+        var m = active(c);
+        if (!m) return [];
+        var p = paramsOf(c);
+        var b = battleState(c);
+        var rows = [];
+        try {
+            switch (m) {
+                case 'unyielding': rows.push({ k: '罡勁', v: Math.floor(num(b.gang, 0)) + ' / ' + Math.round(num(p.cap, 100)) }); break;
+                case 'sigilField': rows.push({ k: '符陣', v: num(b.sigils, 0) + ' / ' + Math.round(num(p.max, 5)) }); break;
+                case 'damageShare': rows.push({ k: '護念', v: num(b.guard, 0) + ' / ' + Math.round(num(p.maxStacks, 8)) }); break;
+                case 'momentum': rows.push({ k: '疾影', v: num(b.momentum, 0) + ' / ' + Math.round(num(p.maxStacks, 5)) }); break;
+                case 'soulHarvest': rows.push({ k: '魂魄', v: num(b.souls, 0) + ' / ' + Math.round(num(p.maxStacks, 20)) }); break;
+                case 'elementCycle': rows.push({ k: '五行', v: ['金', '水', '木', '火', '土'][num(b.elemIdx, 0) % 5] }); break;
+                case 'minionPact': rows.push({ k: '傀儡', v: num(b.minions, 0) + ' / ' + Math.round(num(p.max, 4)) }); break;
+                case 'mirage': rows.push({ k: '幻影', v: num(b.mirage, 0) + ' / ' + Math.round(num(p.max, 3)) }); break;
+                case 'trapGear': rows.push({ k: '機關', v: num(b.traps, 0) + ' / ' + Math.round(num(p.max, 4)) }); break;
+                case 'herbalism': rows.push({ k: '丹藥', v: num(b.pills, 0) + ' / ' + Math.round(num(p.max, 3)) }); break;
+                case 'warCry': rows.push({ k: '戰嚎', v: num(b.cryTurns, 0) > 0 ? ('生效 ' + b.cryTurns + ' 回合') : ('倒數 ' + (Math.round(num(p.interval, 4)) - num(b.cryCd, 0))) }); break;
+                case 'shadowStrike': rows.push({ k: '隱匿', v: num(b.vanish, 0) > 0 ? (b.vanish + ' 回合') : '無' }); break;
+                case 'executioner': rows.push({ k: '處決窗口', v: num(b.execWindow, 0) > 0 ? (b.execWindow + ' 回合') : '無' }); break;
+                case 'intimidate': rows.push({ k: '威壓', v: Math.round(num(b.fear, 0) * 100) + '%' }); break;
+                case 'aura': rows.push({ k: '光環疊加', v: Math.round(Math.min(num(p.rampCap, 0.20), num(b.turns, 0) * num(p.rampPerTurn, 0.02)) * 100) + '%' }); break;
+                case 'bloodRage': {
+                    var mx = maxHpOf(c);
+                    var r = mx > 0 ? (c.currentHp / mx) : 1;
+                    rows.push({ k: '浴血增傷', v: '+' + Math.round(Math.max(0, 1 - r) * num(p.maxBonus, 0.8) * 100) + '%' });
+                    break;
+                }
+            }
+        } catch (e) { }
+        return rows;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       掛載
+       ══════════════════════════════════════════════════════════════ */
+    HY.AscMechanics = {
+        version: 1,
+        keystoneOf: keystoneOf,
+        active: active,
+        has: has,
+        paramsOf: paramsOf,
+        attackMods: attackMods,
+        onAttack: onAttack,
+        onStruck: onStruck,
+        onTurnStart: onTurnStart,
+        onKill: onKill,
+        statusRows: statusRows,
+        count: function () {
+            var D = HY.Data || {};
+            return Object.keys(D.ASCENDANCY_KEYSTONES || {}).length;
+        }
+    };
+
+    console.log('[ascendancyMechanics] ✓ 21 條昇華核心機制已載入');
+})();
+
+
+/* ===== 50 / 256 : talentMasteryData.js ===== */
 // js/talentMasteryData.js  (自動產生，請勿手改)
 // ⭐ POE 官方「天賦專精（Mastery）」資料
 //
@@ -17169,7 +18505,7 @@ window.HY = window.HY || {};
         ' 個專精節點、' + Object.keys(D.TALENT_MASTERY_BY_GROUP).length + ' 個叢集對照');
 })();
 
-/* ===== 49 / 254 : talentStatZh.js ===== */
+/* ===== 51 / 256 : talentStatZh.js ===== */
 // js/talentStatZh.js
 // 🌐 POE 天賦效果 → 中文翻譯層（完整版）
 //
@@ -18764,7 +20100,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 50 / 254 : talentStatZhExtra.js ===== */
+/* ===== 52 / 256 : talentStatZhExtra.js ===== */
 // js/talentStatZhExtra.js
 // 📖 POE 天賦效果「特殊句型」全句字典（補充 talentStatZh.js）
 //
@@ -19175,7 +20511,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 51 / 254 : talentStatZhWave2.js ===== */
+/* ===== 53 / 256 : talentStatZhWave2.js ===== */
 // js/talentStatZhWave2.js  (v1)
 // ⭐ 天賦效果翻譯：第二波（把剩餘 209 條全部翻完）
 //
@@ -19621,7 +20957,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 52 / 254 : talentNameZh.js ===== */
+/* ===== 54 / 256 : talentNameZh.js ===== */
 // js/talentNameZh.js  (v1)
 // ⭐ 天賦節點「名稱」中文化
 //    POE 官方樹共 1124 個唯一名稱：
@@ -20692,7 +22028,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 53 / 254 : talentIconMap.js ===== */
+/* ===== 55 / 256 : talentIconMap.js ===== */
 // js/talentIconMap.js
 // 🎨 POE 天賦圖示 → 本作圖示 對照層
 //
@@ -20931,7 +22267,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 54 / 254 : talentSprites.js ===== */
+/* ===== 56 / 256 : talentSprites.js ===== */
 // js/talentSprites.js  (auto-generated from PoeCharm2 / PathOfBuilding TreeData)
 //
 // POE 天賦圖示的精靈圖座標表。
@@ -23853,7 +25189,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 55 / 254 : talentMasterySystem.js ===== */
+/* ===== 57 / 256 : talentMasterySystem.js ===== */
 // js/talentMasterySystem.js  (v1)
 // ⭐ 天賦專精（Mastery）—— 1:1 複製 POE 機制
 //
@@ -24210,7 +25546,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 56 / 254 : talentMasteryZh.js ===== */
+/* ===== 58 / 256 : talentMasteryZh.js ===== */
 // js/talentMasteryZh.js  (v1)
 // ⭐ 天賦專精效果中文化
 //
@@ -24836,7 +26172,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 57 / 254 : wuxiaMasteryRemap.js ===== */
+/* ===== 59 / 256 : wuxiaMasteryRemap.js ===== */
 // js/wuxiaMasteryRemap.js  (v1)
 // ⭐ 天賦精通中文化：把 1837 條 POE 專精效果改寫成武俠語言
 //
@@ -25390,7 +26726,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 58 / 254 : wuxiaGlossary.js ===== */
+/* ===== 60 / 256 : wuxiaGlossary.js ===== */
 // js/wuxiaGlossary.js  (v1)
 // ⭐ 武俠詞彙統一層：把「POE 機制殘留」一次清乾淨
 //
@@ -25993,7 +27329,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 59 / 254 : wuxiaPurge.js ===== */
+/* ===== 61 / 256 : wuxiaPurge.js ===== */
 // js/wuxiaPurge.js  (v1)
 // ⭐ POE 機制「完全移除」層（不是改名，是刪除）
 //
@@ -26729,7 +28065,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 60 / 254 : jewelData.js ===== */
+/* ===== 62 / 256 : jewelData.js ===== */
 // js/jewelData.js
 // PoE1 珠寶（Jewel）資料表（繁體中文）
 //
@@ -26909,7 +28245,7 @@ window.HY.Data = window.HY.Data || {};
     }
 })();
 
-/* ===== 61 / 254 : jewelNative.js ===== */
+/* ===== 63 / 256 : jewelNative.js ===== */
 // js/jewelNative.js  (v1)
 // ⭐ 珠寶詞綴原生池（完全自製，不依賴 POE）
 //
@@ -27138,7 +28474,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 62 / 254 : guildData.js ===== */
+/* ===== 64 / 256 : guildData.js ===== */
 // js/guildData.js  (v43)
 // 幫會系統獨立資料庫
 //
@@ -27418,7 +28754,7 @@ window.HY.Data = window.HY.Data || {};
     ];
 })();
 
-/* ===== 63 / 254 : townData.js ===== */
+/* ===== 65 / 256 : townData.js ===== */
 // js/townData.js (v2)
 // ⭐ 我的小鎮：開羅風格城鎮經營 —— 建築／組合／研究／事件／居民／職務資料
 // v2 新增：【虛擬人物定居】職務表 POSTS、修行速率、群俠客居、靈獸鎮守
@@ -27562,7 +28898,7 @@ window.HY.Data = window.HY.Data || {};
   window.HY.Data.TOWN = TOWN;
 })();
 
-/* ===== 64 / 254 : friendData.js ===== */
+/* ===== 66 / 256 : friendData.js ===== */
 // js/friendData.js (v1)
 // ⭐ 好友系統：資料層（性格 / 行動 / 好感 / 姓名池 / 全部可調參數）
 // ⚠️ 載入順序：townData.js 之後、friendSystem.js 之前。
@@ -27698,7 +29034,7 @@ window.HY = window.HY || {};
   console.log('[friendData] ✓ 已載入（性格 ' + F.PERSONAS.length + '｜行動 ' + F.ACTIONS.length + '｜好感 ' + F.FAVOR_TIERS.length + ' 階）');
 })();
 
-/* ===== 65 / 254 : friendData2.js ===== */
+/* ===== 67 / 256 : friendData2.js ===== */
 // js/friendData2.js (v1)
 // ⭐ 好友系統 v2：資料層（出團副本／排行榜／羈絆／稱號／任務／書信／對話／比武大會）
 // ⚠️ 載入順序：friendData.js 之後、所有 friendXxxSystem.js 之前
@@ -27979,7 +29315,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 66 / 254 : friendData3.js ===== */
+/* ===== 68 / 256 : friendData3.js ===== */
 // js/friendData3.js (v1)
 // ⭐ 好友系統 v3：資料層（名人好友／世界王／洞府家園／拍賣行／仇敵）
 // ⚠️ 載入順序：friendData2.js 之後、所有 friendXxxSystem.js 之前
@@ -28107,7 +29443,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 67 / 254 : friendData4.js ===== */
+/* ===== 69 / 256 : friendData4.js ===== */
 // js/friendData4.js (v1)
 // ⭐ 好友系統 v4：資料層（授業／工坊／鍛造／煉丹／保鑣／心願／日常／倉庫）
 // ⚠️ 載入順序：friendData3.js 之後
@@ -28234,7 +29570,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 68 / 254 : friendLinkData.js ===== */
+/* ===== 70 / 256 : friendLinkData.js ===== */
 // js/friendLinkData.js (v1)
 // ⭐ 好友系統 v6：跨系統連動資料層
 //    定義 20 個外部系統的連動參數 + 後備資料（外部資料缺失時仍可運作）
@@ -28418,7 +29754,7 @@ window.HY = window.HY || {};
   window.HY.FriendLinkData = { version: '1.0', systems: F.LINK_SYSTEMS.length };
 })();
 
-/* ===== 69 / 254 : lotteryCelebData.js ===== */
+/* ===== 71 / 256 : lotteryCelebData.js ===== */
 // js/lotteryCelebData.js  (v1)
 // ═══════════════════════════════════════════════════════════════════════
 //  大樂透虛擬人物資料庫（世界名人）
@@ -28502,7 +29838,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData] ✓ 已載入 ' + Data.LOTTERY_CELEBS.length + ' 位世界名人');
 })();
 
-/* ===== 70 / 254 : lotteryCelebData2.js ===== */
+/* ===== 72 / 256 : lotteryCelebData2.js ===== */
 // js/lotteryCelebData2.js  (v1)
 // 大樂透虛擬人物資料 — 第二批（中華歷史／文人／武俠）
 // 格式：[id, 名稱, 圖示, 稱號, 最小金額, 最大金額]
@@ -28671,7 +30007,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData2] ✓ 已載入 ' + Data.LOTTERY_CELEBS_V2.length + ' 位中華名人');
 })();
 
-/* ===== 71 / 254 : lotteryCelebData3.js ===== */
+/* ===== 73 / 256 : lotteryCelebData3.js ===== */
 // js/lotteryCelebData3.js  (v1)
 // 大樂透虛擬人物資料 — 第三批（西洋歷史／現代名人）
 // 格式：[id, 名稱, 圖示, 稱號, 最小金額, 最大金額]
@@ -28841,7 +30177,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[lotteryCelebData3] ✓ 已載入 ' + Data.LOTTERY_CELEBS_V3.length + ' 位西洋名人');
 })();
 
-/* ===== 72 / 254 : lotteryCelebData4.js ===== */
+/* ===== 74 / 256 : lotteryCelebData4.js ===== */
 // js/lotteryCelebData4.js (v2)
 // ⭐ 名人擴充：全球各國歷代總統／領袖
 //    ★ 180 位，涵蓋 73 國／地區
@@ -29232,7 +30568,7 @@ window.HY = window.HY || {};
     window.HY.CelebPresidents.regionCount() + ' 國／地區）');
 })();
 
-/* ===== 73 / 254 : saveSystem.js ===== */
+/* ===== 75 / 256 : saveSystem.js ===== */
 // js/saveSystem.js  (v50)
 // Logger（三通道分診）+ SaveSystem
 //
@@ -29464,7 +30800,7 @@ window.HY = window.HY || {};
     window.HY.SAVE_KEY = SAVE_KEY;      // 便捷存取
 })();
 
-/* ===== 74 / 254 : cloudSync.js ===== */
+/* ===== 76 / 256 : cloudSync.js ===== */
 // js/cloudSync.js
 // ☁️ Supabase 雲端同步（全服玩家隊伍排行）
 //
@@ -29692,7 +31028,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 75 / 254 : characterSystem.js ===== */
+/* ===== 77 / 256 : characterSystem.js ===== */
 // js/characterSystem.js  (v52)
 // 角色本體、存檔正規化、衍生屬性計算、升級/拜師、統一戰力計算
 //
@@ -30962,7 +32298,7 @@ window.HY = window.HY || {};
     }
 })();
 
-/* ===== 76 / 254 : rosterSystem.js ===== */
+/* ===== 78 / 256 : rosterSystem.js ===== */
 // js/rosterSystem.js  (v28)
 // 5 角色欄管理
 //
@@ -31234,7 +32570,7 @@ window.HY = window.HY || {};
     window.HY.RosterSystem = RosterSystem;
 })();
 
-/* ===== 77 / 254 : partySystem.js ===== */
+/* ===== 79 / 256 : partySystem.js ===== */
 // js/partySystem.js  (v51)
 // 五人組隊與修仙陣法系統
 //
@@ -31516,7 +32852,7 @@ window.HY = window.HY || {};
     window.HY.PartySystem = PartySystem;
 })();
 
-/* ===== 78 / 254 : martialSystem.js ===== */
+/* ===== 80 / 256 : martialSystem.js ===== */
 // js/martialSystem.js  (v32)
 // 外功／心法／輕功(身法)／專精／經脈 的升級與門派隔離
 //
@@ -31946,7 +33282,7 @@ window.HY = window.HY || {};
     window.HY.MartialSystem = MartialSystem;
 })();
 
-/* ===== 79 / 254 : inventorySystem.js ===== */
+/* ===== 81 / 256 : inventorySystem.js ===== */
 // js/inventorySystem.js  (v28)
 // 全隊共享丹藥行囊
 //
@@ -32026,7 +33362,7 @@ window.HY = window.HY || {};
     window.HY.InventorySystem = InventorySystem;
 })();
 
-/* ===== 80 / 254 : equipmentSystem.js ===== */
+/* ===== 82 / 256 : equipmentSystem.js ===== */
 // js/equipmentSystem.js  (v29)
 // 10 大裝備部位管理系統
 //
@@ -32236,7 +33572,7 @@ window.HY = window.HY || {};
     window.HY.EquipmentSystem = EquipmentSystem;
 })();
 
-/* ===== 81 / 254 : poeCraftSystem.js ===== */
+/* ===== 83 / 256 : poeCraftSystem.js ===== */
 // js/poeCraftSystem.js  (v42)
 // PoE 裝備實體生成、掉落控制、10 大通貨工藝打造系統
 //
@@ -32995,7 +34331,7 @@ window.HY = window.HY || {};
     window.HY.PoeCraftSystem = PoeCraftSystem;
 })();
 
-/* ===== 82 / 254 : essenceSystem.js ===== */
+/* ===== 84 / 256 : essenceSystem.js ===== */
 // js/essenceSystem.js  (v1)
 // PoE1 精隨工藝 + 掉落系統
 //
@@ -33308,7 +34644,7 @@ window.HY = window.HY || {};
     window.HY.EssenceSystem = EssenceSystem;
 })();
 
-/* ===== 83 / 254 : fossilSystem.js ===== */
+/* ===== 85 / 256 : fossilSystem.js ===== */
 // js/fossilSystem.js  (v1)
 // PoE1 化石工藝系統
 //
@@ -33590,7 +34926,7 @@ window.HY = window.HY || {};
     window.HY.FossilSystem = FossilSystem;
 })();
 
-/* ===== 84 / 254 : combatArbiter.js ===== */
+/* ===== 86 / 256 : combatArbiter.js ===== */
 // js/combatArbiter.js
 // ⚖️ 戰鬥仲裁器 —— 確保「同一時間只能進行一種戰鬥系統」
 //
@@ -33723,7 +35059,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 85 / 254 : delveTactics.js ===== */
+/* ===== 87 / 256 : delveTactics.js ===== */
 // js/delveTactics.js
 // ⛏️ 礦坑自動戰鬥戰術（Delve Auto Tactics）
 //
@@ -34444,7 +35780,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 86 / 254 : delveBattleSystem.js ===== */
+/* ===== 88 / 256 : delveBattleSystem.js ===== */
 // js/delveBattleSystem.js
 // ⛏️ 礦坑戰鬥系統（完全獨立於一般戰鬥／輿圖戰鬥）
 //
@@ -34915,7 +36251,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 87 / 254 : delveSystem.js ===== */
+/* ===== 89 / 256 : delveSystem.js ===== */
 // js/delveSystem.js  (v2)
 // PoE 礦坑（Delve）無限深度系統 —— 網格地圖版
 //
@@ -35667,7 +37003,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 88 / 254 : talentSystem.js ===== */
+/* ===== 90 / 256 : talentSystem.js ===== */
 // js/talentSystem.js  (v1)
 // PoE1 天賦樹系統（核心邏輯，不含 UI）
 //
@@ -36164,7 +37500,7 @@ window.HY = window.HY || {};
     window.HY.TalentSystem = TalentSystem;
 })();
 
-/* ===== 89 / 254 : talentStatsParser.js ===== */
+/* ===== 91 / 256 : talentStatsParser.js ===== */
 // js/talentStatsParser.js  (v1)
 // ⭐ POE 天賦效果解析器：把 stats 英文字串轉成角色屬性加成
 //
@@ -36562,7 +37898,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 90 / 254 : wuxiaStatParser.js ===== */
+/* ===== 92 / 256 : wuxiaStatParser.js ===== */
 // js/wuxiaStatParser.js  (v1)
 // ⭐ 武俠效果解析器：把「外功傷害 +6%」這類中文效果轉成屬性加成
 //
@@ -37012,7 +38348,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 91 / 254 : poeStatEngine.js ===== */
+/* ===== 93 / 256 : poeStatEngine.js ===== */
 // js/poeStatEngine.js  (v1)
 // ⭐⭐ POE 天賦效果引擎 —— 1:1 復刻 Path of Exile 的詞綴計算模型
 //
@@ -39613,7 +40949,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 92 / 254 : ascendancySystem.js ===== */
+/* ===== 94 / 256 : ascendancySystem.js ===== */
 // js/ascendancySystem.js  (v1)
 // ⭐⭐ 昇華天賦系統（Path of Exile 1:1）
 //
@@ -40444,7 +41780,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 93 / 254 : ascendancyZh.js ===== */
+/* ===== 95 / 256 : ascendancyZh.js ===== */
 // js/ascendancyZh.js  (v1)
 // ⭐ 昇華天賦中文翻譯層（Path of Exile 1:1）
 //
@@ -42134,7 +43470,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 94 / 254 : uiAscendancy.js ===== */
+/* ===== 96 / 256 : uiAscendancy.js ===== */
 // js/uiAscendancy.js  (v1)
 // ⭐⭐ 昇華天賦面板（POE 1:1 UI）
 //
@@ -43440,7 +44776,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 95 / 254 : jewelSystem.js ===== */
+/* ===== 97 / 256 : jewelSystem.js ===== */
 // js/jewelSystem.js  (v1)
 // PoE1 珠寶系統
 //
@@ -43997,7 +45333,7 @@ window.HY = window.HY || {};
     window.HY.JewelSystem = JewelSystem;
 })();
 
-/* ===== 96 / 254 : blackMarketSystem.js ===== */
+/* ===== 98 / 256 : blackMarketSystem.js ===== */
 // js/blackMarketSystem.js  (v29)
 // v29 修正（收尾整理）：
 //   ⭐ buyRegularItem / buySpecialDeal 補上 item.reqLv 檢查
@@ -44136,7 +45472,7 @@ window.HY = window.HY || {};
     window.HY.BlackMarketSystem = BlackMarketSystem;
 })();
 
-/* ===== 97 / 254 : petSystem.js ===== */
+/* ===== 99 / 256 : petSystem.js ===== */
 // js/petSystem.js
 window.HY = window.HY || {};
 (function () {
@@ -44340,7 +45676,7 @@ window.HY = window.HY || {};
     window.HY.PetSystem = PetSystem;
 })();
 
-/* ===== 98 / 254 : companionSystem.js ===== */
+/* ===== 100 / 256 : companionSystem.js ===== */
 // js/companionSystem.js
 window.HY = window.HY || {};
 (function () {
@@ -44466,7 +45802,7 @@ window.HY = window.HY || {};
     window.HY.CompanionSystem = CompanionSystem;
 })();
 
-/* ===== 99 / 254 : affixSystem.js ===== */
+/* ===== 101 / 256 : affixSystem.js ===== */
 // js/affixSystem.js
 // 遭遇敵人有 35% 機率隨機套用 1~3 個 PoE 詞綴並執行戰鬥詞綴效果
 //
@@ -44739,7 +46075,7 @@ window.HY = window.HY || {};
     window.HY.AffixSystem = AffixSystem;
 })();
 
-/* ===== 100 / 254 : guildCoreSystem.js ===== */
+/* ===== 102 / 256 : guildCoreSystem.js ===== */
 // js/guildCoreSystem.js  (v44)
 // 幫會核心系統：幫會升級經驗、幫眾招募、捐獻
 //
@@ -44864,7 +46200,7 @@ window.HY = window.HY || {};
     window.HY.GuildCoreSystem = GuildCoreSystem;
 })();
 
-/* ===== 101 / 254 : guildBuildingSystem.js ===== */
+/* ===== 103 / 256 : guildBuildingSystem.js ===== */
 // js/guildBuildingSystem.js  (v43)
 // 幫會建築與成員駐守生產系統
 //
@@ -45106,7 +46442,7 @@ window.HY = window.HY || {};
     window.HY.GuildBuildingSystem = GuildBuildingSystem;
 })();
 
-/* ===== 102 / 254 : guildSkillBeastSystem.js ===== */
+/* ===== 104 / 256 : guildSkillBeastSystem.js ===== */
 // js/guildSkillBeastSystem.js  (v44)
 // 幫會祝福 / 鬼谷後天改命 / 鎮派神獸
 //
@@ -45331,7 +46667,7 @@ window.HY = window.HY || {};
     window.HY.GuildSkillBeastSystem = GuildSkillBeastSystem;
 })();
 
-/* ===== 103 / 254 : guildRealmEventSystem.js ===== */
+/* ===== 105 / 256 : guildRealmEventSystem.js ===== */
 // js/guildRealmEventSystem.js  (v29)
 // 幫會鎮妖神塔、幫會秘境與隨機事件系統
 //
@@ -45485,7 +46821,7 @@ window.HY = window.HY || {};
     window.HY.GuildRealmEventSystem = GuildRealmEventSystem;
 })();
 
-/* ===== 104 / 254 : sectMechanicsV2.js ===== */
+/* ===== 106 / 256 : sectMechanicsV2.js ===== */
 // js/sectMechanicsV2.js  (v1)
 // ⭐ 46 門派機制「全部重製」—— 全新設計，不沿用舊有任何機制
 //
@@ -48628,7 +49964,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 105 / 254 : sectFeatureTextV2.js ===== */
+/* ===== 107 / 256 : sectFeatureTextV2.js ===== */
 // js/sectFeatureTextV2.js  (v1)
 // ⭐ 46 派機制「文案重製」—— 與 sectMechanicsV2.js 的機制一一對應
 //
@@ -48831,7 +50167,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 106 / 254 : sectFeatureSystem.js ===== */
+/* ===== 108 / 256 : sectFeatureSystem.js ===== */
 // js/sectFeatureSystem.js  (v36)
 // 各大門派「專屬特色」戰鬥實現
 //
@@ -51285,6 +52621,19 @@ window.HY = window.HY || {};
             if (!enemy) return;
             var self = this;
             var party = this.app.partySys ? this.app.partySys.getPartyMembers() : [];
+
+            /* ⭐ v478：昇華核心機制的擊殺結算（浴血回血／奪魄／處決窗口／傀儡…） */
+            try {
+                var AM = window.HY.AscMechanics;
+                if (AM && typeof AM.onKill === 'function') {
+                    party.forEach(function (c) {
+                        if (!c || c.currentHp <= 0) return;
+                        var m = AM.onKill(c, enemy);
+                        if (m) core.log('【' + c.name + '】' + m, 'combat');
+                    });
+                }
+            } catch (eAM) { }
+
             party.forEach(function (c) {
                 var def = self.getDef(c.sect);
                 if (!def || typeof def.onKill !== 'function') return;
@@ -51451,7 +52800,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 107 / 254 : sectFeatureUi.js ===== */
+/* ===== 109 / 256 : sectFeatureUi.js ===== */
 // js/sectFeatureUi.js  (v38)
 // 各大門派「專屬特色」顯示層
 //
@@ -51783,7 +53132,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 108 / 254 : townSystem.js ===== */
+/* ===== 110 / 256 : townSystem.js ===== */
 // js/townSystem.js (v2)
 // ⭐ 我的小鎮：核心系統（建造／升級／組合／研究／居民／定居／職務／收益結算）
 // v2 新增：【虛擬人物定居】角色住進小鎮、擔任職務、鎮上修行
@@ -52626,7 +53975,7 @@ window.HY = window.HY || {};
   window.HY.TownSystem = TownSystem;
 })();
 
-/* ===== 109 / 254 : townExtra.js ===== */
+/* ===== 111 / 256 : townExtra.js ===== */
 // js/townExtra.js (v1)
 // ⭐ 我的小鎮：內容擴充包（額外 JS）
 //
@@ -53191,7 +54540,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 110 / 254 : townGuildSystem.js ===== */
+/* ===== 112 / 256 : townGuildSystem.js ===== */
 // js/townGuildSystem.js (v1)
 // ⭐ 我的小鎮：冒險者公會（Adventurer's Guild）
 //
@@ -54492,7 +55841,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 111 / 254 : townGuildAdvance.js ===== */
+/* ===== 113 / 256 : townGuildAdvance.js ===== */
 // js/townGuildAdvance.js (v1)
 // ⭐ 我的小鎮：冒險者深造系統（讓虛擬人物各方面等同玩家角色）
 //
@@ -55597,7 +56946,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 112 / 254 : townCelebSystem.js ===== */
+/* ===== 114 / 256 : townCelebSystem.js ===== */
 // js/townCelebSystem.js (v1)
 // ⭐ 我的小鎮：名人遊歷系統（融合大樂透的 360 位虛擬人物）
 //
@@ -56324,7 +57673,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 113 / 254 : townCelebAdvance.js ===== */
+/* ===== 115 / 256 : townCelebAdvance.js ===== */
 // js/townCelebAdvance.js (v1)
 // ⭐ 名人深造與社交 —— 讓虛擬人物「比照玩家角色」的完整功能 + 讓世界有活力
 //
@@ -57148,7 +58497,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 114 / 254 : friendSystem.js ===== */
+/* ===== 116 / 256 : friendSystem.js ===== */
 // js/friendSystem.js (v1)
 // ⭐ 江湖好友系統（核心）：虛擬人物好友 + 全自動行為 + 組隊同行
 //
@@ -58258,7 +59607,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 115 / 254 : friendCelebSystem.js ===== */
+/* ===== 117 / 256 : friendCelebSystem.js ===== */
 // js/friendCelebSystem.js (v1)
 // ⭐ 好友系統 v3：好友＝「世界名人」（取自 celebAll()，共 360 位）
 //    • 等級：由 tier（5 星身價）推導 + id 雜湊抖動（保證同一名人永遠同一等級）
@@ -58561,7 +59910,7 @@ window.HY = window.HY || {};
   console.log('[friendCeleb] ✓ 已載入（好友＝世界名人）');
 })();
 
-/* ===== 116 / 254 : friendHostileSystem.js ===== */
+/* ===== 118 / 256 : friendHostileSystem.js ===== */
 // js/friendHostileSystem.js (v1)
 // ⭐ 好友系統 v3：叛變／仇敵
 //    • 好感歸零 → 每期機率反目成仇
@@ -58886,7 +60235,7 @@ window.HY = window.HY || {};
   console.log('[friendHostile] ✓ 已載入（叛變／仇敵／打劫／招降）');
 })();
 
-/* ===== 117 / 254 : friendPartySystem.js ===== */
+/* ===== 119 / 256 : friendPartySystem.js ===== */
 // js/friendPartySystem.js (v1)
 // ⭐ 好友自行組隊出團（副本遠征）＋ 合擊技 ＋ v2 主 tick 驅動
 // ⚠️ 載入順序：friendSystem.js 之後、friendEventSystem.js 之前
@@ -59441,7 +60790,7 @@ window.HY = window.HY || {};
   console.log('[friendParty] ✓ 已載入（出團遠征 + 合擊技）');
 })();
 
-/* ===== 118 / 254 : friendEventSystem.js ===== */
+/* ===== 120 / 256 : friendEventSystem.js ===== */
 // js/friendEventSystem.js (v1)
 // ⭐ 好友系統 v2：事件層（比武大會／互助任務／江湖求救／好友來訪／名宿退隱／專屬對話）
 // ⚠️ 載入順序：friendPartySystem.js 之後、friendSocialSystem.js 之前
@@ -59968,7 +61317,7 @@ window.HY = window.HY || {};
   console.log('[friendEvent] ✓ 已載入（比武大會／互助任務／求救／來訪／退隱／對話）');
 })();
 
-/* ===== 119 / 254 : friendSocialSystem.js ===== */
+/* ===== 121 / 256 : friendSocialSystem.js ===== */
 // js/friendSocialSystem.js (v1)
 // ⭐ 好友系統 v2：社交層（羈絆關係網／稱號成就／書信）
 // ⚠️ 載入順序：friendEventSystem.js 之後、friendRankSystem.js 之前
@@ -60456,7 +61805,7 @@ window.HY = window.HY || {};
   console.log('[friendSocial] ✓ 已載入（羈絆／稱號／書信）');
 })();
 
-/* ===== 120 / 254 : friendHomeSystem.js ===== */
+/* ===== 122 / 256 : friendHomeSystem.js ===== */
 // js/friendHomeSystem.js (v1)
 // ⭐ 好友系統 v3：洞府／家園
 //    • 每位名人好友都有一處洞府（5 種風格，各自提供加成）
@@ -60783,7 +62132,7 @@ window.HY = window.HY || {};
   console.log('[friendHome] ✓ 已載入（洞府／家園／建材）');
 })();
 
-/* ===== 121 / 254 : friendAuctionSystem.js ===== */
+/* ===== 123 / 256 : friendAuctionSystem.js ===== */
 // js/friendAuctionSystem.js (v1)
 // ⭐ 好友系統 v3：委託拍賣行
 //    • 你把行囊裡的裝備委託好友代售 → 數期後售出，好友抽成
@@ -61062,7 +62411,7 @@ window.HY = window.HY || {};
   console.log('[friendAuction] ✓ 已載入（委託代售／掛售／流標）');
 })();
 
-/* ===== 122 / 254 : friendWorldBossSystem.js ===== */
+/* ===== 124 / 256 : friendWorldBossSystem.js ===== */
 // js/friendWorldBossSystem.js (v1)
 // ⭐ 好友系統 v3：世界王（跨好友團隊大型活動，需 8 人以上）
 //    • Boss HP 依「集結隊伍總戰力」縮放 → 不受戰力數值通膨影響
@@ -61510,7 +62859,7 @@ window.HY = window.HY || {};
   console.log('[friendWorldBoss] ✓ 已載入（世界王討伐）');
 })();
 
-/* ===== 123 / 254 : friendExtraSystem.js ===== */
+/* ===== 125 / 256 : friendExtraSystem.js ===== */
 // js/friendExtraSystem.js (v1)
 // ⭐ 好友系統 v4：擴充功能層
 //    授業傳功／打工採集／鍛造強化／煉丹／保鑣護衛／心願／日常互動／共同倉庫
@@ -62479,7 +63828,7 @@ window.HY = window.HY || {};
   console.log('[friendExtra] ✓ 已載入（授業／工坊／鍛造／煉丹／保鑣／心願／日常／倉庫）');
 })();
 
-/* ===== 124 / 254 : friendLinkSystem.js ===== */
+/* ===== 126 / 256 : friendLinkSystem.js ===== */
 // js/friendLinkSystem.js (v1)
 // ⭐ 好友系統 v6：跨系統連動核心
 //    20 個外部系統的連動實作 + 稽核 + 每期推進
@@ -63853,7 +65202,7 @@ window.HY = window.HY || {};
   console.log('[friendLink] ✓ 已載入（陣法／靈根／五行／寵物／同伴／詞綴／公會／門派／黑市／工藝／打撈／精通／ATB／敵陣／時光／賭局／名冊／離線／等級）');
 })();
 
-/* ===== 125 / 254 : friendRankSystem.js ===== */
+/* ===== 127 / 256 : friendRankSystem.js ===== */
 // js/friendRankSystem.js (v1)
 // ⭐ 好友系統 v2：排行榜（7 大榜）／威望／賽季結算 ＋ friendReport 整合
 // ⚠️ 載入順序：friendSocialSystem.js 之後（最後一支系統檔）
@@ -64167,7 +65516,7 @@ window.HY = window.HY || {};
   console.log('[friendRank] ✓ 已載入（排行榜 + 賽季）');
 })();
 
-/* ===== 126 / 254 : friendUnifySystem.js ===== */
+/* ===== 128 / 256 : friendUnifySystem.js ===== */
 // js/friendUnifySystem.js (v1)
 // ⭐ 好友系統：統一資源層
 //    ① 材料單一池（洞府建材 ＋ 倉庫材料 → friends.materials）
@@ -64723,7 +66072,7 @@ window.HY = window.HY || {};
   console.log('[friendUnify] ✓ 已載入（材料單一池 + 裝備共享池 + 資源統一）');
 })();
 
-/* ===== 127 / 254 : offlineBridge.js ===== */
+/* ===== 129 / 256 : offlineBridge.js ===== */
 // js/offlineBridge.js (v2)
 // ⭐ 離線掛機收益（好友）＋ 與 offlineIdleSystem.js 整合
 //
@@ -65373,7 +66722,7 @@ window.HY = window.HY || {};
   setTimeout(function () { clearInterval(intTimer); }, 35000);
 })();
 
-/* ===== 128 / 254 : combatAutoTactics.js ===== */
+/* ===== 130 / 256 : combatAutoTactics.js ===== */
 // js/combatAutoTactics.js  (v52)
 // 自動戰鬥戰術：計時器、自動連刷、自動服藥、智慧選招、隊員技能輔助
 //
@@ -66045,7 +67394,7 @@ window.HY = window.HY || {};
     console.log('[combatAutoTactics] ✓ 已載入（v52，已移除連刷暫停）');
 })();
 
-/* ===== 129 / 254 : combatPlayerTurn.js ===== */
+/* ===== 131 / 256 : combatPlayerTurn.js ===== */
 // js/combatPlayerTurn.js  (v51)
 // 我方出招、招式屬性、幫會祝福、改命、群俠與靈獸助戰、八元素附傷
 //
@@ -66417,6 +67766,45 @@ window.HY = window.HY || {};
                 } catch (eC) { }
                 var rawDmg = effAtk * skillMult - effectiveDef * 0.6;
                 rawDmg = Math.max(5, rawDmg);
+
+                /* ⭐⭐ v478：昇華核心機制 —— 傷害修正
+                   ──────────────────────────────────────────────────────────
+                   這是機制「真的生效」的關鍵接點。各分支的增傷／穿甲／必中
+                   都在這裡套用，否則核心節點只是文字。
+                     · 判罪：對帶負面狀態的敵人穿甲；低血追殺
+                     · 浴血：氣血越低攻擊越高
+                     · 穿雲：必定命中
+                     · 疾影：連擊層數換攻速
+                     · 暗影：開場必爆
+                     · 五行輪轉：對被剋制目標 +60%
+                     · 藏鋒：裝備部位數加成
+                   全部用 try/catch 包住 —— 機制壞掉不該讓整場戰鬥崩。 */
+                try {
+                    var _AMm = window.HY.AscMechanics;
+                    if (_AMm && typeof _AMm.attackMods === 'function') {
+                        var _am = _AMm.attackMods(charObj, target);
+                        if (_am) {
+                            if (_am.atkMult && isFinite(_am.atkMult) && _am.atkMult > 0) {
+                                rawDmg *= _am.atkMult;
+                            }
+                            if (_am.penPct > 0) {
+                                /* 穿甲：把已扣的防禦再補回一部分傷害 */
+                                rawDmg += effectiveDef * Math.min(0.95, _am.penPct) * 0.6;
+                            }
+                            if (_am.critDmgPct > 0) {
+                                rawDmg *= (1 + _am.critDmgPct);
+                            }
+                            if (_am.critFlat > 0 && !isCrit) {
+                                isCrit = true;
+                                critCount += 1;
+                            }
+                            if (_am.trueDmgPct > 0) {
+                                rawDmg *= (1 + _am.trueDmgPct);
+                            }
+                        }
+                    }
+                } catch (eAMx) { }
+
                 /* ⭐ 總傷害加成（PoE 的 atkPct / physDmg / elemDmg 等）
                    這些詞綴加起來是「增加 X% 傷害」，直接乘在最外層。
                    上限 400%，避免疊到失控。 */
@@ -67080,7 +68468,7 @@ window.HY = window.HY || {};
     window.HY.CombatPlayerTurn = CombatPlayerTurn;
 })();
 
-/* ===== 130 / 254 : combatEnemyTurn.js ===== */
+/* ===== 132 / 256 : combatEnemyTurn.js ===== */
 // js/combatEnemyTurn.js  (v46)
 // 敵方小隊反擊、宗門絕技、詞綴追擊、我方防禦祝福/改命觸發、九元素傷害
 //
@@ -67456,7 +68844,7 @@ window.HY = window.HY || {};
     window.HY.CombatEnemyTurn = CombatEnemyTurn;
 })();
 
-/* ===== 131 / 254 : wuxiaSectMechanics.js ===== */
+/* ===== 133 / 256 : wuxiaSectMechanics.js ===== */
 // js/wuxiaSectMechanics.js  (v1)
 // ⭐ 武俠門派機制：取代所有源自 POE 的機制
 //
@@ -68162,7 +69550,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 132 / 254 : wuxiaCombatCore.js ===== */
+/* ===== 134 / 256 : wuxiaCombatCore.js ===== */
 // js/wuxiaCombatCore.js  (v1)
 // ⭐ 戰鬥機制宿主（純武俠版）—— 完全移除 POE 機制，只保留本作自創與武俠心法
 //
@@ -68399,6 +69787,8 @@ window.HY = window.HY || {};
             var EX = window.HY.CombatMechanicsExtra;
             members.forEach(function (c) {
                 if (!c) return;
+                /* ⭐ v478：清空昇華機制狀態（每場戰鬥重新累積） */
+                c._ascMech = {};
                 init(c);
                 syncFromTalents(c);
                 try {
@@ -68439,6 +69829,20 @@ window.HY = window.HY || {};
                 } catch (e) { }
             }
 
+            /* ①-B 昇華核心機制（v478）
+               ──────────────────────────────────────────────────────────
+               21 條昇華分支各有一個專屬機制（判罪／不壞／浴血／疾影…），
+               這些不是數值，而是會改變戰鬥行為的規則。
+               只有在「已點該核心節點」時才生效（AscMechanics.active 會檢查）。 */
+            try {
+                var AM = window.HY.AscMechanics;
+                if (AM && typeof AM.onAttack === 'function') {
+                    var _amTarget = hits[0] || null;
+                    var _amMsg = AM.onAttack(c, _amTarget, dealt);
+                    if (_amMsg) _core.log('【' + c.name + '】' + _amMsg, 'combat');
+                }
+            } catch (eAM) { }
+
             /* ② 門派機制：命中後結算
                ⭐⭐ v473：整段已移除（避免與 sectMechanicsV2 雙重觸發）
                ──────────────────────────────────────────────────────────
@@ -68478,6 +69882,15 @@ window.HY = window.HY || {};
 
                若兩套並存，同一派會被結算兩次（例如衡天教每回合扣兩次血、
                破招門反制兩次），數值直接翻倍。 */
+            /* ⭐ v478：昇華核心機制的「回合開始」結算
+               （罡勁釋放、符陣鋪設、戰嚎、機關佈置、幻影恢復…） */
+            try {
+                var _AMt = window.HY.AscMechanics;
+                if (_AMt && typeof _AMt.onTurnStart === 'function') {
+                    var _tm = _AMt.onTurnStart(c);
+                    if (_tm) _core.log('【' + c.name + '】' + _tm, 'combat');
+                }
+            } catch (eAMt) { }
             try {
                 /* 罡氣回復（通用，保留） */
                 if (EX && EX.esRecharge && c.sect === 'cihang') {
@@ -68513,6 +69926,24 @@ window.HY = window.HY || {};
             var target = payload && (payload.targetMember || payload.charObj);
             var dmg = num(payload && (payload.enemyDmg != null ? payload.enemyDmg : payload.totalDealt), 0);
             if (!target || dmg <= 0) return;
+
+            /* ⭐ v478：昇華核心機制「受擊」結算（不壞／幻形／隱匿／傀儡分擔）
+               ⚠️ 這一步必須在扣血「之前」才有意義 —— 但 onAfterEnemyAttack
+                  是扣血之後才觸發，所以這裡做的是「回補」：
+                  機制算出該減免多少，就把血量補回去。 */
+            try {
+                var AMs = window.HY.AscMechanics;
+                if (AMs && typeof AMs.onStruck === 'function') {
+                    var _en = payload && (payload.enemy || payload.attacker) || null;
+                    var _red = AMs.onStruck(target, _en, dmg);
+                    if (_red > 0) {
+                        var _mx = target.maxHp || 0;
+                        target.currentHp = Math.min(_mx, (target.currentHp || 0) + _red);
+                        _core.log('【' + target.name + '】昇華機制抵銷 ' + _red + ' 傷害', 'combat');
+                    }
+                }
+            } catch (eAM2) { }
+
             var WA = window.HY.WuxiaArts;
             if (!WA) return;
             try {
@@ -68610,7 +70041,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 133 / 254 : wuxiaSectMechanicsPro.js ===== */
+/* ===== 135 / 256 : wuxiaSectMechanicsPro.js ===== */
 // js/wuxiaSectMechanicsPro.js  (v1)
 // ⭐ 純武俠門派機制引擎（取代 combatMechanicsExtra / Pro / Turn 三支）
 //
@@ -69865,7 +71296,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 134 / 254 : rewardBalance.js ===== */
+/* ===== 136 / 256 : rewardBalance.js ===== */
 // js/rewardBalance.js
 // ⚖️ 獎勵平衡系統（A+B 方案）
 //
@@ -70070,7 +71501,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 135 / 254 : combatCore.js ===== */
+/* ===== 137 / 256 : combatCore.js ===== */
 // js/combatCore.js  (v44)
 // 戰鬥主控：開戰、出招調度、勝敗結算
 //
@@ -70551,7 +71982,7 @@ window.HY = window.HY || {};
     window.HY.CombatSystem = CombatCore;
 })();
 
-/* ===== 136 / 254 : timeTravelSystem.js ===== */
+/* ===== 138 / 256 : timeTravelSystem.js ===== */
 // js/timeTravelSystem.js  (v28)
 // 時空地圖移動與醫療艙
 //
@@ -70617,7 +72048,7 @@ window.HY = window.HY || {};
     window.HY.TimeTravelSystem = TimeTravelSystem;
 })();
 
-/* ===== 137 / 254 : uiCharacterParty.js ===== */
+/* ===== 139 / 256 : uiCharacterParty.js ===== */
 // js/uiCharacterParty.js  (v53)
 // 左欄角色面板 + 角色欄／陣法分頁
 //
@@ -71454,7 +72885,7 @@ window.HY = window.HY || {};
     window.HY.UICharacterParty = UICharacterParty;
 })();
 
-/* ===== 138 / 254 : uiCombatExplore.js ===== */
+/* ===== 140 / 256 : uiCombatExplore.js ===== */
 // js/uiCombatExplore.js  (v50)
 // 時空探索地圖、內掛戰術下拉、戰鬥競技場
 //
@@ -71894,7 +73325,7 @@ window.HY = window.HY || {};
     window.HY.UICombatExplore = UICombatExplore;
 })();
 
-/* ===== 139 / 254 : uiMartialSect.js ===== */
+/* ===== 141 / 256 : uiMartialSect.js ===== */
 // js/uiMartialSect.js  (v48)
 // 外功／心法／身法／專精／經脈 UI
 //
@@ -72483,7 +73914,7 @@ window.HY = window.HY || {};
     window.HY.UIMartialSect = UIMartialSect;
 })();
 
-/* ===== 140 / 254 : uiEquipMarket.js ===== */
+/* ===== 142 / 256 : uiEquipMarket.js ===== */
 // js/uiEquipMarket.js  (v28)
 // 裝備槽、PoE 工藝台、行囊、黑市
 //
@@ -72793,7 +74224,7 @@ window.HY = window.HY || {};
     window.HY.UIEquipMarket = UIEquipMarket;
 })();
 
-/* ===== 141 / 254 : uiBagOverhaul.js ===== */
+/* ===== 143 / 256 : uiBagOverhaul.js ===== */
 // js/uiBagOverhaul.js (v8)
 // ⭐ 「🛡️ 裝備行囊 & 工藝」→ 彈窗化（雙頁面：行囊 / 通貨倉庫）
 //
@@ -78009,7 +79440,7 @@ window.HY = window.HY || {};
   }
 })();
 
-/* ===== 142 / 254 : uiCompanionPet.js ===== */
+/* ===== 144 / 256 : uiCompanionPet.js ===== */
 // js/uiCompanionPet.js  (v28)
 // 群俠助戰與靈獸坐騎分頁
 //
@@ -78276,7 +79707,7 @@ window.HY = window.HY || {};
     window.HY.UICompanionPet = UICompanionPet;
 })();
 
-/* ===== 143 / 254 : uiLogPanels.js ===== */
+/* ===== 145 / 256 : uiLogPanels.js ===== */
 // js/uiLogPanels.js  (v50)
 // 右側日誌面板：戰鬥 / 掉落 / 武點 三面板 + 3 個自訂面板
 //
@@ -79044,7 +80475,7 @@ window.HY = window.HY || {};
     window.HY.UILogPanels = UILogPanels;
 })();
 
-/* ===== 144 / 254 : uiGuild.js ===== */
+/* ===== 146 / 256 : uiGuild.js ===== */
 // js/uiGuild.js  (v45)
 // 幫會分頁（八建築排班、招募、祝福、後天改命、神獸、鎮妖塔與秘境）
 //
@@ -79461,7 +80892,7 @@ window.HY = window.HY || {};
     window.HY.UIGuild = UIGuild;
 })();
 
-/* ===== 145 / 254 : uiTown.js ===== */
+/* ===== 147 / 256 : uiTown.js ===== */
 // js/uiTown.js (v2.3)
 // ⭐ 我的小鎮：全螢幕 UI（格狀城鎮／建造／研究／定居／職務／節慶／地價評鑑）
 //
@@ -80822,7 +82253,7 @@ window.HY = window.HY || {};
   window.HY.UITown = UITown;
 })();
 
-/* ===== 146 / 254 : uiTownGuild.js ===== */
+/* ===== 148 / 256 : uiTownGuild.js ===== */
 // js/uiTownGuild.js (v1)
 // ⭐ 我的小鎮 UI：冒險者公會分頁（掛載於 HY.UITown.prototype）
 //
@@ -81638,7 +83069,7 @@ window.HY = window.HY || {};
   window.HY.UITownGuild = { version: '1.0', submounts: ['roster', 'storage', 'missions', 'contracts', 'manage', 'log'] };
 })();
 
-/* ===== 147 / 254 : uiTownGuildAdvance.js ===== */
+/* ===== 149 / 256 : uiTownGuildAdvance.js ===== */
 // js/uiTownGuildAdvance.js (v1)
 // ⭐ 冒險者深造 UI —— 擴充「⚔️ 冒險者公會」分頁，新增「🎓 深造」子分頁
 //
@@ -82435,7 +83866,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 148 / 254 : uiTownCeleb.js ===== */
+/* ===== 150 / 256 : uiTownCeleb.js ===== */
 // js/uiTownCeleb.js (v1)
 // ⭐ 名人遊歷 UI —— 擴充「我的小鎮」分頁，新增「🌟 名人」分頁
 //
@@ -82910,7 +84341,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 149 / 254 : uiTownCelebAdvance.js ===== */
+/* ===== 151 / 256 : uiTownCelebAdvance.js ===== */
 // js/uiTownCelebAdvance.js (v1)
 // ⭐ 名人深造 UI —— 擴充「🌟 名人」視窗，新增 3 個子分頁
 //
@@ -83446,7 +84877,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 150 / 254 : uiTownOverlays.js ===== */
+/* ===== 152 / 256 : uiTownOverlays.js ===== */
 // js/uiTownOverlays.js (v1)
 // ⭐ 小鎮：彈出視窗化 —— 把「⚔️ 冒險者公會」「🌟 名人」改成 2/3 大視窗
 //
@@ -83816,7 +85247,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 151 / 254 : uiFriend.js ===== */
+/* ===== 153 / 256 : uiFriend.js ===== */
 // js/uiFriend.js (v2.1)
 // ⭐ 好友系統 UI：小鎮「🤝 好友」標籤 + 2/3 畫面彈出視窗
 //    （v3 起標籤由 uiFriend3.js 搬到主介面「角色&隊伍」旁，本檔仍負責渲染器與彈窗邏輯）
@@ -84621,7 +86052,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend] ✓ 已載入（好友分頁 + 彈出視窗；標籤已停用閃動）');
 })();
 
-/* ===== 152 / 254 : uiFriend2.js ===== */
+/* ===== 154 / 256 : uiFriend2.js ===== */
 // js/uiFriend2.js (v2)
 // ⭐ 好友系統 v2 UI：新增 7 個分頁
 //    🏰 出團遠征　🏆 排行榜　💞 羈絆關係　🎖️ 稱號成就　✉️ 書信　🎯 互助任務　🎪 比武大會
@@ -85329,7 +86760,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend2] ✓ 已載入（新增 ' + V2_SUBS.length + ' 個分頁）');
 })();
 
-/* ===== 153 / 254 : uiFriend3.js ===== */
+/* ===== 155 / 256 : uiFriend3.js ===== */
 // js/uiFriend3.js (v5.1)
 // ⭐ 好友系統 v3 UI：標籤搬家 + 世界王／洞府／拍賣行／仇敵
 //
@@ -86490,7 +87921,7 @@ window.HY = window.HY || {};
   setTimeout(function () { clearInterval(bootWatch); }, 30000);
 })();
 
-/* ===== 154 / 254 : uiFriend4.js ===== */
+/* ===== 156 / 256 : uiFriend4.js ===== */
 // js/uiFriend4.js (v1)
 // ⭐ 好友系統 v4 UI：
 //    ① 好友面板字體放大（calc + CSS 變數，預設 ×2，可調）
@@ -87200,7 +88631,7 @@ html.fr4-big .fr-modal.full { width: 97vw !important; height: 95vh !important; }
   setTimeout(function () { clearInterval(watch); }, 30000);
 })();
 
-/* ===== 155 / 254 : uiFriend5.js ===== */
+/* ===== 157 / 256 : uiFriend5.js ===== */
 // js/uiFriend5.js (v1.1)
 // ⭐ 好友系統 v5（補強層）
 //    ① 書信：新增「🗑️ 一鍵清空信箱（先自動領附件）」與「💣 強制清空」
@@ -87541,7 +88972,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend5] ✓ 已載入（書信清空 + 面板內徽章；已停用閃動）');
 })();
 
-/* ===== 156 / 254 : uiFriend6.js ===== */
+/* ===== 158 / 256 : uiFriend6.js ===== */
 // js/uiFriend6.js (v3)
 // ⭐ 🔗 系統連動 —— 獨立主分頁
 //    位置：插在「作弊」與「儲存進度」之間（優先插在「儲存進度」之前）
@@ -88469,7 +89900,7 @@ window.HY = window.HY || {};
   console.log('[uiFriend6] ✓ 已載入（🔗 系統連動 — 獨立主分頁 v3，位置：作弊 ↔ 儲存進度）');
 })();
 
-/* ===== 157 / 254 : fontSystem.js ===== */
+/* ===== 159 / 256 : fontSystem.js ===== */
 // js/fontSystem.js (v1)
 // ⭐ 遊戲字體系統：全域基準 ＋ 各系統面板獨立字級
 //    ① 全域：調整 <html> font-size（影響所有 rem 介面）
@@ -88752,7 +90183,7 @@ window.HY = window.HY || {};
   else boot();
 })();
 
-/* ===== 158 / 254 : uiFontPanel.js ===== */
+/* ===== 160 / 256 : uiFontPanel.js ===== */
 // js/uiFontPanel.js (v4.1)
 // ⭐ 遊戲字體調整面板：🔠 字體標籤（掛在「📱 畫面智慧適應」旁）+ 字體調整彈窗
 //
@@ -89612,7 +91043,7 @@ window.HY = window.HY || {};
   console.log('[uiFont] ✓ 已載入（🔠 字體標籤 + 字體調整面板 v4.1；標籤已停用閃動）');
 })();
 
-/* ===== 159 / 254 : partyPanelCleanup.js ===== */
+/* ===== 161 / 256 : partyPanelCleanup.js ===== */
 // js/partyPanelCleanup.js (v1)
 // ⭐ 移除「戰鬥隊伍面板」下方的三個區塊：
 //      🔥 主控心法：……
@@ -89995,7 +91426,7 @@ window.HY = window.HY || {};
   setTimeout(function () { try { run(); } catch (e) { /* 忽略 */ } }, 3500);
 })();
 
-/* ===== 160 / 254 : uiTabFix.js ===== */
+/* ===== 162 / 256 : uiTabFix.js ===== */
 // js/uiTabFix.js (v1)
 // ⭐ 擴充標籤排版修正器
 //
@@ -90579,7 +92010,7 @@ ${CFG.CONTAINER_SEL} > button > span{
   console.log('[TabFix] ✓ 已載入（擴充標籤排版修正）');
 })();
 
-/* ===== 161 / 254 : uiTextFix.js ===== */
+/* ===== 163 / 256 : uiTextFix.js ===== */
 // js/uiTextFix.js  (v1)
 // ⭐ 介面文字修正層：把「內部 ID / 英文術語」換成中文顯示
 //
@@ -90973,7 +92404,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 162 / 254 : poeBaseItems.js ===== */
+/* ===== 164 / 256 : poeBaseItems.js ===== */
 // js/poeBaseItems.js  (auto-generated by build_poe_items.bat v3)
 // Appends all PoE 1 equipment bases into window.HY.Data.POE_BASES.
 // Schema matches equipmentData.js POE_BASES, plus two extra fields:
@@ -91024,7 +92455,7 @@ window.HY.Data = window.HY.Data || {};
   }
 })();
 
-/* ===== 163 / 254 : poeAffixFull.js ===== */
+/* ===== 165 / 256 : poeAffixFull.js ===== */
 // js/poeAffixFull.js  (auto-generated from poedb affix dumps, 100 item classes)
 // 每列：[ family, genType, 文字樣板, tiers, slotMask ]
 //   genType : 1 = 前綴 (prefix)，2 = 後綴 (suffix)，0 = 不明
@@ -91871,7 +93302,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 164 / 254 : poeAffixMap.js ===== */
+/* ===== 166 / 256 : poeAffixMap.js ===== */
 // js/poeAffixMap.js
 // 🗺️ PoE 詞綴 → 本作屬性鍵 對照表
 //
@@ -93153,7 +94584,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 165 / 254 : wuxiaAffixData.js ===== */
+/* ===== 167 / 256 : wuxiaAffixData.js ===== */
 // js/wuxiaAffixData.js  (v1)
 // ⭐ 武俠裝備詞綴池（取代 POE 詞綴）
 //
@@ -93941,7 +95372,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 166 / 254 : wuxiaAffixNative.js ===== */
+/* ===== 168 / 256 : wuxiaAffixNative.js ===== */
 // js/wuxiaAffixNative.js  (v2)
 // ⭐ 裝備詞綴原生池（完全自製，不依賴 POE）
 //
@@ -94437,7 +95868,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 167 / 254 : wuxiaAffixPool.js ===== */
+/* ===== 169 / 256 : wuxiaAffixPool.js ===== */
 // js/wuxiaAffixPool.js  (v1)
 // ⭐ 武俠詞綴池：接管 PoeAffixMap.poolFor，讓裝備不再產生 POE 詞綴
 //
@@ -94568,7 +95999,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 168 / 254 : poeItemPool.js ===== */
+/* ===== 170 / 256 : poeItemPool.js ===== */
 // js/poeItemPool.js (v3)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Makes ALL in-game equipment PoE 1 equipment.
@@ -95168,7 +96599,7 @@ window.HY.PoeOnly = window.HY.PoeItemPool;
   window.HY.PoeOnly = window.HY.PoeItemPool;
 })();
 
-/* ===== 169 / 254 : poeItemIcons.js ===== */
+/* ===== 171 / 256 : poeItemIcons.js ===== */
 // js/poeItemIcons.js (v8)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Official PoE art on equipment tiles, with NO synchronous work inside DOM
@@ -95825,7 +97256,7 @@ window.HY.PoeItemIcons = {
   };
 })();
 
-/* ===== 170 / 254 : poeCodex.js ===== */
+/* ===== 172 / 256 : poeCodex.js ===== */
 // js/poeCodex.js (v3)  [ASCII build - safe for any file encoding]
 // In-game codex: every PoE base item as icon + Chinese name + stats.
 // v3 : items with no icon data (the game's own 63 bases) now show a slot
@@ -96174,7 +97605,7 @@ window.HY = window.HY || {};
   };
 })();
 
-/* ===== 171 / 254 : poeCurrencyIcons.js ===== */
+/* ===== 173 / 256 : poeCurrencyIcons.js ===== */
 // js/poeCurrencyIcons.js (v3) -- ASCII ONLY (safe for any file encoding)
 // ---------------------------------------------------------------------
 // Replaces the diamond in #currency-orb-bar with official Path of Exile art.
@@ -96470,7 +97901,7 @@ window.HY.PoeCurrencyIcons = {
   }
 })();
 
-/* ===== 172 / 254 : poeUiFix.js ===== */
+/* ===== 174 / 256 : poeUiFix.js ===== */
 // js/poeUiFix.js (v8)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // 1. the stat panel stays gone: the panel, its button, its stylesheet and any
@@ -97746,7 +99177,7 @@ window.HY.PoeUiFix = {
   }
 })();
 
-/* ===== 173 / 254 : poeAffixPlus.js ===== */
+/* ===== 175 / 256 : poeAffixPlus.js ===== */
 // js/poeAffixPlus.js (v5)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // WHAT CHANGED
@@ -98554,7 +99985,7 @@ window.HY.PoeStats = {
 })();
 
 
-/* ===== 174 / 254 : gambleQuiet.js ===== */
+/* ===== 176 / 256 : gambleQuiet.js ===== */
 // js/gambleQuiet.js (v1)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Stops the "no pending bets" line from flooding the combat log and from
@@ -98806,7 +100237,7 @@ window.HY.GambleQuiet = {
   };
 })();
 
-/* ===== 175 / 254 : poeScale.js ===== */
+/* ===== 177 / 256 : poeScale.js ===== */
 // js/poeScale.js (v2)  [ASCII build - safe for any file encoding]
 // ---------------------------------------------------------------------------
 // Enlarges PoE item / currency art and their labels so they fill the tile they
@@ -99215,7 +100646,7 @@ window.HY.PoeScale = {
   };
 })();
 
-/* ===== 176 / 254 : main.js ===== */
+/* ===== 178 / 256 : main.js ===== */
 // js/main.js (v32)
 // GameApp：系統實例化、初始化、事件綁定、定時器
 //
@@ -99783,7 +101214,7 @@ window.HY = window.HY || {};
   });
 })();
 
-/* ===== 177 / 254 : dexteritySpeedSystem.js ===== */
+/* ===== 179 / 256 : dexteritySpeedSystem.js ===== */
 // js/dexteritySpeedSystem.js  (v34)
 // 出手攻速：各系統加成，統一套用 ÷3
 //
@@ -100019,7 +101450,7 @@ window.HY = window.HY || {};
     console.log('[dexSys] ✓ 已載入（v34，根骨不再影響攻速）');
 })();
 
-/* ===== 178 / 254 : combatAtbSystem.js ===== */
+/* ===== 180 / 256 : combatAtbSystem.js ===== */
 // js/combatAtbSystem.js  (v52)
 // ATB 集氣條戰鬥節奏
 //
@@ -100461,7 +101892,7 @@ window.HY = window.HY || {};
     window.HY.CombatAtbSystem = CombatAtbSystem;
 })();
 
-/* ===== 179 / 254 : uiDexAtb.js ===== */
+/* ===== 181 / 256 : uiDexAtb.js ===== */
 // js/uiDexAtb.js  (v56)
 // 五維加點、折疊面板、5v5 固定戰鬥欄
 //
@@ -101761,7 +103192,7 @@ window.HY = window.HY || {};
     window.HY.UIDexAtb = UIDexAtb;
 })();
 
-/* ===== 180 / 254 : combatPanelShared.js ===== */
+/* ===== 182 / 256 : combatPanelShared.js ===== */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
 //
@@ -102211,7 +103642,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 181 / 254 : spiritRootSystem.js ===== */
+/* ===== 183 / 256 : spiritRootSystem.js ===== */
 // js/spiritRootSystem.js  (v3)
 // 專責「九大靈根隨機分配、靈根淬鍊升級、洗髓易根、相生相剋與戰鬥觸發」
 //
@@ -102607,7 +104038,7 @@ window.HY = window.HY || {};
     window.HY.SpiritRootSystem = SpiritRootSystem;
 })();
 
-/* ===== 182 / 254 : uiSpiritRoot.js ===== */
+/* ===== 184 / 256 : uiSpiritRoot.js ===== */
 // js/uiSpiritRoot.js  (v50.2)
 // 九元素・九大靈根分頁
 //
@@ -103081,7 +104512,7 @@ window.HY = window.HY || {};
     window.HY.UISpiritRoot = UISpiritRoot;
 })();
 
-/* ===== 183 / 254 : enemyFormationSystem.js ===== */
+/* ===== 185 / 256 : enemyFormationSystem.js ===== */
 // js/enemyFormationSystem.js  (v53)
 // 敵方陣法系統
 //
@@ -103224,7 +104655,7 @@ window.HY = window.HY || {};
     window.HY.EnemyFormationSystem = EnemyFormationSystem;
 })();
 
-/* ===== 184 / 254 : salvageExpeditionSystem.js ===== */
+/* ===== 186 / 256 : salvageExpeditionSystem.js ===== */
 // js/salvageExpeditionSystem.js  (v29)
 // 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 靈獸時空探險
 //
@@ -103609,7 +105040,7 @@ window.HY = window.HY || {};
     window.HY.SalvageExpeditionSystem = SalvageExpeditionSystem;
 })();
 
-/* ===== 185 / 254 : uiSalvageExpedition.js ===== */
+/* ===== 187 / 256 : uiSalvageExpedition.js ===== */
 // js/uiSalvageExpedition.js  (v50.1)
 // 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 靈獸探險 UI
 //
@@ -103839,7 +105270,7 @@ window.HY = window.HY || {};
     window.HY.UISalvageExpedition = UISalvageExpedition;
 })();
 
-/* ===== 186 / 254 : uiInventorySorter.js ===== */
+/* ===== 188 / 256 : uiInventorySorter.js ===== */
 // js/uiInventorySorter.js  (v2)
 // 道具欄部位分類標籤 + 稀有度自動排序
 //
@@ -104060,7 +105491,7 @@ window.HY = window.HY || {};
     window.HY.UIInventorySorter = UIInventorySorter;
 })();
 
-/* ===== 187 / 254 : offlineIdleSystem.js ===== */
+/* ===== 189 / 256 : offlineIdleSystem.js ===== */
 // js/offlineIdleSystem.js  (v31)
 // 離線掛機結算
 //
@@ -104662,7 +106093,7 @@ window.HY = window.HY || {};
     console.log('[OfflineIdle] ✓ v31 已載入（獨立時間戳 ＋ 就緒輪詢）');
 })();
 
-/* ===== 188 / 254 : levelExpSystem.js ===== */
+/* ===== 190 / 256 : levelExpSystem.js ===== */
 // js/levelExpSystem.js  (v49)
 // 升級經驗曲線 + 十四經脈成功率 + 三個門派篩選器
 //
@@ -104889,7 +106320,7 @@ window.HY = window.HY || {};
     window.HY.LevelExpSystem = LevelExpSystem;
 })();
 
-/* ===== 189 / 254 : elementSystem.js ===== */
+/* ===== 191 / 256 : elementSystem.js ===== */
 // js/elementSystem.js  (v53)
 // 八元素計算引擎（唯一權威）
 //
@@ -105598,7 +107029,7 @@ window.HY = window.HY || {};
     window.HY.ElementSystem = ElementSystem;
 })();
 
-/* ===== 190 / 254 : resistUnify.js ===== */
+/* ===== 192 / 256 : resistUnify.js ===== */
 // js/resistUnify.js  (v2)
 // ⭐ 九元素抗性計算層（POE 四抗機制已移除）
 //
@@ -105867,7 +107298,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 191 / 254 : responsiveLayoutSystem.js ===== */
+/* ===== 193 / 256 : responsiveLayoutSystem.js ===== */
 // js/responsiveLayoutSystem.js  (v29)
 // 使遊戲畫面隨視窗大小自動相容（4K/2K、筆電、分割視窗、平板、手機）
 //
@@ -106053,7 +107484,7 @@ window.HY = window.HY || {};
     window.HY.ResponsiveLayoutSystem = ResponsiveLayoutSystem;
 })();
 
-/* ===== 192 / 254 : cheatPanel.js ===== */
+/* ===== 194 / 256 : cheatPanel.js ===== */
 // js/cheatPanel.js  (v3)
 // 🛠️ 作弊面板：把 gameConfig.js 的全部可調參數做成可即時編輯的 UI
 //
@@ -107191,7 +108622,7 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
     }
 })();
 
-/* ===== 193 / 254 : gambleSystem.js ===== */
+/* ===== 195 / 256 : gambleSystem.js ===== */
 // js/gambleSystem.js  (v1)
 // 🎰 時空賭坊：黑市賭博系統
 //
@@ -108228,7 +109659,7 @@ window.HY = window.HY || {};
     window.HY.GAMBLE_GAMES = GAMES;
 })();
 
-/* ===== 194 / 254 : lotterySystem.js ===== */
+/* ===== 196 / 256 : lotterySystem.js ===== */
 // js/lotterySystem.js  (v5)
 // ═══════════════════════════════════════════════════════════════════════════
 //  🎟️ 大樂透核心系統（仿台灣大樂透）
@@ -108987,7 +110418,7 @@ window.HY = window.HY || {};
     window.HY.LotteryDefaults = DEFAULT_CFG;
 })();
 
-/* ===== 195 / 254 : uiLottery.js ===== */
+/* ===== 197 / 256 : uiLottery.js ===== */
 // js/uiLottery.js  (v5)
 // ═══════════════════════════════════════════════════════════════════════
 //  黑市分區折疊 + 大樂透面板 + 開獎前提醒彈窗
@@ -109923,7 +111354,7 @@ window.HY = window.HY || {};
     window.HY.UILottery = UILottery;
 })();
 
-/* ===== 196 / 254 : lotteryNoTicketFix.js ===== */
+/* ===== 198 / 256 : lotteryNoTicketFix.js ===== */
 // js/lotteryNoTicketFix.js (v1)
 // ⭐ 樂透：沒有購買彩券時，不彈「開獎結果」視窗
 //
@@ -110174,7 +111605,7 @@ window.HY = window.HY || {};
   console.log('[LotteryFix] ✓ 已載入（無票不彈開獎視窗）');
 })();
 
-/* ===== 197 / 254 : uiDelve.js ===== */
+/* ===== 199 / 256 : uiDelve.js ===== */
 // js/uiDelve.js  (v1)
 // PoE1 礦坑（Delve）全螢幕面板
 //
@@ -111265,7 +112696,7 @@ window.HY = window.HY || {};
     }, 60);
 })();
 
-/* ===== 198 / 254 : uiDelveMap.js ===== */
+/* ===== 200 / 256 : uiDelveMap.js ===== */
 // js/uiDelveMap.js  (v2)
 // ⭐ PoE 礦坑地圖渲染層（1:1 復刻 POE 的 Plan Souterrain / Subterranean Chart）
 //
@@ -111768,7 +113199,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 199 / 254 : uiDelveTactics.js ===== */
+/* ===== 201 / 256 : uiDelveTactics.js ===== */
 // js/uiDelveTactics.js
 // ⛏️ 礦坑自動戰鬥戰術設定面板
 //
@@ -112159,7 +113590,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 200 / 254 : uiTalent.js ===== */
+/* ===== 202 / 256 : uiTalent.js ===== */
 // js/uiTalent.js  (v1)
 // PoE1 天賦樹 Canvas UI
 //
@@ -115231,7 +116662,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 201 / 254 : kingsmarchData.js ===== */
+/* ===== 203 / 256 : kingsmarchData.js ===== */
 // js/kingsmarchData.js
 // ⭐ 金司馬區（Kingsmarch）全資料表
 //
@@ -115788,7 +117219,7 @@ window.HY.Data = window.HY.Data || {};
   }
 })();
 
-/* ===== 202 / 254 : kingsmarchSystem.js ===== */
+/* ===== 204 / 256 : kingsmarchSystem.js ===== */
 // js/kingsmarchSystem.js
 // ⭐ 金司馬區：核心系統
 //
@@ -116545,7 +117976,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchSystem = KingsmarchSystem;
 })();
 
-/* ===== 203 / 254 : kingsmarchShip.js ===== */
+/* ===== 205 / 256 : kingsmarchShip.js ===== */
 // js/kingsmarchShip.js
 // ⭐ 金司馬區：航運系統
 //
@@ -116951,7 +118382,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchShip = KingsmarchShip;
 })();
 
-/* ===== 204 / 254 : kingsmarchRune.js ===== */
+/* ===== 206 / 256 : kingsmarchRune.js ===== */
 // js/kingsmarchRune.js
 // ⭐ 金司馬區：符文工藝
 //
@@ -117171,7 +118602,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchRune = KingsmarchRune;
 })();
 
-/* ===== 205 / 254 : kingsmarchRecombine.js ===== */
+/* ===== 207 / 256 : kingsmarchRecombine.js ===== */
 // js/kingsmarchRecombine.js
 // ⭐ 金司馬區：重組器 / 通貨交易所 / 拆解台
 //
@@ -117484,7 +118915,7 @@ window.HY = window.HY || {};
   window.HY.KingsmarchRecombine = KingsmarchRecombine;
 })();
 
-/* ===== 206 / 254 : kingsmarchMapRunners.js ===== */
+/* ===== 208 / 256 : kingsmarchMapRunners.js ===== */
 // js/kingsmarchMapRunners.js  (v2)
 // ⭐ 金司馬區：工人常駐刷圖營地，自動連刷地圖
 //
@@ -118438,7 +119869,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 207 / 254 : uiKingsmarch.js ===== */
+/* ===== 209 / 256 : uiKingsmarch.js ===== */
 // js/uiKingsmarch.js
 // ⭐ 金司馬區：全螢幕面板
 //
@@ -120154,7 +121585,7 @@ window.HY = window.HY || {};
     window.HY.UIKingsmarch = UIKingsmarch;
 })();
 
-/* ===== 208 / 254 : atlasData.js ===== */
+/* ===== 210 / 256 : atlasData.js ===== */
 // js/atlasData.js
 // ⭐ 異界輿圖資料表：地圖階級、地圖詞綴、輿圖天賦
 //
@@ -120696,7 +122127,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 209 / 254 : atlasTreeData.js ===== */
+/* ===== 211 / 256 : atlasTreeData.js ===== */
 // js/atlasTreeData.js  (自動產生，請勿手改)
 // ⭐ POE 官方「輿圖天賦（Atlas Passive Tree）」1:1 資料
 //
@@ -120737,7 +122168,7 @@ window.HY.Data = window.HY.Data || {};
     console.log('[atlasTreeData] 已載入 ' + 903 + ' 個輿圖天賦節點、' + 1003 + ' 條連線');
 })();
 
-/* ===== 210 / 254 : atlasTreeSprites.js ===== */
+/* ===== 212 / 256 : atlasTreeSprites.js ===== */
 // js/atlasTreeSprites.js  (自動產生，請勿手改)
 // ⭐ POE 官方「輿圖天賦」圖集座標（1:1 復刻用）
 //
@@ -120778,7 +122209,7 @@ window.HY.Data = window.HY.Data || {};
         Object.keys(D.ATLAS_SPRITES).length + ' 組）');
 })();
 
-/* ===== 211 / 254 : atlasTreeZh.js ===== */
+/* ===== 213 / 256 : atlasTreeZh.js ===== */
 // js/atlasTreeZh.js  (v1)
 // ⭐ 輿圖天賦效果中文化
 //
@@ -121965,7 +123396,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 212 / 254 : atlasTreeZh2.js ===== */
+/* ===== 214 / 256 : atlasTreeZh2.js ===== */
 // js/atlasTreeZh2.js  (v1)
 // ⭐ 輿圖天賦效果中文化：第二波（補完剩餘 170 條 → 100%）
 //
@@ -122459,7 +123890,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 213 / 254 : atlasTreeNames.js ===== */
+/* ===== 215 / 256 : atlasTreeNames.js ===== */
 // js/atlasTreeNames.js  (v1)
 // ⭐ 輿圖天賦「節點名稱」中文化（補完 317 個未翻譯節點）
 //
@@ -122843,7 +124274,7 @@ window.HY.Data = window.HY.Data || {};
 })(window);
 
 
-/* ===== 214 / 254 : atlasTactics.js ===== */
+/* ===== 216 / 256 : atlasTactics.js ===== */
 // js/atlasTactics.js
 // 🗺️ 打圖戰鬥戰術系統（Map Battle Tactics）
 //
@@ -124048,7 +125479,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 215 / 254 : atlasSystem.js ===== */
+/* ===== 217 / 256 : atlasSystem.js ===== */
 // js/atlasSystem.js
 // ⭐ 異界輿圖系統（核心邏輯，不含 UI）
 //
@@ -125814,7 +127245,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 216 / 254 : uiAtlas.js ===== */
+/* ===== 218 / 256 : uiAtlas.js ===== */
 // js/uiAtlas.js
 // ⭐ 異界輿圖全螢幕面板
 //
@@ -127835,7 +129266,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 217 / 254 : uiAtlasTactics.js ===== */
+/* ===== 219 / 256 : uiAtlasTactics.js ===== */
 // js/uiAtlasTactics.js
 // 🗺️ 打圖戰鬥戰術設定面板（獨立於「時空內掛」）
 //
@@ -128330,7 +129761,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 218 / 254 : uiAtlasTree.js ===== */
+/* ===== 220 / 256 : uiAtlasTree.js ===== */
 // js/uiAtlasTree.js  (v1)
 // ⭐ 輿圖天賦（Atlas Passive Tree）1:1 POE 渲染層
 //
@@ -129298,7 +130729,7 @@ window.HY = window.HY || {};
 })(window);
 
 
-/* ===== 219 / 254 : worldClockData.js ===== */
+/* ===== 221 / 256 : worldClockData.js ===== */
 // js/worldClockData.js  (v1)
 // ⭐ 天候與時辰：全域動態層的資料表
 //
@@ -129579,7 +131010,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 220 / 254 : worldClockSystem.js ===== */
+/* ===== 222 / 256 : worldClockSystem.js ===== */
 // js/worldClockSystem.js  (v1)
 // ⭐ 天候與時辰系統：把 worldClockData 的資料接進實際的數值計算
 //
@@ -129958,7 +131389,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 221 / 254 : uiWorldClock.js ===== */
+/* ===== 223 / 256 : uiWorldClock.js ===== */
 // js/uiWorldClock.js  (v1)
 // ⭐ 天候時辰：頂部列小掛件 + 詳細面板
 //
@@ -130493,7 +131924,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 222 / 254 : perCharState.js ===== */
+/* ===== 224 / 256 : perCharState.js ===== */
 // js/perCharState.js  (v1)
 // ⭐ 每角色獨立狀態：把原本存在 rootState 的資料搬到「角色物件」上
 //
@@ -130745,7 +132176,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 223 / 254 : statusEffectData.js ===== */
+/* ===== 225 / 256 : statusEffectData.js ===== */
 // js/statusEffectData.js  (v1)
 // ⭐ 異常狀態 / 輔助狀態：統一的狀態資料表
 //
@@ -131288,7 +132719,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 224 / 254 : statusEffectSystem.js ===== */
+/* ===== 226 / 256 : statusEffectSystem.js ===== */
 // js/statusEffectSystem.js  (v1)
 // ⭐ 異常狀態 / 輔助狀態：統一的施加、結算、到期引擎
 //
@@ -132018,7 +133449,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 225 / 254 : daoHeartData.js ===== */
+/* ===== 227 / 256 : daoHeartData.js ===== */
 // js/daoHeartData.js  (v1)
 // ⭐ 道心天賦樹：仙俠風格的天賦體系
 //
@@ -132332,7 +133763,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 226 / 254 : daoHeartSystem.js ===== */
+/* ===== 228 / 256 : daoHeartSystem.js ===== */
 // js/daoHeartSystem.js  (v1)
 // ⭐ 道心天賦：點數計算、配置、效果彙總
 //
@@ -132853,7 +134284,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 227 / 254 : uiDaoHeart.js ===== */
+/* ===== 229 / 256 : uiDaoHeart.js ===== */
 // js/uiDaoHeart.js  (v1)
 // ⭐ 道心天賦：三分支面板 + 狀態機制說明
 //
@@ -133452,7 +134883,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 228 / 254 : disciplesData.js ===== */
+/* ===== 230 / 256 : disciplesData.js ===== */
 // js/disciplesData.js  (v1)
 // ⭐ 掌門之路：弟子養成 + 門派經營的資料表
 //
@@ -133871,7 +135302,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 229 / 254 : disciplesSystem.js ===== */
+/* ===== 231 / 256 : disciplesSystem.js ===== */
 // js/disciplesSystem.js  (v1)
 // ⭐ 掌門之路：開宗立派、收徒、弟子養成、門派經營
 //
@@ -134524,7 +135955,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 230 / 254 : uiDisciples.js ===== */
+/* ===== 232 / 256 : uiDisciples.js ===== */
 // js/uiDisciples.js  (v1)
 // ⭐ 掌門之路：全螢幕面板
 //
@@ -135270,7 +136701,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 231 / 254 : realmData.js ===== */
+/* ===== 233 / 256 : realmData.js ===== */
 // js/realmData.js  (v1)
 // ⭐ 境界突破：把 Lv.1~300 重新切成 10 個境界
 //
@@ -135492,7 +136923,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 232 / 254 : realmSystem.js ===== */
+/* ===== 234 / 256 : realmSystem.js ===== */
 // js/realmSystem.js  (v1)
 // ⭐ 境界突破系統：渡劫戰、永久被動、轉生
 //
@@ -136005,7 +137436,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 233 / 254 : meridianMapData.js ===== */
+/* ===== 235 / 256 : meridianMapData.js ===== */
 // js/meridianMapData.js  (v1)
 // ⭐ 經脈打通：穴位圖資料
 //
@@ -136302,7 +137733,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 234 / 254 : meridianMapSystem.js ===== */
+/* ===== 236 / 256 : meridianMapSystem.js ===== */
 // js/meridianMapSystem.js  (v1)
 // ⭐ 經脈打通系統：真氣、穴位依序打通、走火入魔
 //
@@ -136703,7 +138134,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 235 / 254 : formationGridData.js ===== */
+/* ===== 237 / 256 : formationGridData.js ===== */
 // js/formationGridData.js  (v1)
 // ⭐ 陣盤：3×3 佈陣格位資料
 //
@@ -136913,7 +138344,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 236 / 254 : formationGridSystem.js ===== */
+/* ===== 238 / 256 : formationGridSystem.js ===== */
 // js/formationGridSystem.js  (v1)
 // ⭐ 陣盤系統：站位加成 + 陣型相剋
 //
@@ -137198,7 +138629,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 237 / 254 : canonCultivation.js ===== */
+/* ===== 239 / 256 : canonCultivation.js ===== */
 // js/canonCultivation.js  (v1)
 // ⭐ 藏書閣・修仙功法（獨立體系）
 //
@@ -137542,7 +138973,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 238 / 254 : canonGongfaData.js ===== */
+/* ===== 240 / 256 : canonGongfaData.js ===== */
 // js/canonGongfaData.js  (v2)
 // ⭐ 藏書閣・修仙功法：道途屬性（完全取代武學屬性）
 //
@@ -137660,7 +139091,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 239 / 254 : canonGongfaGuide.js ===== */
+/* ===== 241 / 256 : canonGongfaGuide.js ===== */
 // js/canonGongfaGuide.js  (v1)
 // ⭐ 修仙功法說明（定位／玩法／使用建議）
 //
@@ -137927,7 +139358,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 240 / 254 : canonData.js ===== */
+/* ===== 242 / 256 : canonData.js ===== */
 // js/canonData.js  (v1)
 // ⭐ 藏經閣殘頁：典籍收集資料
 //
@@ -138426,7 +139857,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 241 / 254 : canonSystem.js ===== */
+/* ===== 243 / 256 : canonSystem.js ===== */
 // js/canonSystem.js  (v1)
 // ⭐ 藏經殘頁系統：收集、重複分解、集滿學心法
 //
@@ -138886,7 +140317,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 242 / 254 : codexCollectionData.js ===== */
+/* ===== 244 / 256 : codexCollectionData.js ===== */
 // js/codexCollectionData.js  (v1)
 // ⭐ 江湖圖鑑：把所有既有內容變成「可完成度」
 //
@@ -139121,7 +140552,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 243 / 254 : codexCollectionSystem.js ===== */
+/* ===== 245 / 256 : codexCollectionSystem.js ===== */
 // js/codexCollectionSystem.js  (v1)
 // ⭐ 江湖圖鑑系統：收集記錄、成就判定、永久加成
 //
@@ -139489,7 +140920,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 244 / 254 : uiCanon.js ===== */
+/* ===== 246 / 256 : uiCanon.js ===== */
 // js/uiCanon.js  (v1)
 // ⭐ 藏書閣：藏經殘頁 + 江湖圖鑑
 //
@@ -140289,7 +141720,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 245 / 254 : statCodexData.js ===== */
+/* ===== 247 / 256 : statCodexData.js ===== */
 // js/statCodexData.js  (v1)
 // ⭐ 屬性圖鑑資料：把遊戲中所有屬性／能力／效果集中定義，供 UI 查閱。
 //
@@ -141233,7 +142664,7 @@ HY.Data.STAT_CODEX = {
 };
 
 
-/* ===== 246 / 254 : uiStatCodex.js ===== */
+/* ===== 248 / 256 : uiStatCodex.js ===== */
 // js/uiStatCodex.js  (v1)
 // ⭐ 屬性圖鑑：把遊戲中所有屬性／能力／效果集中查閱。
 //
@@ -141693,7 +143124,7 @@ window.HY = window.HY || {};
 })();
 
 
-/* ===== 247 / 254 : statTooltip.js ===== */
+/* ===== 249 / 256 : statTooltip.js ===== */
 // js/statTooltip.js  (v1)
 // ⭐ 全域屬性提示系統 —— 滑鼠停留 1 秒後顯示說明小窗
 //
@@ -142164,7 +143595,7 @@ window.HY = window.HY || {};
 })(window.HY = window.HY || {});
 
 
-/* ===== 248 / 254 : escortData.js ===== */
+/* ===== 250 / 256 : escortData.js ===== */
 // js/escortData.js  (v1)
 // ⭐ 鏢局護鏢：風險路線任務資料
 //
@@ -142402,7 +143833,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 249 / 254 : escortSystem.js ===== */
+/* ===== 251 / 256 : escortSystem.js ===== */
 // js/escortSystem.js  (v1)
 // ⭐ 鏢局護鏢系統：接單、押運、劫鏢、結算
 //
@@ -142822,7 +144253,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 250 / 254 : alignmentData.js ===== */
+/* ===== 252 / 256 : alignmentData.js ===== */
 // js/alignmentData.js  (v1)
 // ⭐ 通緝令：正邪雙陣營資料
 //
@@ -143057,7 +144488,7 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 251 / 254 : alignmentSystem.js ===== */
+/* ===== 253 / 256 : alignmentSystem.js ===== */
 // js/alignmentSystem.js  (v1)
 // ⭐ 通緝令系統：正邪陣營、懸賞任務、捕快追殺
 //
@@ -143429,7 +144860,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 252 / 254 : uiEscort.js ===== */
+/* ===== 254 / 256 : uiEscort.js ===== */
 // js/uiEscort.js  (v1)
 // ⭐ 江湖行：鏢局護鏢 + 通緝令
 //
@@ -144141,7 +145572,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 253 / 254 : uiCultivation.js ===== */
+/* ===== 255 / 256 : uiCultivation.js ===== */
 // js/uiCultivation.js  (v1)
 // ⭐ 修行錄：境界突破 + 經脈打通 + 陣盤
 //
@@ -144948,7 +146379,7 @@ window.HY = window.HY || {};
 })(window.HY);
 
 
-/* ===== 254 / 254 : uiTabDrag.js ===== */
+/* ===== 256 / 256 : uiTabDrag.js ===== */
 // js/uiTabDrag.js
 // ⭐ 頂部分頁標籤可自由拖曳排序
 //
