@@ -4572,7 +4572,12 @@ window.HY = window.HY || {};
         minionDmg:    { name: '靈獸傷害',   group: 'minion', pct: true },
         minionHp:     { name: '靈獸氣血',   group: 'minion', pct: true },
         minionSpd:    { name: '靈獸速度',   group: 'minion', pct: true },
-        aoeRadius:    { name: '招式範圍',   group: 'minion', pct: true },
+
+        /* ⚠️ aoeRadius（招式範圍）已移除：
+              derived stats 中永遠是 undefined —— 沒有任何詞條會寫入它。
+              群攻加成實際走「門派機制」的 mods.aoeBonus（只有唐門用到），
+              那是比例值直接乘在傷害上，與這個屬性欄位無關。
+              面板顯示「招式範圍：—」只會讓玩家誤以為有點可加。 */
 
         /* ⚠️ 已移除（本作沒有對應機制，戰鬥中從不讀取，顯示只是誤導）：
               totemDmg     圖騰傷害      → 本作是劍樁，走門派機制不走屬性
@@ -4606,7 +4611,7 @@ window.HY = window.HY || {};
         core:     '⚔️ 核心屬性',
         offense:  '🔥 攻擊',
         defense:  '🛡️ 防禦',
-        resist:   '🌡️ 抗性',
+        /* ⚠️ resist 分組不顯示（抗性統一由「🌀 八元素」區呈現） */
         resource: '💚 續航',
         speed:    '⚡ 速度',
         minion:   '🐉 靈獸',
@@ -66833,42 +66838,15 @@ window.HY = window.HY || {};
 
             var html = '';
             GROUPS.forEach(function (g) {
-                /* ⭐ v426：抗性分組改由整合層提供（避免與八元素區重複且數字對不上）
+                /* ⭐ v429：抗性分組不再單獨顯示
                    ──────────────────────────────────────────────────────────
-                   舊版直接列 derived 的 fireRes / coldRes / allRes 等，
-                   但那些值是「輸入」而非「最終抗性」，且沒有套上限。
-                   新版改列 HY.Resist 的計算結果：每個元素的最終抗性與上限。 */
-                if (g === 'resist') {
-                    var RR = window.HY && window.HY.Resist;
-                    var ch = window.HY.game && window.HY.game.charSys && window.HY.game.charSys.state;
-                    if (RR && ch) {
-                        var rd = null;
-                        try { rd = RR.detail(ch); } catch (eR2) { rd = null; }
-                        if (rd && rd.rows && rd.rows.length) {
-                            var rcells = rd.rows.map(function (r) {
-                                var hasR = (r.cur !== 0);
-                                var color = r.cur < 0 ? '#ef4444' : (r.capped ? '#10b981' : (hasR ? '#7dd3fc' : '#3f4a5a'));
-                                return '<span title="來源：裝備天賦 ' + r.fromPoe + '%／元素防禦 ' + r.fromDef +
-                                    '%／全抗 ' + r.fromAll + '%' +
-                                    (r.capped ? '\n未截斷 ' + r.raw + '%' : '') + '" ' +
-                                    'style="display:inline-block;min-width:50%;box-sizing:border-box;padding:1px 4px;cursor:help;">' +
-                                    '<span style="color:' + (hasR ? '#94a3b8' : '#475569') + '">' +
-                                    r.icon + r.zh + '抗：</span>' +
-                                    '<b style="color:' + color + '">' + r.cur + '%</b>' +
-                                    ' <span style="color:#475569;font-size:.72em">/' + r.cap + '</span>' +
-                                    '</span>';
-                            }).join('');
-                            html += '<div style="margin-bottom:7px;">' +
-                                '<div style="color:#c8a45c;font-size:.8rem;font-weight:bold;border-bottom:1px solid #2a3441;' +
-                                'padding-bottom:2px;margin-bottom:3px;">🌡️ 抗性（八元素整合）' +
-                                '<span style="float:right;color:#94a3b8;font-weight:normal">平均 ' +
-                                (rd.avg ? rd.avg.cur : 0) + '%</span></div>' +
-                                '<div style="display:flex;flex-wrap:wrap;">' + rcells + '</div>' +
-                                '</div>';
-                            return;     /* 已處理，跳過原本的 derived 列表 */
-                        }
-                    }
-                }
+                   使用者指出：八元素區已經顯示抗性，上面再列一次「抗性（八元素整合）」
+                   是重複的，而且兩邊排版不一致（一邊金抗 26.7%/75、一邊火 攻99 抗15.9%）。
+
+                   現在抗性只在「🌀 八元素」區呈現，且該區已重新設計成
+                   卡片式（攻/抗雙欄 + 上限進度條），資訊更清楚。
+                   這裡直接跳過 resist 分組。 */
+                if (g === 'resist') return;
 
                 var keys = Object.keys(STATS).filter(function (k) { return STATS[k].group === g; });
                 if (!keys.length) return;
@@ -66895,16 +66873,16 @@ window.HY = window.HY || {};
                     '</div>';
             });
 
-            /* ⭐ v426：八元素抗性（整合後的統一顯示）
+            /* ⭐ v429：八元素區重新設計（取代原本的「抗性」分組）
                ──────────────────────────────────────────────────────────
-               舊版直接顯示 elementStats.def 的原始防禦值（攻 81 / 抗 89），
-               但那與實際減傷沒有直觀關係，也跟另一套「火抗 7.2%」對不上。
-
-               新版改用 HY.Resist（抗性整合層）：
-                 · 顯示「攻擊 / 抗性%」，抗性已套用上限（預設 75%）
-                 · 超過上限時標註 ✱ 並顯示原始值
-                 · 負抗性（受到額外傷害）用紅色
-                 · 平均抗性與總攻擊/總防禦一併顯示在標題 */
+               設計目標：
+                 · 一眼看出「攻／抗」兩個數字，不再擠成一行文字
+                 · 抗性加上「上限進度條」，能直覺判斷還差多少到滿抗
+                 · 8 個元素排成 4 欄 × 2 列，寬度一致、視覺整齊
+                 · 相剋關係用底色微光提示（剋制者偏亮）
+                 · 傷害加成（火勁傷害 +31% 等）標在攻擊值旁，綠色小字
+                 · 負抗性（受到額外傷害）整張卡片轉紅
+               ────────────────────────────────────────────────────────── */
             var Data = window.HY && window.HY.Data;
             var R = window.HY && window.HY.Resist;
             var c = window.HY.game && window.HY.game.charSys && window.HY.game.charSys.state;
@@ -66915,78 +66893,94 @@ window.HY = window.HY || {};
                     try { resData = R.get(c); } catch (eR) { resData = null; }
                 }
 
-                var elCells = [];
-                var keys = resData ? Data.ELEMENT_RING : null;
-
                 if (resData) {
+                    var avg = resData.__avg || {};
+                    var avgRes = avg.cur || 0;
+                    var avgCap = avg.cap || 75;
+
+                    /* 平均抗性用顏色分級：<0 紅、<40 灰、<65 藍、>=65 綠 */
+                    var avgColor = '#94a3b8';
+                    if (avgRes < 0) avgColor = '#ef4444';
+                    else if (avgRes >= 65) avgColor = '#10b981';
+                    else if (avgRes >= 40) avgColor = '#7dd3fc';
+
+                    var cards = [];
                     Data.ELEMENT_RING.forEach(function (ek) {
                         var m = Data.ELEMENTS[ek];
                         var r = resData[ek];
                         if (!m || !r) return;
 
-                        /* 抗性顏色：負=紅、滿=綠、普通=元素色 */
-                        var resColor = '#3f4a5a';
-                        if (r.cur < 0) resColor = '#ef4444';
-                        else if (r.cur > 0) resColor = (r.capped ? '#10b981' : m.color);
+                        /* 抗性狀態決定整張卡片的色調 */
+                        var isNeg = (r.cur < 0);
+                        var isFull = (r.capped || r.cur >= r.cap * 0.99);
+                        var barColor = isNeg ? '#ef4444' : (isFull ? '#10b981' : m.color);
+                        var borderColor = isNeg ? '#7f1d1d' : (isFull ? '#065f46' : (m.color + '55'));
 
-                        var txt = '攻 ' + r.atk +
-                            ' <span style="color:' + resColor + '">抗 ' + r.cur + '%</span>' +
-                            (r.capped ? '<span style="color:#10b981;font-size:.85em">✱</span>' : '');
+                        /* 抗性進度條（以抗性上限為分母，負值視為 0 長度） */
+                        var barPct = Math.max(0, Math.min(100, (r.cur / avgCap) * 100));
 
-                        /* ⭐ v428：顯示該元素的「傷害加成%」（來自「火勁傷害」等詞條）
-                           這樣玩家就能看到「火勁傷害 +31%」實際加在哪裡，
-                           不必再另外列一組 fireDmg / coldDmg 欄位。 */
-                        var boostTxt = '';
-                        if (r.atkBoost) {
-                            boostTxt = '<span style="color:#4ade80;font-size:.85em">+' + r.atkBoost + '%</span>';
-                        }
+                        /* 攻擊值 + 傷害加成 */
+                        var boostHtml = r.atkBoost
+                            ? '<span style="color:#4ade80;font-size:.82em;font-weight:normal">+' + r.atkBoost + '%</span>'
+                            : '';
 
-                        elCells.push(
-                            '<span title="' + m.fullName + '\n' +
-                                '攻擊 ' + r.atk + (r.atkBoost ? '（含傷害加成 +' + r.atkBoost + '%）' : '') +
-                                '｜抗性 ' + r.cur + '%（上限 ' + r.cap + '%）' +
-                                (r.capped ? '\n未截斷值 ' + r.raw + '%' : '') +
+                        cards.push(
+                            '<div title="' + m.fullName + '｜' + m.atkDesc + ' / ' + m.resDesc +
+                                '\n攻擊 ' + r.atk + (r.atkBoost ? '（含傷害加成 +' + r.atkBoost + '%）' : '') +
+                                '\n抗性 ' + r.cur + '%（上限 ' + r.cap + '%）' +
+                                (r.capped ? '　已達上限（未截斷 ' + r.raw + '%）' : '') +
                                 '\n來源：裝備天賦 ' + r.fromPoe + '%／元素防禦 ' + r.fromDef + '%／全抗 ' + r.fromAll + '%" ' +
-                                'style="display:inline-block;min-width:25%;box-sizing:border-box;padding:2px 4px;' +
-                                'color:' + m.color + ';white-space:nowrap;cursor:help;">' +
-                                m.icon + m.name + ' ' + txt + (boostTxt ? ' ' + boostTxt : '') + '</span>'
+                                'style="box-sizing:border-box;padding:4px 6px 5px;border-radius:4px;cursor:help;' +
+                                'background:linear-gradient(180deg,' + m.color + '12,rgba(0,0,0,0.25));' +
+                                'border:1px solid ' + borderColor + ';">' +
+
+                                /* 第一行：圖示 + 元素名 */
+                                '<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">' +
+                                    '<span style="font-size:1.05em;">' + m.icon + '</span>' +
+                                    '<b style="color:' + m.color + ';font-size:.86em;">' + m.name + '</b>' +
+                                    (isFull ? '<span style="margin-left:auto;color:#10b981;font-size:.72em;">滿</span>' : '') +
+                                '</div>' +
+
+                                /* 第二行：攻 / 抗 */
+                                '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
+                                'font-size:.8em;line-height:1.35;">' +
+                                    '<span style="color:#94a3b8;">攻' +
+                                        '<b style="color:#e2e8f0;margin-left:2px;">' + r.atk + '</b>' +
+                                        boostHtml +
+                                    '</span>' +
+                                    '<span style="color:#94a3b8;">抗' +
+                                        '<b style="color:' + barColor + ';margin-left:2px;">' + r.cur + '%</b>' +
+                                        '<span style="color:#475569;font-size:.85em;">/' + r.cap + '</span>' +
+                                    '</span>' +
+                                '</div>' +
+
+                                /* 第三行：抗性進度條 */
+                                '<div style="height:3px;margin-top:3px;border-radius:2px;' +
+                                'background:rgba(255,255,255,0.08);overflow:hidden;">' +
+                                    '<div style="height:100%;width:' + barPct.toFixed(1) + '%;' +
+                                    'background:' + barColor + ';border-radius:2px;' +
+                                    (isFull ? 'box-shadow:0 0 4px ' + barColor + ';' : '') + '"></div>' +
+                                '</div>' +
+                            '</div>'
                         );
                     });
 
-                    var avg = resData.__avg || {};
-                    html += '<div style="margin-bottom:7px;">' +
-                        '<div style="color:#c8a45c;font-size:.8rem;font-weight:bold;border-bottom:1px solid #2a3441;' +
-                        'padding-bottom:2px;margin-bottom:3px;">🌀 八元素（金木水火土冰風雷）' +
-                        '<span style="float:right;color:#94a3b8;font-weight:normal">' +
-                        '平均抗性 ' + (avg.cur || 0) + '%｜上限 ' + (avg.cap || 75) + '%</span></div>' +
-                        '<div style="display:flex;flex-wrap:wrap;">' + elCells.join('') + '</div>' +
-                        '</div>';
-                } else {
-                    /* 整合層未載入 → 退回舊的原始防禦值顯示 */
-                    var elAtk2 = {}, elDef2 = {};
-                    try {
-                        var elSys2 = window.HY.game && window.HY.game.elementSys;
-                        if (elSys2 && typeof elSys2.getElementStats === 'function') {
-                            var es2 = elSys2.getElementStats(c);
-                            elAtk2 = (es2 && es2.atk) || {};
-                            elDef2 = (es2 && es2.def) || {};
-                        }
-                    } catch (eEl2) { }
-                    Data.ELEMENT_RING.forEach(function (ek) {
-                        var m = Data.ELEMENTS[ek];
-                        if (!m) return;
-                        var a2 = Math.round(Number(elAtk2[ek]) || 0);
-                        var dv2 = Math.round(Number(elDef2[ek]) || 0);
-                        elCells.push(
-                            '<span style="display:inline-block;min-width:25%;box-sizing:border-box;padding:1px 3px;' +
-                            'color:' + ((a2 || dv2) ? m.color : '#3f4a5a') + ';white-space:nowrap;">' +
-                            m.icon + m.name + ((a2 || dv2) ? ' 攻' + a2 + ' / 抗' + dv2 : '') + '</span>'
-                        );
-                    });
-                    html += '<div style="margin-bottom:7px;">' +
-                        '<div style="color:#c8a45c;font-size:.8rem;font-weight:bold;border-bottom:1px solid #2a3441;' +
-                        'padding-bottom:2px;margin-bottom:3px;">🌀 八元素（金木水火土冰風雷）</div>' +
-                        '<div style="display:flex;flex-wrap:wrap;">' + elCells.join('') + '</div>' +
+                    html += '<div style="margin-bottom:9px;">' +
+                        /* 標題列：左標題、右平均抗性 */
+                        '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
+                        'border-bottom:1px solid #2a3441;padding-bottom:3px;margin-bottom:5px;">' +
+                            '<span style="color:#c8a45c;font-size:.8rem;font-weight:bold;">🌀 八元素</span>' +
+                            '<span style="font-size:.76rem;color:#64748b;">' +
+                                '平均抗性 <b style="color:' + avgColor + '">' + avgRes + '%</b>' +
+                                '<span style="color:#3f4a5a"> / ' + avgCap + '%</span>' +
+                                '<span style="margin-left:8px;">總攻 <b style="color:#94a3b8">' +
+                                    (avg.totalAtk || 0) + '</b></span>' +
+                            '</span>' +
+                        '</div>' +
+                        /* 4 欄格線（間距 4px，兩列共 8 個元素） */
+                        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
+                            cards.join('') +
+                        '</div>' +
                         '</div>';
                 }
             }
