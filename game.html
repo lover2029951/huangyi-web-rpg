@@ -30954,7 +30954,27 @@ window.HY = window.HY || {};
                      ③ 超量的裝備背包與彩券歷史做上限裁切
                    全部都是「可重建的衍生資料」，不會影響遊戲進度。 */
                 var payload = this._slimForSave(this.charSys.rootState);
-                var data = JSON.stringify(payload);
+                var data;
+                try {
+                    data = JSON.stringify(payload);
+                } catch (errCirc) {
+                    /* ⭐⭐ v501：循環引用防護（最後保險）
+                       ──────────────────────────────────────────────────────────
+                       症狀：開自動戰鬥後存檔失敗。
+                       根因：狀態系統曾把「施加者角色物件」存進 c.__status[id].source，
+                            形成 c.__status.x.source === c 的循環引用，
+                            JSON.stringify 直接拋 TypeError。
+
+                       根因已在 statusEffectSystem 修正（改存 id）。
+                       這裡再加一層：若仍有任何模組寫入循環引用，
+                       用「已訪問物件」標記法安全序列化（遇到循環就寫成 null），
+                       寧可少存一個無關緊要的參照，也絕不讓存檔失敗。 */
+                    console.warn('[saveSystem] 偵測到循環引用，改用安全序列化', errCirc && errCirc.message);
+                    data = this._safeStringify(payload);
+                    if (this.logger) {
+                        this.logger.add('⚠️ 存檔資料含循環參照，已自動修正後存檔。', 'system');
+                    }
+                }
                 try {
                     localStorage.setItem(SAVE_KEY, data);
                 } catch (errQuota) {
@@ -31058,6 +31078,56 @@ window.HY = window.HY || {};
             return out;
         }
 
+        /** ⭐ v501：循環引用安全的序列化
+            ──────────────────────────────────────────────────────────
+            做法：手動遞迴走訪，只追蹤「目前路徑上的祖先」。
+              · 遇到指向祖先的參照 → 寫成 null（這才是真正的循環）
+              · 兄弟節點共用同一物件 → 正常保留（例如同一件裝備被引用兩次）
+            比 JSON.stringify 略慢，但只在真的遇到循環時才走這條路。 */
+        _safeStringify(root) {
+            var ancestors = [];
+            function walk(v, depth) {
+                if (v === null || v === undefined) return null;
+                var t = typeof v;
+                if (t === 'number') return isFinite(v) ? v : null;
+                if (t === 'string' || t === 'boolean') return v;
+                if (t === 'function' || t === 'symbol') return undefined;
+                if (t !== 'object') return null;
+                /* 只追蹤祖先鏈（不會誤殺重複引用） */
+                if (ancestors.indexOf(v) >= 0) return null;
+                if (depth > 60) return null;      /* 防護：異常深層結構 */
+                ancestors.push(v);
+                var out;
+                try {
+                    if (Array.isArray(v)) {
+                        out = [];
+                        for (var i = 0; i < v.length; i++) {
+                            var av = walk(v[i], depth + 1);
+                            out.push(av === undefined ? null : av);
+                        }
+                    } else {
+                        out = {};
+                        for (var k in v) {
+                            if (!Object.prototype.hasOwnProperty.call(v, k)) continue;
+                            var cv = walk(v[k], depth + 1);
+                            if (cv !== undefined) out[k] = cv;
+                        }
+                    }
+                } finally {
+                    ancestors.pop();
+                }
+                return out;
+            }
+            var safe = walk(root, 0);
+            var json;
+            try {
+                json = JSON.stringify(safe);
+            } catch (e) {
+                json = JSON.stringify(this._minimalForSave(root));
+            }
+            return json;
+        }
+
         /** 上次存檔時間（人類可讀） */
         lastSaveText() {
             var ts = 0;
@@ -31075,11 +31145,15 @@ window.HY = window.HY || {};
         _slimForSave(root) {
             if (!root || typeof root !== 'object') return root;
 
-            /* ① 角色的純快取欄位：下次要用時會自動重算，不必存 */
+            /* ① 角色的純快取欄位：下次要用時會自動重算，不必存
+               ⭐ v501：__status 也一併剔除 —— 戰鬥中的異常／增益狀態
+                    只是本場戰鬥的暫存，沒有跨場保存的意義，
+                    而且它最容易夾帶循環引用（source 曾指向角色本身）。 */
             var CACHE_KEYS = [
                 '__dsCache', '__daoBonus', '__daoBonusSig',
                 '__statusTalent', '__statusTalentSig',
-                '__inShieldCalc', '__petSig', '__talentBonusCache'
+                '__inShieldCalc', '__petSig', '__talentBonusCache',
+                '__status', '_battle'
             ];
 
             var out = {};
@@ -133908,6 +133982,19 @@ window.HY = window.HY || {};
             return target.__status;
         }
 
+        /** ⭐ v501：由施加者 id 找回角色物件（純查詢，不建立任何資料） */
+        _resolveSource(id) {
+            if (!id) return null;
+            var g = G();
+            var roster = g.charSys && g.charSys.rootState && g.charSys.rootState.roster;
+            if (Array.isArray(roster)) {
+                for (var i = 0; i < roster.length; i++) {
+                    if (roster[i] && String(roster[i].id) === String(id)) return roster[i];
+                }
+            }
+            return null;
+        }
+
         /** 目前該目標身上的所有狀態（給 UI） */
         list(target) {
             var b = this.bag(target);
@@ -133923,7 +134010,10 @@ window.HY = window.HY || {};
                     id: id, def: def,
                     stacks: st.stacks,
                     turns: num(st.turns, 0),
-                    source: st.source || null
+                    /* ⭐ v501：source 已改存 id，這裡解析回角色物件（找不到就是 null） */
+                    source: st.sourceId ? this._resolveSource(st.sourceId) : null,
+                    sourceId: st.sourceId || null,
+                    sourceName: st.sourceName || null
                 });
             });
             /* 異常優先顯示 */
@@ -134002,7 +134092,23 @@ window.HY = window.HY || {};
             b[id] = {
                 stacks: newStacks,
                 turns: newTurns,
-                source: o.source || cur.source || null,
+                /* ⭐⭐⭐ v501：只存施加者的「識別資訊」，不可存整個角色物件！
+                   ──────────────────────────────────────────────────────────
+                   症狀：開啟自動戰鬥後手動存檔會失敗（紅色「存檔失敗」）。
+
+                   根因（實測確認）：這裡原本寫 `source: o.source`，
+                   而 o.source 就是施加狀態的角色物件本身。
+                   於是形成 c.__status.rage.source === c 的循環引用：
+                     JSON.stringify(rootState) → TypeError:
+                     Converting circular structure to JSON
+
+                   存檔直接拋錯 → 顯示存檔失敗。
+                   只有在戰鬥中「真的被施加過增益/異常」之後才會出現，
+                   所以平常存檔正常、開了自動戰鬥才壞。
+
+                   修法：只記錄 id / 名稱，需要精確物件時用 sourceRef 解析。 */
+                sourceId: (o.source && o.source.id) ? String(o.source.id) : (cur.sourceId || null),
+                sourceName: (o.source && o.source.name) ? String(o.source.name) : (cur.sourceName || null),
                 appliedAt: Date.now()
             };
 
@@ -148785,6 +148891,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
