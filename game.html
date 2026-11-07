@@ -85516,44 +85516,6 @@ window.HY = window.HY || {};
     if (!host) return;
     var H = CFG.BTN_HEIGHT, P = CFG.BTN_PAD, F = CFG.BTN_FONT;
     var css = `
-/* ⭐⭐ v63：#top-bar 禁止換行
-   ──────────────────────────────────────────────────────────
-   問題：responsiveLayoutSystem 把 #top-bar 設成 flex-wrap:wrap，
-         而「標題區 + 工具列」的內容寬度必定超過容器寬度
-         → 工具列被擠到第二行，面板高度從 46px 暴增到 101px。
-
-   解法：改成 nowrap，讓工具列以 flex:1 收縮並橫向捲動，
-         標題區可被壓縮（min-width:0 + 文字截斷）。
-         這樣永遠是單行，不會再跳成兩排。 */
-#top-bar{
-  flex-wrap:nowrap !important;
-  align-items:center !important;
-}
-#top-bar > div:first-child{
-  flex:0 0 auto !important;
-}
-/* 標題區可壓縮：標題過長時截斷，而不是把工具列推下去 */
-#top-bar .title-box{
-  flex:0 1 auto !important;
-  min-width:0 !important;
-  max-width:none !important;
-  overflow:hidden !important;
-  white-space:nowrap !important;
-}
-#top-bar .title-box h1{
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  max-width:100% !important;
-}
-/* 工具列吃滿剩餘空間並可橫向捲動（不折行）
-   ⭐ 關鍵：flex-basis 設 0，讓它只拿「標題之後剩下的寬度」，
-      而不是用內容寬度（1566px）去跟標題區搶 → 才不會被擠到下一行。 */
-#top-bar ${CFG.CONTAINER_SEL}{
-  flex:1 1 0 !important;
-  min-width:0 !important;
-}
-
 /* ══ .system-controls：單列橫向捲動工具列 ══
    ⚠️ 舊版用 flex-wrap:wrap，按鈕總寬超過視窗時會折到第二行，
       於是工具列高度在 30px / 60px 之間來回變動 ——
@@ -85612,23 +85574,6 @@ ${CFG.CONTAINER_SEL} > button > span{
 
 /* ══ 窄螢幕：縮短內距 ══ */
 @media (max-width:1100px){
-  /* ⭐ v63：窄螢幕把標題區縮到最小，優先讓工具列有空間
-     （標題不是操作元件，縮小不影響可用性） */
-  @media (max-width:1100px){
-    #top-bar .title-box{
-      flex:0 0 auto !important;
-      max-width:150px !important;
-    }
-    #top-bar .title-box h1{
-      font-size:.92rem !important;
-    }
-    #top-bar .title-box .subtitle{
-      display:none !important;
-    }
-    #top-bar #current-map-badge{
-      display:none !important;
-    }
-  }
   ${CFG.CONTAINER_SEL} > button,
   ${CFG.CONTAINER_SEL} > a,
   .hy-ext-btn{ padding:0 8px !important; font-size:.74rem !important; }
@@ -85690,29 +85635,6 @@ ${CFG.CONTAINER_SEL} > button > span{
     injectCSS();
     var ctrl = container();
     if (!ctrl) return false;
-    /* ⭐⭐ v63：把「流浪按鈕」收回工具列
-       ──────────────────────────────────────────────────────────
-       問題：uiKingsmarch / uiDaoHeart / uiCanon / uiEscort /
-             uiCultivation / uiDisciples / uiWorldClock 注入按鈕時，
-             若當下 .system-controls 還沒建立，走的是 bar.appendChild(btn)
-             → 按鈕直接掛在 #top-bar 底下，變成「獨立一行」，
-               把面板撐成 101px 高（就是玩家看到的第二排孤零零一顆）。
-
-       解法：掃描 #top-bar 的直接子元素，凡是 <button> 或 .hy-ext-btn
-             一律搬進 .system-controls。這樣不論誰先載入都不會漏。 */
-    var bar = document.getElementById('top-bar') || document.querySelector(CFG.FALLBACK_SEL);
-    if (bar && ctrl !== bar && ctrl.parentNode) {
-      var strays = Array.prototype.slice.call(bar.children).filter(function (el) {
-        if (!isEl(el) || el === ctrl) return false;
-        if (el.tagName === 'BUTTON') return true;
-        if (el.classList && el.classList.contains('hy-ext-btn')) return true;
-        return false;
-      });
-      strays.forEach(function (el) {
-        ctrl.appendChild(el);
-        log('收回流浪按鈕：' + (el.id || txtOf(el).slice(0, 12)));
-      });
-    }
     var kids = Array.prototype.slice.call(ctrl.children).filter(isEl);
     /* ① 分桶 */
     var bucket = {};     // key -> [el...]
@@ -99482,15 +99404,9 @@ window.HY = window.HY || {};
                     'gap: clamp(4px, 0.7vh, 10px);' +
                     'transform-origin: top left;' +
                 '}' +
-                /* ⭐ v63：#top-bar 改為 nowrap（原本 flex-wrap:wrap）
-                   原因：「重啟鈕 + 標題區 + 工具列」內容寬度必定超過容器寬度，
-                         一旦允許換行，工具列就會被擠到第二行，
-                         面板高度從 46px 暴增到 101px。
-                         nowrap 後工具列用 flex:1 收縮 + 橫向捲動，永遠單行。 */
                 '#top-bar {' +
                     'padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 20px);' +
-                    'flex-wrap: nowrap;' +
-                    'align-items: center;' +
+                    'flex-wrap: wrap;' +
                     'gap: 8px;' +
                 '}' +
                 /* 三欄主體 */
@@ -113626,15 +113542,7 @@ window.HY = window.HY || {};
                 if (delveBtn && delveBtn.parentNode) {
                     delveBtn.parentNode.insertBefore(btn, delveBtn.nextSibling);
                 } else {
-                    /* ⭐ v63：不要掛在 #top-bar 上（會變成獨立一行，面板被撐成兩排），
-                       改放進 .system-controls；沒有的話就地建一個。 */
-                    var _c = bar.querySelector('.system-controls');
-                    if (!_c) {
-                        _c = document.createElement('div');
-                        _c.className = 'system-controls';
-                        bar.appendChild(_c);
-                    }
-                    _c.appendChild(btn);
+                    bar.appendChild(btn);
                 }
                 if (timer) clearInterval(timer);
             };
@@ -123633,15 +123541,13 @@ window.HY = window.HY || {};
                 chip.type = 'button';
                 chip.addEventListener('click', function () { self.open(); });
 
-                /* ⭐ v63：找不到 .system-controls 時，先在 top-bar 內建一個，
-                   避免按鈕掛在 #top-bar 上變成獨立一行（會把面板撐成兩排）。 */
+                /* 放在「儲存進度」按鈕之前，跟其他系統按鈕同一區 */
                 var ctrl = bar.querySelector('.system-controls');
-                if (!ctrl) {
-                    ctrl = document.createElement('div');
-                    ctrl.className = 'system-controls';
-                    bar.appendChild(ctrl);
+                if (ctrl) {
+                    ctrl.insertBefore(chip, ctrl.firstChild);
+                } else {
+                    bar.appendChild(chip);
                 }
-                ctrl.insertBefore(chip, ctrl.firstChild);
                 if (timer) clearInterval(timer);
                 self._updateChip();
                 self._startChipLoop();
@@ -128002,15 +127908,9 @@ window.HY = window.HY || {};
                 btn.style.cssText = 'background:#1d1428;color:#c084fc;border:1px solid #a855f7;' +
                     'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
                 btn.addEventListener('click', function () { self.open(); });
-                /* ⭐ v63：找不到 .system-controls 時就地建一個，
-                   避免按鈕掛在 #top-bar 上變成獨立一行（面板被撐成兩排）。 */
                 var ctrl = bar.querySelector('.system-controls');
-                if (!ctrl) {
-                    ctrl = document.createElement('div');
-                    ctrl.className = 'system-controls';
-                    bar.appendChild(ctrl);
-                }
-                ctrl.insertBefore(btn, ctrl.firstChild);
+                if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
+                else bar.appendChild(btn);
                 if (timer) clearInterval(timer);
             };
             tick();
@@ -129704,23 +129604,11 @@ window.HY = window.HY || {};
                     'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
                 btn.addEventListener('click', function () { self.open(); });
 
-                /* ⭐ v63：找不到 .system-controls 時就地建一個，
-
-                   避免按鈕掛在 #top-bar 上變成獨立一行（面板被撐成兩排）。 */
-
                 var ctrl = bar.querySelector('.system-controls');
 
-                if (!ctrl) {
+                if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
 
-                    ctrl = document.createElement('div');
-
-                    ctrl.className = 'system-controls';
-
-                    bar.appendChild(ctrl);
-
-                }
-
-                ctrl.insertBefore(btn, ctrl.firstChild);
+                else bar.appendChild(btn);
                 if (timer) clearInterval(timer);
             };
             tick();
@@ -133740,15 +133628,9 @@ window.HY = window.HY || {};
                 btn.style.cssText = 'background:#0f1e18;color:#6ee7b7;border:1px solid #2f6b52;' +
                     'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
                 btn.addEventListener('click', function () { self.open(); });
-                /* ⭐ v63：找不到 .system-controls 時就地建一個，
-                   避免按鈕掛在 #top-bar 上變成獨立一行（面板被撐成兩排）。 */
                 var ctrl = bar.querySelector('.system-controls');
-                if (!ctrl) {
-                    ctrl = document.createElement('div');
-                    ctrl.className = 'system-controls';
-                    bar.appendChild(ctrl);
-                }
-                ctrl.insertBefore(btn, ctrl.firstChild);
+                if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
+                else bar.appendChild(btn);
                 if (timer) clearInterval(timer);
             };
             tick();
@@ -135593,15 +135475,9 @@ window.HY = window.HY || {};
                 btn.style.cssText = 'background:#241d10;color:#f0c674;border:1px solid #c8a45c;' +
                     'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
                 btn.addEventListener('click', function () { self.open(); });
-                /* ⭐ v63：找不到 .system-controls 時就地建一個，
-                   避免按鈕掛在 #top-bar 上變成獨立一行（面板被撐成兩排）。 */
                 var ctrl = bar.querySelector('.system-controls');
-                if (!ctrl) {
-                    ctrl = document.createElement('div');
-                    ctrl.className = 'system-controls';
-                    bar.appendChild(ctrl);
-                }
-                ctrl.insertBefore(btn, ctrl.firstChild);
+                if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
+                else bar.appendChild(btn);
                 if (timer) clearInterval(timer);
             };
             tick();
@@ -136337,15 +136213,9 @@ window.HY = window.HY || {};
                 btn.style.cssText = 'background:#1d1428;color:#c084fc;border:1px solid #a855f7;' +
                     'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
                 btn.addEventListener('click', function () { self.open(); });
-                /* ⭐ v63：找不到 .system-controls 時就地建一個，
-                   避免按鈕掛在 #top-bar 上變成獨立一行（面板被撐成兩排）。 */
                 var ctrl = bar.querySelector('.system-controls');
-                if (!ctrl) {
-                    ctrl = document.createElement('div');
-                    ctrl.className = 'system-controls';
-                    bar.appendChild(ctrl);
-                }
-                ctrl.insertBefore(btn, ctrl.firstChild);
+                if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
+                else bar.appendChild(btn);
                 if (timer) clearInterval(timer);
             };
             tick();
