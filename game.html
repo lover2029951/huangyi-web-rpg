@@ -8943,8 +8943,35 @@ window.HY.Data = window.HY.Data || {};
             var E = ELEM[ek], R = ROLE[rk], Q = QUALITY[qk];
 
             var pf = E.prefixes[(idx - 1) % E.prefixes.length];
-            var be = R.beasts[Math.floor(idx / 3) % R.beasts.length];
+            var beastIdx = Math.floor(idx / 3) % R.beasts.length;
+            var be = R.beasts[beastIdx];
             var sk = R.skills[(idx - 1) % R.skills.length];
+
+            /* ⭐ v486：靈獸美術外觀
+               ──────────────────────────────────────────────────────────
+               25 張手繪插畫對應「定位 × 獸種」（5 種定位 × 5 種獸）。
+               200 隻靈獸共用這 25 張，靠元素色調與品質光輝做出區別：
+                 · 定位決定造型（猛攻＝猛獸、守護＝厚甲、治療＝靈禽…）
+                 · 元素決定色相濾鏡（CSS filter hue-rotate）
+                 · 品質決定外框光輝顏色（凡品灰 → 神品紅）
+               這樣不必生成 200 張圖，視覺上仍有 200 種辨識度。 */
+            var ART_SLUG = {
+                attack: ['tiger', 'wolf', 'leopard', 'lion', 'bear'],
+                guard: ['turtle', 'rhino', 'elephant', 'ox', 'xiezhi'],
+                heal: ['deer', 'crane', 'rabbit', 'antelope', 'steed'],
+                debuff: ['spider', 'scorpion', 'owl', 'bat', 'snake'],
+                burst: ['dragon', 'roc', 'phoenix', 'qilin', 'serpent']
+            };
+            var artRole = { attack: 'attack', guard: 'defend', heal: 'heal', debuff: 'debuff', burst: 'burst' }[rk] || 'attack';
+            var artSlug = (ART_SLUG[rk] || ART_SLUG.attack)[beastIdx % 5];
+            var artFile = 'assets/pets/' + artRole + '_' + artSlug + '.jpg';
+
+            /* 元素 → 色相偏移（讓同一張圖在 8 種元素下呈現不同色調） */
+            var ELEM_HUE = {
+                metal: 0, wood: 60, water: 165, fire: 335,
+                earth: 25, ice: 180, wind: 110, lightning: 260
+            };
+            var artHue = (ELEM_HUE[ek] != null) ? ELEM_HUE[ek] : 0;
 
             var name = pf + be;
             if (usedNames[name]) {
@@ -8994,6 +9021,8 @@ window.HY.Data = window.HY.Data || {};
                 powerMult: powerMult,
                 role: rk, element: ek, quality: qk,
                 qualityColor: Q.color,
+                art: artFile,          /* ⭐ v486：插畫路徑 */
+                hue: artHue,           /* ⭐ v486：元素色相偏移 */
                 bonus: bonus
             };
         }
@@ -45952,6 +45981,9 @@ window.HY = window.HY || {};
                 quality: pet.quality || 'common',
                 qualityColor: pet.qualityColor || '#94a3b8',
                 powerMult: pet.powerMult * (1 + (lv - 1) * 0.1),
+                /* ⭐ v486：插畫（戰鬥面板顯示靈獸用） */
+                art: pet.art || '',
+                hue: (typeof pet.hue === 'number') ? pet.hue : 0,
                 bonus: bonus
             };
         }
@@ -73716,7 +73748,24 @@ window.HY = window.HY || {};
             const compTag = document.getElementById('battle-companion-tag');
             if (compTag) compTag.textContent = activeComp ? '🤝 隨行護法：' + activeComp.name + ' (' + activeComp.skillName + ')' : '🤝 隨行護法：無';
             const petTag = document.getElementById('battle-pet-tag');
-            if (petTag) petTag.textContent = activePet ? '🐉 隨行靈獸：' + activePet.name + ' (' + activePet.skillName + ')' : '🐉 隨行靈獸：無';
+            if (petTag) {
+                /* ⭐ v486：靈獸改用「小頭像 + 名稱」呈現（原本只有文字） */
+                if (activePet && activePet.art) {
+                    var _hue = activePet.hue || 0;
+                    petTag.innerHTML =
+                        '<span style="display:inline-flex;align-items:center;gap:6px;">' +
+                            '<img src="' + activePet.art + '" alt="" ' +
+                            'style="width:22px;height:22px;border-radius:5px;object-fit:cover;' +
+                            'border:1.5px solid ' + (activePet.qualityColor || '#94a3b8') + ';' +
+                            'filter:hue-rotate(' + _hue + 'deg);">' +
+                            '<span>🐉 ' + activePet.name + ' (' + activePet.skillName + ')</span>' +
+                        '</span>';
+                } else {
+                    petTag.textContent = activePet
+                        ? '🐉 隨行靈獸：' + activePet.name + ' (' + activePet.skillName + ')'
+                        : '🐉 隨行靈獸：無';
+                }
+            }
             const pillCount = app.charSys.rootState.inventory.pill_hp || 0;
             const healBtn = document.getElementById('btn-heal-pill');
             if (healBtn) healBtn.textContent = '💊 服用行軍散 (' + pillCount + ')';
@@ -80044,19 +80093,23 @@ window.HY = window.HY || {};
                         '</div>';
                 }
                 card.innerHTML =
-                    '<div>' +
-                        '<h4>' +
-                            '<span style="color:' + (pet.qualityColor || '#94a3b8') + '">' +
-                                (Data.PET_ROLE_ICONS[pet.role] || '⚔️') + ' ' + pet.name +
-                            '</span> ' +
-                            '<small style="color:#10b981;">[需 Lv.' + pet.reqLv + '+ | ' + pet.species + ']</small> ' +
-                            (lv > 0 ? '<span class="sp-color">(Lv.' + lv + ')</span>' : '<span style="color:#64748b;">(未收服)</span>') +
-                        '</h4>' +
-                        '<p style="color:#94a3b8;font-size:.85em">' +
-                            (Data.PET_ROLE_DESC[pet.role] || '') +
-                        '</p>' +
-                        '<p>' + pet.desc + '</p>' +
-                        '<p>💥 靈獸戰技：<strong>《' + pet.skillName + '》</strong> | 騎乘加成：' + bonusText + '</p>' +
+                    '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+                        /* ⭐ v486：靈獸插畫（左側） */
+                        this._artHtml(pet, lv > 0) +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<h4>' +
+                                '<span style="color:' + (pet.qualityColor || '#94a3b8') + '">' +
+                                    (Data.PET_ROLE_ICONS[pet.role] || '⚔️') + ' ' + pet.name +
+                                '</span> ' +
+                                '<small style="color:#10b981;">[需 Lv.' + pet.reqLv + '+ | ' + pet.species + ']</small> ' +
+                                (lv > 0 ? '<span class="sp-color">(Lv.' + lv + ')</span>' : '<span style="color:#64748b;">(未收服)</span>') +
+                            '</h4>' +
+                            '<p style="color:#94a3b8;font-size:.82em;margin:2px 0;">' +
+                                (Data.PET_ROLE_DESC[pet.role] || '') +
+                            '</p>' +
+                            '<p style="font-size:.85em;margin:2px 0;">' + pet.desc + '</p>' +
+                            '<p style="font-size:.85em;margin:2px 0;">💥 靈獸戰技：<strong>《' + pet.skillName + '》</strong> | 騎乘加成：' + bonusText + '</p>' +
+                        '</div>' +
                     '</div>' +
                     actionHtml;
                 if (lv === 0) {
@@ -80080,6 +80133,33 @@ window.HY = window.HY || {};
                 if (_winScroll > 0) window.scrollTo(window.scrollX || 0, _winScroll);
             } catch (eScroll) { }
         }
+        /* ⭐⭐⭐ v486：靈獸插畫
+           ──────────────────────────────────────────────────────────
+           25 張手繪插畫對應「定位 × 獸種」，200 隻靈獸共用。
+           靠三層視覺差異做出辨識度：
+             ① 造型：定位（猛攻／守護／治療／干擾／爆發）決定是哪隻獸
+             ② 色調：元素決定 CSS hue-rotate（金0° 木60° 水165° 火335°…）
+             ③ 光輝：品質決定外框顏色與強度（凡品灰 → 神品紅）
+           未收服的靈獸降低飽和度並壓暗，一眼看出「還沒養」。 */
+        _artHtml(pet, owned) {
+            if (!pet || !pet.art) return '';
+            var hue = (typeof pet.hue === 'number') ? pet.hue : 0;
+            var qColor = pet.qualityColor || '#94a3b8';
+            var isMyth = (pet.quality === 'myth');
+            var isLegend = (pet.quality === 'legend');
+            /* 神品與絕品加脈動光暈 */
+            var glow = isMyth ? ('0 0 14px ' + qColor + ',0 0 26px ' + qColor)
+                : (isLegend ? ('0 0 10px ' + qColor) : ('0 0 6px rgba(0,0,0,.6)'));
+            var filter = 'hue-rotate(' + hue + 'deg)' +
+                (owned ? ' saturate(1.05)' : ' saturate(.35) brightness(.62)');
+            return '<div style="flex:0 0 auto;width:76px;height:76px;border-radius:10px;overflow:hidden;' +
+                'border:2px solid ' + qColor + ';box-shadow:' + glow + ';background:#0b1220;' +
+                'display:flex;align-items:center;justify-content:center;">' +
+                '<img src="' + pet.art + '" alt="" loading="lazy" ' +
+                'style="width:100%;height:100%;object-fit:cover;filter:' + filter + ';">' +
+            '</div>';
+        }
+
         renderCompanionTab() {
             const Data = window.HY.Data;
             const app = this.app;
