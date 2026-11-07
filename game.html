@@ -831,16 +831,9 @@ details > summary::marker {
                 </div>
 
                 <h3>⚔️ 詳細戰鬥與抗性面板</h3>
-                <div class="stat-grid" style="font-size:0.84rem; gap:7px;">
-                    <div>🗡️ 綜合攻擊：<strong id="stat-atk" style="color:#f87171;">25</strong></div>
-                    <div>🛡️ 護體防禦：<strong id="stat-def" style="color:#60a5fa;">10</strong></div>
-                    <div>🎯 精準命中：<strong id="stat-hit" style="color:#38bdf8;">90%</strong></div>
-                    <div>🍃 輕功閃避：<strong id="stat-eva" style="color:#34d399;">7%</strong></div>
-                    <div>💥 會心爆擊：<strong id="stat-crit" style="color:#fbbf24;">8%</strong></div>
-                    <div>🔰 暴擊抵抗：<strong id="stat-critres" style="color:#a78bfa;">4%</strong></div>
-                    <div>🔥 會心傷倍：<span id="stat-critdmg">165%</span></div>
-                    <div>☯️ 心法減傷：<span id="stat-dmgred">0%</span></div>
-                </div>
+                <!-- ⭐ v419：完整屬性面板（依 StatRegistry 的 8 個分組顯示全部 69 項）
+                     舊版只有 8 項，玩家看不到抗性、格擋、吸取、掉落等關鍵數值。 -->
+                <div id="stat-panel-full" style="font-size:0.82rem; line-height:1.75;"></div>
 
                 <h3>💎 共享資源與當前配置</h3>
                 <div class="resource-box">
@@ -66178,6 +66171,146 @@ window.HY = window.HY || {};
                 (defTop ? '🛡️' + defTop : '') +
             '</span>';
         }
+        /**
+         * ⭐ v419：完整屬性面板
+         * ──────────────────────────────────────────────────────────
+         * 舊版只顯示 8 項（攻擊/防禦/命中/閃避/會心/暴抗/會傷/減傷），
+         * 玩家看不到抗性、格擋、吸取、掉落、靈獸等關鍵數值。
+         *
+         * 本方法依 StatRegistry 的 8 個分組，把 69 個屬性全部列出。
+         * 設計原則：
+         *   · 數值為 0 也顯示（灰色），讓玩家知道「有這項、只是還沒加成」
+         *   · 有數值的用亮色，一眼看出哪些是真的有效果
+         *   · 抗性類附上上限提示（例如 75% 上限）
+         *   · 八元素抗性另外展開（本作核心特色）
+         */
+        renderFullStats(d) {
+            var host = document.getElementById('stat-panel-full');
+            if (!host) return;
+            var REG = window.HY && window.HY.StatRegistry;
+            if (!REG || !REG.STATS) {
+                host.innerHTML = '<div style="color:#94a3b8">屬性系統未載入</div>';
+                return;
+            }
+
+            var st = d || {};
+            var STATS = REG.STATS;
+
+            /* 分組順序（與 StatRegistry 的 GROUP_NAMES 對應） */
+            var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed', 'mechanic', 'utility'];
+            var GROUP_ICON = {
+                core: '⚔️', offense: '🔥', defense: '🛡️', resist: '🌡️',
+                resource: '💚', speed: '⚡', mechanic: '⚙️', utility: '💰'
+            };
+            /* 顯示名稱覆寫（用本作武俠用語，而非 Registry 的通用名） */
+            var NAME = {
+                atk: '外功攻擊', def: '護體防禦', maxHp: '最大氣血', maxMp: '最大內力',
+                hit: '精準命中', eva: '輕功閃避', crit: '會心爆擊', critRes: '會心抵抗',
+                atkPct: '傷害加成', physDmg: '外功傷害', fireDmg: '火勁傷害',
+                coldDmg: '冰勁傷害', lightningDmg: '雷勁傷害', chaosDmg: '毒勁傷害',
+                elemDmg: '八元素內勁', critDmg: '會心傷害', critFlat: '會心率加成',
+                hitFlat: '命中率加成', armorPen: '破甲穿透', dotDmg: '持續傷害',
+                armorPct: '護體加成', evaPct: '輕功加成', blockChance: '格擋率',
+                dodgeChance: '閃避率', dmgReduce: '受傷減免', esShield: '罡氣值',
+                esPct: '罡氣加成', thornsDmg: '反震傷害',
+                fireRes: '火抗', coldRes: '冰抗', lightningRes: '雷抗',
+                chaosRes: '毒抗', allRes: '全元素抗性',
+                maxFireRes: '火抗上限', maxColdRes: '冰抗上限', maxLightRes: '雷抗上限',
+                lifeRegen: '氣血回復', manaRegen: '內力回復',
+                lifeLeech: '氣血吸取', manaLeech: '內力吸取',
+                lifeOnHit: '擊中回血', manaOnHit: '擊中回內', lifeOnKill: '擊殺回血',
+                hpCostReduce: '氣血消耗減免', mpCostReduce: '內力消耗減免',
+                atkSpd: '出手速度', castSpd: '運功速度', moveSpd: '身法速度',
+                atbGain: '集氣速度', cooldownRec: '冷卻回復',
+                minionDmg: '靈獸傷害', minionHp: '靈獸氣血', minionSpd: '靈獸速度',
+                totemDmg: '劍樁傷害', auraEffect: '真元效果', curseEffect: '陰煞效果',
+                aoeRadius: '招式範圍', projSpeed: '暗器速度', projCount: '額外暗器',
+                pierceCount: '暗器穿透', chainCount: '暗器連鎖', skillEffectDur: '招式持續',
+                itemRarity: '物品稀有度', itemQuantity: '物品數量', goldFind: '銀兩獲取',
+                expGain: '經驗獲取', mapDropRate: '地圖掉落率', essenceRate: '精隨掉落率',
+                lightRadius: '視野範圍'
+            };
+
+            function valOf(key) {
+                var v = st[key];
+                if (typeof v !== 'number' || !isFinite(v)) return null;
+                return v;
+            }
+            function fmtVal(key, v) {
+                var info = STATS[key] || {};
+                var n = Math.round(v * 10) / 10;
+                if (info.pct) return n + '%';
+                return String(Math.round(n));
+            }
+
+            var html = '';
+            GROUPS.forEach(function (g) {
+                var keys = Object.keys(STATS).filter(function (k) { return STATS[k].group === g; });
+                if (!keys.length) return;
+                var cells = [];
+                keys.forEach(function (k) {
+                    var v = valOf(k);
+                    var has = (v !== null && v !== 0);
+                    var label = NAME[k] || REG.statName(k);
+                    var shown = (v === null) ? '—' : fmtVal(k, v);
+                    var cap = STATS[k].cap;
+                    var capTxt = (cap && has) ? (' <span style="color:#475569;font-size:.72em">/' + cap + '</span>') : '';
+                    cells.push(
+                        '<span style="display:inline-block;min-width:50%;box-sizing:border-box;padding:1px 4px;">' +
+                        '<span style="color:' + (has ? '#94a3b8' : '#475569') + '">' + label + '：</span>' +
+                        '<b style="color:' + (has ? '#7dd3fc' : '#3f4a5a') + '">' + shown + '</b>' + capTxt +
+                        '</span>'
+                    );
+                });
+                html += '<div style="margin-bottom:7px;">' +
+                    '<div style="color:#c8a45c;font-size:.8rem;font-weight:bold;border-bottom:1px solid #2a3441;' +
+                    'padding-bottom:2px;margin-bottom:3px;">' + (GROUP_ICON[g] || '') + ' ' +
+                    (REG.GROUP_NAMES && REG.GROUP_NAMES[g] ? REG.GROUP_NAMES[g] : g) + '</div>' +
+                    '<div style="display:flex;flex-wrap:wrap;">' + cells.join('') + '</div>' +
+                    '</div>';
+            });
+
+            /* 八元素抗性明細（本作核心，單獨列出）
+               ⚠️ 元素攻防走 elementSystem.getElementStats()，
+                  不是 derived stats 的欄位（舊版讀 __worldElAtk 永遠是空的）。 */
+            var Data = window.HY && window.HY.Data;
+            if (Data && Data.ELEMENT_RING && Data.ELEMENTS) {
+                var elAtk = {}, elDef = {};
+                try {
+                    var elSys = window.HY.game && window.HY.game.elementSys;
+                    if (elSys && typeof elSys.getElementStats === 'function') {
+                        var es = elSys.getElementStats(window.HY.game.charSys.state);
+                        elAtk = (es && es.atk) || {};
+                        elDef = (es && es.def) || {};
+                    }
+                } catch (eEl) { }
+
+                var elCells = [];
+                Data.ELEMENT_RING.forEach(function (ek) {
+                    var m = Data.ELEMENTS[ek];
+                    if (!m) return;
+                    var a = Math.round(Number(elAtk[ek]) || 0);
+                    var dv = Math.round(Number(elDef[ek]) || 0);
+                    var parts = [];
+                    if (a) parts.push('攻 ' + a);
+                    if (dv) parts.push('抗 ' + dv);
+                    var txt = parts.join(' / ');
+                    elCells.push(
+                        '<span title="' + m.fullName + '（' + m.atkLabel + ' / ' + m.resLabel + '）" ' +
+                        'style="display:inline-block;min-width:25%;box-sizing:border-box;padding:1px 3px;' +
+                        'color:' + (txt ? m.color : '#3f4a5a') + ';white-space:nowrap;">' +
+                        m.icon + m.name + (txt ? ' ' + txt : '') + '</span>'
+                    );
+                });
+                html += '<div style="margin-bottom:7px;">' +
+                    '<div style="color:#c8a45c;font-size:.8rem;font-weight:bold;border-bottom:1px solid #2a3441;' +
+                    'padding-bottom:2px;margin-bottom:3px;">🌀 八元素（金木水火土冰風雷）</div>' +
+                    '<div style="display:flex;flex-wrap:wrap;">' + elCells.join('') + '</div>' +
+                    '</div>';
+            }
+
+            host.innerHTML = html;
+        }
         buildReqChips(req, counts) {
             var Data = window.HY.Data;
             if (!req) return '<span style="color:#64748b; font-size:0.78rem;">無靈根限制</span>';
@@ -66301,19 +66434,11 @@ window.HY = window.HY || {};
             setText('stat-str', st.stats.str);
             setText('stat-agi', st.stats.agi);
             setText('stat-int', st.stats.int);
-            setText('stat-atk', d.atk);
-            setText('stat-def', d.def);
-            setText('stat-hit', d.hit + '%');
-            setText('stat-eva', d.eva + '%');
-            setText('stat-crit', d.crit + '%');
-            setText('stat-critres', d.critRes + '%');
-            setText('stat-critdmg', d.critDmg + '%');
-            /* ⭐ 心法減傷等「加成型」數值是累加浮點，會出現 0.8999999999999999
-               這種 IEEE 754 誤差 → 一律四捨五入到小數一位（整數就不顯示小數） */
-            setText('stat-dmgred', this.fix1(d.dmgReduce) + '%');
             setText('char-points', st.freePoints);
             setText('char-sp', app.charSys.rootState.sp);
             setText('char-gold', app.charSys.rootState.gold);
+            /* ⭐ v419：完整屬性面板（69 項，依 8 個分組） */
+            try { this.renderFullStats(d); } catch (eFS) { console.error('[UI] renderFullStats 失敗', eFS); }
             setText('active-companion-name', activeComp ? activeComp.name + ' (Lv.' + activeComp.lv + ')' : '無');
             setText('active-xinfa-name', activeXinfa ? activeXinfa.name + ' (第' + activeXinfa.lv + '層)' : '未運功');
             setText('active-qinggong-name', activeQg ? activeQg.name + ' (第' + activeQg.lv + '境)' : '未常駐');
@@ -108023,45 +108148,66 @@ window.HY = window.HY || {};
                 return '<div class="row"><span>' + k + '</span><span' +
                     (cls ? ' class="' + cls + '"' : '') + '>' + v + '</span></div>';
             }
-            h += '<div class="sec"><h4>⚔️ 戰鬥屬性</h4>';
-            h += row('外功攻擊', fmt(st.atk || 0), 'up');
-            h += row('護體防禦', fmt(st.def || 0), 'up');
-            h += row('最大氣血', fmt(st.maxHp || 0), 'up');
-            h += row('最大內力', fmt(st.maxMp || 0), 'up');
-            /* ⭐ v67：罡氣（內部鍵 energyShield / maxEs）
-               ──────────────────────────────────────────────
-               天賦樹寫的是「罡氣 +3.1」，但面板原本顯示「能量護盾」，
-               同一個屬性兩個名字，玩家會以為天賦沒生效或是兩種不同東西。
-               依使用者要求統一為「罡氣」（符合仙俠風格）。
-               括號保留內部概念，方便對照舊資料。 */
-            if (num(st.energyShield, 0) > 0) {
-                h += row('🔵 罡氣', fmt(st.energyShield), 'up');
-            }
-            h += row('命中', fmt(st.hit || 0) + '%');
-            h += row('輕功', fmt(st.eva || 0) + '%');
-            h += row('會心', num(st.crit, 0).toFixed(1) + '%');
-            h += row('會心抵抗', num(st.critRes, 0).toFixed(1) + '%');
-            if (st.critDmg) h += row('會心傷害', fmt(st.critDmg) + '%');
-            /* ⭐ 減傷是累加浮點，Math.floor 會把 0.9 顯示成 0 → 改用一位小數 */
-            if (st.dmgReduce) h += row('受傷減免', pct1(st.dmgReduce) + '%');
-            h += '</div>';
-            /* ── ④ 天賦貢獻（只列出有加的） ── */
+            /* ══════════════════════════════════════════════════════
+               ⭐ v419：合併「戰鬥屬性」與「天賦貢獻」為單一面板
+               ──────────────────────────────────────────────────────────
+               使用者反映：天賦能力不要分開顯示。
+
+               舊版把同一件事拆成兩塊：
+                 ⚔️ 戰鬥屬性   → 外功攻擊 489、最大氣血 4328…
+                 🌳 天賦貢獻   → 罡氣上限 增加 2.4%…
+
+               問題：
+                 · 「罡氣上限 +2.4%」單獨看沒有意義 —— 玩家要知道
+                   「罡氣現在到底是多少」
+                 · 玩家得自己在腦中把兩塊相加
+                 · 同樣的屬性在兩處出現（如果天賦直接寫 +N）
+
+               新版：
+                 一個面板列出「最終數值」，並在後面用小字標註
+                 天賦貢獻了多少（＋X），一眼看出來源。
+               ══════════════════════════════════════════════════════ */
+
+            /* ── 先算出「天賦貢獻」的合併清單（供後面比對與標註） ── */
             var tb = null;
             try { tb = this.talent.getBonusFor(c); } catch (e) { tb = null; }
 
-            /* ⭐ POE 官方節點的數值全部是 stats 字串（「+10 to Strength」這種），
-               不是 tb.flat / tb.more 的結構化欄位，所以上面那段永遠是空的。
-               這裡額外統計「已配置節點的效果條數」，並列出前幾條翻譯後的效果。
+            /* 結構化加成（天賦的 flat / more / extra 通道）→ 併入附加效果
+               ⚠️ 這些是「節點 bonus 物件」的欄位，與 stats 字串是兩條不同來源，
+                  舊版因為只看 stats 字串而完全漏掉。 */
+            var structLines = [];
+            var LBL2 = {
+                maxHp: '最大氣血', maxMp: '最大內力', maxEs: '罡氣',
+                atk: '外功攻擊', def: '護體防禦', hit: '命中', eva: '輕功',
+                crit: '會心', critRes: '會心抵抗', critDmg: '會心傷害',
+                dmgReduce: '受傷減免', atkSpd: '出手速度', physDmg: '外功傷害',
+                elemDmg: '八元素內勁', dotDmg: '持續傷害', atkPct: '傷害加成'
+            };
+            if (tb) {
+                ['con', 'str', 'agi', 'int'].forEach(function (k) {
+                    var v = (tb.attr || {})[k];
+                    if (!v) return;
+                    var nm = { con: '體魄', str: '力道', agi: '身法', int: '內息' }[k];
+                    structLines.push(nm + ' +' + fmt(v));
+                });
+                Object.keys(tb.flat || {}).forEach(function (k) {
+                    var v = tb.flat[k];
+                    if (!v) return;
+                    structLines.push((LBL2[k] || k) + ' +' + fmt(v));
+                });
+                Object.keys(tb.more || {}).forEach(function (k) {
+                    var v = tb.more[k];
+                    if (!v) return;
+                    structLines.push((LBL2[k] || k) + ' +' + (v * 100).toFixed(1) + '%');
+                });
+                Object.keys(tb.extra || {}).forEach(function (k) {
+                    var v = tb.extra[k];
+                    if (!v) return;
+                    structLines.push((LBL2[k] || k) + ' +' + fmt(v));
+                });
+            }
 
-               ⚠️ v55：改為「相同屬性合併」。
-                  原本是逐條列出，所以 24 個節點可能顯示成
-                    +10 最大能量護盾
-                    +20 最大能量護盾
-                    +10 最大能量護盾
-                    +14 最大能量護盾
-                  同樣的屬性重複四行，玩家根本看不出總共加了多少。
-                  現在把「同一個屬性 + 同一種計算方式」加總成一行。 */
-            var poeLines = [];          /* 保留原始逐條（除錯用） */
+            var poeLines = [];
             var _TZ3 = window.HY.TalentZh;
             var _NODES3 = window.HY.Data.TALENT_NODES || {};
             var _alloc3 = (c.talent && c.talent.allocated) || {};
@@ -108074,22 +108220,18 @@ window.HY = window.HY || {};
                 });
             });
 
-            /* ── ⭐ 相同屬性合併 ──
-               把翻譯後的字串拆成「數值 + 屬性名」，同屬性同單位就加總。
-               例：+10 最大能量護盾 / +20 最大能量護盾 → +30 最大能量護盾
-                   最大能量護盾增加 4% / 增加 6%       → 最大能量護盾增加 10%
-               無法辨識的句型（條件式、特殊機制）原樣保留，不合併。 */
+            /* ── 相同屬性合併（天賦樹的效果字串） ── */
             var MERGE = (function () {
-                var buckets = {};      /* key → { name, val, unit, cond } */
-                var others = [];       /* 無法安全合併的原文 */
-                var order = [];        /* 保持出現順序 */
+                var buckets = {};
+                var others = [];
+                var order = [];
 
-                function add(name, val, unit, cond) {
+                function add(name, val, unit) {
                     var nm = String(name || '').trim();
                     if (!nm) return false;
-                    var key = nm + '|' + unit + '|' + (cond || '');
+                    var key = nm + '|' + unit;
                     if (!buckets[key]) {
-                        buckets[key] = { name: nm, val: 0, unit: unit, cond: cond || '' };
+                        buckets[key] = { name: nm, val: 0, unit: unit };
                         order.push(key);
                     }
                     buckets[key].val += val;
@@ -108101,145 +108243,155 @@ window.HY = window.HY || {};
                     if (!s) return;
                     var m;
 
-                    /* ① 「+30 最大能量護盾」→ 純加法 */
-                    m = /^([+-]?[\d.]+)\s+(.+)$/.exec(s);
-                    if (m && !/%/.test(s)) {
-                        if (add(m[2], parseFloat(m[1]), 'flat', '')) return;
-                    }
-
-                    /* ② 「最大能量護盾增加 6%」→ 百分比加法 */
+                    /* 「屬性 +N%」 */
+                    m = /^(.+?)\s*\+\s*([\d.]+)\s*%$/.exec(s);
+                    if (m) { if (add(m[1], parseFloat(m[2]), 'pct')) return; }
+                    /* 「屬性 +N」 */
+                    m = /^(.+?)\s*\+\s*([\d.]+)$/.exec(s);
+                    if (m && !/%/.test(s)) { if (add(m[1], parseFloat(m[2]), 'flat')) return; }
+                    /* 「屬性增加 N%」 */
                     m = /^(.+?)(?:增加|提高|提升)\s*([\d.]+)%$/.exec(s);
-                    if (m) {
-                        if (add(m[1], parseFloat(m[2]), 'pct', '')) return;
-                    }
-
-                    /* ③ 「+14% 最大能量護盾」→ 百分比加法 */
+                    if (m) { if (add(m[1], parseFloat(m[2]), 'pct')) return; }
+                    /* 「+N 屬性」 */
+                    m = /^([+-]?[\d.]+)\s+(.+)$/.exec(s);
+                    if (m && !/%/.test(s)) { if (add(m[2], parseFloat(m[1]), 'flat')) return; }
+                    /* 「+N% 屬性」 */
                     m = /^([+-][\d.]+)%\s+(.+)$/.exec(s);
-                    if (m) {
-                        if (add(m[2], parseFloat(m[1]), 'pct', '')) return;
-                    }
-
-                    /* ④ 「每秒回復 5 魔力」→ 同屬性加法（保留「每秒」語意） */
+                    if (m) { if (add(m[2], parseFloat(m[1]), 'pct')) return; }
+                    /* 「每秒回復 N 屬性」 */
                     m = /^每秒(?:回復|恢復)\s*([\d.]+)\s*(.+)$/.exec(s);
-                    if (m) {
-                        if (add('回復 ' + m[2] + '/秒', parseFloat(m[1]), 'flat', '')) return;
-                    }
+                    if (m) { if (add('回復 ' + m[2] + '/秒', parseFloat(m[1]), 'flat')) return; }
 
-                    /* ⑤ 「能量護盾回復速率增加 10%」→ 屬性 + 百分比 */
-                    m = /^(.+?速率)(?:增加|提高|提升)\s*([\d.]+)%$/.exec(s);
-                    if (m) {
-                        if (add(m[1], parseFloat(m[2]), 'pct', '')) return;
-                    }
-
-                    /* 其他（條件式／特殊機制）原樣保留 */
                     others.push(s);
                 });
 
+                var byName = {};        /* 屬性名 → { pct, flat } 供快速查詢 */
                 var merged = order.map(function (k) {
                     var b = buckets[k];
                     var val = Math.round(b.val * 100) / 100;
-                    var txt;
-                    if (b.unit === 'pct') {
-                        txt = b.name + ' 增加 ' + val + '%';
-                    } else {
-                        txt = (val >= 0 ? '+' : '') + val + ' ' + b.name;
-                    }
-                    return { txt: txt, val: Math.abs(val) };
+                    if (!byName[b.name]) byName[b.name] = { pct: 0, flat: 0 };
+                    if (b.unit === 'pct') byName[b.name].pct += val;
+                    else byName[b.name].flat += val;
+                    var txt = (b.unit === 'pct')
+                        ? b.name + ' 增加 ' + val + '%'
+                        : (val >= 0 ? '+' : '') + val + ' ' + b.name;
+                    return { txt: txt, val: Math.abs(val), name: b.name, unit: b.unit, num: val };
                 });
-                /* 數值大的排前面，讓主要加成先被看到 */
                 merged.sort(function (a, b) { return b.val - a.val; });
-                return { merged: merged.map(function (x) { return x.txt; }), others: others };
+                return { merged: merged, others: others, byName: byName };
             })();
 
-            /* 給後續 UI 用的最終清單：合併後的屬性 + 無法合併的原句 */
-            poeLines = MERGE.merged.concat(MERGE.others);
-            if (tb) {
-                var hasAny = false;
-                var LBL = {
-                    /* ⭐ v67：maxEs 顯示為「罡氣」，與天賦樹用詞一致 */
-                    maxHp: '最大氣血', maxMp: '最大內力', maxEs: '罡氣',
-                    atk: '外功攻擊', def: '護體防禦',
-                    hit: '命中', eva: '輕功', crit: '會心', critRes: '會心抵抗'
-                };
-                var lines = [];
+            /* ── 天賦在某屬性上的百分比貢獻 ──
+               ⭐ v421：使用者要求「天賦能力不要分開顯示」，
+                  因此不再在數值後面加「（天賦 +2.4%）」括號，
+                  直接顯示最終數值。天賦效果改列在最下方「附加效果」區，
+                  僅供查閱來源，不干擾主要數值的閱讀。 */
+            var TALENT_PCT = MERGE.byName;
+            function talentTag() { return ''; }   /* 已停用括號標註 */
 
-                /* ⭐ 避免同一屬性顯示兩次：
-                   結構化通道（tb.flat / tb.more）與 POE 逐條翻譯（poeLines）
-                   常常描述同一個加成（例如 maxEs 11% 與「最大能量護盾 增加 11%」）。
-                   若 POE 行已經涵蓋該屬性，就跳過結構化那行，只留 POE 那行
-                   （POE 行的名稱更完整、來源更精確）。 */
-                var _poeJoined = poeLines.join(' ').replace(/\s+/g, '');
-                function poeCovers(key) {
-                    var ALIAS = {
-                        maxHp: ['最大生命', '最大氣血', '生命', '氣血'],
-                        maxMp: ['最大魔力', '最大內力', '魔力', '內力'],
-                        maxEs: ['最大能量護盾', '能量護盾', '罡氣'],
-                        atk: ['攻擊', '物理傷害', '外功'],
-                        def: ['護甲', '防禦', '護體'],
-                        hit: ['命中'],
-                        eva: ['閃避', '輕功'],
-                        crit: ['暴擊', '爆擊', '會心'],
-                        critRes: ['暴擊抵抗', '會心抵抗']
-                    }[key];
-                    if (!ALIAS) return false;
-                    return ALIAS.some(function (w) { return _poeJoined.indexOf(w) >= 0; });
-                }
+            /* ── 主面板：一次顯示全部戰鬥屬性 ── */
+            h += '<div class="sec"><h4>⚔️ 戰鬥屬性 <span class="n">全部</span></h4>';
+            h += row('外功攻擊', fmt(st.atk || 0), 'up');
+            h += row('護體防禦', fmt(st.def || 0), 'up');
+            h += row('最大氣血', fmt(st.maxHp || 0), 'up');
+            h += row('最大內力', fmt(st.maxMp || 0), 'up');
+            if (num(st.energyShield, 0) > 0) {
+                h += row('🔵 罡氣', fmt(st.energyShield), 'up');
+            }
+            h += row('精準命中', fmt(st.hit || 0) + '%');
+            h += row('輕功閃避', fmt(st.eva || 0) + '%');
+            h += row('會心爆擊', num(st.crit, 0).toFixed(1) + '%');
+            h += row('會心抵抗', num(st.critRes, 0).toFixed(1) + '%');
+            if (st.critDmg) h += row('會心傷害', fmt(st.critDmg) + '%');
+            if (st.dmgReduce) h += row('受傷減免', pct1(st.dmgReduce) + '%');
+            h += row('出手速度', fmt(st.atkSpd || 100) + '%');
+            /* 其他速度 */
+            if (num(st.castSpd, 0) && num(st.castSpd, 0) !== 100) {
+                h += row('運功速度', fmt(st.castSpd) + '%');
+            }
+            if (num(st.moveSpd, 0) && num(st.moveSpd, 0) !== 100) {
+                h += row('身法速度', fmt(st.moveSpd) + '%');
+            }
+            /* 防禦層 */
+            if (num(st.blockChance, 0)) h += row('格擋率', fmt(st.blockChance) + '%');
+            if (num(st.dodgeChance, 0)) h += row('閃避率', fmt(st.dodgeChance) + '%');
+            if (num(st.thornsDmg, 0)) h += row('反震傷害', fmt(st.thornsDmg) + '%');
+            /* 續航 */
+            if (num(st.lifeLeech, 0)) h += row('氣血吸取', fmt(st.lifeLeech) + '%');
+            if (num(st.manaLeech, 0)) h += row('內力吸取', fmt(st.manaLeech) + '%');
+            if (num(st.lifeRegen, 0)) h += row('氣血回復', fmt(st.lifeRegen) + '%');
+            if (num(st.manaRegen, 0)) h += row('內力回復', fmt(st.manaRegen) + '%');
+            if (num(st.lifeOnHit, 0)) h += row('擊中回血', fmt(st.lifeOnHit));
+            if (num(st.lifeOnKill, 0)) h += row('擊殺回血', fmt(st.lifeOnKill));
+            /* 實用 */
+            if (num(st.itemRarity, 0)) h += row('物品稀有度', fmt(st.itemRarity) + '%');
+            if (num(st.itemQuantity, 0)) h += row('物品數量', fmt(st.itemQuantity) + '%');
+            if (num(st.goldFind, 0)) h += row('銀兩獲取', fmt(st.goldFind) + '%');
+            if (num(st.expGain, 0)) h += row('經驗獲取', fmt(st.expGain) + '%');
 
-                Object.keys(tb.flat || {}).forEach(function (k) {
-                    var v = tb.flat[k];
-                    if (!v) return;
-                    if (poeCovers(k)) return;            /* POE 行已涵蓋 → 不重複 */
-                    var nm = LBL[k] || k;
-                    if (k.indexOf('elAtk_') === 0) nm = k.replace('elAtk_', '') + '元素攻擊';
-                    if (k.indexOf('elDef_') === 0) nm = k.replace('elDef_', '') + '元素抗性';
-                    lines.push([nm, (v > 0 ? '+' : '') + fmt(v)]);
-                    hasAny = true;
+            /* ── 抗性（原本完全沒顯示） ── */
+            var resRows = [
+                ['火抗', st.fireRes], ['冰抗', st.coldRes],
+                ['雷抗', st.lightningRes], ['毒抗', st.chaosRes]
+            ];
+            var resAny = resRows.some(function (r) { return num(r[1], 0) !== 0; }) || num(st.allRes, 0) !== 0;
+            if (resAny) {
+                resRows.forEach(function (r) {
+                    if (num(r[1], 0) !== 0) h += row(r[0], fmt(r[1]) + '%');
                 });
-                /* （_poeJoined / poeCovers 已在上面宣告，這裡直接用） */
-                Object.keys(tb.more || {}).forEach(function (k) {
-                    var v = tb.more[k];
-                    if (!v) return;
-                    if (poeCovers(k)) return;        /* POE 行已涵蓋 → 不重複顯示 */
-                    var nm = LBL[k] || k;
-                    lines.push([nm + '（乘算）', (v > 0 ? '+' : '') + (v * 100).toFixed(1) + '%']);
-                    hasAny = true;
-                });                ['con', 'str', 'agi', 'int'].forEach(function (k) {
-                    var v = (tb.attr || {})[k];
-                    if (!v) return;
-                    var nm = { con: '體魄', str: '力道', agi: '身法', int: '內息' }[k];
-                    lines.push([nm + '（天賦）', '+' + fmt(v)]);
-                    hasAny = true;
+                if (num(st.allRes, 0) !== 0) h += row('全元素抗性', fmt(st.allRes) + '%', 'up');
+            } else {
+                h += '<div class="row"><span>元素抗性</span>' +
+                    '<span style="color:#475569;font-size:.85em">尚無加成</span></div>';
+            }
+            h += '</div>';
+
+            /* ── 其餘天賦效果（已合併，只列無法對應到上方欄位的） ── */
+            var residual = [];
+            /* 上方已顯示的屬性名 → 不再重複列
+               ⚠️ 這裡的鍵必須涵蓋 talentTag() 比對用過的所有別名，
+                  否則會出現「罡氣 22（天賦 +2.4%）」下面又列「・罡氣 +2.4%」。 */
+            var SHOWN = {
+                '外功攻擊': 1, '護體防禦': 1, '最大氣血': 1, '最大內力': 1,
+                '氣血上限': 1, '內力上限': 1, '罡氣上限': 1, '罡氣': 1,
+                '命中': 1, '輕功': 1, '閃避': 1, '會心': 1, '會心傷害': 1,
+                '受傷減免': 1, '減傷': 1, '出手速度': 1, '攻擊': 1, '傷害': 1,
+                '外功傷害': 1, '防禦': 1, '護體': 1, '氣血': 1, '內力': 1,
+                /* 抗性類（已在「元素抗性」那行處理） */
+                '火抗': 1, '冰抗': 1, '雷抗': 1, '毒抗': 1, '全元素抗性': 1,
+                '八元素抗性': 1, '八元素內勁': 1,
+                /* 常見變體 */
+                '最大氣血上限': 1, '最大內力上限': 1, '會心率': 1, '暴擊': 1, '爆擊': 1
+            };
+            /* ⭐ v420：structLines（天賦的 flat/more/extra 通道）也要過濾。
+               實測 tb.more 的 maxEs/maxHp/maxMp 與上方欄位完全相同，
+               不過濾就會在下面重複列一次。 */
+            structLines = structLines.filter(function (txt) {
+                var nm = String(txt).replace(/\s*[+＋].*$/, '').trim();
+                return !SHOWN[nm];
+            });
+            MERGE.merged.forEach(function (m) {
+                if (SHOWN[m.name]) return;      /* 已在上方欄位標註 */
+                residual.push(m.txt);
+            });
+            MERGE.others.forEach(function (t) { residual.push(t); });
+
+            if (residual.length || structLines.length) {
+                h += '<div class="sec"><h4>🌳 天賦附加效果 <span class="n">' +
+                    (residual.length + structLines.length) + ' 項</span></h4>';
+                structLines.slice(0, 20).forEach(function (txt) {
+                    h += '<div class="row"><span style="color:#7dd3fc">・' + esc(txt) + '</span></div>';
                 });
-                Object.keys(tb.extra || {}).forEach(function (k) {
-                    var v = tb.extra[k];
-                    if (!v) return;
-                    var nm = { critDmg: '會心傷害', dmgReduce: '受傷減免', atkSpd: '出手速度' }[k] || k;
-                    lines.push([nm, '+' + fmt(v) + (k === 'atkSpd' ? '' : '%')]);
-                    hasAny = true;
+                residual.slice(0, 40).forEach(function (txt) {
+                    h += '<div class="row"><span style="color:#94a3b8">・' + esc(txt) + '</span></div>';
                 });
-                /* ⭐ 合併後條數變少，可以提高顯示上限（原本 26 條被截斷得很嚴重） */
-                var MAX_SHOW = 40;
-                var totalLines = lines.length + poeLines.length;
-                h += '<div class="sec"><h4>🌳 天賦貢獻 <span class="n">' +
-                    totalLines + ' 項</span></h4>';
-                if (!hasAny && !poeLines.length) {
-                    h += '<div class="empty">尚未配置任何有加成效果的節點。<br>' +
-                        '點擊樹上的節點開始配置。</div>';
-                } else {
-                    lines.slice(0, MAX_SHOW).forEach(function (p) {
-                        h += row(p[0], p[1], 'up');
-                    });
-                    /* ⭐ POE 節點的效果（已翻譯，且相同屬性已合併） */
-                    poeLines.slice(0, Math.max(0, MAX_SHOW - lines.length)).forEach(function (txt) {
-                        h += '<div class="row"><span style="color:#94a3b8">・' +
-                            esc(txt) + '</span></div>';
-                    });
-                    if (totalLines > MAX_SHOW) {
-                        h += '<div class="note">…另有 ' + (totalLines - MAX_SHOW) + ' 項</div>';
-                    }
+                var totalRes = residual.length + structLines.length;
+                if (totalRes > 60) {
+                    h += '<div class="note">…另有 ' + (totalRes - 60) + ' 項</div>';
                 }
                 h += '</div>';
             }
+
             /* ── ⑤ 已配置的關鍵天賦 / 專精摘要 ── */
             var notes = [];
             var _zhOf = this._zhName.bind(this);
@@ -108391,6 +108543,7 @@ window.HY = window.HY || {};
         if (tries >= 200) clearInterval(timer);   /* ⭐ v62：60ms × 200 ≈ 12s 上限 */
     }, 60);
 })();
+
 
 /* ===== 196 / 245 : kingsmarchData.js ===== */
 // js/kingsmarchData.js
