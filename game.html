@@ -765,6 +765,9 @@ details > summary::marker {
             <div class="title-box" style="flex:1 1 auto;">
                 <h1>⚡ 黃易群俠傳 <span class="subtitle">Lv.300 破碎虛空傳奇</span></h1>
                 <span id="current-map-badge">當前時空：星際實驗室</span>
+                <!-- ⭐ v68：屬性圖鑑按鈕的固定插入點（緊接「當前時空」右側）
+                     由 uiStatCodex.js 注入，避免它被排到工具列最尾端。 -->
+                <span id="stat-codex-slot" style="display:inline-flex; align-items:center; margin-left:8px;"></span>
                 <span id="party-size-badge" style="margin-left:8px; background:rgba(16,185,129,0.18); border:1px solid #10b981; color:#10b981; padding:4px 10px; border-radius:4px; font-size:0.85rem;">🚩 上陣人數：1人</span>
             </div>
 
@@ -27294,7 +27297,40 @@ window.HY = window.HY || {};
             if (channel === 'loot') return this.lootContainer;
             return this.combatContainer;
         }
+        /* ⭐⭐ v68：清理訊息中的「長尾巴小數」
+           ──────────────────────────────────────────────────────────
+           問題：戰鬥訊息常出現 0.888888888888888 這種浮點誤差値。
+                 來源是 JS 的浮點運算（例如 8/9）直接串進字串，
+                 沒有經過 toFixed / Math.round。
+
+           解法：在輸出前統一壓成 2 位小數。
+
+           安全性考量：
+             · 只處理「小數點後 4 位以上」的數字 → 4.4、1.25 這種正常値不動
+             · 前後必須不是數字或小數點 → 避免把 1.2.3 版本號切壞
+             · 整數完全不受影響（沒有小數點）
+             · 對 HTML 字串同樣有效（style="width:33.33333%" → 33.33%）
+             · 冪等：清理過的値再清理一次結果相同 */
+        static sanitizeNums(str) {
+            if (typeof str !== 'string' || !str) return str;
+            /* 沒有「小數點後 4 位以上」就直接返回，省掉正則開銷 */
+            if (!/\d\.\d{4,}/.test(str)) return str;
+            return str.replace(
+                /(^|[^\d.])(\d+)\.(\d{4,})(?![\d])/g,
+                function (m, pre, intPart, frac) {
+                    var v = parseFloat(intPart + '.' + frac);
+                    if (!isFinite(v)) return m;
+                    /* 壓成 2 位小數；若四捨五入後剛好是整數，就不顯示小數點 */
+                    var s = v.toFixed(2);
+                    if (/\.00$/.test(s)) s = String(Math.round(v));
+                    /* 極小値（< 0.01）不要變成 0.00，改顯示「趨近 0」以免看起來像歸零 */
+                    return pre + s;
+                }
+            );
+        }
         add(message, type) {
+            /* ⭐ v68：先清理浮點尾巴，再走分流邏輯 */
+            message = Logger.sanitizeNums(message);
             type = type || 'system';
             if (!this.combatContainer) this.combatContainer = document.getElementById('game-log');
             if (!this.lootContainer) this.lootContainer = document.getElementById('loot-log');
@@ -73999,11 +74035,26 @@ window.HY = window.HY || {};
             var style = document.createElement('style');
             style.id = 'hy-logpanel-style';
             style.innerHTML =
+                /* ⭐ v68：右側面板可整區捲動
+                   ──────────────────────────────────────────────
+                   原本 #log-panel 是 overflow:hidden，各面板用 flex 分配
+                   剩餘高度。面板一多（3 個內建 + 3 個自訂 = 6 個），
+                   每個只剩幾十 px，內容全被切掉且無法捲動。
+
+                   改成：面板本身改成「自然高度」，整個 log-panel 可垂直捲動。
+                   這樣 6 個面板都能展開看完整內容，不會被壓扁。 */
                 '#log-panel { display:flex !important; flex-direction:column !important;' +
-                    ' gap:8px !important; overflow:hidden !important; min-height:0 !important; }' +
-                '.log-details { display:flex; flex-direction:column; min-height:0;' +
-                    ' background:#121822; border-radius:6px; box-sizing:border-box; overflow:hidden; }' +
-                '.log-details[open] { flex:var(--fw,1) 1 0; }' +
+                    ' gap:8px !important; overflow-y:auto !important; overflow-x:hidden !important;' +
+                    ' min-height:0 !important; padding-right:2px; }' +
+                '#log-panel::-webkit-scrollbar { width:7px; }' +
+                '#log-panel::-webkit-scrollbar-track { background:transparent; }' +
+                '#log-panel::-webkit-scrollbar-thumb { background:#3a4a5e; border-radius:4px; }' +
+                '#log-panel::-webkit-scrollbar-thumb:hover { background:#4b5e75; }' +
+                '.log-details { display:flex; flex-direction:column;' +
+                    ' background:#121822; border-radius:6px; box-sizing:border-box; overflow:hidden;' +
+                    ' flex:0 0 auto; }' +
+                /* 展開的面板給固定高度上限（可自行捲動內容），收合的只留標題列 */
+                '.log-details[open] { flex:0 0 auto; max-height:none; }' +
                 '.log-details:not([open]) { flex:0 0 auto; }' +
                 '.log-details > summary { display:flex; align-items:center; justify-content:space-between;' +
                     ' gap:6px; padding:5px 8px; cursor:pointer; user-select:none;' +
@@ -74031,10 +74082,12 @@ window.HY = window.HY || {};
                     ' border-color:#f59e0b !important; color:#fbbf24 !important; }' +
                 '.log-filter-btn.on { background:rgba(245,158,11,.2) !important; }' +
                 '.log-body { flex:1 1 auto; min-height:0; overflow-y:auto; padding:6px 8px;' +
-                    ' display:flex; flex-direction:column; gap:4px; font-size:.8rem; }' +
+                    ' display:flex; flex-direction:column; gap:4px; font-size:.8rem;' +
+                    ' max-height:220px; }' +   /* ⭐ v68：內容區各自捲動，避免整欄被單一面板撐爆 */
                 '.log-body::-webkit-scrollbar { width:6px; }' +
                 '.log-body::-webkit-scrollbar-track { background:transparent; }' +
                 '.log-body::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }' +
+                '.log-body::-webkit-scrollbar-thumb:hover { background:#475569; }' +
                 '.log-details:not([open]) .log-body { display:none; }';
             document.head.appendChild(style);
             this.injectFilterStyles();
@@ -74427,6 +74480,10 @@ window.HY = window.HY || {};
             var self = this;
             var origAdd = logger.add.bind(logger);
             logger.add = function (message, type) {
+                /* ⭐ v68：自訂面板與武學分流是自己寫 innerHTML 的，
+                   不經過 Logger.add 的清理 → 這裡先清一次，
+                   避免 0.888888888888888 這種浮點尾巴從這兩條路徑漏出。 */
+                message = HY.Logger.sanitizeNums(message);
                 var before = {};
                 self.allPanels.forEach(function (p) {
                     var b = document.getElementById(p.bodyId);
@@ -99492,7 +99549,19 @@ window.HY = window.HY || {};
                     '#log-panel {' +
                         'grid-column: 1 / -1;' +
                         'height: 420px;' +
-                        'flex-direction: row !important;' +   /* ⭐ 覆蓋 uiLogPanels 的 !important */
+                        /* ⭐ v68：改成 row 時面板是橫向並排，
+                           此時要靠「橫向捲動」才看得到全部面板。
+                           uiLogPanels 設的 overflow-y:auto 在橫向排列下無意義，
+                           這裡覆蓋成 auto（橫向）。 */
+                        'flex-direction: row !important;' +
+                        'flex-wrap: nowrap !important;' +
+                        'overflow-x: auto !important;' +
+                        'overflow-y: hidden !important;' +
+                        'align-items: stretch !important;' +
+                    '}' +
+                    '#log-panel > .log-details {' +
+                        'flex: 0 0 280px !important;' +
+                        'min-width: 280px !important;' +
                     '}' +
                 '}' +
                 /* 平板與手機窄視窗：單欄垂直佈局 */
@@ -135079,18 +135148,28 @@ window.HY = window.HY || {};
            ══════════════════════════════════════════════════ */
         injectEntryButton() {
             if (document.getElementById(ENTRY_ID)) return true;
-            var host = document.querySelector('.system-controls') ||
-                       document.getElementById('top-bar');
-            if (!host) return false;
             var self = this;
             var btn = document.createElement('button');
             btn.id = ENTRY_ID;
             btn.className = 'sys-btn';
             btn.style.cssText = 'background:#131c2b;color:#7dd3fc;border:1px solid #2a4a63;' +
-                'border-radius:5px;padding:6px 13px;font-size:.8rem;cursor:pointer;margin:0 4px;';
+                'border-radius:5px;padding:4px 10px;font-size:.78rem;cursor:pointer;margin:0;';
             btn.textContent = '📖 屬性圖鑑';
             btn.title = '查閱遊戲中所有屬性、能力與效果的完整說明';
             btn.addEventListener('click', function () { self.open(); });
+
+            /* ⭐ v68：優先插入「當前時空」徽章旁邊的專用插槽。
+               原本掛在 .system-controls 尾端，會被排到工具列最右邊、
+               離「當前時空」很遠，玩家要多找一段距離。
+               有插槽就放插槽，沒有才退回工具列（保持相容）。 */
+            var slot = document.getElementById('stat-codex-slot');
+            if (slot) {
+                slot.appendChild(btn);
+                return true;
+            }
+            var host = document.querySelector('.system-controls') ||
+                       document.getElementById('top-bar');
+            if (!host) { btn.remove(); return false; }
             host.appendChild(btn);
             return true;
         }
