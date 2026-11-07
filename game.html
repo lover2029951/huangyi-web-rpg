@@ -4531,7 +4531,7 @@ window.HY = window.HY || {};
         critFlat:     { name: '爆擊率加成', group: 'offense', pct: true },
         hitFlat:      { name: '命中率加成', group: 'offense', pct: true },
         armorPen:     { name: '護甲穿透',   group: 'offense', pct: true, cap: 85 },
-        dotDmg:       { name: '持續傷害',   group: 'offense', pct: true },
+        /* ⭐ v459：持續傷害（DoT）機制已移除 —— 屬性整條刪除 */
 
         /* ── 防禦 ── */
         armorPct:     { name: '護甲加成',   group: 'defense', pct: true },
@@ -5265,8 +5265,8 @@ window.HY.Data = window.HY.Data || {};
             bonus: { atk: 60, crit: 12, hit: 8 },
             feature: {
                 id: 'ignite', name: '聖火燎原', icon: '🔥', color: '#ef4444', maxStack: 8,
-                shortDesc: '點燃聖火持續灼傷，自身殘血增幅',
-                desc: '攻擊為敵人疊加 1 層「聖火」（上限 8 層），每層每回合造成 0.15 倍攻擊力的灼傷；自身每損失 10% 氣血，「聖火」灼傷威力提升 8%。'
+                shortDesc: '累積炎勁，出手時一次引爆',
+                desc: '攻擊為敵人疊加 1 層「炎勁」（上限 8 層）；自身下次出手時，將敵人身上全部炎勁一次引爆，每層造成 0.15 倍攻擊力的爆發傷害。自身每損失 10% 氣血，引爆威力提升 8%。'
             },
             signatureSkill: 'mingjiao_art_1',
             skillTree: tree('mingjiao')
@@ -5597,7 +5597,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'brandmark', name: '梵音烙印', icon: '🔯', color: '#fbbf24', maxStack: 3,
                 shortDesc: '烙印附著敵人，持續灼燒並自動跳轉',
-                desc: '每次出手後自動在敵人身上附著 1 道「梵音烙印」（上限 3 道），每道烙印每回合造成 0.25 倍攻擊力的灼燒傷害，持續 8 回合；目標死亡時烙印會自動跳轉至其他存活敵人。\n【武學相生】真言印威力隨外功與會心成長。'
+                desc: '每次出手後自動在敵人身上附著 1 道「梵音烙印」（上限 3 道），每道烙印使自身攻擊力 +3%。目標死亡時烙印會自動跳轉至其他存活敵人。\n【武學相生】真言印威力隨外功與會心成長。'
             },
             mechanic: 'brand',
             mechanicName: '烙印',
@@ -5702,12 +5702,12 @@ window.HY.Data = window.HY.Data || {};
         /* ── ❄️🔥 冰火島 — 冰火雙絕（灼痕）── */
         binghuo: {
             id: 'binghuo', name: '冰火島', reqLv: 10,
-            desc: '【冰火雙絕陰陽並濟】同時修習至寒與至熱兩極真勁的奇門，十式冰火掌與兩極歸元，以灼痕持續折磨敵人。',
+            desc: '【冰火雙絕陰陽並濟】同時修習至寒與至熱兩極真勁的奇門，十式冰火掌與兩極歸元，以灼痕削弱敵人抗性。',
             bonus: { atk: 60, crit: 13, maxMp: 50 },
             feature: {
                 id: 'elemental', name: '冰火雙絕', icon: '❄️', color: '#22d3ee', maxStack: 3,
-                shortDesc: '依靈根在敵人身上留下灼痕，持續侵蝕並削弱',
-                desc: '命中時依自身靈根在敵人身上留下「灼痕」，持續 3 回合：\n· 火靈根 → 焚痕（每回合焚燒）\n· 水／冰靈根 → 凍痕（每回合凍蝕）\n· 雷靈根 → 麻痕（每回合電擊）\n· 土靈根 → 裂痕（每回合崩解）\n· 金靈根 → 銳痕（每回合割裂，威力最高）\n· 木靈根 → 纏痕（每回合纏繞）\n\n同種灼痕再中時延長持續時間，不疊加傷害；每道灼痕同時使敵人抗性 -4%。'
+            shortDesc: '依靈根在敵人身上留下灼痕，削弱抗性並強化自身',
+            desc: '命中時依自身靈根在敵人身上留下「灼痕」，持續 3 回合：\n· 火靈根 → 焚痕（火抗 -4%）\n· 水／冰靈根 → 凍痕（冰抗 -4%、閃避下降）\n· 雷靈根 → 麻痕（雷抗 -4%、受傷增加）\n· 土靈根 → 裂痕（土抗 -4%、防禦下降）\n· 金靈根 → 銳痕（金抗 -4%、削甲最強）\n· 木靈根 → 纏痕（木抗 -4%、攻速下降）\n\n同種灼痕再中時延長持續時間，不疊加。每道灼痕同時使敵人抗性 -4%，並使你對該敵人的傷害提升。'
             },
             mechanic: 'ailment',
             mechanicName: '灼痕',
@@ -5816,8 +5816,8 @@ window.HY.Data = window.HY.Data || {};
             bonus: { atk: 78, maxHp: 340, crit: 15 },
             feature: {
                 id: 'bloodpact', name: '血祭魔功', icon: '🩸', color: '#dc2626', maxStack: 1,
-                shortDesc: '賣血換傷害，低血時爆發但持續流失',
-                desc: '每次攻擊前消耗 12% **當前**氣血，換取該次攻擊 +35% 傷害。\n當氣血低於 30% 時，傷害再額外 ×1.5，但每回合會流失 5% 最大氣血（血祭反噬）。\n擊殺敵人時回復 10% 最大氣血。\n\n⚠ 保護機制：若扣血會讓氣血低於 5%，則該次不扣血也不加傷害。\n\n【設計理念】高風險高報酬。血量越低越強，但反噬會逼你在「繼續賣血」與「補血」之間抉擇。'
+                shortDesc: '賣血換傷害，低血時爆發更強',
+                desc: '每次攻擊前消耗 12% **當前**氣血，換取該次攻擊 +35% 傷害。\n當氣血低於 30% 時，傷害再額外 ×1.5。\n擊殺敵人時回復 10% 最大氣血。\n\n⚠ 保護機制：若扣血會讓氣血低於 5%，則該次不扣血也不加傷害。\n\n【設計理念】高風險高報酬。血量越低越強，但每次出手都要付出氣血代價，逼你在「繼續賣血」與「補血」之間抉擇。'
             },
             mechanic: 'bloodpact',
             mechanicName: '血祭',
@@ -5881,7 +5881,7 @@ window.HY.Data = window.HY.Data || {};
             feature: {
                 id: 'poisonburst', name: '毒爆連鎖', icon: '☣️', color: '#84cc16', maxStack: 8,
                 shortDesc: '多目標疊毒，引爆時連鎖濺射',
-                desc: '攻擊時為敵人疊加「劇毒」（每隻獨立計算，上限 8 層），每層每回合造成 6% 攻擊力的毒傷。\n劇毒累積至 8 層時自動【引爆】：\n· 主目標（毒層最多者）受到 0.5 × 引爆倍率 × 層數 的傷害\n· 其他中毒敵人受到 60% 的連鎖濺射傷害\n· 引爆後所有劇毒層數清零\n\n【設計理念】與星宿「劇毒削上限」不同——這是**多目標連鎖爆**。群怪越多，連鎖越強，清場爽感最強。'
+                desc: '攻擊時為敵人疊加「劇毒」（每隻獨立計算，上限 8 層）。層數本身不造成傷害，僅作為引爆的計數。\n劇毒累積至 8 層時自動【引爆】：\n· 主目標（毒層最多者）受到 0.5 × 引爆倍率 × 層數 的傷害\n· 其他中毒敵人受到 60% 的連鎖濺射傷害\n· 引爆後所有劇毒層數清零\n\n【設計理念】與星宿「劇毒削上限」不同——這是**多目標連鎖爆**。群怪越多，連鎖越強，清場爽感最強。'
             },
             mechanic: 'poisonburst',
             mechanicName: '毒爆',
@@ -25967,6 +25967,15 @@ window.HY = window.HY || {};
           命中 = 這條效果依賴不存在的機制 → 刪掉它。
        ══════════════════════════════════════════════════════ */
     var PURGE = [
+        /* ⭐ v459：持續傷害（DoT）機制已完全移除
+           ──────────────────────────────────────────────────────
+           所有「每回合扣血」「持續傷害加成」類的詞條都不再有效果，
+           這裡攔截天賦樹／專精／昇華中的相關描述，避免玩家點下去卻無效。 */
+        {
+            id: 'dot',
+            name: '持續傷害（DoT）',
+            re: /持續傷害|持續傷害加成|每秒受到|每回合受到.*傷害|每回合失去.*生命|點燃傷害|流血傷害|中毒傷害|腐蝕傷害|燃燒傷害|點燃持續|流血持續|中毒持續|持續傷害倍率|傷害持續時間/
+        },
         {
             id: 'charge',
             name: '充能球（耐力／狂怒／能量球）',
@@ -36576,7 +36585,7 @@ window.HY = window.HY || {};
         meleeDamage:   { name: '近戰傷害',   group: 'damage' },
         projectileDamage:{ name: '投射物傷害', group: 'damage' },
         areaDamage:    { name: '範圍傷害',   group: 'damage' },
-        dotDamage:     { name: '持續傷害',   group: 'damage' },
+        /* ⭐ v459：持續傷害已移除（dotDamage 不再註冊為有效屬性） */
         minionDamage:  { name: '召喚物傷害', group: 'damage' },
         totemDamage:   { name: '圖騰傷害',   group: 'damage' },
         trapDamage:    { name: '陷阱傷害',   group: 'damage' },
@@ -36606,7 +36615,7 @@ window.HY = window.HY || {};
         physDotMulti:  { name: '物理持續加成', group: 'damage' },
         poisonDotMulti:{ name: '中毒持續加成', group: 'damage' },
         bleedDotMulti: { name: '流血持續加成', group: 'damage' },
-        igniteDotMulti:{ name: '點燃持續加成', group: 'damage' },
+
 
         /* ── 爆擊 ── */
         critChance:    { name: '爆擊率',     group: 'crit' },
@@ -36858,13 +36867,11 @@ window.HY = window.HY || {};
         [/^damage over time multiplier for poison from critical strikes$/, 'poisonDotMulti'],
         [/^damage over time multiplier for poison$/, 'poisonDotMulti'],
         [/^damage over time multiplier for bleeding$/, 'bleedDotMulti'],
-        [/^damage over time multiplier for ignite$/, 'igniteDotMulti'],
         [/^fire damage over time multiplier( with attack skills)?$/, 'fireDotMulti'],
         [/^cold damage over time multiplier$/, 'coldDotMulti'],
         [/^chaos damage over time multiplier$/, 'chaosDotMulti'],
         [/^physical damage over time multiplier$/, 'physDotMulti'],
         [/^damage over time multiplier$/, 'dotMulti'],
-        [/^damage over time$/, 'dotDamage'],
 
         /* ── 爆擊 ── */
         [/^critical strike multiplier for spell damage$/, 'spellCritMulti'],
@@ -36978,7 +36985,6 @@ window.HY = window.HY || {};
         [/^poison duration$/, 'poisonDuration'],
         [/^ignite duration on enemies$/, 'igniteDuration'],
         [/^ignite duration on you$/, 'ailmentDurationOnYou'],
-        [/^fire damage over time multiplier for ignite$/, 'igniteDotMulti'],
         [/^duration of elemental ailments on enemies$/, 'elemAilmentDuration'],
         [/^duration of elemental ailments on you$/, 'ailmentDurationOnYou'],
         [/^duration of cold ailments$/, 'coldAilmentDuration'],
@@ -38931,7 +38937,7 @@ window.HY = window.HY || {};
         meleePhysDamage: 'physDmg', physAttackDamage: 'physDmg',
         fireDamage: 'elemDmg', coldDamage: 'elemDmg', lightDamage: 'elemDmg',
         chaosDamage: 'elemDmg', elemDamage: 'elemDmg',
-        dotDamage: 'dotDmg',
+        /* ⭐ v459：dotDamage → dotDmg 映射已移除（屬性不存在） */
         trapDamage: 'atkPct', mineDamage: 'atkPct', brandDamage: 'atkPct'
     };
 
@@ -38940,7 +38946,7 @@ window.HY = window.HY || {};
         atkSpd: 1, castSpd: 1, moveSpd: 1, critFlat: 1, hitFlat: 1,
         fireRes: 1, coldRes: 1, lightningRes: 1, chaosRes: 1, allRes: 1,
         blockChance: 1, dodgeChance: 1, spellSuppress: 1,
-        dmgReduce: 1, atkPct: 1, physDmg: 1, elemDmg: 1, dotDmg: 1,
+        dmgReduce: 1, atkPct: 1, physDmg: 1, elemDmg: 1,
         armorPen: 1, lifeLeech: 1, manaLeech: 1, itemRarity: 1, itemQuantity: 1,
         aoeRadius: 1, auraEffect: 1, curseEffect: 1, minionDmg: 1, minionHp: 1,
         totemDmg: 1, lifeRegen: 1, manaRegen: 1, lightRadius: 1,
@@ -44955,37 +44961,48 @@ window.HY = window.HY || {};
                 return log;
             }
         },
-        // 🔥 明教 — 聖火燎原
+        // 🔥 明教 — 聖火燎原（⭐ v459：移除 DoT，改為引爆型爆發）
         mingjiao: {
             key: 'burnmark',
             base: { max: 8, dot: 0.15, lowHpBonus: 0.08 },
             onAttack: function (sys, core, c, target, dealt, p) {
                 if (!target) return '';
                 var es = sys.enemyState(target);
-                es.ignite = Math.min(p.max, (es.ignite || 0) + 1);
+                /* ⭐ v459：持續傷害機制已移除。
+                   舊版：攻擊疊層 → 每回合結束扣血（DoT）
+                   新版：攻擊疊層 → 出手時一次引爆（爆發）
+                   手感保留（越打越痛），但沒有每回合持續扣血。 */
+                var n = es.ignite || 0;
+                var log = '';
+                /* 先引爆既有炎勁（一次性） */
+                if (n > 0 && dealt > 0) {
+                    var bonus = 1;
+                    var party = sys.app.partySys ? sys.app.partySys.getPartyMembers() : [];
+                    if (party.length > 0) {
+                        var lowest = 1;
+                        party.forEach(function (m) {
+                            if (m.currentHp <= 0) return;
+                            var md = sys.app.charSys.getDerivedStatsForChar(m);
+                            var ratio = md.maxHp > 0 ? (m.currentHp / md.maxHp) : 1;
+                            if (ratio < lowest) lowest = ratio;
+                        });
+                        bonus = 1 + (1 - lowest) * (es.igniteBonus || 0) * 10;
+                    }
+                    var dmg = Math.max(3, Math.floor((es.igniteAtk || 20) * (es.igniteDot || 0.15) * n * bonus));
+                    target.currentHp = Math.max(0, target.currentHp - dmg);
+                    log += ' [🔥炎勁引爆 ' + dmg + ' 傷（' + n + '層）]';
+                    n = 0;
+                }
+                /* 再疊上這一擊的新炎勁 */
+                es.ignite = Math.min(p.max, n + 1);
                 es.igniteAtk = sys.atkOf(c);
                 es.igniteDot = p.dot;
                 es.igniteBonus = p.lowHpBonus;
-                return ' [🔥聖火 ' + es.ignite + '層]';
+                return log + ' [🔥炎勁 ' + es.ignite + '/' + Math.round(p.max) + '層]';
             },
-            onTurnEnd: function (sys, core, enemy, p) {
-                var es = sys.enemyState(enemy);
-                if (!es.ignite || es.ignite <= 0 || enemy.currentHp <= 0) return '';
-                var bonus = 1;
-                var party = sys.app.partySys ? sys.app.partySys.getPartyMembers() : [];
-                if (party.length > 0) {
-                    var lowest = 1;
-                    party.forEach(function (m) {
-                        if (m.currentHp <= 0) return;
-                        var md = sys.app.charSys.getDerivedStatsForChar(m);
-                        var ratio = md.maxHp > 0 ? (m.currentHp / md.maxHp) : 1;
-                        if (ratio < lowest) lowest = ratio;
-                    });
-                    bonus = 1 + (1 - lowest) * (es.igniteBonus || 0) * 10;
-                }
-                var dmg = Math.max(3, Math.floor((es.igniteAtk || 20) * (es.igniteDot || 0.15) * es.ignite * bonus));
-                enemy.currentHp = Math.max(0, enemy.currentHp - dmg);
-                return ' [🔥聖火灼傷 ' + dmg + '（' + es.ignite + '層）]';
+            onTurnEnd: function () {
+                /* ⭐ v459：持續傷害已移除，回合結束不再結算任何傷害。 */
+                return '';
             }
         },
         // 🎯 丐幫 — 連環破綻
@@ -45819,7 +45836,8 @@ window.HY = window.HY || {};
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
                 var rows = [
                     { k: '上限', v: Math.round(ctx.params.max) + ' 層／敵', hl: true },
-                    { k: '每層灼燒', v: ctx.pct(ctx.params.dpsPct) + ' 攻擊力／回合' }
+                    { k: '每層增益', v: '+3% 自身攻擊力' },
+                    { k: '機制', v: '印記累積增傷（無持續傷害）' }
                 ];
                 foes.slice(0, 3).forEach(function (e) {
                     var n = (EX && EX.sealOf) ? EX.sealOf(e) : 0;
@@ -46203,7 +46221,7 @@ window.HY = window.HY || {};
                     { k: '傷害加成', v: ctx.pct(ctx.params.dmgBonusPct) },
                     { k: '低血門檻', v: ctx.pct(ctx.params.lowHpThreshold) },
                     { k: '低血爆發', v: isLow ? ('生效中 ×' + (Math.round(ctx.params.lowHpExtraMult * 100) / 100).toFixed(2)) : '未觸發' },
-                    { k: '反噬', v: isLow ? (ctx.pct(ctx.params.lowHpDrainPct) + '/回合') : '無' }
+                    { k: '反噬', v: isLow ? '無（已移除持續流失）' : '無' }
                 ];
             }
         },
@@ -46350,7 +46368,7 @@ window.HY = window.HY || {};
                 var list = ((core && core.enemies) || []).filter(function (e) { return e && e.currentHp > 0; });
                 var rows = [
                     { k: '中毒敵人', v: list.filter(function (e) { return e._poison && e._poison.stacks > 0; }).length + ' 名', hl: true },
-                    { k: '每層毒傷', v: ctx.pct(ctx.params.perStackDpsPct) + ' 攻擊力' },
+                    { k: '機制', v: '層數累積至滿即引爆（無持續傷害）' },
                     { k: '引爆倍率', v: '×' + (Math.round(ctx.params.burstMult * 100) / 100).toFixed(2) },
                     { k: '連鎖濺射', v: ctx.pct(ctx.params.chainRatio) },
                     { k: '引爆條件', v: '滿 ' + Math.round(ctx.params.max) + ' 層自動引爆' }
@@ -46919,7 +46937,7 @@ window.HY = window.HY || {};
             }
             if (k === 'element')   { b.elem = (b.yyHits || 1) % 5; return '五行：' + (def.ELEMENTS[(b.elem || 0)] || '金'); }
             if (k === 'drain')  return '納元吸取 ' + Math.round(p.drain * 100) + '%';
-            if (k === 'ignite') return '聖火灼傷 ' + Math.round(p.dot * 100) + '%/層';
+            if (k === 'ignite') return '炎勁 ' + Math.round(p.dot * 100) + '%/層（引爆）';
             if (k === 'poison') return '劇毒削上限 ' + Math.round(p.cut * 100) + '%/層';
             if (k === 'meridian') return '脈門命中 +' + Math.round(p.hit * 100) + '%/層';
             if (k === 'frost')  return '寒冰減速 ' + Math.round(p.slow * 100) + '%/層';
@@ -47002,9 +47020,10 @@ window.HY = window.HY || {};
                     if (p.releaseHeal > 0) rows.push({ k: '引爆回血', v: pct(p.releaseHeal) });
                     break;
                 case 'ignite':
-                    rows.push({ k: '受灼燒敵人', v: enemyCount('ignite') + ' 名', hl: true });
-                    rows.push({ k: '最高層數', v: enemyMaxStack('ignite') + ' / ' + cnt(p.max) });
-                    rows.push({ k: '每層灼傷', v: pct(p.dot) });
+                    rows.push({ k: '帶炎勁敵人', v: enemyCount('ignite') + ' 名', hl: true });
+                    rows.push({ k: '最高炎勁', v: enemyMaxStack('ignite') + ' / ' + cnt(p.max) });
+                    rows.push({ k: '引爆倍率', v: pct(p.dot) + '／層' });
+                    rows.push({ k: '引爆時機', v: '自身出手時一次引爆（非持續傷害）' });
                     rows.push({ k: '殘血增幅', v: pct(p.lowHpBonus) });
                     break;
                 case 'breach':
@@ -65208,25 +65227,22 @@ window.HY = window.HY || {};
         return { name: K.icon + K.name, turns: found ? found.turns : 3, kind: K.name };
     }
 
+    /* ⭐ v459：持續傷害已移除。
+       原本 ailmentTick 會讓灼痕每回合扣血（DoT），
+       現在灼痕只保留「抗性削弱」與「計時」，
+       到期即消散，不再造成任何逐回合傷害。 */
     function ailmentTick(e, c) {
         var list = e && e.__yin;
         if (!list || !list.length) return null;
-        var total = 0;
         var keep = [];
         for (var i = 0; i < list.length; i++) {
             var a = list[i];
             if (!a || a.turns <= 0) continue;
-            var d = Math.max(1, Math.floor(a.atk * a.dmgPct));
-            total += d;
             a.turns -= 1;
             if (a.turns > 0) keep.push(a);
         }
         e.__yin = keep;
         syncAil(e);
-        if (total > 0) {
-            e.currentHp = Math.max(0, e.currentHp - total);
-            return { dmg: total, log: '🔥 【' + e.name + '】灼痕侵蝕 ' + total + ' 傷' };
-        }
         return null;
     }
 
@@ -65360,14 +65376,14 @@ window.HY = window.HY || {};
         setMx(c, 'bloodPact', mxs(c, 'bloodPact', 0) + 1);
         return { ok: true, cost: cost, mult: mult };
     }
+    /* ⭐ v459：持續傷害／每回合流失機制已移除。
+       原本血祭教在低血時每回合扣 5% 最大氣血（血祭反噬），
+       屬於逐回合遞減傷害。現在改為「賣血」本身就是成本：
+       每次攻擊前扣 12% 當前氣血（bloodBeforeAttack 已實作），
+       低血時只保留傷害加成，不再有額外的每回合流失。
+       保留函式簽名供既有呼叫端使用。 */
     function bloodTick(c, p) {
-        var st = statsOf(c) || {};
-        var maxHp = num(st.maxHp, 100);
-        var curHp = num(c.currentHp, maxHp);
-        if ((curHp / maxHp) > num(p && p.lowHpThreshold, 0.30)) return 0;
-        var drain = Math.max(1, Math.floor(maxHp * num(p && p.lowHpDrainPct, 0.05)));
-        c.currentHp = Math.max(1, curHp - drain);
-        return drain;
+        return 0;
     }
 
     /* ══════════════════════════════════════════════════════
@@ -65526,13 +65542,11 @@ window.HY = window.HY || {};
         syncPoison(e);
         return { stacks: s.n, full: s.n >= max };
     }
+    /* ⭐ v459：持續傷害已移除。
+       毒爆幫的劇毒不再每回合扣血，改為純粹的「引爆計數器」：
+       疊滿即引爆（poisonBurst），中間不產生任何逐回合傷害。 */
     function poisonTick(e, c) {
-        var s = e && e.__du;
-        if (!s || s.n <= 0) return null;
-        var st = statsOf(c) || {};
-        var dmg = Math.max(1, Math.floor(num(st.atk, 10) * 0.06 * s.n));
-        e.currentHp = Math.max(0, e.currentHp - dmg);
-        return { dmg: dmg };
+        return null;
     }
     function poisonBurst(c, p) {
         var foes = aliveEnemies();
@@ -66027,14 +66041,13 @@ window.HY = window.HY || {};
         e.__seal = n;
         return { stacks: n, applied: true };
     }
+    /* ⭐ v459：持續傷害已移除。
+       原本 sealTick 每回合扣血（DoT），現在真言印只提供
+       「每層 +3% 自身攻擊力」的增益（見 sectFeatureSystem.mods），
+       不再有任何逐回合傷害結算。
+       保留函式簽名是為了讓既有呼叫端不必改動。 */
     function sealTick(e, c) {
-        var n = sealOf(e);
-        if (n <= 0) return null;
-        var st = statsOf(c) || {};
-        var atk = num(st.atk, 10);
-        var dmg = Math.max(1, Math.floor(atk * 0.08 * n));
-        e.currentHp = Math.max(0, e.currentHp - dmg);
-        return { dmg: dmg, stacks: n };
+        return null;
     }
 
     /* ── 10. 淨念禪院：心印 ── */
@@ -89596,13 +89609,13 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_dot', statKey: 'dotDmg', genType: 1,
-            name: '陰毒', label: '陰毒', unit: '%', slots: ['weapon', 'gloves', 'ring', 'amulet'],
-            tags: ['DOT'],
+            groupId: 'wx_pen', statKey: 'armorPen', genType: 1,
+            name: '裂甲', label: '裂甲', unit: '%', slots: ['weapon', 'gloves', 'ring', 'amulet'],
+            tags: ['OFFENSE'],
             tiers: [
-                { reqLv: 15, min: 8, max: 14 },
-                { reqLv: 44, min: 15, max: 26 },
-                { reqLv: 74, min: 28, max: 46 }
+                { reqLv: 15, min: 4, max: 7 },
+                { reqLv: 44, min: 8, max: 13 },
+                { reqLv: 74, min: 14, max: 23 }
             ]
         },
         {
@@ -89707,13 +89720,13 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_dot2', statKey: 'dotDmg', genType: 1,
-            name: '蝕骨', label: '蝕骨', unit: '%', slots: ['boots', 'belt', 'helmet', 'offhand'],
-            tags: ['DOT'],
+            groupId: 'wx_critflat', statKey: 'critFlat', genType: 1,
+            name: '鋒銳', label: '鋒銳', unit: '%', slots: ['boots', 'belt', 'helmet', 'offhand'],
+            tags: ['OFFENSE'],
             tiers: [
-                { reqLv: 18, min: 7, max: 13 },
-                { reqLv: 48, min: 14, max: 24 },
-                { reqLv: 78, min: 26, max: 42 }
+                { reqLv: 18, min: 3, max: 6 },
+                { reqLv: 48, min: 7, max: 12 },
+                { reqLv: 78, min: 13, max: 21 }
             ]
         },
         {
@@ -89957,13 +89970,13 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            groupId: 'wx_dot_s', statKey: 'dotDmg', genType: 2,
-            name: '腐毒', label: '腐毒', unit: '%', slots: ['boots', 'gloves', 'belt', 'offhand'],
-            tags: ['DOT'],
+            groupId: 'wx_critdmg', statKey: 'critDmg', genType: 2,
+            name: '裂創', label: '裂創', unit: '%', slots: ['boots', 'gloves', 'belt', 'offhand'],
+            tags: ['OFFENSE'],
             tiers: [
-                { reqLv: 20, min: 6, max: 12 },
-                { reqLv: 52, min: 13, max: 23 },
-                { reqLv: 82, min: 24, max: 40 }
+                { reqLv: 20, min: 6, max: 11 },
+                { reqLv: 52, min: 12, max: 20 },
+                { reqLv: 82, min: 21, max: 35 }
             ]
         },
         {
@@ -126254,7 +126267,6 @@ window.HY.Data = window.HY.Data || {};
          maxStack   最大層數（0 = 不可疊加）
          turns      預設持續回合
          applyBase  基礎施加機率（0~1）
-         dotPct     每回合傷害 = 來源攻擊力 × dotPct × 層數
          mods       對目標施加的屬性懲罰
          perStack   每層額外效果
        ══════════════════════════════════════════════════════ */
@@ -126264,40 +126276,35 @@ window.HY.Data = window.HY.Data || {};
             id: 'poison', name: '中毒', icon: '☠️', color: '#22c55e',
             cat: 'ailment', element: 'wood',
             maxStack: 10, turns: 4, applyBase: 0.35,
-            dotPct: 0.055,
-            desc: '每回合受到毒性傷害，可疊加 10 層。',
-            perStackDesc: '每層：每回合 +5.5% 攻擊力的毒傷'
+            desc: '劇毒攻心，削弱敵方戰力，可疊加 10 層。',
+            perStackDesc: '每層：毒抗 -4%'
         },
         burn: {
             id: 'burn', name: '燃燒', icon: '🔥', color: '#ef4444',
             cat: 'ailment', element: 'fire',
             maxStack: 8, turns: 3, applyBase: 0.30,
-            dotPct: 0.085,
-            desc: '烈焰焚身，每回合受到火焰傷害。',
-            perStackDesc: '每層：每回合 +8.5% 攻擊力的火傷'
+            desc: '烈焰焚身，護體被灼蝕而脆弱。',
+            perStackDesc: '每層：火抗 -4%'
         },
         bleed: {
             id: 'bleed', name: '流血', icon: '🩸', color: '#dc2626',
             cat: 'ailment', element: 'metal',
             maxStack: 8, turns: 3, applyBase: 0.32,
-            dotPct: 0.065,
-            desc: '傷口不止，每回合失血。目標移動時額外受傷。',
-            perStackDesc: '每層：每回合 +6.5% 攻擊力的失血'
+            desc: '傷口不止，氣血難凝，受到的傷害提高。',
+            perStackDesc: '每層：受到傷害 +2%'
         },
         frostbite: {
             id: 'frostbite', name: '凍傷', icon: '❄️', color: '#67e8f9',
             cat: 'ailment', element: 'ice',
             maxStack: 6, turns: 3, applyBase: 0.28,
-            dotPct: 0.045,
             mods: { atkSpdDownPct: 6, evaDownPct: 8 },
-            desc: '寒氣侵體，行動遲緩且每回合受傷。',
+            desc: '寒氣侵體，行動遲緩、身法受阻。',
             perStackDesc: '每層：攻速 -6%、閃避 -8%'
         },
         shock: {
             id: 'shock', name: '麻痺', icon: '⚡', color: '#c084fc',
             cat: 'ailment', element: 'lightning',
             maxStack: 6, turns: 3, applyBase: 0.30,
-            dotPct: 0.03,
             mods: { dmgTakenPct: 8 },
             desc: '雷電麻痺，受到的傷害提高。',
             perStackDesc: '每層：受到傷害 +8%'
@@ -126306,7 +126313,6 @@ window.HY.Data = window.HY.Data || {};
             id: 'corrode', name: '侵蝕', icon: '🪨', color: '#d97706',
             cat: 'ailment', element: 'earth',
             maxStack: 8, turns: 4, applyBase: 0.26,
-            dotPct: 0.035,
             mods: { defDownPct: 7 },
             desc: '土石之力侵蝕護體，防禦持續下降。',
             perStackDesc: '每層：防禦 -7%'
@@ -126403,10 +126409,9 @@ window.HY.Data = window.HY.Data || {};
             id: 'scorch', name: '灼燒', icon: '🌋', color: '#fb923c',
             cat: 'ailment', element: 'fire',
             maxStack: 6, turns: 4, applyBase: 0.24,
-            dotPct: 0.05,
             mods: { fireResDownPct: 8 },
             desc: '烈焰灼體，火抗下降且持續受傷。',
-            perStackDesc: '每層：火抗 -8%、每回合 +5% 攻擊力火傷'
+            perStackDesc: '每層：火抗 -8%'
         },
         brittle: {
             id: 'brittle', name: '脆化', icon: '🧊', color: '#a5f3fc',
@@ -126428,10 +126433,9 @@ window.HY.Data = window.HY.Data || {};
             id: 'wither', name: '凋零', icon: '🍂', color: '#84cc16',
             cat: 'ailment', element: 'chaos',
             maxStack: 10, turns: 5, applyBase: 0.28,
-            dotPct: 0.04,
             mods: { chaosResDownPct: 6 },
             desc: '毒勁侵蝕生機，抗性與氣血一同流失。',
-            perStackDesc: '每層：毒抗 -6%、每回合 +4% 攻擊力毒傷'
+            perStackDesc: '每層：毒抗 -6%'
         },
 
         /* ── 內傷類（武俠特有） ── */
@@ -126439,7 +126443,6 @@ window.HY.Data = window.HY.Data || {};
             id: 'internalInjury', name: '內傷', icon: '💔', color: '#f87171',
             cat: 'wound',
             maxStack: 8, turns: 5, applyBase: 0.26,
-            dotPct: 0.03,
             mods: { maxHpDownPct: 5, lifeRegenDownPct: 20 },
             desc: '臟腑受創，氣血上限下降且難以回復。',
             perStackDesc: '每層：氣血上限 -5%、回復 -20%'
@@ -126806,7 +126809,7 @@ window.HY = window.HY || {};
             this.logger = app && app.logger;
             this._installed = false;
             /* 統計：本場戰鬥各狀態的施加次數（給 UI / 戰報用） */
-            this.stats = { applied: 0, expired: 0, dotDamage: 0, byId: {} };
+            this.stats = { applied: 0, expired: 0, byId: {} };
         }
 
         /* ══════════════════════════════════════════════════
@@ -127242,21 +127245,17 @@ window.HY = window.HY || {};
          * 回合結束時結算（DoT + 回合數遞減）
          * @param {object} target
          * @param {object} [opts] { atk（來源攻擊力）, isChar（是否為我方角色） }
-         * @returns {{dotDamage, expired:[], healed, logs:[]}}
+         * @returns {{expired:[], healed, logs:[]}}
          */
         tick(target, opts) {
             var o = opts || {};
-            var res = { dotDamage: 0, expired: [], healed: 0, logs: [] };
+            var res = { expired: [], healed: 0, logs: [] };
             var b = this.bag(target);
             if (!b) return res;
 
             var A = D().AILMENTS || {};
             var B = D().BUFFS || {};
-            var srcAtk = num(o.atk, 0);
-
-            /* 持續傷害增幅（來源天賦） */
-            var dotMul = 1;
-            if (o.source) dotMul = 1 + num(this._talentStatusBonus(o.source).dotMul, 0);
+            /* ⭐ v459：持續傷害已移除，srcAtk / dotMul 不再需要 */
 
             var self = this;
             Object.keys(b).forEach(function (id) {
@@ -127266,16 +127265,10 @@ window.HY = window.HY || {};
                 if (!def) { delete b[id]; return; }
                 var n = num(st.stacks, 0);
 
-                /* ① 持續傷害（異常才有） */
-                if (A[id] && def.dotPct && srcAtk > 0) {
-                    var dmg = Math.round(srcAtk * def.dotPct * n * dotMul);
-                    if (dmg > 0) {
-                        res.dotDamage += dmg;
-                        self.stats.dotDamage += dmg;
-                        res.logs.push('☠️ ' + (target.name || '目標') + ' 受到【' +
-                            def.name + '】' + dmg + ' 點持續傷害');
-                    }
-                }
+                /* ⭐ v459：持續傷害（DoT）已移除。
+                   原本這裡會依 dotPct 計算每回合傷害，
+                   現在異常狀態只保留「屬性懲罰」與「回合數遞減」，
+                   不再有任何每回合扣血。 */
 
                 /* ② 回復（輔助狀態） */
                 if (B[id] && def.healPerStackPct && o.isChar) {
@@ -127453,7 +127446,7 @@ window.HY = window.HY || {};
            戰報 / 統計
            ══════════════════════════════════════════════════ */
         resetStats() {
-            this.stats = { applied: 0, expired: 0, dotDamage: 0, byId: {} };
+            this.stats = { applied: 0, expired: 0, byId: {} };
         }
 
         statsSummary() {
@@ -127469,7 +127462,6 @@ window.HY = window.HY || {};
             return {
                 applied: this.stats.applied,
                 expired: this.stats.expired,
-                dotDamage: this.stats.dotDamage,
                 rows: rows
             };
         }
