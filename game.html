@@ -136346,7 +136346,8 @@ window.HY = window.HY || {};
                     if (daoText) {
                         h += '<div class="can-card" style="border-left:3px solid #a78bfa">' +
                             '<h4 style="color:#a78bfa">🌌 道途總加成</h4>' +
-                            '<div style="font-size:.76rem;color:#c4b5fd;line-height:1.9">' +
+                            /* ⭐ v467：data-stat-auto → 每個道途屬性名都可懸停查說明 */
+                            '<div data-stat-auto style="font-size:.76rem;color:#c4b5fd;line-height:1.9">' +
                             '　' + esc(daoText) +
                             '</div>' +
                             '<div style="font-size:.7rem;color:#64748b;margin-top:3px">' +
@@ -136357,31 +136358,14 @@ window.HY = window.HY || {};
                 h += '<div class="can-card"><h4>✅ 已領悟功法</h4>';
                 mine.forEach(function (m) {
                     var gf = m.gongfa;
-                    /* ⭐ v464：功法已改用「道途屬性」（passive 已被 canonGongfaData 移除），
-                       這裡改為直接從 dao 計算當前重數的實際數值，
-                       不再顯示「當前加成：無」這種誤導文字。 */
-                    var daoNow = (Data.gongfaDaoAt ? Data.gongfaDaoAt(gf, m.lv) : null) || {};
-                    var bits = [];
-                    (function () {
-                        var L = Data.DAO_STAT_LABELS || {};
-                        ['daoAtk', 'daoDef', 'daoHp', 'daoMp'].forEach(function (k) {
-                            var v = daoNow[k];
-                            if (!v) return;
-                            bits.push((L[k] || k) + ' ' + (v > 0 ? '+' : '') + v);
-                        });
-                        if (daoNow.daoRegen) {
-                            bits.push((L.daoRegen || '元炁回復') + ' ' +
-                                (daoNow.daoRegen * 100).toFixed(1) + '%/回合');
-                        }
-                        if (daoNow.daoBreak) {
-                            bits.push((L.daoBreak || '破境') + ' ' +
-                                (daoNow.daoBreak * 100).toFixed(1) + '%');
-                        }
-                        if (daoNow.daoAura) {
-                            bits.push((L.daoAura || '道韻') + ' +' +
-                                (daoNow.daoAura * 100).toFixed(1) + '%');
-                        }
-                    })();
+                    /* ⭐ v467：功法屬性全部帶 data-stat，可懸停查說明
+                       ──────────────────────────────────────────────────────────
+                       舊版是一串純文字（「道體 +600　·　道基 +90」），
+                       玩家看不出這些屬性是幹什麼的。
+                       現在每個屬性名都包上 span[data-stat]，滑鼠停留 1 秒
+                       就會顯示該屬性的完整說明（說明/計算/提示）。
+                       數值仍保留在後方，不影響閱讀。
+                       （屬性列表由下方「🌌 道途」區塊統一輸出） */
                     var canUp = num(cur.lv, 1) >= m.reqLv && sp >= m.cost;
                     h += '<div class="cn-book" style="border-left:3px solid ' + esc(gf.color) + '">' +
                         '<div class="hd">' +
@@ -136407,7 +136391,9 @@ window.HY = window.HY || {};
                                     'font-weight:bold;margin-bottom:3px;">🎯 ' + esc(gd.role) + '</div>';
                             }
                             if (gd.how) {
-                                out += '<div style="font-size:.71rem;color:#cbd5e1;line-height:1.7;' +
+                                /* ⭐ v467：data-stat-auto 讓「道體 +42、道基 +6」
+                                   這些屬性名自動變成可懸停查詢 */
+                                out += '<div data-stat-auto style="font-size:.71rem;color:#cbd5e1;line-height:1.7;' +
                                     'margin-bottom:3px;"><b style="color:#94a3b8;">運作：</b>' +
                                     esc(gd.how) + '</div>';
                             }
@@ -136428,16 +136414,39 @@ window.HY = window.HY || {};
                         })() +
                         (function () {
                             /* ⭐ 道途加成（修仙專屬，與武學屬性分開顯示）
-                               ⭐ v465：加 data-stat-auto，讓每個道途屬性可懸停查說明 */
+                               ⭐ v467：改為直接輸出帶 data-stat 的標籤
+                                  （原本靠 data-stat-auto 自動辨識，但它只在
+                                    元素首次出現時掃一次，面板重繪後會失效） */
                             var d = (Data.gongfaDaoAt ? Data.gongfaDaoAt(gf, m.lv) : null);
-                            var dt = d && Data.daoEffectText ? Data.daoEffectText(d) : '';
-                            if (!dt) return '';
-                            return '<div data-stat-auto style="font-size:.72rem;color:#a78bfa;margin-top:3px">' +
-                                '　🌌 道途：' + esc(dt) + '</div>';
+                            if (!d) return '';
+                            var L = Data.DAO_STAT_LABELS || {};
+                            var parts = [];
+                            function tag2(k, label, txt) {
+                                return '<span data-stat="' + k + '" ' +
+                                    'style="cursor:help;border-bottom:1px dotted rgba(167,139,250,0.45);">' +
+                                    label + '</span>' + txt;
+                            }
+                            ['daoAtk', 'daoDef', 'daoHp', 'daoMp'].forEach(function (k) {
+                                var v = d[k];
+                                if (!v) return;
+                                parts.push(tag2(k, (L[k] || k), ' ' + (v > 0 ? '+' : '') + v));
+                            });
+                            if (d.daoRegen) {
+                                parts.push(tag2('daoRegen', (L.daoRegen || '元炁回復'),
+                                    ' ' + (d.daoRegen * 100).toFixed(1) + '%／回合'));
+                            }
+                            if (d.daoBreak) {
+                                parts.push(tag2('daoBreak', (L.daoBreak || '破境'),
+                                    ' ' + (d.daoBreak * 100).toFixed(1) + '%'));
+                            }
+                            if (d.daoAura) {
+                                parts.push(tag2('daoAura', (L.daoAura || '道韻'),
+                                    ' +' + (d.daoAura * 100).toFixed(1) + '%'));
+                            }
+                            if (!parts.length) return '';
+                            return '<div style="font-size:.72rem;color:#a78bfa;margin-top:3px">' +
+                                '　🌌 道途：' + parts.join('　·　') + '</div>';
                         })() +
-                        '<div style="font-size:.72rem;color:#cbd5e1;margin-top:3px">' +
-                            '　📊 當前加成：' + (bits.join('　·　') || '無') +
-                        '</div>' +
                         '<div style="display:flex;gap:6px;align-items:center;margin-top:7px">' +
                         '<button class="can-btn green" data-gfup="' + gf.id + '"' +
                             (canUp ? '' : ' disabled') + '>' +
@@ -136484,7 +136493,7 @@ window.HY = window.HY || {};
                             '</span>' +
                             (gd && gd.role ? '<div style="color:' + esc(gf.color) + ';font-size:.7rem;' +
                                 'margin-top:2px;">🎯 ' + esc(gd.role) + '</div>' : '') +
-                            (gd && gd.how ? '<div style="color:#94a3b8;font-size:.69rem;' +
+                            (gd && gd.how ? '<div data-stat-auto style="color:#94a3b8;font-size:.69rem;' +
                                 'line-height:1.65;margin-top:1px;">' + esc(gd.how) + '</div>' : '') +
                             '</div>';
                     });
@@ -138449,27 +138458,64 @@ window.HY = window.HY || {};
         var nodes = root.querySelectorAll ? root.querySelectorAll('[data-stat-auto]') : [];
         Array.prototype.forEach.call(nodes, function (host) {
             if (host.__statTagged) return;
-            var raw = host.textContent || '';
-            if (!raw.trim()) return;
+            if (!(host.textContent || '').trim()) return;
 
-            /* 用佔位符做一次性替換，避免 replace 過程中又匹配到自己插入的標籤 */
-            var out = esc(raw);
-            var used = {};
-            list.forEach(function (it) {
-                if (used[it.name]) return;
-                /* 只替換「還沒被包起來」的裸文字 */
-                var safe = it.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                var re = new RegExp('(^|[^>\\w])(' + safe + ')(?![^<]*</span>)', 'g');
-                if (re.test(out)) {
-                    used[it.name] = 1;
-                    out = out.replace(re, function (m0, pre, word) {
-                        return pre + '<span data-stat="' + it.key + '" ' +
-                            'style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.45);">' +
-                            word + '</span>';
-                    });
+            /* ⭐ v467：改為只處理「純文字節點」，不再整個 innerHTML 重寫
+               ──────────────────────────────────────────────────────────
+               舊做法：取 textContent → 全體轉義 → 正則替換 → 寫回 innerHTML
+               問題：宿主內若有 <b>運作：</b> 這種標籤，會被當成純文字轉義，
+                    導致標籤消失、粗體變文字。
+               新做法：用 TreeWalker 走訪文字節點，只把「屬性名」包成 span，
+                    其餘 DOM 結構完全保留。 */
+            var walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null, false);
+            var textNodes = [];
+            var n;
+            while ((n = walker.nextNode())) {
+                if (n.parentNode && n.parentNode.getAttribute &&
+                    n.parentNode.getAttribute('data-stat')) continue;   /* 已標記的跳過 */
+                if ((n.nodeValue || '').trim()) textNodes.push(n);
+            }
+
+            textNodes.forEach(function (tn) {
+                /* 逐個屬性名分段：找出所有命中位置，從後往前插入避免位移 */
+                var txt = tn.nodeValue;
+                var hits = [];
+                list.forEach(function (it) {
+                    var idx = txt.indexOf(it.name);
+                    while (idx >= 0) {
+                        hits.push({ start: idx, end: idx + it.name.length, key: it.key });
+                        idx = txt.indexOf(it.name, idx + 1);
+                    }
+                });
+                if (!hits.length) return;
+                /* 去除重疊（長名優先，已由 list 排序保證） */
+                hits.sort(function (a, b) { return a.start - b.start || (b.end - a.start) - (a.end - a.start); });
+                var picked = [];
+                var lastEnd = -1;
+                hits.forEach(function (h) {
+                    if (h.start >= lastEnd) { picked.push(h); lastEnd = h.end; }
+                });
+                if (!picked.length) return;
+
+                var frag = document.createDocumentFragment();
+                var cursor = 0;
+                picked.forEach(function (h) {
+                    if (h.start > cursor) {
+                        frag.appendChild(document.createTextNode(txt.slice(cursor, h.start)));
+                    }
+                    var sp = document.createElement('span');
+                    sp.setAttribute('data-stat', h.key);
+                    sp.style.cssText = 'cursor:help;border-bottom:1px dotted rgba(147,197,253,0.45);';
+                    sp.textContent = txt.slice(h.start, h.end);
+                    frag.appendChild(sp);
+                    cursor = h.end;
+                });
+                if (cursor < txt.length) {
+                    frag.appendChild(document.createTextNode(txt.slice(cursor)));
                 }
+                tn.parentNode.replaceChild(frag, tn);
             });
-            host.innerHTML = out;
+
             host.__statTagged = true;
         });
     }
