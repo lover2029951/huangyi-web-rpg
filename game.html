@@ -25701,6 +25701,54 @@ window.HY = window.HY || {};
             id: 'wuxing',
             name: '五行（應為八元素）',
             re: /五行/
+        },
+        {
+            id: 'corpse',
+            name: '屍體（本作沒有屍體機制）',
+            /* POE 有「消耗屍體」這類詞條（吞噬屍體回復、每具屍體增傷…），
+               本作戰鬥結束即清除敵人，沒有留下屍體，因此整條無效。 */
+            re: /屍體|屍骸|吞噬.*屍|消耗.*屍/
+        },
+        {
+            id: 'totem',
+            name: '圖騰（本作叫劍樁，且不共用 POE 系統）',
+            /* 萬劍山莊的劍樁是門派機制，天賦樹的 Totem 詞條對它無效 */
+            re: /圖騰/
+        },
+        {
+            id: 'poe-aura',
+            name: '光環（本作沒有光環技能）',
+            re: /光環/
+        },
+
+        /* ══ 以下為 POE 專有名詞，本作完全不存在 ══ */
+
+        {
+            id: 'offering',
+            name: '奉獻（POE 的 Offering 技能）',
+            /* 本作沒有「犧牲召喚物以獲得增益」這類技能 */
+            re: /奉獻/
+        },
+        {
+            id: 'vaal',
+            name: '瓦爾（POE 的 Vaal 技能版本）',
+            /* 本作沒有「瓦爾技能」這種充能型強化技能（與瓦爾多/瓦爾寶珠無關） */
+            re: /瓦爾(?!多|寶珠|石|克)/
+        },
+        {
+            id: 'poe-skillname',
+            name: 'POE 專屬技能名（閃現射擊／幻影射擊…）',
+            /* 這些是 POE 的技能名稱，本作招式完全是另一套（太祖長拳等） */
+            re: /閃現射擊|幻影射擊|旋風斬|毒雨|冰矛|火球|電弧|靈體投擲|雷霆衝鋒/
+        },
+        {
+            id: 'poe-keyword',
+            name: 'POE 機制關鍵字',
+            /* ⚠️ 只列「本作確實沒有」的：
+               · 點燃／感電／焦灼／脆化 → 本作的灼痕叫「焚痕／麻痕」等，不用這些名
+               · 勇氣／威力／強度疊層 → POE 的資源條，本作沒有
+               不列入：偷取、回補、命中、閃避（這些本作有實作） */
+            re: /點燃|感電|焦灼|脆化|勇氣|敵人威力|蓄力層數|強度疊層/
         }
     ];
 
@@ -25747,6 +25795,118 @@ window.HY = window.HY || {};
             .replace(/五行/g, '八元素')
             /* 再收斂一次（避免「五行→八元素」後又與既有的「八元素」相鄰） */
             .replace(/(?:八)+元素/g, '八元素');
+    }
+
+    /* ══════════════════════════════════════════════════════
+       二之一、條件不存在的效果 → 換成合理條件（保留原效果）
+       ──────────────────────────────────────────────────────────
+       有些詞條的「效果」本身是合理的（回復氣血、增傷…），
+       只是「觸發條件」用到了本作沒有的東西（屍體、圖騰…）。
+       這類不該整條刪掉，而是換掉條件、保留效果。
+       ══════════════════════════════════════════════════════ */
+    var CONDITION_FIX = [
+        /* 屍體 → 擊殺（本作擊殺敵人後不會留下屍體，改為擊殺時觸發） */
+        { re: /^每\s*([\d.]+)\s*秒消耗附近\s*1\s*具屍體，回復\s*([\d.]+)\s*%\s*氣血$/,
+          fn: function (m) { return '擊殺敵人時回復 ' + m[2] + '% 氣血'; } },
+        { re: /每具屍體[，,]?\s*回復\s*([\d.]+)\s*%\s*氣血/,
+          fn: function (m) { return '擊殺敵人時回復 ' + m[1] + '% 氣血'; } },
+        { re: /擊殺.*屍體/,
+          fn: function () { return '擊殺敵人時額外回復 3% 氣血'; } },
+        { re: /消耗.*屍體/,
+          fn: function () { return '擊殺敵人時回復 4% 氣血'; } },
+        { re: /屍體/,
+          fn: function () { return '擊殺敵人時回復 3% 氣血'; } },
+
+        /* 奉獻（POE 犧牲召喚物） → 本作改為「靈獸共鳴」：靈獸在場時自身增益 */
+        { re: /^奉獻效果增加\s*([\d.]+)\s*%$/,
+          fn: function (m) { return '靈獸在場時，自身傷害 +' + m[1] + '%'; } },
+        { re: /奉獻效果/,
+          fn: function () { return '靈獸在場時，自身傷害 +12%'; } },
+
+        /* 瓦爾技能 → 本作沒有，改為「絕招蓄勁」。
+           ⚠️ 必須用「整句」規則，不能用 /非瓦爾/ 部分替換 ——
+              原文是「非瓦爾打擊招式額外鎖定 1 個附近敵人」，
+              只換「非瓦爾」三個字會留下「普通招式…打擊招式…」的重複句。 */
+        { re: /^非瓦爾打擊招式額外鎖定\s*\d+\s*個附近敵人$/,
+          fn: function () { return '普通招式額外鎖定 1 個附近敵人'; } },
+        { re: /非瓦爾/g, fn: function () { return '普通'; } },
+        { re: /瓦爾技能/g, fn: function () { return '絕招'; } },
+        { re: /瓦爾(?!多|寶珠|石|克)/g, fn: function () { return '絕招'; } },
+
+        /* POE 技能名 → 本作沒有的招式，改為通用冷卻加成 */
+        { re: /閃現射擊|幻影射擊/,
+          fn: function () { return '輕功類招式冷卻回復 +50%'; } },
+
+        /* POE 異常名 → 改用本作的灼痕命名（全域替換，不用捕捉群組） */
+        { re: /點燃/g, fn: function () { return '焚痕'; } },
+        { re: /感電/g, fn: function () { return '麻痕'; } },
+        { re: /焦灼/g, fn: function () { return '焦痕'; } },
+        { re: /脆化/g, fn: function () { return '裂痕'; } }
+    ];
+
+    /** 條件修正（回傳新句子，否則 null）
+     *  ⭐ 會「多輪套用」：一句話可能同時含「點燃」與「感電」，
+     *     必須全部換掉，不能只換第一個命中的規則。 */
+    function fixCondition(text) {
+        var s = String(text == null ? '' : text).trim();
+        if (!s) return null;
+
+        var changed = false;
+        var guard = 0;
+        var cur = s;
+
+        while (guard++ < 8) {
+            var hit = false;
+            for (var i = 0; i < CONDITION_FIX.length; i++) {
+                var rule = CONDITION_FIX[i];
+                var m = rule.re.exec(cur);
+                if (!m) continue;
+
+                var next;
+                try {
+                    /* 無參數的規則 → 全域字詞替換；有參數 → 整句改寫 */
+                    next = (!rule.fn.length) ? cur.replace(rule.re, rule.fn()) : rule.fn(m);
+                } catch (e) { continue; }
+
+                if (next && next !== cur) {
+                    cur = next;
+                    hit = true;
+                    changed = true;
+                }
+                break;      /* 每輪只套一條，然後從頭再掃（避免規則互相干擾） */
+            }
+            if (!hit) break;
+        }
+
+        return changed ? cur : null;
+    }
+
+    /**
+     * ⭐ 收尾清理：移除「相鄰重複片段」。
+     * 部分替換規則若命中的是片語（例如「非瓦爾」），可能留下
+     * 「普通招式額外鎖定 1 個附近敵人打擊招式額外鎖定 1 個附近敵人」
+     * 這種疊句。這裡做最後一道防線。
+     */
+    function tidy(text) {
+        var s = String(text == null ? '' : text);
+        if (!s) return s;
+
+        /* ① 若句子由「兩段幾乎相同」的內容組成 → 只留一段 */
+        var mid = Math.floor(s.length / 2);
+        for (var cut = 4; cut < mid; cut++) {
+            var a = s.slice(0, cut);
+            var b = s.slice(cut, cut * 2);
+            if (a === b) { s = s.slice(0, cut) + s.slice(cut * 2); break; }
+        }
+
+        /* ② 常見疊字收斂 */
+        s = s.replace(/(額外鎖定\s*\d+\s*個附近敵人)\1+/g, '$1');
+        s = s.replace(/([\u4e00-\u9fa5]{4,})\1+/g, '$1');
+        s = s.replace(/(?:八)+元素/g, '八元素');
+
+        /* ③ 清掉多餘空白與重複標點 */
+        s = s.replace(/\s{2,}/g, ' ').replace(/[，,]{2,}/g, '，').trim();
+        return s;
     }
 
     /* ══════════════════════════════════════════════════════
@@ -25840,6 +26000,7 @@ window.HY = window.HY || {};
         if (!N || typeof N !== 'object') return null;
 
         var statsFixed = 0;      /* 五行→八元素 */
+        var condFixed = 0;       /* 條件不存在 → 換條件 */
         var statsRemoved = 0;    /* 刪掉的效果條數 */
         var nodesReplaced = 0;   /* 效果被換掉的節點數（節點保留） */
         var byCat = {};
@@ -25859,6 +26020,12 @@ window.HY = window.HY || {};
             n.stats.forEach(function (raw) {
                 var s = fixElements(raw);
                 if (s !== raw) statsFixed++;
+                /* ⭐ 先嘗試「換條件、保留效果」（例如：屍體 → 擊殺） */
+                var cf = fixCondition(s);
+                if (cf) {
+                    s = cf;
+                    condFixed++;
+                }
                 var cat = shouldPurge(s);
                 if (cat) {
                     statsRemoved++;
@@ -25866,7 +26033,7 @@ window.HY = window.HY || {};
                     byCat[cat] = (byCat[cat] || 0) + 1;
                     return;                 /* 這條效果丟棄 */
                 }
-                out.push(s);
+                out.push(tidy(s));
             });
 
             /* ⭐ 全部被刪光 → 換成一條武俠效果，節點保留 */
@@ -25880,6 +26047,7 @@ window.HY = window.HY || {};
 
         return {
             statsFixed: statsFixed,
+            condFixed: condFixed,
             statsRemoved: statsRemoved,
             nodesReplaced: nodesReplaced,
             byCat: byCat
@@ -25945,6 +26113,7 @@ window.HY = window.HY || {};
         if (!M || typeof M !== 'object') return null;
 
         var effFixed = 0;
+        var effCondFixed = 0;
         var effRemoved = 0;
         var effReplaced = 0;
         var masteriesPurged = 0;
@@ -25964,6 +26133,9 @@ window.HY = window.HY || {};
                 ef.stats.forEach(function (raw) {
                     var s = fixElements(raw);
                     if (s !== raw) effFixed++;
+                    /* ⭐ 先換條件（屍體→擊殺），保留原效果 */
+                    var cf = fixCondition(s);
+                    if (cf) { s = cf; effCondFixed++; }
                     var cat = shouldPurge(s);
                     if (cat) {
                         effRemoved++;
@@ -25971,7 +26143,7 @@ window.HY = window.HY || {};
                         byCat[cat] = (byCat[cat] || 0) + 1;
                         return;
                     }
-                    keptStats.push(s);
+                    keptStats.push(tidy(s));
                 });
 
                 /* ⭐ 該選項全部被刪光 → 換成一條通用效果，選項保留 */
@@ -26015,6 +26187,7 @@ window.HY = window.HY || {};
 
         return {
             effFixed: effFixed,
+            effCondFixed: effCondFixed,
             effRemoved: effRemoved,
             effReplaced: effReplaced,
             masteriesPurged: masteriesPurged,
@@ -26038,6 +26211,7 @@ window.HY = window.HY || {};
 
         _report = {
             statsFixed: a ? a.statsFixed : 0,
+            condFixed: (a ? a.condFixed : 0) + (b ? b.effCondFixed : 0),
             statsRemoved: a ? a.statsRemoved : 0,
             nodesReplaced: a ? a.nodesReplaced : 0,
             effFixed: b ? b.effFixed : 0,
@@ -26049,13 +26223,17 @@ window.HY = window.HY || {};
                 charge: (a && a.byCat.charge || 0) + (b && b.byCat.charge || 0),
                 mine: (a && a.byCat.mine || 0) + (b && b.byCat.mine || 0),
                 warcry: (a && a.byCat.warcry || 0) + (b && b.byCat.warcry || 0),
-                wuxing: (a && a.byCat.wuxing || 0) + (b && b.byCat.wuxing || 0)
+                wuxing: (a && a.byCat.wuxing || 0) + (b && b.byCat.wuxing || 0),
+                corpse: (a && a.byCat.corpse || 0) + (b && b.byCat.corpse || 0),
+                totem: (a && a.byCat.totem || 0) + (b && b.byCat.totem || 0),
+                aura: (a && a.byCat['poe-aura'] || 0) + (b && b.byCat['poe-aura'] || 0)
             }
         };
 
         try {
             console.log('[HY WuxiaPurge] ✓ POE 機制已完全移除（節點保留）：' +
                 '刪除天賦效果 ' + _report.statsRemoved + ' 條、' +
+                '換條件保留效果 ' + _report.condFixed + ' 條、' +
                 '其中 ' + _report.nodesReplaced + ' 顆節點改為替代效果、' +
                 '位置樞紐補效果 ' + _report.proxyFilled + ' 顆、' +
                 '專精效果刪 ' + _report.effRemoved + ' 條、' +
@@ -26070,6 +26248,8 @@ window.HY = window.HY || {};
         THEME_RULES: THEME_RULES,
         shouldPurge: shouldPurge,
         fixElements: fixElements,
+        fixCondition: fixCondition,
+        tidy: tidy,
         replacementFor: replacementFor,
         run: run,
         report: function () { return _report; },
