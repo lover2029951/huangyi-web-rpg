@@ -106990,23 +106990,28 @@ window.HY = window.HY || {};
            ⭐ v518：改為懸浮在舞台「頂部中央」（VS 正上方、立繪上方留白區），
                    並把下方立繪往下推，確保完全不遮擋角色。 */
         '.hy-stage-share{position:absolute;left:50%;top:8px;z-index:7;' +
-            'transform:translateX(-50%);width:230px;' +
-            'padding:5px 10px;border-radius:8px;pointer-events:none;' +
+            'transform:translateX(-50%);width:min(560px,72%);' +
+            'padding:6px 12px;border-radius:8px;pointer-events:none;' +
             'background:rgba(4,8,14,.92);border:1px solid rgba(51,65,85,.9);' +
             'box-shadow:0 3px 14px rgba(0,0,0,.85);' +
             'font-size:.58rem;color:#94a3b8;}',
+        /* ⭐ v519：兩欄式排列，5 人也能全部顯示 */
+        '.hy-stage-share .sh-grid{display:grid;grid-template-columns:1fr 1fr;' +
+            'gap:3px 14px;margin-top:3px;}',
         '.hy-stage-share .sh-t{display:block;font-size:.54rem;color:#64748b;' +
-            'letter-spacing:.5px;margin-bottom:3px;text-align:center;}',
-        '.hy-stage-share .sh-row{display:flex;align-items:center;gap:4px;margin-top:2px;}',
-        '.hy-stage-share .sh-nm{flex:0 0 52px;overflow:hidden;text-overflow:ellipsis;' +
+            'letter-spacing:.5px;text-align:center;}',
+        '.hy-stage-share .sh-row{display:flex;align-items:center;gap:4px;}',
+        '.hy-stage-share .sh-nm{flex:0 0 58px;overflow:hidden;text-overflow:ellipsis;' +
             'white-space:nowrap;color:#cbd5e1;}',
         '.hy-stage-share .sh-bar{flex:1 1 auto;height:6px;border-radius:3px;overflow:hidden;' +
             'background:#0a1220;border:1px solid rgba(30,58,74,.8);}',
         '.hy-stage-share .sh-bar i{display:block;height:100%;' +
             'background:linear-gradient(90deg,#0e7490,#22d3ee 70%,#a5f3fc);' +
             'box-shadow:0 0 6px rgba(34,211,238,.6);transition:width .3s;}',
-        '.hy-stage-share .sh-pc{flex:0 0 28px;text-align:right;color:#7dd3fc;' +
+        '.hy-stage-share .sh-pc{flex:0 0 26px;text-align:right;color:#7dd3fc;' +
             'font-variant-numeric:tabular-nums;}',
+        /* 單人時退回單欄，避免半張空欄 */
+        '.hy-stage-share .sh-grid:has(.sh-row:only-child){grid-template-columns:1fr;}',
 
         /* ⭐ v510：立繪上方的 buff / debuff 圖示 */
         '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;' +
@@ -107763,8 +107768,9 @@ window.HY = window.HY || {};
                 el.appendChild(box);
             }
             keys.sort(function (a, b) { return st.dmgByAlly[b] - st.dmgByAlly[a]; });
-            var h = '<span class="sh-t">傷害佔比</span>';
-            keys.slice(0, 3).forEach(function (k) {
+            /* ⭐ v519：改為兩欄式，顯示全部隊員（最多 5 人）而不遮擋立繪 */
+            var h = '<span class="sh-t">傷害佔比</span><div class="sh-grid">';
+            keys.slice(0, 5).forEach(function (k) {
                 var pct = Math.round((st.dmgByAlly[k] / total) * 100);
                 h += '<div class="sh-row">' +
                     '<span class="sh-nm" title="' + esc(k) + '">' + esc(k) + '</span>' +
@@ -107772,6 +107778,7 @@ window.HY = window.HY || {};
                     '<span class="sh-pc">' + pct + '%</span>' +
                     '</div>';
             });
+            h += '</div>';
             if (box.innerHTML !== h) box.innerHTML = h;
 
             /* ⭐ v518：佔比條固定在頂部中央，不需動態定位；
