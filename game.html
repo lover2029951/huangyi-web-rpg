@@ -17178,48 +17178,51 @@ window.HY.Data = window.HY.Data || {};
     /* ══════════════════════════════════════════════════════════════
        職業 → 昇華分支（沿用原本 21 條，名稱武俠化）
        ══════════════════════════════════════════════════════════════ */
+    /* ⚠️ 名稱一律用「身份／流派」命名（者・師・手・酋長），
+       不使用 宗／門／派／教／幫／會／堂／寨／樓／閣／府／殿／壇／谷／島
+       這類門派用字，避免與本作的門派系統混淆。 */
     var BRANCHES = {
         /* ── 聖堂（Templar）：內功、守護、審判 ── */
         Templar: [
-            { id: 'Inquisitor', name: '裁決宗', icon: '⚖️', theme: '審判 · 破邪' },
-            { id: 'Hierophant', name: '天師道', icon: '📜', theme: '符籙 · 陣樞' },
-            { id: 'Guardian', name: '金剛門', icon: '🛡️', theme: '護體 · 承傷' }
+            { id: 'Inquisitor', name: '審判者', icon: '⚖️', theme: '審判 · 破邪' },
+            { id: 'Hierophant', name: '符籙師', icon: '📜', theme: '符籙 · 陣樞' },
+            { id: 'Guardian', name: '守護者', icon: '🛡️', theme: '護體 · 承傷' }
         ],
         /* ── 野蠻人（Marauder）：剛猛、狂怒、圖騰 ── */
         Marauder: [
-            { id: 'Juggernaut', name: '不動尊', icon: '🗿', theme: '不動 · 反震' },
-            { id: 'Berserker', name: '狂戰堂', icon: '🔥', theme: '狂怒 · 流血' },
-            { id: 'Chieftain', name: '蠻王寨', icon: '🪓', theme: '戰吼 · 圖騰' }
+            { id: 'Juggernaut', name: '不屈者', icon: '🗿', theme: '不動 · 反震' },
+            { id: 'Berserker', name: '狂戰者', icon: '🔥', theme: '狂怒 · 浴血' },
+            { id: 'Chieftain', name: '部落酋長', icon: '🪓', theme: '戰吼 · 部眾' }
         ],
-        /* ── 遊俠（Ranger）：身法、遠程、自然 ── */
+        /* ── 遊俠（Ranger）：身法、遠程、洞察 ── */
         Ranger: [
-            { id: 'Raider', name: '疾風堂', icon: '🌪️', theme: '疾行 · 連擊' },
-            { id: 'Deadeye', name: '神射樓', icon: '🎯', theme: '精準 · 暗器' },
-            { id: 'Pathfinder', name: '藥王谷', icon: '🌿', theme: '丹藥 · 續戰' }
+            { id: 'Raider', name: '疾行者', icon: '🌪️', theme: '疾行 · 連擊' },
+            { id: 'Deadeye', name: '神射手', icon: '🎯', theme: '精準 · 遠擊' },
+            { id: 'Pathfinder', name: '尋徑者', icon: '🧭', theme: '洞察 · 先機' }
         ],
         /* ── 女巫（Witch）：內息、虛實、陰煞 ── */
         Witch: [
-            { id: 'Occultist', name: '陰煞教', icon: '🕯️', theme: '陰煞 · 奪元' },
-            { id: 'Elementalist', name: '五行宗', icon: '🌈', theme: '五行 · 引爆' },
-            { id: 'Necromancer', name: '馭屍門', icon: '💀', theme: '傀儡 · 血祭' }
+            { id: 'Occultist', name: '玄陰師', icon: '🕯️', theme: '幽蝕 · 暗影' },
+            { id: 'Elementalist', name: '五行師', icon: '🌈', theme: '五行 · 輪轉' },
+            { id: 'Necromancer', name: '御魂師', icon: '💀', theme: '傀儡 · 血契' }
         ],
         /* ── 決鬥者（Duelist）：劍術、格擋、決鬥 ── */
         Duelist: [
-            { id: 'Slayer', name: '斷魂劍', icon: '⚔️', theme: '處決 · 吸血' },
-            { id: 'Gladiator', name: '鐵衛府', icon: '🛡️', theme: '格擋 · 破甲' },
-            { id: 'Champion', name: '戰神壇', icon: '👑', theme: '威壓 · 光環' }
+            { id: 'Slayer', name: '斷魂者', icon: '⚔️', theme: '處決 · 收割' },
+            { id: 'Gladiator', name: '鐵衛者', icon: '🛡️', theme: '格擋 · 反擊' },
+            { id: 'Champion', name: '戰意者', icon: '👑', theme: '威壓 · 震懾' }
         ],
-        /* ── 暗影（Shadow）：暗器、毒、機關 ── */
+        /* ── 暗影（Shadow）：暗器、幻術、機關 ── */
         Shadow: [
-            { id: 'Assassin', name: '影殺門', icon: '🗡️', theme: '會心 · 暗殺' },
-            { id: 'Trickster', name: '千面閣', icon: '🎭', theme: '閃避 · 幻術' },
-            { id: 'Saboteur', name: '機巧閣', icon: '⚙️', theme: '機關 · 火雷' }
+            { id: 'Assassin', name: '暗影者', icon: '🗡️', theme: '會心 · 隱匿' },
+            { id: 'Trickster', name: '千面者', icon: '🎭', theme: '閃避 · 幻形' },
+            { id: 'Saboteur', name: '機巧師', icon: '⚙️', theme: '機關 · 引爆' }
         ],
         /* ── 貴族（Scion）：均衡、多變 ── */
         Scion: [
-            { id: 'Ascendant', name: '至尊殿', icon: '🌟', theme: '萬法 · 兼修' },
-            { id: 'Reliquarian', name: '藏劍樓', icon: '📦', theme: '兵器 · 收藏' },
-            { id: 'Luminary', name: '明光台', icon: '✨', theme: '光環 · 護持' }
+            { id: 'Ascendant', name: '萬法者', icon: '🌟', theme: '萬法 · 兼修' },
+            { id: 'Reliquarian', name: '藏鋒者', icon: '📦', theme: '兵器 · 藏鋒' },
+            { id: 'Luminary', name: '明光者', icon: '✨', theme: '光環 · 護持' }
         ]
     };
 
@@ -17287,18 +17290,27 @@ window.HY.Data = window.HY.Data || {};
             params: { maxBonus: 0.50, critDmgPct: 0.35 }
         },
         Pathfinder: {
-            name: '百草', icon: '🌿',
-            desc: '每回合自動調配 1 劑丹藥（上限 3）；' +
-                  '服用時效果 +50%，並清除身上 1 個負面狀態。',
-            mechanic: 'herbalism',
-            params: { max: 3, effectPct: 1.50, cleanse: 1 }
+            name: '尋跡', icon: '🧭',
+            desc: '每回合觀察敵人的破綻並累積「洞察」（上限 3 層）。' +
+                  '出手時消耗全部洞察：每層使本次傷害 +35%，並使目標接下來 2 回合受到的傷害 +10%。' +
+                  '若洞察達到 3 層，該擊必定命中。',
+            mechanic: 'insight',
+            params: {
+                maxStacks: 3, dmgPerStack: 0.35,
+                vulnPct: 0.10, vulnTurns: 2
+            }
         },
         Occultist: {
-            name: '奪魄', icon: '🕯️',
-            desc: '擊殺敵人時吸取其魂魄：永久累積 +2% 傷害（上限 20 層）；' +
-                  '每層同時使敵方受到陰煞效果 +1%。',
-            mechanic: 'soulHarvest',
-            params: { maxStacks: 20, dmgPerStack: 0.02, cursePerStack: 0.01 }
+            name: '幽冥', icon: '🕯️',
+            desc: '每次攻擊在敵人身上留下「幽蝕」（每層使其受到傷害 +6%，上限 5 層）。' +
+                  '幽蝕滿 5 層時自動引爆：造成該敵人已失氣血 25% 的傷害，' +
+                  '並把幽蝕轉化為你 3 回合的攻擊加成（每層 +8%）。',
+            mechanic: 'haunt',
+            params: {
+                maxStacks: 5, vulnPerStack: 0.06,
+                burstLostPct: 0.25, burstMinPct: 0.08,
+                atkPerStack: 0.08, buffTurns: 3
+            }
         },
         Elementalist: {
             name: '五行輪轉', icon: '🌈',
@@ -17326,7 +17338,11 @@ window.HY.Data = window.HY.Data || {};
             desc: '格擋成功時立即反擊（150% 攻擊力）；' +
                   '每次格擋使目標護甲 -8%（上限 5 層），疊滿時目標防禦歸零 2 回合。',
             mechanic: 'riposte',
-            params: { counterMult: 1.50, armorBreakPerStack: 0.08, maxStacks: 5 }
+            params: {
+                blockChance: 0.35, counterMult: 1.50,
+                armorBreakPerStack: 0.08, maxStacks: 5,
+                slowTurns: 2
+            }
         },
         Champion: {
             name: '威壓', icon: '👑',
@@ -17354,7 +17370,7 @@ window.HY.Data = window.HY.Data || {};
             desc: '每 2 回合自動佈下 1 個機關（上限 4）；' +
                   '機關在敵人出手時引爆，造成 80% 攻擊力傷害並使其攻速 -25%（2 回合）。',
             mechanic: 'trapGear',
-            params: { interval: 2, max: 4, dmgPct: 0.80, slowPct: 0.25 }
+            params: { interval: 2, max: 4, dmgPct: 0.80, slowPct: 0.25, slowTurns: 2 }
         },
         Ascendant: {
             name: '萬法', icon: '🌟',
@@ -18068,7 +18084,8 @@ window.HY = window.HY || {};
                     out.atkMult *= (1 + ramp);
                     break;
                 }
-                /* 陰煞教・奪魄：擊殺累積 */
+                /* 陰煞教・奪魄（舊版 soulHarvest）：擊殺累積
+                   ⚠️ 已由 haunt 取代；這裡保留只為相容舊存檔，正常不會觸發。 */
                 case 'soulHarvest': {
                     out.atkMult *= (1 + num(b.souls, 0) * num(p.dmgPerStack, 0.02));
                     break;
@@ -18102,6 +18119,30 @@ window.HY = window.HY || {};
                 case 'executioner': {
                     if (num(b.execWindow, 0) > 0) {
                         out.atkMult *= (1 + num(p.afterKillAtk, 0.40));
+                    }
+                    break;
+                }
+                /* 尋徑者・洞察：出手時消耗全部洞察層數增傷 */
+                case 'insight': {
+                    var ins = num(b.insight, 0);
+                    if (ins > 0) {
+                        out.atkMult *= (1 + ins * num(p.dmgPerStack, 0.35));
+                        /* 滿層必定命中 */
+                        if (ins >= Math.round(num(p.maxStacks, 3))) out.forceHit = true;
+                    }
+                    break;
+                }
+                /* 玄陰師・幽蝕：幽蝕層數使目標受傷增加（體現在攻擊力上，
+                   因為本作沒有「目標受傷 +X%」的統一通道） */
+                case 'haunt': {
+                    if (target) {
+                        var hs = target._sect && target._sect.__m_haunt;
+                        var hn = hs ? num(hs.stacks, 0) : 0;
+                        if (hn > 0) out.atkMult *= (1 + hn * num(p.vulnPerStack, 0.06));
+                    }
+                    /* 引爆後的攻擊加成 */
+                    if (num(b.hauntBuff, 0) > 0) {
+                        out.atkMult *= (1 + num(b.hauntBuff, 0));
                     }
                     break;
                 }
@@ -18186,6 +18227,54 @@ window.HY = window.HY || {};
                     }
                     break;
                 }
+                /* 玄陰師・幽蝕：每次攻擊疊一層，滿層引爆 */
+                case 'haunt': {
+                    if (!target || target.currentHp <= 0) break;
+                    if (!target._sect) target._sect = {};
+                    var hs = target._sect.__m_haunt;
+                    if (!hs || typeof hs !== 'object') hs = target._sect.__m_haunt = {};
+                    var capH = Math.round(num(p.maxStacks, 5));
+                    hs.stacks = Math.min(capH, num(hs.stacks, 0) + 1);
+
+                    if (hs.stacks >= capH) {
+                        /* 引爆傷害：取「已失氣血 25%」與「最大氣血 8%」兩者較大者。
+                           ⚠️ 只用已失氣血會出問題 —— 滿血或高血敵人引爆只有 1 點傷害，
+                              機制形同空轉。加上保底讓它對任何血量都有威脅。 */
+                        var tmx = num(target.maxHp, 0);
+                        var lost = Math.max(0, tmx - num(target.currentHp, 0));
+                        var byLost = Math.floor(lost * num(p.burstLostPct, 0.25));
+                        var byMax = Math.floor(tmx * num(p.burstMinPct, 0.08));
+                        var burst = Math.max(1, Math.max(byLost, byMax));
+                        target.currentHp = Math.max(0, target.currentHp - burst);
+                        /* 轉化為自身攻擊加成 */
+                        b.hauntBuff = capH * num(p.atkPerStack, 0.08);
+                        b.hauntBuffTurns = Math.round(num(p.buffTurns, 3));
+                        hs.stacks = 0;
+                        msg += ' [🕯️幽蝕引爆 ' + burst + ' 傷，攻擊 +' +
+                            Math.round(b.hauntBuff * 100) + '%（' + b.hauntBuffTurns + ' 回合）]';
+                    } else {
+                        msg += ' [🕯️幽蝕 ' + hs.stacks + '/' + capH + ']';
+                    }
+                    break;
+                }
+                /* 尋徑者・洞察：出手時消耗全部層數 */
+                case 'insight': {
+                    var ins = num(b.insight, 0);
+                    if (ins <= 0) break;
+                    var stacksUsed = ins;
+                    b.insight = 0;
+                    /* 給目標掛「易傷」 */
+                    if (target && target.currentHp > 0) {
+                        if (!target._sect) target._sect = {};
+                        var vs = target._sect.__m_insight;
+                        if (!vs || typeof vs !== 'object') vs = target._sect.__m_insight = {};
+                        vs.vuln = num(p.vulnPct, 0.10);
+                        vs.turns = Math.round(num(p.vulnTurns, 2));
+                    }
+                    msg += ' [🧭洞察釋放 ' + stacksUsed + ' 層→傷害 +' +
+                        Math.round(stacksUsed * num(p.dmgPerStack, 0.35) * 100) + '%]';
+                    break;
+                }
                 /* 傀儡術・血契 */
                 case 'minionPact': {
                     if (num(b.minions, 0) < Math.round(num(p.max, 4))) {
@@ -18203,6 +18292,22 @@ window.HY = window.HY || {};
                     var capT = Math.round(num(p.max, 4));
                     if (num(b.traps, 0) < capT) {
                         b.traps = num(b.traps, 0) + 1;
+                    }
+                    /* ⚠️ 舊版機關只會增加、永遠不會引爆（實測 enemyHp 完全沒變）。
+                       現在：出手時只要場上有機關，就全部引爆。 */
+                    var nT = num(b.traps, 0);
+                    if (nT > 0 && target && target.currentHp > 0) {
+                        var tAtk = atkOf(c);
+                        var boom = Math.max(1, Math.floor(tAtk * num(p.dmgPct, 0.80) * nT));
+                        target.currentHp = Math.max(0, target.currentHp - boom);
+                        /* 減速：標記在敵人身上 */
+                        if (!target._sect) target._sect = {};
+                        var stT = target._sect.__m_trapGear;
+                        if (!stT || typeof stT !== 'object') stT = target._sect.__m_trapGear = {};
+                        stT.slow = Math.round(num(p.slowTurns, 2) || 2);
+                        stT.slowPct = num(p.slowPct, 0.25);
+                        b.traps = 0;
+                        msg += ' [⚙️機關引爆 ' + nT + ' 座→' + boom + ' 傷]';
                     }
                     break;
                 }
@@ -18240,12 +18345,16 @@ window.HY = window.HY || {};
                     }
                     break;
                 }
-                /* 千面閣・幻形：幻影分擔 */
+                /* 千面閣・幻形：幻影分擔
+                   ⚠️ 舊版把「幻影數量」寫在 onTurnStart 才補，但受擊時先判斷
+                      b.mirage > 0 才扣 —— 結果第一次受擊時 mirage 還是 0（沒減傷），
+                      之後 onTurnStart 補滿才生效。現在改為：受擊當下若沒有幻影，
+                      先自動生成 1 個（代表「閃避後留下的殘影」），再分擔。 */
                 case 'mirage': {
-                    if (num(b.mirage, 0) > 0) {
-                        reduce = Math.floor(dmg * 0.40);
-                        b.mirage = num(b.mirage, 0) - 1;
-                    }
+                    var capM0 = Math.round(num(p.max, 3));
+                    if (num(b.mirage, 0) <= 0) b.mirage = capM0;   /* 自動補滿 */
+                    reduce = Math.floor(dmg * 0.40);
+                    b.mirage = Math.max(0, num(b.mirage, 0) - 1);
                     break;
                 }
                 /* 金剛門・承天：代隊友承受（這裡是自身受擊，改為累積護念） */
@@ -18259,6 +18368,25 @@ window.HY = window.HY || {};
                 case 'minionPact': {
                     if (num(b.minions, 0) > 0) {
                         reduce = Math.floor(dmg * num(p.sharePct, 0.20));
+                    }
+                    break;
+                }
+                /* 鐵衛府・鐵壁：格擋反擊
+                   ⚠️ 舊版完全沒有這個 case → 機制形同不存在（實測 reduced 永遠 0）。
+                   現在：受擊時有格擋率 → 免傷 + 反擊 + 疊破甲。 */
+                case 'riposte': {
+                    var blockChance = num(p.blockChance, 0.35);
+                    if (Math.random() < blockChance) {
+                        /* 格擋成功：免傷 85% */
+                        reduce = Math.floor(dmg * 0.85);
+                        b.blockStacks = Math.min(Math.round(num(p.maxStacks, 5)),
+                            num(b.blockStacks, 0) + 1);
+                        /* 反擊 */
+                        var rip = Math.max(1, Math.floor(atkOf(c) * num(p.counterMult, 1.50)));
+                        if (enemy && enemy.currentHp > 0) {
+                            enemy.currentHp = Math.max(0, enemy.currentHp - rip);
+                        }
+                        b.lastRiposte = rip;
                     }
                     break;
                 }
@@ -18320,7 +18448,22 @@ window.HY = window.HY || {};
                     c.currentHp = Math.min(maxHpOf(c), c.currentHp + h2);
                     break;
                 }
-                /* 藥王谷・百草：配丹 */
+                /* 尋徑者・洞察：每回合累積層數 */
+                case 'insight': {
+                    var capI = Math.round(num(p.maxStacks, 3));
+                    if (num(b.insight, 0) < capI) b.insight = num(b.insight, 0) + 1;
+                    msg += ' [🧭洞察 ' + b.insight + '/' + capI + ']';
+                    break;
+                }
+                /* 玄陰師：引爆後的攻擊加成倒數 */
+                case 'haunt': {
+                    if (num(b.hauntBuffTurns, 0) > 0) {
+                        b.hauntBuffTurns -= 1;
+                        if (b.hauntBuffTurns <= 0) b.hauntBuff = 0;
+                    }
+                    break;
+                }
+                /* 藥王谷・百草（舊版，保留相容） */
                 case 'herbalism': {
                     var capH = Math.round(num(p.max, 3));
                     if (num(b.pills, 0) < capH) b.pills = num(b.pills, 0) + 1;
@@ -18378,7 +18521,8 @@ window.HY = window.HY || {};
                     msg += ' [🔥浴血回復 ' + heal + ']';
                     break;
                 }
-                /* 陰煞教：吸取魂魄 */
+                /* 陰煞教：吸取魂魄（舊版 soulHarvest —— 已由 haunt 取代，
+                   這裡保留是為了讓舊存檔不會出錯） */
                 case 'soulHarvest': {
                     var cap = Math.round(num(p.maxStacks, 20));
                     b.souls = Math.min(cap, num(b.souls, 0) + 1);
@@ -18431,6 +18575,20 @@ window.HY = window.HY || {};
                 case 'sigilField': rows.push({ k: '符陣', v: num(b.sigils, 0) + ' / ' + Math.round(num(p.max, 5)) }); break;
                 case 'damageShare': rows.push({ k: '護念', v: num(b.guard, 0) + ' / ' + Math.round(num(p.maxStacks, 8)) }); break;
                 case 'momentum': rows.push({ k: '疾影', v: num(b.momentum, 0) + ' / ' + Math.round(num(p.maxStacks, 5)) }); break;
+                case 'insight': rows.push({ k: '洞察', v: num(b.insight, 0) + ' / ' + Math.round(num(p.maxStacks, 3)) }); break;
+                case 'haunt': {
+                    var foesH = aliveFoes();
+                    var mxH = 0;
+                    foesH.forEach(function (e) {
+                        var hs = e._sect && e._sect.__m_haunt;
+                        if (hs && num(hs.stacks, 0) > mxH) mxH = num(hs.stacks, 0);
+                    });
+                    rows.push({ k: '幽蝕', v: mxH + ' / ' + Math.round(num(p.maxStacks, 5)) });
+                    if (num(b.hauntBuff, 0) > 0) {
+                        rows.push({ k: '引爆加成', v: '+' + Math.round(num(b.hauntBuff, 0) * 100) + '%（' + num(b.hauntBuffTurns, 0) + ' 回合）' });
+                    }
+                    break;
+                }
                 case 'soulHarvest': rows.push({ k: '魂魄', v: num(b.souls, 0) + ' / ' + Math.round(num(p.maxStacks, 20)) }); break;
                 case 'elementCycle': rows.push({ k: '五行', v: ['金', '水', '木', '火', '土'][num(b.elemIdx, 0) % 5] }); break;
                 case 'minionPact': rows.push({ k: '傀儡', v: num(b.minions, 0) + ' / ' + Math.round(num(p.max, 4)) }); break;
