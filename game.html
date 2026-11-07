@@ -99140,7 +99140,7 @@ window.HY = window.HY || {};
             var genMeta = isMix ? null : Data.SPIRIT_ROOTS[rMeta.generates];
             var genName = genMeta ? genMeta.name : '';
             var tip = isMix
-                ? ('本命靈根：' + rMeta.name + ' Lv.' + lv + '（八元素兼修，不入相剋環）')
+                ? ('本命靈根：' + rMeta.name + ' Lv.' + lv + '（九元素兼修，不入相剋環）')
                 : ('本命靈根：' + rMeta.name + ' Lv.' + lv +
                    '（剋 ' + counterName + '，傷害 +35%；生 ' + genName + '）');
             var badgeHtml =
@@ -99290,7 +99290,7 @@ window.HY = window.HY || {};
                 ? '<div style="margin-top:6px; font-size:0.78rem; color:#a78bfa;">🌌 你目前為【混靈根】：獨立於此環之外，不受剋制亦不剋制他人。</div>'
                 : '';
             return '<div style="background:#121822; border:1px solid #2e3b4e; border-radius:6px; padding:8px 10px; margin-bottom:10px;">' +
-                '<div style="font-size:0.85rem; color:#fbbf24; font-weight:bold; margin-bottom:6px;">☯️ 八元素相剋環（剋制 +35%、被剋 -20%）</div>' +
+                '<div style="font-size:0.85rem; color:#fbbf24; font-weight:bold; margin-bottom:6px;">☯️ 九元素相剋環（剋制 +35%、被剋 -20%）</div>' +
                 '<div style="line-height:2;">' + chain +
                     '<span style="color:#64748b; margin:0 2px;">➔</span>' + (first ? first.icon + first.name : '') + '（循環）</div>' +
                 mixNote +
@@ -99383,7 +99383,7 @@ window.HY = window.HY || {};
                 (isMixed ?
                 '<div style="background:#121822; border:1px solid ' + curMeta.color + '; border-radius:6px; padding:10px 12px; margin-bottom:14px;">' +
                     '<div style="font-size:0.85rem; color:' + curMeta.color + '; font-weight:bold; margin-bottom:6px;">' +
-                        curMeta.icon + ' 混靈根・八元素攻防分配（讀自全隊元素聚合）' +
+                        curMeta.icon + ' 混靈根・九元素攻防分配（讀自全隊元素聚合）' +
                     '</div>' +
                     '<div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.85rem; margin-bottom:6px;">' +
                         '<span style="color:#fb923c;">⚔️ 九元素攻擊合計：<strong style="color:#fff;">' + mixedAtkSum + '</strong></span>' +
@@ -99403,7 +99403,7 @@ window.HY = window.HY || {};
                     '</div>' +
                     '<p style="font-size:0.76rem; color:#94a3b8; margin-top:6px;">💡 九元素完整攻防明細統一顯示於左欄「⚔️ 戰鬥與抗性面板」。</p>' +
                 '</div>' : '')) +
-                '<h3 style="margin:14px 0 8px;">📜 九大靈根總覽（八大元素靈根 + 混靈根）</h3>' +
+                '<h3 style="margin:14px 0 8px;">📜 九大靈根總覽（八大元素靈根 + 混元靈根）</h3>' +
                 '<div id="spirit-root-catalog" class="enemy-grid"></div>';
             var upBtn = panel.querySelector('#btn-up-spirit-root');
             if (upBtn) {
@@ -99457,7 +99457,7 @@ window.HY = window.HY || {};
                 card.innerHTML =
                     '<div>' +
                         '<h4 style="color:' + r.color + ';">' + r.icon + ' ' + r.name +
-                            (isMixCard ? ' <small style="color:' + r.color + ';">（八元素兼修）</small>'
+                            (isMixCard ? ' <small style="color:' + r.color + ';">（九元素兼修）</small>'
                                        : (elMeta2 ? ' <small style="color:' + elMeta2.color + ';">（' + elMeta2.icon + elMeta2.name + '元素）</small>' : '')) +
                             (isCurrent ? ' <span class="sci-color">[★ 當前本命 Lv.' + (st.spiritRootLv || 1) + ']</span>' : '') +
                         '</h4>' +
@@ -135396,7 +135396,7 @@ window.HY.Data = window.HY.Data || {};
             name: '元素',
             icon: '🌀',
             color: '#38bdf8',
-            desc: '八元素掌握',
+            desc: '九元素掌握',
             source: 'ELEMENTS',
             groupSize: 4,
             reward: { stat: 'elAtk', perGroup: 0.02, label: '元素攻擊 +2%' }
