@@ -105364,6 +105364,51 @@ window.HY = window.HY || {};
             }
         }
 
+        /** ⭐ v512：舞台用的技能屬性與群攻標記
+           ──────────────────────────────────────────────────────────
+           屬性來源優先序：
+             ① 招式自身的 element 欄位（少數招式有）
+             ② 施術者的靈根 spiritRoot（角色與怪物都有，五行設定）
+             ③ null → 使用陣營預設色
+           群攻判斷：招式 isAoe，或敵方 effect 含 aoe/群/掃/範。 */
+        _stageSkillMeta(unit, isEnemy) {
+            try {
+                if (!unit || Number(unit.currentHp) <= 0) return { element: null, aoe: false };
+                var Data = window.HY.Data || {};
+
+                /* ① 先看角色/怪物自身靈根 */
+                var rootElem = unit.spiritRoot || null;
+                if (rootElem && !(Data.ELEMENTS && Data.ELEMENTS[rootElem])) rootElem = null;
+
+                if (isEnemy) {
+                    var list = (unit.skills || []).filter(function (s) { return s && s.name; });
+                    var pick = list.length ? list.slice().sort(function (a, b) {
+                        return (b.mult || 1) - (a.mult || 1);
+                    })[0] : null;
+                    var effE = pick ? String(pick.effect || '') : '';
+                    return {
+                        element: (pick && pick.element) || rootElem,
+                        aoe: /aoe|群|掃|範/.test(effE)
+                    };
+                }
+
+                /* 我方：用戰術選出的招式 */
+                var core = this.app.combatSys;
+                var at = core && core.autoTactics;
+                var sid = null;
+                try {
+                    sid = (at && typeof at.pickTacticalSkillForChar === 'function')
+                        ? at.pickTacticalSkillForChar(unit, true) : null;
+                } catch (e) { sid = null; }
+                if (!sid) sid = 'basic_punch';
+                var art = (Data.MARTIAL_ARTS || {})[sid] || {};
+                return {
+                    element: art.element || rootElem,
+                    aoe: !!art.isAoe
+                };
+            } catch (e) { return { element: null, aoe: false }; }
+        }
+
         /** ⭐ v511：舞台用的「這回合會放的招式名」（給技能名稱浮現） */
         _stageSkillName(unit, isEnemy) {
             try {
@@ -105402,13 +105447,18 @@ window.HY = window.HY || {};
                     if (!isFinite(maxHp) || maxHp <= 0) maxHp = Number(m.maxHp) || 0;
                     var cur = Number(m.currentHp);
                     if (!isFinite(cur)) cur = maxHp;
+                    var meta = self._stageSkillMeta(m, false);
                     party.push({
                         name: m.name || '隊員',
                         cur: cur, max: maxHp,
+                        mp: Number(m.currentMp) || 0,
+                        mpMax: Number(md.maxMp) || 0,
                         alive: cur > 0,
                         ready: !!combat.currentEnemy && Number(m.atb || 0) >= 100,
                         atb: Number(m.atb || 0),
                         skill: self._stageSkillName(m, false),
+                        element: meta.element,
+                        aoe: meta.aoe,
                         sprite: BS.charSprite(m),
                         color: BS.charColor(m),
                         buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
@@ -105426,13 +105476,21 @@ window.HY = window.HY || {};
                     var maxHp = Number(e.maxHp) || 0;
                     var cur = Number(e.currentHp);
                     if (!isFinite(cur)) cur = maxHp;
+                    var eMaxMp2 = (typeof e.maxMp === 'number' && e.maxMp > 0)
+                        ? e.maxMp
+                        : Math.floor(80 + (e.lv || 1) * 25 + (e.atk || 20) * 0.15);
+                    var eMeta = self._stageSkillMeta(e, true);
                     foes.push({
                         name: e.name || '敵人',
                         cur: cur, max: maxHp,
+                        mp: (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp2,
+                        mpMax: eMaxMp2,
                         alive: cur > 0,
                         ready: Number(e.atb || 0) >= 100,
                         atb: Number(e.atb || 0),
                         skill: self._stageSkillName(e, true),
+                        element: eMeta.element,
+                        aoe: eMeta.aoe,
                         sprite: BS.monSprite(e),
                         avatar: BS.monAvatar(e),
                         target: (combat.currentEnemy === e),
@@ -106370,6 +106428,27 @@ window.HY = window.HY || {};
     var SNAPSHOT = {};
 
     /* ══════════════════════════════════════════════════════
+       元素配色（軌跡線 / 技能名 / AOE 依屬性變色）
+       ══════════════════════════════════════════════════════ */
+    var ELEM_STYLE = {
+        metal:     { core: '#fbbf24', glow: '#fde68a', rgb: '251,191,36' },
+        wood:      { core: '#4ade80', glow: '#bbf7d0', rgb: '74,222,128' },
+        water:     { core: '#38bdf8', glow: '#bae6fd', rgb: '56,189,248' },
+        fire:      { core: '#ef4444', glow: '#fecaca', rgb: '239,68,68' },
+        earth:     { core: '#d97706', glow: '#fde68a', rgb: '217,119,6' },
+        ice:       { core: '#67e8f9', glow: '#cffafe', rgb: '103,232,249' },
+        wind:      { core: '#2dd4bf', glow: '#99f6e4', rgb: '45,212,191' },
+        lightning: { core: '#c084fc', glow: '#e9d5ff', rgb: '192,132,252' },
+        chaos:     { core: '#a78bfa', glow: '#ddd6fe', rgb: '167,139,250' }
+    };
+
+    /** 取得元素配色（找不到就回 null → 用預設的陣營色） */
+    function elemStyle(elem) {
+        if (!elem) return null;
+        return ELEM_STYLE[String(elem)] || null;
+    }
+
+    /* ══════════════════════════════════════════════════════
        場景對照表
        ══════════════════════════════════════════════════════ */
     /* ⭐ 依「紀元」對照（比依地圖 id 穩固：地圖 id 曾改過名） */
@@ -106416,7 +106495,7 @@ window.HY = window.HY || {};
         /* ── 舞台外框 ── */
         '.hy-stage{position:relative;margin:0 0 10px;border-radius:10px;overflow:hidden;' +
             'display:flex;align-items:flex-end;justify-content:space-between;' +
-            'padding:14px 12px 28px;min-height:212px;box-sizing:border-box;' +
+            'padding:20px 16px 34px;min-height:310px;box-sizing:border-box;' +
             'border:1px solid #1e3a4c;' +
             'background:radial-gradient(ellipse 60% 70% at 50% 42%,rgba(34,80,120,.42) 0%,rgba(10,16,24,.98) 72%),' +
             'linear-gradient(180deg,#0a1220 0%,#0d1622 46%,#080d14 100%);' +
@@ -106444,13 +106523,13 @@ window.HY = window.HY || {};
         /* ── 地平線 ── */
         '.hy-stage-ground{position:absolute;left:0;right:0;bottom:0;height:34%;pointer-events:none;' +
             'background:linear-gradient(180deg,transparent,rgba(3,7,12,.92) 62%);}',
-        '.hy-stage-floor{position:absolute;left:8%;right:8%;bottom:23%;height:2px;pointer-events:none;' +
+        '.hy-stage-floor{position:absolute;left:6%;right:6%;bottom:27%;height:2px;pointer-events:none;' +
             'background:linear-gradient(90deg,transparent,rgba(34,211,238,.5),rgba(34,211,238,.72),' +
             'rgba(34,211,238,.5),transparent);box-shadow:0 0 14px rgba(34,211,238,.45);}',
 
         /* ── 兩側站位 ── */
         '.hy-stage-side{position:relative;z-index:2;width:49%;display:flex;align-items:flex-end;gap:2px;' +
-            'min-height:186px;--h:180px;}',
+            'min-height:280px;--h:270px;}',
         '.hy-stage-side.ally{justify-content:flex-end;padding-right:26px;}',
         '.hy-stage-side.foe{justify-content:flex-start;padding-left:26px;}',
 
@@ -106571,8 +106650,29 @@ window.HY = window.HY || {};
         '@keyframes hy-head{0%{opacity:0;r:2;}28%{opacity:1;r:9;}70%{opacity:.9;r:7;}' +
             '100%{opacity:0;r:16;}}',
 
-        /* ⭐ v511：技能名稱浮現（立繪上方） */
-        '.hy-fx-skill{position:absolute;left:50%;top:-6px;z-index:8;pointer-events:none;' +
+        /* ⭐ v512：AOE 全體特效 —— 中央爆散衝擊波 */
+        '.hy-fx-aoe{position:absolute;left:50%;top:46%;z-index:6;pointer-events:none;' +
+            'width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;' +
+            'border:3px solid var(--aoe-col,#38bdf8);' +
+            'box-shadow:0 0 26px var(--aoe-col,#38bdf8),inset 0 0 22px var(--aoe-col,#38bdf8);' +
+            'animation:hy-aoe-ring .62s ease-out forwards;}',
+        '@keyframes hy-aoe-ring{0%{opacity:.95;transform:scale(.25);}' +
+            '60%{opacity:.75;}' +
+            '100%{opacity:0;transform:scale(26);}}',
+        /* AOE 二次擴散環 */
+        '.hy-fx-aoe2{position:absolute;left:50%;top:46%;z-index:6;pointer-events:none;' +
+            'width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;' +
+            'border:2px solid var(--aoe-col,#38bdf8);opacity:.6;' +
+            'animation:hy-aoe-ring2 .8s ease-out .09s forwards;}',
+        '@keyframes hy-aoe-ring2{0%{opacity:.6;transform:scale(.2);}' +
+            '100%{opacity:0;transform:scale(34);}}',
+        /* AOE 全場閃光 */
+        '.hy-fx-aoe-flash{position:absolute;inset:0;z-index:5;pointer-events:none;' +
+            'background:radial-gradient(ellipse at 50% 46%,var(--aoe-glow,rgba(56,189,248,.34)),transparent 66%);' +
+            'animation:hy-aoe-flash .58s ease-out forwards;}',
+        '@keyframes hy-aoe-flash{0%{opacity:.1;}22%{opacity:1;}100%{opacity:0;}}',
+
+        /* ⭐ v511：技能名稱浮現（立繪上方） */        '.hy-fx-skill{position:absolute;left:50%;top:-6px;z-index:8;pointer-events:none;' +
             'transform:translateX(-50%);white-space:nowrap;' +
             'font-size:.78rem;font-weight:bold;letter-spacing:1px;' +
             'padding:2px 9px;border-radius:9px;' +
@@ -106623,11 +106723,11 @@ window.HY = window.HY || {};
         '.hy-stage-order .od-sep{font-size:.55rem;color:#334155;}',
 
         /* ⭐ v510：立繪上方的 buff / debuff 圖示 */
-        '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;' +
-            'max-width:96px;margin-bottom:2px;z-index:4;}',
+        '.hy-stage-buffs{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;' +
+            'max-width:118px;margin-bottom:3px;z-index:4;}',
         '.hy-stage-buff{display:inline-flex;align-items:center;justify-content:center;' +
-            'min-width:15px;height:15px;padding:0 2px;border-radius:3px;' +
-            'font-size:.58rem;line-height:1;' +
+            'min-width:17px;height:17px;padding:0 3px;border-radius:4px;' +
+            'font-size:.64rem;line-height:1;' +
             'background:rgba(6,12,20,.88);border:1px solid #334155;' +
             'box-shadow:0 0 4px rgba(0,0,0,.7);}',
         '.hy-stage-buff.bad{border-color:rgba(248,113,113,.75);}' +
@@ -106635,9 +106735,9 @@ window.HY = window.HY || {};
         '.hy-stage-buff b{font-size:.5rem;font-weight:bold;color:#e2e8f0;margin-left:1px;}',
 
         /* ── 名字牌 + 血條 ── */
-        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:88px;margin-top:2px;' +
+        '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:110px;margin-top:3px;' +
             'text-align:center;line-height:1.1;}',
-        '.hy-stage-nm{display:block;font-size:.62rem;font-weight:bold;white-space:nowrap;' +
+        '.hy-stage-nm{display:block;font-size:.72rem;font-weight:bold;white-space:nowrap;' +
             'overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px #000;}',
         '.hy-stage-unit.ally .hy-stage-nm{color:#7dd3fc;}',
         '.hy-stage-unit.foe .hy-stage-nm{color:#fca5a5;}',
@@ -106648,6 +106748,24 @@ window.HY = window.HY || {};
         '.hy-stage-unit.ally .hy-stage-hp i{background:linear-gradient(90deg,#059669,#34d399);}',
         '.hy-stage-unit.foe .hy-stage-hp i{background:linear-gradient(90deg,#b91c1c,#f87171);}',
         '.hy-stage-hp i.low{background:linear-gradient(90deg,#b91c1c,#fbbf24) !important;}',
+
+        /* ⭐ v512：內力條（氣血下方一條細藍條） */
+        '.hy-stage-mp{height:3px;margin-top:1px;border-radius:2px;overflow:hidden;' +
+            'background:rgba(2,6,12,.9);border:1px solid rgba(30,58,74,.9);}',
+        '.hy-stage-mp i{display:block;height:100%;width:100%;' +
+            'transition:width .22s linear;background:linear-gradient(90deg,#1d4ed8,#60a5fa);}',
+        '.hy-stage-unit.foe .hy-stage-mp i{background:linear-gradient(90deg,#4338ca,#818cf8);}',
+        '.hy-stage-mp i.emptymana{background:linear-gradient(90deg,#334155,#475569) !important;' +
+            'opacity:.6;}',
+
+        /* ⭐ v512：集氣條（ATB，內力條下方最細一條，滿檔發金光） */
+        '.hy-stage-atb{height:2px;margin-top:1px;border-radius:2px;overflow:hidden;' +
+            'background:rgba(2,6,12,.85);}',
+        '.hy-stage-atb i{display:block;height:100%;width:0%;' +
+            'transition:width .14s linear;background:linear-gradient(90deg,#b45309,#fbbf24);}',
+        '.hy-stage-unit.ready .hy-stage-atb i{' +
+            'background:linear-gradient(90deg,#f59e0b,#fde68a);' +
+            'box-shadow:0 0 8px rgba(251,191,36,.95);}',
 
         /* 立繪缺失時的圓形頭像 */
         '.hy-stage-fallback{width:54px;height:54px;border-radius:50%;object-fit:cover;' +
@@ -106889,6 +107007,10 @@ window.HY = window.HY || {};
                 '<span class="hy-stage-nm"' + nmColor + ' title="' + esc(u.name) + '">' +
                     esc(u.name) + '</span>' +
                 '<div class="hy-stage-hp"><i data-hp="' + side + i + '"></i></div>' +
+                /* ⭐ v512：內力條 */
+                '<div class="hy-stage-mp"><i data-mp="' + side + i + '"></i></div>' +
+                /* ⭐ v512：集氣條 */
+                '<div class="hy-stage-atb"><i data-atb="' + side + i + '"></i></div>' +
             '</div>' +
         '</div>';
     }
@@ -106899,13 +107021,13 @@ window.HY = window.HY || {};
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    /** 依該側人數調整立繪高度：1~2 人最大、3 人略縮、4~5 人再縮 */
+    /** 依該側人數調整立繪高度：⭐ v512 整體放大 1.5 倍 */
     function heightFor(n) {
-        if (n <= 1) return 186;
-        if (n === 2) return 176;
-        if (n === 3) return 150;
-        if (n === 4) return 132;
-        return 118;
+        if (n <= 1) return 280;
+        if (n === 2) return 264;
+        if (n === 3) return 226;
+        if (n === 4) return 198;
+        return 178;
     }
 
     /* ══════════════════════════════════════════════════════
@@ -106931,7 +107053,7 @@ window.HY = window.HY || {};
                 if (d < -0.5) {
                     var dmg = Math.abs(d);
                     var crit = dmg >= Math.max(1, (Number(p.max) || 0) * 0.18);
-                    playHit(el, node, side, i, dmg, crit);
+                    playHit(el, node, side, i, dmg, crit, null, u.element);
                 } else if (d > 0.5) {
                     playHeal(node, d);
                 }
@@ -106972,6 +107094,26 @@ window.HY = window.HY || {};
                 bar.classList.toggle('low', pct <= 30);
             }
 
+            /* ⭐ v512：內力條 */
+            var mpBar = node.querySelector('[data-mp="' + side + i + '"]');
+            if (mpBar) {
+                var mpPct = 100;
+                if (typeof u.mp === 'number' && typeof u.mpMax === 'number' && u.mpMax > 0) {
+                    mpPct = Math.max(0, Math.min(100, (u.mp / u.mpMax) * 100));
+                } else if (u.mp === undefined && u.mpMax === undefined) {
+                    mpPct = 0;
+                }
+                mpBar.style.width = mpPct.toFixed(1) + '%';
+                mpBar.classList.toggle('emptymana', mpPct <= 5);
+            }
+
+            /* ⭐ v512：集氣條（ATB） */
+            var atbBar = node.querySelector('[data-atb="' + side + i + '"]');
+            if (atbBar) {
+                var atbPct = Math.max(0, Math.min(100, Number(u.atb || 0)));
+                atbBar.style.width = atbPct.toFixed(1) + '%';
+            }
+
             /* ── 狀態圖示 ── */
             var buffBox = node.querySelector('.hy-stage-buffs');
             if (buffBox) {
@@ -106996,6 +107138,36 @@ window.HY = window.HY || {};
                 skill: u.skill || null
             };
         });
+
+        /* ⭐ v512：AOE 判斷 —— 同一輪有 2 個以上同陣營單位掉血 → 播放全體特效
+           （放在迴圈外，一次只播一組，避免重複疊加） */
+        if (!rebuilt && prev.length) {
+            var hitNodes = [];
+            var hitElement = null;
+            for (var q = 0; q < list.length; q++) {
+                var pd = prev[q];
+                if (!pd) continue;
+                if ((Number(list[q].cur) || 0) - (Number(pd.cur) || 0) < -0.5) {
+                    var hq = el.querySelector('.hy-stage-unit[data-side="' +
+                        side + '"][data-i="' + q + '"]');
+                    if (hq) hitNodes.push(hq);
+                    if (!hitElement && list[q].element) hitElement = list[q].element;
+                }
+            }
+            /* 2 個以上同時掉血 → 視為群體攻擊 */
+            if (hitNodes.length >= 2) {
+                if (stageId) SNAPSHOT[stageId].__aoeCd = SNAPSHOT[stageId].__aoeCd || 0;
+                var nowTs = Date.now();
+                if (!SNAPSHOT[stageId].__aoeCd || nowTs - SNAPSHOT[stageId].__aoeCd > 380) {
+                    SNAPSHOT[stageId].__aoeCd = nowTs;
+                    var foeS = (side === 'foe') ? 'ally' : 'foe';
+                    var atkList = el.querySelectorAll('.hy-stage-side.' + foeS +
+                        ' .hy-stage-unit:not(.dead)');
+                    var atkNode = atkList.length ? atkList[0] : null;
+                    playAoe(el, atkNode, foeS, hitNodes, hitElement);
+                }
+            }
+        }
     }
 
     /* ══════════════════════════════════════════════════════
@@ -107009,10 +107181,11 @@ window.HY = window.HY || {};
         setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 960);
     }
 
-    function playHit(el, node, side, i, dmg, crit, actorNode) {
+    function playHit(el, node, side, i, dmg, crit, actorNode, element) {
         if (!node) return;
 
-        /* ⭐ v511：先畫攻擊軌跡線（從出手者 → 被打者） */
+        /* ⭐ v511：先畫攻擊軌跡線（從出手者 → 被打者）
+           ⭐ v512：依屬性變色 */
         var atkEl = el.querySelector('.hy-stage-side.' + ((side === 'foe') ? 'ally' : 'foe'));
         var attacker = actorNode;
         if (!attacker && atkEl) {
@@ -107020,7 +107193,7 @@ window.HY = window.HY || {};
             if (cands.length) attacker = cands[Math.floor(Math.random() * cands.length)];
         }
         if (attacker && attacker !== node) {
-            drawTrail(el, attacker, node, side === 'foe' ? 'ally' : 'foe', crit);
+            drawTrail(el, attacker, node, side === 'foe' ? 'ally' : 'foe', crit, element);
         }
         if (attacker) {
             attacker.classList.remove('lunge');
@@ -107061,8 +107234,9 @@ window.HY = window.HY || {};
     /* ⭐ v511：攻擊軌跡線
        ──────────────────────────────────────────────────────────
        用 SVG 畫一條從出手者胸口到被打者胸口的弧形能量線。
-       我方 → 敵方：青色系；敵方 → 我方：紅色系；暴擊加粗並加尖端爆點。 */
-    function drawTrail(el, fromNode, toNode, fromSide, crit) {
+       ⭐ v512：依技能屬性變色（element 傳入 'fire' / 'ice' … 等）。
+       暴擊加粗並加尖端爆點。 */
+    function drawTrail(el, fromNode, toNode, fromSide, crit, element) {
         try {
             var svg = el.querySelector('.hy-stage-fxline');
             if (!svg) return;
@@ -107080,9 +107254,11 @@ window.HY = window.HY || {};
             var mx = (x1 + x2) / 2;
             var my = Math.min(y1, y2) - Math.abs(x2 - x1) * 0.10 - 12;
 
+            /* ⭐ 屬性配色優先，沒有屬性才用陣營色 */
+            var es = elemStyle(element);
             var isAlly = (fromSide === 'ally');
-            var col = isAlly ? '#22d3ee' : '#f87171';
-            var col2 = isAlly ? '#a5f3fc' : '#fecdd3';
+            var col = es ? es.core : (isAlly ? '#22d3ee' : '#f87171');
+            var col2 = es ? es.glow : (isAlly ? '#a5f3fc' : '#fecdd3');
             var w = crit ? 4.2 : 2.6;
 
             var d = 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2;
@@ -107127,15 +107303,65 @@ window.HY = window.HY || {};
         } catch (e) { }
     }
 
-    /* ⭐ v511：技能名稱浮現 */
-    function showSkillName(node, name, side, isHeal) {
+    /* ⭐ v511：技能名稱浮現
+       ⭐ v512：依屬性變色 */
+    function showSkillName(node, name, side, isHeal, element) {
         if (!node || !name) return;
         var d = document.createElement('div');
         d.className = 'hy-fx-skill ' + (side === 'foe' ? 'foe' : 'ally');
         d.textContent = (isHeal ? '✚ ' : '《') + name + (isHeal ? '' : '》');
-        if (isHeal) d.style.color = '#6ee7b7';
+        var es = elemStyle(element);
+        if (es) {
+            d.style.color = es.glow;
+            d.style.borderColor = es.core;
+            d.style.boxShadow = '0 0 12px rgba(' + es.rgb + ',.6)';
+            d.style.background = 'rgba(6,12,20,.92)';
+        }
+        if (isHeal) {
+            d.style.color = '#6ee7b7';
+            d.style.borderColor = 'rgba(74,222,128,.75)';
+            d.style.boxShadow = '0 0 12px rgba(74,222,128,.6)';
+        }
         node.appendChild(d);
         setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1180);
+    }
+
+    /* ⭐ v512：AOE 全體特效（中央衝擊波 + 全場閃光 + 對每個目標拉線） */
+    function playAoe(el, fromNode, fromSide, targets, element) {
+        if (!el) return;
+        var es = elemStyle(element);
+        var col = es ? es.core : (fromSide === 'ally' ? '#22d3ee' : '#f87171');
+        var glowRgb = es ? es.rgb : (fromSide === 'ally' ? '56,189,248' : '248,113,113');
+
+        /* 全場閃光 */
+        var fl = document.createElement('div');
+        fl.className = 'hy-fx-aoe-flash';
+        fl.style.setProperty('--aoe-glow', 'rgba(' + glowRgb + ',.36)');
+        el.appendChild(fl);
+        setTimeout(function () { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 620);
+
+        /* 主衝擊環 */
+        var r1 = document.createElement('div');
+        r1.className = 'hy-fx-aoe';
+        r1.style.setProperty('--aoe-col', col);
+        el.appendChild(r1);
+        setTimeout(function () { if (r1.parentNode) r1.parentNode.removeChild(r1); }, 660);
+
+        /* 二次擴散環 */
+        var r2 = document.createElement('div');
+        r2.className = 'hy-fx-aoe2';
+        r2.style.setProperty('--aoe-col', col);
+        el.appendChild(r2);
+        setTimeout(function () { if (r2.parentNode) r2.parentNode.removeChild(r2); }, 960);
+
+        /* 對每個目標拉線（間隔 60ms，形成掃射感） */
+        (targets || []).forEach(function (t, i) {
+            setTimeout(function () {
+                if (fromNode && t && t !== fromNode) {
+                    drawTrail(el, fromNode, t, fromSide, false, element);
+                }
+            }, i * 60);
+        });
     }
 
     /* ⭐ v511：出手順序軸 */
@@ -107286,7 +107512,7 @@ window.HY = window.HY || {};
         sceneClass: sceneClass,
         /* 對外手動觸發（給特殊技能表現用） */
         fx: {
-            hit: function (id, side, index, dmg, crit, actorIndex) {
+            hit: function (id, side, index, dmg, crit, actorIndex, element) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
@@ -107295,7 +107521,7 @@ window.HY = window.HY || {};
                     actor = el.querySelector('.hy-stage-unit[data-side="' +
                         (side === 'foe' ? 'ally' : 'foe') + '"][data-i="' + actorIndex + '"]');
                 }
-                if (n) playHit(el, n, side, index, dmg || 0, !!crit, actor);
+                if (n) playHit(el, n, side, index, dmg || 0, !!crit, actor, element);
             },
             heal: function (id, side, index, amount) {
                 var el = document.getElementById(id || 'hy-battle-stage');
@@ -107309,20 +107535,29 @@ window.HY = window.HY || {};
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
                 if (n) floatText(n, text, kind || 'dmg');
             },
-            /* ⭐ v511：技能名稱浮現 */
-            skill: function (id, side, index, name) {
+            /* ⭐ v511：技能名稱浮現（v512 支援屬性配色） */
+            skill: function (id, side, index, name, element) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
-                if (n) showSkillName(n, name, side, /回|療|補|治|癒/.test(String(name)));
+                if (n) showSkillName(n, name, side, /回|療|補|治|癒/.test(String(name)), element);
             },
             /* ⭐ v511：手動畫軌跡線（from → to，兩邊都是 index） */
-            trail: function (id, fromSide, fromIndex, toSide, toIndex, crit) {
+            trail: function (id, fromSide, fromIndex, toSide, toIndex, crit, element) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var a = el.querySelector('.hy-stage-unit[data-side="' + fromSide + '"][data-i="' + fromIndex + '"]');
                 var b = el.querySelector('.hy-stage-unit[data-side="' + toSide + '"][data-i="' + toIndex + '"]');
-                if (a && b) drawTrail(el, a, b, fromSide, !!crit);
+                if (a && b) drawTrail(el, a, b, fromSide, !!crit, element);
+            },
+            /* ⭐ v512：AOE 全體特效（自動對該側所有活著的單位拉線） */
+            aoe: function (id, fromSide, targetSide, element) {
+                var el = document.getElementById(id || 'hy-battle-stage');
+                if (!el) return;
+                var atkList = el.querySelectorAll('.hy-stage-side.' + fromSide + ' .hy-stage-unit:not(.dead)');
+                var atk = atkList.length ? atkList[0] : null;
+                var tgts = el.querySelectorAll('.hy-stage-unit.' + targetSide + ':not(.dead)');
+                if (tgts.length) playAoe(el, atk, fromSide, [].slice.call(tgts), element);
             }
         }
     };
@@ -116113,13 +116348,20 @@ window.HY = window.HY || {};
                         if (!isFinite(mx) || mx <= 0) mx = Number(m.maxHp) || 0;
                         var cu = Number(m.currentHp);
                         if (!isFinite(cu)) cu = mx;
+                        var _metaA = (HY.uiDexAtb && HY.uiDexAtb._stageSkillMeta)
+                            ? HY.uiDexAtb._stageSkillMeta(m, false) : { element: null, aoe: false };
                         _party.push({
                             name: m.name || '隊員',
-                            cur: cu, max: mx, alive: cu > 0,
+                            cur: cu, max: mx,
+                            mp: Number(m.currentMp) || 0,
+                            mpMax: Number(md3.maxMp) || 0,
+                            alive: cu > 0,
                             ready: Number(m.atb || 0) >= 100,
                             atb: Number(m.atb || 0),
                             skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
                                 ? HY.uiDexAtb._stageSkillName(m, false) : null,
+                            element: _metaA.element,
+                            aoe: _metaA.aoe,
                             sprite: BS.charSprite(m),
                             color: BS.charColor(m),
                             buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
@@ -116131,13 +116373,23 @@ window.HY = window.HY || {};
                         var mx2 = Number(e.maxHp) || 0;
                         var cu2 = Number(e.currentHp);
                         if (!isFinite(cu2)) cu2 = mx2;
+                        var _eMp2 = (typeof e.maxMp === 'number' && e.maxMp > 0)
+                            ? e.maxMp
+                            : Math.floor(80 + (e.lv || 1) * 25 + (e.atk || 20) * 0.15);
+                        var _metaB = (HY.uiDexAtb && HY.uiDexAtb._stageSkillMeta)
+                            ? HY.uiDexAtb._stageSkillMeta(e, true) : { element: null, aoe: false };
                         _foes2.push({
                             name: e.name || '敵人',
-                            cur: cu2, max: mx2, alive: cu2 > 0,
+                            cur: cu2, max: mx2,
+                            mp: (typeof e.currentMp === 'number') ? e.currentMp : _eMp2,
+                            mpMax: _eMp2,
+                            alive: cu2 > 0,
                             ready: Number(e.atb || 0) >= 100,
                             atb: Number(e.atb || 0),
                             skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
                                 ? HY.uiDexAtb._stageSkillName(e, true) : null,
+                            element: _metaB.element,
+                            aoe: _metaB.aoe,
                             sprite: BS.monSprite(e),
                             avatar: BS.monAvatar(e),
                             target: (dbRef.currentEnemy === e),
