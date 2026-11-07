@@ -4515,12 +4515,15 @@ window.HY = window.HY || {};
 
         /* ── 攻擊 ── */
         atkPct:       { name: '攻擊傷害',   group: 'offense', pct: true },
-        physDmg:      { name: '物理傷害',   group: 'offense', pct: true },
-        fireDmg:      { name: '火焰傷害',   group: 'offense', pct: true },
-        coldDmg:      { name: '冰冷傷害',   group: 'offense', pct: true },
-        lightningDmg: { name: '閃電傷害',   group: 'offense', pct: true },
-        chaosDmg:     { name: '混沌傷害',   group: 'offense', pct: true },
-        elemDmg:      { name: '元素傷害',   group: 'offense', pct: true },
+        physDmg:      { name: '外功傷害',   group: 'offense', pct: true },
+        elemDmg:      { name: '八元素內勁', group: 'offense', pct: true },
+        /* ⚠️ 已移除（戰鬥中從不讀取，且與八元素攻重複）：
+              fireDmg / coldDmg / lightningDmg / chaosDmg
+              → 單元素傷害改由 elementSystem 的八元素攻擊值呈現，
+                詞條「火勁傷害 +31%」會直接乘在該元素的攻擊力上
+                （通道：elemAtk_fire / elemAtk_ice / ...）。
+              玩家在「🌀 八元素」區就能看到實際的攻/抗，
+              不需要再用另一組百分比欄位重複表達同一件事。 */
         critDmg:      { name: '爆擊傷害',   group: 'offense', pct: true },
         critFlat:     { name: '爆擊率加成', group: 'offense', pct: true },
         hitFlat:      { name: '命中率加成', group: 'offense', pct: true },
@@ -35993,15 +35996,22 @@ window.HY = window.HY || {};
         { re: /^風抗$/, key: 'windRes', kind: 'flat' },
 
         /* 五行內勁
-           ⚠️ 同樣的理由：fireDmg / elemDmg 這些只寫進 derived 物件，
-              戰鬥公式沒有讀取 → 天賦點了沒感覺。
-              統一映射到 elemDmg 的實際通道（elementSystem 會讀），
-              並保留 atkPct 作為保險。 */
+           ⭐ v428：改為「單元素專屬通道」
+           ──────────────────────────────────────────────────────────
+           舊版把「火勁傷害／冰勁傷害／雷勁傷害／毒勁傷害」
+           全部映射到同一個 elemDmg（全元素通用加成）。
+           結果：點「火勁傷害 +31%」時，冰勁／雷勁傷害也一起變強，
+                 面板顯示「火勁 31%／雷勁 49%」看起來像各自獨立，
+                 實際上是同一個數字被拆成四行 —— 完全誤導。
+
+           新版：各自映射到對應元素通道（八元素 + 毒）。
+           這些值會由 elementSystem 乘在該元素的攻擊力上。 */
+        { re: /^火勁傷害$/, key: 'elemAtk_fire', kind: 'more' },
+        { re: /^冰勁傷害$/, key: 'elemAtk_ice', kind: 'more' },
+        { re: /^雷勁傷害$/, key: 'elemAtk_lightning', kind: 'more' },
+        { re: /^毒勁傷害$/, key: 'elemAtk_chaos', kind: 'more' },
+        { re: /^八元素內勁$/, key: 'elemDmg', kind: 'more' },
         { re: /^五行內勁$/, key: 'elemDmg', kind: 'more' },
-        { re: /^火勁傷害$/, key: 'elemDmg', kind: 'more' },
-        { re: /^冰勁傷害$/, key: 'elemDmg', kind: 'more' },
-        { re: /^雷勁傷害$/, key: 'elemDmg', kind: 'more' },
-        { re: /^毒勁傷害$/, key: 'elemDmg', kind: 'more' },
 
         /* 速度 */
         { re: /^出手速度$/, key: 'atkSpd', kind: 'more' },
@@ -66923,14 +66933,23 @@ window.HY = window.HY || {};
                             ' <span style="color:' + resColor + '">抗 ' + r.cur + '%</span>' +
                             (r.capped ? '<span style="color:#10b981;font-size:.85em">✱</span>' : '');
 
+                        /* ⭐ v428：顯示該元素的「傷害加成%」（來自「火勁傷害」等詞條）
+                           這樣玩家就能看到「火勁傷害 +31%」實際加在哪裡，
+                           不必再另外列一組 fireDmg / coldDmg 欄位。 */
+                        var boostTxt = '';
+                        if (r.atkBoost) {
+                            boostTxt = '<span style="color:#4ade80;font-size:.85em">+' + r.atkBoost + '%</span>';
+                        }
+
                         elCells.push(
                             '<span title="' + m.fullName + '\n' +
-                                '攻擊 ' + r.atk + '｜抗性 ' + r.cur + '%（上限 ' + r.cap + '%）' +
+                                '攻擊 ' + r.atk + (r.atkBoost ? '（含傷害加成 +' + r.atkBoost + '%）' : '') +
+                                '｜抗性 ' + r.cur + '%（上限 ' + r.cap + '%）' +
                                 (r.capped ? '\n未截斷值 ' + r.raw + '%' : '') +
                                 '\n來源：裝備天賦 ' + r.fromPoe + '%／元素防禦 ' + r.fromDef + '%／全抗 ' + r.fromAll + '%" ' +
                                 'style="display:inline-block;min-width:25%;box-sizing:border-box;padding:2px 4px;' +
                                 'color:' + m.color + ';white-space:nowrap;cursor:help;">' +
-                                m.icon + m.name + ' ' + txt + '</span>'
+                                m.icon + m.name + ' ' + txt + (boostTxt ? ' ' + boostTxt : '') + '</span>'
                         );
                     });
 
@@ -100081,6 +100100,9 @@ window.HY = window.HY || {};
             var self = this;
             var atk = emptyMap();
             var def = emptyMap();
+            /* ⭐ v428：每個元素收到的「傷害加成%」（供 UI 顯示來源）
+               例如「火勁傷害 +31%」→ boost.fire = 0.31 */
+            var boost = {};
             var keys = this.keys();
             // 0. ⭐ 基礎元素攻防（原 spiritRootSystem 的獨立公式）
             var flat = this._flatElementBase(c);
@@ -100223,17 +100245,48 @@ window.HY = window.HY || {};
                     var tf = tb.flat || {};
                     var tm = tb.more || {};
                     keys.forEach(function (k) {
-                        /* 加法：單元素 + 全元素 */
-                        var add = (tf['elAtk_' + k] || 0) + (tf.elAtk_all || 0);
+                        /* ⭐ v428：合併「八元素攻」與「X勁傷害」兩套命名
+                           ──────────────────────────────────────────────────
+                           舊版只認 elAtk_* / elDef_*（天賦樹的原始命名），
+                           但武俠詞條產生的是「火勁傷害」「雷勁傷害」，
+                           被 wuxiaStatParser 映射到 elemAtk_fire 等通道。
+                           兩套命名不互通 → 武俠詞條永遠不生效。
+
+                           現在兩套都讀：
+                             elAtk_<k>     天賦樹原始命名
+                             elemAtk_<k>   武俠詞條命名（火勁傷害 → elemAtk_fire）
+                             elAtk_all     全元素
+                             elemDmg       全元素通用（八元素內勁） */
+                        var single = (tf['elAtk_' + k] || 0) + (tf['elemAtk_' + k] || 0);
+                        var allFlat = (tf.elAtk_all || 0) + (tf.elemAtk_all || 0);
+                        var add = single + allFlat;
                         if (add) atk[k] += add;
-                        var addD = (tf['elDef_' + k] || 0) + (tf.elDef_all || 0);
+
+                        var singleD = (tf['elDef_' + k] || 0) + (tf['elemRes_' + k] || 0);
+                        var allDef = (tf.elDef_all || 0) + (tf.elemRes_all || 0);
+                        var addD = singleD + allDef;
                         if (addD) def[k] += addD;
-                        /* 乘法：單元素 + 全元素 */
-                        var pa = (tm['elAtk_' + k] || 0) + (tm.elAtk_all || 0);
-                        if (pa) atk[k] = Math.floor(atk[k] * (1 + pa));
-                        var pd = (tm['elDef_' + k] || 0) + (tm.elDef_all || 0);
+
+                        /* 乘法：單元素 + 全元素（同樣兩種命名都吃） */
+                        var pa = (tm['elAtk_' + k] || 0) + (tm['elemAtk_' + k] || 0) + (tm.elAtk_all || 0);
+                        if (pa) {
+                            atk[k] = Math.floor(atk[k] * (1 + pa));
+                            /* ⭐ v428：記錄該元素收到的傷害加成（供 UI 顯示） */
+                            boost[k] = (boost[k] || 0) + pa;
+                        }
+
+                        var pd = (tm['elDef_' + k] || 0) + (tm['elemRes_' + k] || 0) + (tm.elDef_all || 0);
                         if (pd) def[k] = Math.floor(def[k] * (1 + pd));
                     });
+
+                    /* 全元素通用加成（八元素內勁 / 五行內勁）→ 八種都乘 */
+                    var genPct = _num(tm.elemDmg, 0);
+                    if (genPct) {
+                        keys.forEach(function (k) {
+                            atk[k] = Math.floor(atk[k] * (1 + genPct));
+                            boost[k] = (boost[k] || 0) + genPct;
+                        });
+                    }
                 }
             }
             // 11.7 ⭐ PoE 抗性 → 八元素防禦（橋接層）
@@ -100288,7 +100341,7 @@ window.HY = window.HY || {};
                 atk[k] = Math.max(0, Math.floor(atk[k]));
                 def[k] = Math.max(0, Math.floor(def[k]));
             });
-            var result = { atk: atk, def: def, totalAtk: this.sum(atk), totalDef: this.sum(def) };
+            var result = { atk: atk, def: def, atkBoost: boost, totalAtk: this.sum(atk), totalDef: this.sum(def) };
             this._cacheSig[c.id] = sig;
             this._cache[c.id] = result;
             return result;
@@ -100791,6 +100844,15 @@ window.HY = window.HY || {};
             out[k].color = (ELEM_META[k] && ELEM_META[k].color) || '#94a3b8';
             /* 攻擊值也一併帶出，方便 UI 一次顯示「攻/抗」 */
             out[k].atk = (es && es.atk) ? Math.round(num(es.atk[k], 0)) : 0;
+            /* ⭐ v428：該元素的傷害加成%（來自「火勁傷害」「雷勁傷害」等詞條）
+               這些詞條由 wuxiaStatParser 映射到 elemAtk_<元素>，
+               elementSystem 會把它乘在該元素的攻擊力上。
+               這裡把百分比帶出來，UI 就能顯示「🔥火 攻 62 +31%」，
+               玩家一眼看出加成加在哪個元素，不必再另開一組欄位。 */
+            out[k].atkBoost = 0;
+            if (es && es.atkBoost && typeof es.atkBoost[k] === 'number') {
+                out[k].atkBoost = Math.round(es.atkBoost[k] * 1000) / 10;
+            }
             sumCur += r.cur;
             sumRaw += r.raw;
         });
