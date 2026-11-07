@@ -719,13 +719,57 @@ details > summary::marker {
 </style>
 </head>
 <body>
-    <div id="hy-boot-overlay" style="position:fixed;inset:0;background:#0f141c;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;">
+    <!-- ⭐ v61：開機遮罩改為「半透明」，讓下方已渲染的 UI 透出來
+         ──────────────────────────────────────────────────────────────
+         原本是 background:#0f141c 完全不透明 → 243 個 JS 載完前全黑。
+         改成 rgba(15,20,28,.88) + 模糊 → 玩家看得到標籤列已經在那裡，
+         心理上不會覺得「等很久」。
+
+         ⭐⭐ v62 真正的原因與修正：
+         遮罩 position:fixed; inset:0 + z-index:99999 會把「整條頂部標籤列」
+         一起蓋住，而頂部列是 index.html 的靜態 HTML，第一帧（約 30~80ms）
+         就已經畫好 → 玩家感受到的「標籤顯示太慢」其實是遮罩擋住它。
+
+         修正：讓 #top-bar 以 z-index:100000 疊在遮罩之上（見下方 <style>），
+               遮罩本身維持 inset:0 蓋住主內容。
+               搭配 body:not(.hy-ready) 時停用指針事件，
+               避免載入途中誤點「重啟時空」清掉存檔。 -->
+    <div id="hy-boot-overlay" style="position:fixed;inset:0;background:rgba(15,20,28,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);">
         <div style="font-size:1.3rem;color:#c89d54;font-weight:bold;margin-bottom:16px;">⚡ 黃易群俠傳 Web</div>
         <div style="width:340px;height:10px;background:#121822;border:1px solid #2e3b4e;border-radius:6px;overflow:hidden;">
             <div id="hy-boot-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0284c7,#00e5ff);transition:width 0.12s linear;"></div>
         </div>
         <div id="hy-boot-text" style="margin-top:12px;font-size:0.82rem;color:#94a3b8;">正在初始化時空引擎…</div>
     </div>
+
+    <!-- ⭐⭐ v61/v62：頂部標籤的可見性
+         ──────────────────────────────────────────────────────────────
+         v61 曾在此預先渲染一個「標籤骨架」，但骨架的 z-index 只有 9998，
+         而開機遮罩是 99999 → 骨架從來沒顯示過（純粹白做）。
+
+         v62 改為根本解法：真正的 #top-bar 是靜態 HTML，30~80ms 就畫好，
+         只要把它抬到遮罩之上（z-index:100000）即可，不需要任何骨架。
+         因此移除骨架，改用下面的 <style>。 -->
+    <style>
+        /* ⭐⭐ v62：頂部標籤列疊在開機遮罩之上
+           ──────────────────────────────────────────────────────────
+           遮罩是 z-index:99999 的 fixed 全屏元素，把 #top-bar（靜態 HTML，
+           30~80ms 就畫好）整條壓住 → 這就是「標籤顯現太慢」的真正原因。
+           把列抬到 100000 之後，玩家一開頁就看到標籤列，不必等 246 個 JS。
+
+           載入完成前用 pointer-events:none 鎖住點擊，
+           避免誤觸「重啟時空」而清掉存檔；hy-ready 後恢復可點。 */
+        #top-bar {
+            position: relative;
+            z-index: 100000;
+        }
+        body:not(.hy-ready) #top-bar {
+            pointer-events: none;
+        }
+        body:not(.hy-ready) #top-bar .system-controls > button {
+            opacity: .72;
+        }
+    </style>
 
     <div id="game-container">
         <!-- 頂部：時空與系統列（重啟鈕已移至最左以防誤點） -->
@@ -37227,13 +37271,18 @@ window.HY = window.HY || {};
             return SECT_CLASS[c.sect] || 'Scion';
         }
 
-        /** ⭐ 該角色可選的昇華分支（依職業，3 條）
+        /** ⭐ 該角色可選的昇華分支
             ──────────────────────────────────────────────────────────
-            v4：完全還原成原本的「職業 → 3 分支」體系。
-                節點、連線、數值全部保留 POE 原始資料；
-                唯一改動是「職業名／分支名」換成仙俠中文
-                （由 ascendancyZhNames.js 就地改寫 name 欄位）。
-                本函式只負責把名稱包成 UI 要的格式。 */
+            v5：恢復「全部 21 條都可選」的設計。
+                原本只給本職業的 3 條，導致玩家一輩子只能看到 3 個昇華，
+                其餘 18 條（含天驕 49 節點、藏珍 36 節點等內容最豐富的）
+                永遠看不到。
+
+            現規則：
+              · 全部 21 條都列出
+              · 本職業的 3 條標記 isMine: true 並排在前面（UI 加金色「本職」標籤）
+              · 其餘 18 條排在後面，仍可預覽與加入
+              · 名稱全部仙俠化（由 ascendancyZhNames.js 就地改寫） */
         branchesFor(charObj) {
             var cls = this.poeClassOf(charObj);
             var tbl = this.classTable();
@@ -37241,39 +37290,48 @@ window.HY = window.HY || {};
             var ZN = HY.AscendancyZhNames || null;
             var byBranch = this.byBranch();
 
-            var list = [];
+            /* ① 全部有節點的分支 */
+            var all = Object.keys(byBranch).filter(function (id) {
+                return byBranch[id] && byBranch[id].length;
+            });
 
-            /* 本職業的 3 條分支 */
-            (tbl[cls] || []).forEach(function (b) {
-                var bi = ZN && ZN.branchInfo ? ZN.branchInfo(b.id) : null;
-                list.push({
-                    id: b.id,
-                    name: b.name,
-                    nameZh: b.name || ((ZH && ZH.branch) ? ZH.branch(b.id) : b.id),
-                    isMine: true,
-                    nodeCount: (byBranch[b.id] || []).length,
+            /* ② 本職業的 3 條 */
+            var mine = {};
+            (tbl[cls] || []).forEach(function (b) { mine[b.id] = true; });
+
+            function mk(id, isMine, fallbackName) {
+                var bi = ZN && ZN.branchInfo ? ZN.branchInfo(id) : null;
+                var nm = (ZN && ZN.branchName) ? ZN.branchName(id)
+                       : (fallbackName || ((ZH && ZH.branch) ? ZH.branch(id) : id));
+                return {
+                    id: id,
+                    name: nm,
+                    nameZh: nm,
+                    isMine: isMine,
+                    nodeCount: (byBranch[id] || []).length,
                     icon: bi ? bi.icon : '',
                     color: bi ? bi.color : '#94a3b8',
                     desc: ''
-                });
+                };
+            }
+
+            var list = [];
+
+            /* ③ 本職先放（依 ASCENDANCY_CLASSES 的順序） */
+            (tbl[cls] || []).forEach(function (b) {
+                if (!all.length || all.indexOf(b.id) !== -1) {
+                    list.push(mk(b.id, true, b.name));
+                }
             });
 
-            /* 若職業對照失敗（舊存檔異常）→ 退回全部列出 */
-            if (!list.length) {
-                Object.keys(byBranch).forEach(function (id) {
-                    var bi = ZN && ZN.branchInfo ? ZN.branchInfo(id) : null;
-                    list.push({
-                        id: id,
-                        name: (ZN && ZN.branchName) ? ZN.branchName(id) : id,
-                        nameZh: (ZN && ZN.branchName) ? ZN.branchName(id) : id,
-                        isMine: false,
-                        nodeCount: (byBranch[id] || []).length,
-                        icon: bi ? bi.icon : '',
-                        color: bi ? bi.color : '#94a3b8',
-                        desc: ''
-                    });
-                });
-            }
+            /* ④ 其餘分支（節點多的排前面，內容豐富的先看到） */
+            all.filter(function (id) { return !mine[id]; })
+               .sort(function (a, b) {
+                   return (byBranch[b] || []).length - (byBranch[a] || []).length;
+               })
+               .forEach(function (id) {
+                   list.push(mk(id, false));
+               });
 
             return list;
         }
@@ -40509,12 +40567,23 @@ window.HY = window.HY || {};
                     var x1 = n.x * s + ox, y1 = n.y * s + oy;
                     var x2 = t.x * s + ox, y2 = t.y * s + oy;
                     var both = n.allocated && t.allocated;
-                    /* 先畫一層深色描邊，確保在插畫背景上仍看得見 */
+                    /* ⭐ v62：連線大幅加粗並提高對比
+                       ──────────────────────────────────────────────
+                       使用者反應「點節點的連線條不明顯」。
+                       原本未配置線是 rgba(120,142,168,.75) + 1.2px，
+                       在插畫背景上幾乎與背景同亮度 → 看不見路徑。
+
+                       改法：
+                         ① 暗底描邊加粗（3→4.5px）→ 任何背景都有輪廓
+                         ② 未配置線改亮灰藍 rgba(168,192,216,.95)
+                         ③ 未配置線寬 1.2→2.0px（下限），隨縮放等比放大
+                         ④ 已配置線加光暈，形成清楚的金色路徑 */
+                    ctx.lineCap = 'round';
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
-                    ctx.strokeStyle = 'rgba(2,5,10,0.75)';
-                    ctx.lineWidth = Math.max(3, 5 * s);
+                    ctx.strokeStyle = 'rgba(2,5,10,0.85)';
+                    ctx.lineWidth = Math.max(4.5, 7 * s);
                     ctx.shadowBlur = 0;
                     ctx.stroke();
                     /* 再畫主線 */
@@ -40522,13 +40591,13 @@ window.HY = window.HY || {};
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
                     if (both) {
-                        ctx.strokeStyle = 'rgba(56,189,248,0.90)';
-                        ctx.lineWidth = Math.max(2, 3.2 * s);
-                        ctx.shadowColor = 'rgba(56,189,248,0.65)';
-                        ctx.shadowBlur = 10;
+                        ctx.strokeStyle = 'rgba(125,211,252,0.98)';
+                        ctx.lineWidth = Math.max(2.6, 4.0 * s);
+                        ctx.shadowColor = 'rgba(56,189,248,0.85)';
+                        ctx.shadowBlur = 12;
                     } else {
-                        ctx.strokeStyle = 'rgba(120,142,168,0.75)';
-                        ctx.lineWidth = Math.max(1.2, 2.0 * s);
+                        ctx.strokeStyle = 'rgba(168,192,216,0.95)';
+                        ctx.lineWidth = Math.max(2.0, 2.8 * s);
                         ctx.shadowBlur = 0;
                     }
                     ctx.stroke();
@@ -104666,12 +104735,15 @@ window.HY = window.HY || {};
         }
         return true;
     }
+    /* ⭐ v62：移除「先等 260ms 才 boot」的人為延遲。
+       #top-bar 是靜態 HTML、game 物件由屏障檔建立，boot 內部自己會檢查，
+       所以立即可試；輪詢間隔也從 500ms 縮到 60ms，標籤幾乎同一帧就出現。 */
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(boot, 260);
+        setTimeout(boot, 0);
     } else {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 260); });
+        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 0); });
     }
-    window.addEventListener('load', function () { setTimeout(boot, 800); });
+    window.addEventListener('load', function () { setTimeout(boot, 120); });
     var tries = 0;
     var timer = setInterval(function () {
         tries += 1;
@@ -104679,8 +104751,8 @@ window.HY = window.HY || {};
             try { window.HY.uiDelve.injectEntryButton(); } catch (e) { }
             if (tries > 4) clearInterval(timer);
         }
-        if (tries >= 40) clearInterval(timer);
-    }, 500);
+        if (tries >= 200) clearInterval(timer);   /* ⭐ v62：60ms × 200 ≈ 12s 上限 */
+    }, 60);
 })();
 
 /* ===== 193 / 246 : uiDelveMap.js ===== */
@@ -107382,10 +107454,14 @@ window.HY = window.HY || {};
             var isPoeTreeW = !!(D.TALENT_META && /^poe-/.test(D.TALENT_META.scheme || ''));
             if (isPoeTreeW) {
                 var poeRW = Math.max(0.5, Math.min(64, 5.2 * s * 5.2));
-                edgeW = Math.max(1.3, Math.min(4.6, poeRW * 0.30));
+                /* ⭐⭐ v62：連線再加粗一階
+                   使用者二次反映「連線條不明顯」。
+                   v61 的 0.42／下限 2.0px 仍偏細（縮小視圖下只有 1~2 個實體像素）。
+                   改係數 0.55、下限 2.8px、上限 7.0px。 */
+                edgeW = Math.max(2.8, Math.min(7.0, poeRW * 0.55));
             }
             ctx.lineWidth = edgeW;
-            ctx.lineCap = 'butt';
+            ctx.lineCap = 'round';
             var drawn = {};
             var visSet = this._computeVisibleSet();
             var self2 = this;
@@ -107503,10 +107579,14 @@ window.HY = window.HY || {};
                         ctx.strokeStyle = '#8a7856';
                         ctx.globalAlpha = 0.85;
                     } else {
-                        /* 未配置的一般連線：POE 原版是淡金褐色，清楚可見 */
-                        ctx.strokeStyle = '#9c8a6b';
-                        ctx.globalAlpha = 0.92;
+                        /* 未配置的一般連線：POE 原版是淡金褐色，清楚可見
+                           ⭐ v62：再提亮一階（#b8a482 → #cbb894）+ 拉高 alpha，
+                                   讓未點的天賦路徑也能一眼看清。 */
+                        ctx.strokeStyle = '#cbb894';
+                        ctx.globalAlpha = 1.0;
                     }
+                    /* ⭐ v61：記下主色，供「暗底描邊 + 主線」兩段繪製使用 */
+                    var _prevStyle = ctx.strokeStyle;
                 /* ══════════════════════════════════════════════════
                    ⭐ POE 原版連線演算法（PassiveTree.lua:BuildConnector）
                    ──────────────────────────────────────────────────
@@ -107539,20 +107619,56 @@ window.HY = window.HY || {};
                     /* 世界角度（從正上方順時針）→ canvas 角度（從正右方逆時針） */
                     var cA1 = (a1d - 90) * Math.PI / 180;
                     var cA2 = (a2d - 90) * Math.PI / 180;
-                    ctx.beginPath();
-                    if (arcD <= 90) {
-                        ctx.arc(cxs.x, cxs.y, radS, cA1, cA2, false);
-                    } else {
-                        var midD = (a1d + a2d) / 2;
-                        var cAm = (midD - 90) * Math.PI / 180;
-                        ctx.arc(cxs.x, cxs.y, radS, cA1, cAm, false);
-                        ctx.moveTo(cxs.x + Math.cos(cAm) * radS, cxs.y + Math.sin(cAm) * radS);
-                        ctx.arc(cxs.x, cxs.y, radS, cAm, cA2, false);
-                    }
-                    ctx.stroke();
+
+                    /* ⭐ v61：弧線也要「暗底描邊 + 主線」，
+                       否則叢集內部的弧線在深色底圖上同樣看不清。
+                       把「畫弧」抽成小函式，描邊與主線共用同一路徑。 */
+                    var _drawArc = function (lw, style, alpha) {
+                        var _pa = ctx.globalAlpha;
+                        ctx.save();
+                        ctx.globalAlpha = alpha;
+                        ctx.strokeStyle = style;
+                        ctx.lineWidth = lw;
+                        ctx.beginPath();
+                        if (arcD <= 90) {
+                            ctx.arc(cxs.x, cxs.y, radS, cA1, cA2, false);
+                        } else {
+                            var midD = (a1d + a2d) / 2;
+                            var cAm = (midD - 90) * Math.PI / 180;
+                            ctx.arc(cxs.x, cxs.y, radS, cA1, cAm, false);
+                            ctx.moveTo(cxs.x + Math.cos(cAm) * radS, cxs.y + Math.sin(cAm) * radS);
+                            ctx.arc(cxs.x, cxs.y, radS, cAm, cA2, false);
+                        }
+                        ctx.stroke();
+                        ctx.restore();
+                        ctx.globalAlpha = _pa;
+                    };
+                    _drawArc(edgeW + 3.6, '#05080c', 0.92);   /* ⭐ v62：暗底描邊加粗 2.2→3.6 */
+                    _drawArc(edgeW, _prevStyle, ctx.globalAlpha);  /* 主線 */
                 } else {
                     var seg = trimSegment(sa.x, sa.y, sb.x, sb.y, nodeVisR(n), nodeVisR(NODES[nextId]));
                     if (seg) {
+                        /* ⭐ v61：先畫「暗底描邊」再加粗主線
+                           ──────────────────────────────────────────
+                           使用者反應「連線條不明顯」。
+                           原本只有單層半透明線，在深色背景（尤其是叢集底圖的
+                           深藍/深紅區域）幾乎融進去。
+                           解法：同樣路徑先描一層更粗的深色（近黑），
+                                再把主色畫上去 → 任何背景都能看出線的輪廓。 */
+                        var _prevAlpha = ctx.globalAlpha;
+                        ctx.save();
+                        ctx.globalAlpha = 0.92;               /* ⭐ v62：0.85 → 0.92 */
+                        ctx.strokeStyle = '#05080c';
+                        ctx.lineWidth = edgeW + 3.6;          /* ⭐ v62：+2.2 → +3.6 */
+                        ctx.beginPath();
+                        ctx.moveTo(seg.x1, seg.y1);
+                        ctx.lineTo(seg.x2, seg.y2);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.globalAlpha = _prevAlpha;
+                        ctx.strokeStyle = _prevStyle;
+                        ctx.lineWidth = edgeW;
                         ctx.beginPath();
                         ctx.moveTo(seg.x1, seg.y1);
                         ctx.lineTo(seg.x2, seg.y2);
@@ -108513,12 +108629,13 @@ window.HY = window.HY || {};
         }
         return true;
     }
+    /* ⭐ v62：移除「先等 280ms 才 boot」的人為延遲（同 uiDelve）。 */
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(boot, 280);
+        setTimeout(boot, 0);
     } else {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 280); });
+        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 0); });
     }
-    window.addEventListener('load', function () { setTimeout(boot, 820); });
+    window.addEventListener('load', function () { setTimeout(boot, 130); });
     var tries = 0;
     var timer = setInterval(function () {
         tries += 1;
@@ -108526,8 +108643,8 @@ window.HY = window.HY || {};
             try { window.HY.uiTalent.injectEntryButton(); } catch (e) { }
             if (tries > 4) clearInterval(timer);
         }
-        if (tries >= 40) clearInterval(timer);
-    }, 500);
+        if (tries >= 200) clearInterval(timer);   /* ⭐ v62：60ms × 200 ≈ 12s 上限 */
+    }, 60);
 })();
 
 /* ===== 196 / 246 : kingsmarchData.js ===== */
@@ -113422,14 +113539,16 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 40) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.querySelector('.top-bar') ||
                           document.querySelector('.hy-topbar') ||
                           document.getElementById('top-bar');
                 if (!bar) return;
-                if (document.getElementById('km-entry-btn')) { clearInterval(timer); return; }
+                if (document.getElementById('km-entry-btn')) { if (timer) clearInterval(timer); return; }
                 var btn = document.createElement('button');
                 btn.id = 'km-entry-btn';
                 btn.textContent = '⚓ 金司馬區';
@@ -113442,8 +113561,10 @@ window.HY = window.HY || {};
                 } else {
                     bar.appendChild(btn);
                 }
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById('km-entry-btn')) timer = setInterval(tick, 60);
         }
     }
     window.HY.UIKingsmarch = UIKingsmarch;
@@ -121114,12 +121235,13 @@ window.HY = window.HY || {};
         return true;
     }
 
+    /* ⭐ v62：移除「先等 300ms 才 boot」的人為延遲（同 uiDelve）。 */
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(boot, 300);
+        setTimeout(boot, 0);
     } else {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 300); });
+        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 0); });
     }
-    window.addEventListener('load', function () { setTimeout(boot, 900); });
+    window.addEventListener('load', function () { setTimeout(boot, 140); });
 
     var tries = 0;
     var timer = setInterval(function () {
@@ -121128,8 +121250,8 @@ window.HY = window.HY || {};
             try { window.HY.uiAtlas.injectEntryButton(); } catch (e) { }
             if (tries > 4) clearInterval(timer);
         }
-        if (tries >= 40) clearInterval(timer);
-    }, 500);
+        if (tries >= 200) clearInterval(timer);   /* ⭐ v62：60ms × 200 ≈ 12s 上限 */
+    }, 60);
 })();
 
 
@@ -123414,10 +123536,19 @@ window.HY = window.HY || {};
         injectChip() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            var timer = null;
+            /* ⭐ v62：先「立即嘗試」一次再開始輪詢。
+               #top-bar 是 index.html 的靜態 HTML，模組載入時它早已存在，
+               原本 setInterval(..., 300) 讓第一顆標籤平白多等 300ms。
+               輪詢間隔也縮到 60ms，模組晚到也能快速補上。 */
+            function tryInject() {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
-                if (document.getElementById(CHIP_ID)) { clearInterval(timer); self._updateChip(); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
+                if (document.getElementById(CHIP_ID)) {
+                    if (timer) clearInterval(timer);
+                    self._updateChip();
+                    return;
+                }
                 var bar = document.getElementById('top-bar') ||
                     document.querySelector('.top-bar') || document.querySelector('.hy-topbar');
                 if (!bar) return;
@@ -123434,10 +123565,12 @@ window.HY = window.HY || {};
                 } else {
                     bar.appendChild(chip);
                 }
-                clearInterval(timer);
+                if (timer) clearInterval(timer);
                 self._updateChip();
                 self._startChipLoop();
-            }, 300);
+            }
+            tryInject();
+            if (!document.getElementById(CHIP_ID)) timer = setInterval(tryInject, 60);
         }
 
         _startChipLoop() {
@@ -127776,12 +127909,15 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。
+               #top-bar 是靜態 HTML，模組載入時早就在 DOM 裡了。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.getElementById('top-bar') || document.querySelector('.top-bar');
                 if (!bar) return;
-                if (document.getElementById(ENTRY_ID)) { clearInterval(timer); return; }
+                if (document.getElementById(ENTRY_ID)) { if (timer) clearInterval(timer); return; }
                 var btn = document.createElement('button');
                 btn.id = ENTRY_ID;
                 btn.type = 'button';
@@ -127792,8 +127928,10 @@ window.HY = window.HY || {};
                 var ctrl = bar.querySelector('.system-controls');
                 if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
                 else bar.appendChild(btn);
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById(ENTRY_ID)) timer = setInterval(tick, 60);
         }
 
         _build() {
@@ -129465,13 +129603,15 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.getElementById('top-bar') ||
                     document.querySelector('.top-bar') || document.querySelector('.hy-topbar');
                 if (!bar) return;
-                if (document.getElementById(ENTRY_ID)) { clearInterval(timer); return; }
+                if (document.getElementById(ENTRY_ID)) { if (timer) clearInterval(timer); return; }
 
                 var btn = document.createElement('button');
                 btn.id = ENTRY_ID;
@@ -129484,8 +129624,10 @@ window.HY = window.HY || {};
                 var ctrl = bar.querySelector('.system-controls');
                 if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
                 else bar.appendChild(btn);
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById(ENTRY_ID)) timer = setInterval(tick, 60);
         }
 
         /* ══════════════════════════════════════════════════
@@ -133486,12 +133628,14 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.getElementById('top-bar') || document.querySelector('.top-bar');
                 if (!bar) return;
-                if (document.getElementById(ENTRY_ID)) { clearInterval(timer); return; }
+                if (document.getElementById(ENTRY_ID)) { if (timer) clearInterval(timer); return; }
                 var btn = document.createElement('button');
                 btn.id = ENTRY_ID;
                 btn.type = 'button';
@@ -133502,8 +133646,10 @@ window.HY = window.HY || {};
                 var ctrl = bar.querySelector('.system-controls');
                 if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
                 else bar.appendChild(btn);
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById(ENTRY_ID)) timer = setInterval(tick, 60);
         }
 
         _build() {
@@ -135329,12 +135475,14 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.getElementById('top-bar') || document.querySelector('.top-bar');
                 if (!bar) return;
-                if (document.getElementById(ENTRY_ID)) { clearInterval(timer); return; }
+                if (document.getElementById(ENTRY_ID)) { if (timer) clearInterval(timer); return; }
                 var btn = document.createElement('button');
                 btn.id = ENTRY_ID;
                 btn.type = 'button';
@@ -135345,8 +135493,10 @@ window.HY = window.HY || {};
                 var ctrl = bar.querySelector('.system-controls');
                 if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
                 else bar.appendChild(btn);
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById(ENTRY_ID)) timer = setInterval(tick, 60);
         }
 
         _build() {
@@ -136062,13 +136212,15 @@ window.HY = window.HY || {};
         injectEntryButton() {
             var self = this;
             var tries = 0;
-            var timer = setInterval(function () {
+            /* ⭐ v62：先「立即嘗試」一次，再以 60ms 輪詢（原本固定等 300ms）。 */
+            var timer = null;
+            var tick = function () {
                 tries++;
-                if (tries > 60) { clearInterval(timer); return; }
+                if (tries > 120) { if (timer) clearInterval(timer); return; }
                 var bar = document.getElementById('top-bar') ||
                     document.querySelector('.top-bar');
                 if (!bar) return;
-                if (document.getElementById(ENTRY_ID)) { clearInterval(timer); return; }
+                if (document.getElementById(ENTRY_ID)) { if (timer) clearInterval(timer); return; }
                 var btn = document.createElement('button');
                 btn.id = ENTRY_ID;
                 btn.type = 'button';
@@ -136079,8 +136231,10 @@ window.HY = window.HY || {};
                 var ctrl = bar.querySelector('.system-controls');
                 if (ctrl) ctrl.insertBefore(btn, ctrl.firstChild);
                 else bar.appendChild(btn);
-                clearInterval(timer);
-            }, 300);
+                if (timer) clearInterval(timer);
+            };
+            tick();
+            if (!document.getElementById(ENTRY_ID)) timer = setInterval(tick, 60);
         }
 
         _build() {
