@@ -79978,6 +79978,70 @@ window.HY = window.HY || {};
         constructor(app) {
             this.app = app;
         }
+        /* ⭐ v494：橫向卡片版面樣式（只注入一次）
+           ──────────────────────────────────────────────────────────
+           目標：一屏能看到更多靈獸，且說明文字不再被擠成多行。
+
+           版面配置（三個區塊橫排）：
+             ┌──────┬────────────────────────────┬──────────┐
+             │ 插畫 │ 名稱 / 定位 / 說明 / 加成  │  按鈕    │
+             │ 76px │        彈性寬度            │  固定寬  │
+             └──────┴────────────────────────────┴──────────┘ */
+        _ensureRowStyle() {
+            if (document.getElementById('hy-pet-row-style')) return;
+            var css =
+                /* 清單變單欄（原本 enemy-grid 是多欄 grid） */
+                '#pet-list{' +
+                    'display:block !important;' +
+                    'grid-template-columns:none !important;' +
+                    'gap:0 !important;' +
+                '}' +
+                /* 每張卡橫向 */
+                '#pet-list .pet-card-row{' +
+                    'display:flex !important;' +
+                    'flex-direction:row !important;' +
+                    'align-items:center !important;' +
+                    'justify-content:flex-start !important;' +
+                    'gap:14px !important;' +
+                    'padding:10px 14px !important;' +
+                    'margin-bottom:8px !important;' +
+                    'min-height:0 !important;' +
+                '}' +
+                /* 卡內第一層（插畫 + 資訊）也要橫排並且撐滿 */
+                '#pet-list .pet-card-row > div:first-child{' +
+                    'flex:1 1 auto !important;' +
+                    'min-width:0 !important;' +
+                    'align-items:center !important;' +
+                '}' +
+                /* 說明文字限制在兩行內，避免單卡過高 */
+                '#pet-list .pet-card-row p{' +
+                    'margin:1px 0 !important;' +
+                    'display:-webkit-box;' +
+                    '-webkit-line-clamp:2;' +
+                    '-webkit-box-orient:vertical;' +
+                    'overflow:hidden;' +
+                '}' +
+                /* 按鈕區靠右、不壓縮 */
+                '#pet-list .pet-card-row > .btn-primary,' +
+                '#pet-list .pet-card-row > .btn-group-row{' +
+                    'flex:0 0 auto !important;' +
+                    'align-self:center !important;' +
+                '}' +
+                '#pet-list .pet-card-row .btn-primary{' +
+                    'white-space:nowrap !important;' +
+                '}' +
+                /* 窄視窗（<820px）改回上下堆疊，否則按鈕會被擠出畫面 */
+                '@media (max-width: 820px){' +
+                    '#pet-list .pet-card-row{flex-direction:column !important;align-items:stretch !important;}' +
+                    '#pet-list .pet-card-row > .btn-primary,' +
+                    '#pet-list .pet-card-row > .btn-group-row{width:100% !important;}' +
+                '}';
+            var st = document.createElement('style');
+            st.id = 'hy-pet-row-style';
+            st.textContent = css;
+            document.head.appendChild(st);
+        }
+
         renderPetTab() {
             const Data = window.HY.Data;
             const app = this.app;
@@ -79985,8 +80049,18 @@ window.HY = window.HY || {};
             if (!petListEl || !Data.PETS) return;
             app.petSys.ensureState();
 
-            /* ⭐⭐⭐ v485：靈獸介面跳動修正
+            /* ⭐ v494：靈獸卡片改為「橫向一行一隻」
                ──────────────────────────────────────────────────────────
+               原本 enemy-grid 用 auto-fill minmax(175px, 1fr)，
+               每張卡只有 ~175px 寬，插畫 + 名稱 + 說明 + 按鈕全部被迫窄擠，
+               一屏只看得到 3~4 隻。改成整列橫向：
+                 ① #pet-list 變單欄
+                 ② 每張卡內部「插畫｜資訊｜按鈕」三段橫排
+                 這樣一屏能看 8~10 隻，且說明文字不再擠成好幾行。 */
+            this._ensureRowStyle();
+
+            /* 簽章必須含橫向版面旗標，否則舊版（直向）會被快取擋住不重繪 */
+            /* ⭐⭐⭐ v485：靈獸介面跳動修正
                症狀：靈獸面板會不停跳動、閃爍，滾動位置也會被拉回頂端。
 
                根因（實測確認）：
@@ -80009,7 +80083,7 @@ window.HY = window.HY || {};
             const F0 = this._petFilter || { role: 'all', element: 'all', quality: 'all', ownedOnly: false };
             const sig = [
                 F0.role, F0.element, F0.quality, F0.ownedOnly ? 1 : 0,
-                activePetId0 || '', maxCharLv0,
+                activePetId0 || '', maxCharLv0, 'row1',   /* row1 = v494 橫向版面 */
                 Object.keys(ownedPets0).sort().map(function (k) {
                     var v = ownedPets0[k];
                     return k + ':' + (typeof v === 'object' ? (v.lv || 0) : v);
@@ -80080,17 +80154,24 @@ window.HY = window.HY || {};
             });
 
             var ownedCount = Object.keys(ownedPets).length;
+            /* ⭐ v494：把「顯示 N 隻（已篩選）」搬到篩選列最右側
+               ──────────────────────────────────────────────────────────
+               原本它是一個獨立區塊印在清單上方，佔一行空間又容易忽略。
+               現在直接在篩選列右下角，和總數並排顯示。 */
             filterHost.innerHTML =
                 chipGroup('定位', 'role', roleOpts, F.role) +
                 chipGroup('元素', 'element', elemOpts, F.element) +
                 chipGroup('品階', 'quality', qualOpts, F.quality) +
-                '<div><span style="color:#64748b;margin-right:6px;">其他</span>' +
-                '<button data-pf="owned" data-pv="' + (F.ownedOnly ? '0' : '1') + '" style="' +
-                'margin:0 4px 2px 0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;font-family:inherit;' +
-                (F.ownedOnly ? 'background:#14532d;border:1px solid #10b981;color:#6ee7b7;'
-                             : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
-                '">' + (F.ownedOnly ? '✔ ' : '') + '僅顯示已收服 (' + ownedCount + ')</button>' +
-                '<span style="float:right;color:#64748b;">共 ' + Object.keys(Data.PETS).length + ' 隻</span></div>';
+                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                    '<span style="color:#64748b;margin-right:2px;">其他</span>' +
+                    '<button data-pf="owned" data-pv="' + (F.ownedOnly ? '0' : '1') + '" style="' +
+                        'margin:0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;font-family:inherit;' +
+                        (F.ownedOnly ? 'background:#14532d;border:1px solid #10b981;color:#6ee7b7;'
+                                     : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
+                        '">' + (F.ownedOnly ? '✔ ' : '') + '僅顯示已收服 (' + ownedCount + ')</button>' +
+                    '<span id="pet-list-count" style="margin-left:auto;color:#7dd3fc;font-weight:bold;' +
+                        'font-size:.82rem;white-space:nowrap;"></span>' +
+                '</div>';
 
             /* 綁定篩選 */
             var self = this;
@@ -80115,21 +80196,26 @@ window.HY = window.HY || {};
                 return true;
             });
 
-            /* 顯示筆數提示 */
-            var countEl = document.createElement('div');
-            countEl.style.cssText = 'margin:0 0 8px;font-size:.82rem;color:#94a3b8;';
-            countEl.textContent = '顯示 ' + listIds.length + ' 隻' +
-                (listIds.length < Object.keys(Data.PETS).length ? '（已篩選）' : '');
-            petListEl.appendChild(countEl);
-
-            /* 最多一次渲染 120 隻，避免 DOM 過重 */
+            /* 顯示筆數（⭐ v494：寫在篩選列最右側，不再佔用清單空間）
+               ⚠️ 原本還有一行橘色警告「僅顯示前 120 隻，請用上方篩選器縮小範圍」，
+                  使用者要求移除。改為在筆數上直接標示實際渲染數量，
+                  資訊還在但不再多佔一行、也不刺眼。 */
             const LIMIT = 120;
             var shown = listIds.slice(0, LIMIT);
-            if (listIds.length > LIMIT) {
-                var note = document.createElement('div');
-                note.style.cssText = 'margin:6px 0;font-size:.82rem;color:#f59e0b;';
-                note.textContent = '⚠️ 僅顯示前 ' + LIMIT + ' 隻，請用上方篩選器縮小範圍';
-                petListEl.appendChild(note);
+            var totalAll = Object.keys(Data.PETS).length;
+
+            var countEl = document.getElementById('pet-list-count');
+            if (countEl) {
+                if (listIds.length > LIMIT) {
+                    countEl.textContent = '顯示 ' + shown.length + ' / ' + listIds.length + ' 隻';
+                    countEl.style.color = '#fbbf24';
+                } else if (listIds.length < totalAll) {
+                    countEl.textContent = '顯示 ' + listIds.length + ' 隻（已篩選）';
+                    countEl.style.color = '#7dd3fc';
+                } else {
+                    countEl.textContent = '共 ' + totalAll + ' 隻';
+                    countEl.style.color = '#7dd3fc';
+                }
             }
 
             shown.forEach(petId => {
@@ -80150,7 +80236,7 @@ window.HY = window.HY || {};
                     bonusText = app.equipSys.formatBonusText(pet.bonus) + ' <small style="color:#94a3b8;">(Lv.1 基礎)</small>';
                 }
                 const card = document.createElement('div');
-                card.className = 'card-item';
+                card.className = 'card-item pet-card-row';
                 card.style.borderColor = isActive ? '#10b981' : '#2e3b4e';
                 let actionHtml = '';
                 if (lv === 0) {
@@ -148206,6 +148292,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
