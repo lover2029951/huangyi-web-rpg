@@ -1726,11 +1726,28 @@ window.HY = window.HY || {};
             while (task.acc >= task.baseMs && guard < MAX_GUARD) {
                 task.acc -= task.baseMs;
                 guard++;
+                var cbStart = now();
                 try {
                     task.cb.apply(null, task.args);
                 } catch (e) {
                     console.error('[GameConfig interval error]', e);
                 }
+                var cbCost = now() - cbStart;
+
+                /* ⭐ 記錄慢任務（超過 50ms）供除錯，並強制停手避免連鎖 */
+                if (cbCost > 50) {
+                    S.__slowTasks = S.__slowTasks || {};
+                    var k = String(task.cb).replace(/\s+/g, ' ').slice(0, 70);
+                    S.__slowTasks[k] = {
+                        count: (S.__slowTasks[k] ? S.__slowTasks[k].count : 0) + 1,
+                        lastMs: Math.round(cbCost),
+                        baseMs: task.baseMs
+                    };
+                    /* 慢任務不再補跑第二次（它已經吃掉太多預算） */
+                    task.acc = Math.min(task.acc, task.baseMs - 1);
+                    break;
+                }
+
                 if (!S.tasks[id]) break;      /* 任務被 clearInterval 了 */
 
                 /* ① 單一任務預算用完 → 換下一個任務（不影響其他任務） */
@@ -85602,6 +85619,20 @@ window.HY = window.HY || {};
   /* ── 主處理 ── */
   function run() {
     if (!document.body) return { found: 0, rows: 0, parent: false };
+
+    /* ⭐ v2：先做「便宜的前置檢查」，避免每次都全 DOM 掃描。
+       findInnermost 會用 querySelectorAll('*') + 逐一讀 textContent，
+       在 3600 節點的頁面上要 18ms。若畫面上根本沒有目標標籤，
+       這次就完全不用掃。 */
+    var bodyText = String(document.body.textContent || '');
+    var anyMark = false;
+    for (var mi = 0; mi < CFG.MARKS.length; mi++) {
+      if (bodyText.indexOf(CFG.MARKS[mi]) !== -1) { anyMark = true; break; }
+    }
+    if (!anyMark && !_manual.length) {
+      return { found: 0, rows: _rows.length, parent: false, skipped: true };
+    }
+
     /* 1) 手動指定優先 */
     _manual.forEach(function (sel) {
       var els;
@@ -85659,10 +85690,42 @@ window.HY = window.HY || {};
   }
   function startPoll() {
     if (_pollTimer) return;
+    /* ⭐ v2：效能修正（這是主執行緒卡頓的主要來源之一）
+       ──────────────────────────────────────────────────────────
+       舊版：POLL_MS=1500、POLL_MAX=200 → 5 分鐘內每 1.5 秒
+             做一次「全 DOM 掃描」（querySelectorAll('*') + 逐一讀
+             textContent），實測單次 18ms。
+             在靈獸分頁（200 張卡片、3600+ 節點）時更慢，
+             加上排程器同輪補跑 → 疊加成 3 秒卡頓。
+
+       這是「移除三個區塊」的一次性任務，根本不需要持續輪詢：
+         · 開機前 6 次（9 秒）足夠涵蓋所有 UI 延遲載入
+         · 之後完全交給 MutationObserver（已在新增節點時觸發）
+         · 且只有在「畫面上真的有那三個標籤」時才做全 DOM 掃描
+           （先做便宜的字串檢查，避免無謂掃描） */
     _pollTimer = setInterval(function () {
       _pollCount += 1;
-      run();
-      if (_pollCount >= CFG.POLL_MAX) { clearInterval(_pollTimer); _pollTimer = null; }
+
+      /* ① 便宜的前置檢查：畫面上還有沒有目標標籤？
+            沒有就完全跳過全 DOM 掃描（省下 18ms）。 */
+      var body = document.body;
+      var needScan = false;
+      if (body) {
+        var hay = String(body.textContent || '');
+        for (var i = 0; i < CFG.MARKS.length; i++) {
+          if (hay.indexOf(CFG.MARKS[i]) !== -1) { needScan = true; break; }
+        }
+      }
+      if (needScan) {
+        try { run(); } catch (e) { }
+      }
+
+      /* ② 只輪詢 6 次（9 秒），之後交給 MutationObserver */
+      if (_pollCount >= 6) {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+        log('輪詢結束（已完成 ' + _pollCount + ' 次），改由 MutationObserver 監看');
+      }
     }, CFG.POLL_MS);
   }
   function injectStyle() {
@@ -92273,19 +92336,65 @@ window.HY.PoeUiFix = {
     return st.runs;
   }
   var sideTimer = null, purgeTimer = null, modalTimer = null;
+  var _sideTries = 0, _purgeTries = 0;
+
+  /* ⭐ 效能修正（主執行緒卡頓熱點）
+     ──────────────────────────────────────────────────────────
+     舊版這兩個計時器「永久執行」：
+       · purgeTimer 每 800ms 做一次全 DOM 掃描（querySelectorAll('*')）
+       · sideTimer  每 700ms 檢查側欄
+     在 3600 節點的頁面上每次 10~18ms，加上排程器同輪補跑
+     → 與其他任務疊加成數秒卡頓。
+
+     這些都是「一次性 UI 修補」，達成就該停：
+       · purgePanel：目標元素不存在時就沒必要再掃（連續 5 次空轉即停）
+       · syncSidebar：側欄已完成就停（連續 8 次無事即停）
+     ────────────────────────────────────────────────────────── */
   function startTimers() {
     if (sideTimer === null && window.setInterval) {
       sideTimer = setInterval(function () {
         try {
           if (document.hidden) return;
-          if (sidebarComplete()) return;
+          if (sidebarComplete()) {
+            _sideTries++;
+            /* 連續 8 次確認已完成 → 停掉（真的需要時 MutationObserver 會再處理） */
+            if (_sideTries >= 8) {
+              clearInterval(sideTimer); sideTimer = null;
+              console.log('[poeUiFix] 側欄修補完成，停止輪詢');
+            }
+            return;
+          }
+          _sideTries = 0;
           st.fallbackRan++;
           syncSidebar();
         } catch (e) {}
       }, CFG.fallbackMs);
     }
     if (purgeTimer === null && window.setInterval) {
-      purgeTimer = setInterval(function () { try { purgePanel(); } catch (e) {} }, CFG.purgeMs);
+      purgeTimer = setInterval(function () {
+        try {
+          /* 先做便宜的前置檢查：畫面上還有沒有需要清理的元素？
+             沒有就累計空轉次數，連續 5 次就停掉整個計時器。 */
+          var need = false;
+          if (document.body) {
+            var all = document.body.getElementsByTagName('*');
+            for (var i = 0; i < all.length; i++) {
+              var el = all[i];
+              if (el.getAttribute && el.getAttribute('data-poe-purged')) { need = true; break; }
+            }
+          }
+          if (!need) {
+            _purgeTries++;
+            if (_purgeTries >= 5) {
+              clearInterval(purgeTimer); purgeTimer = null;
+              console.log('[poeUiFix] 面板清理完成，停止輪詢');
+            }
+            return;
+          }
+          _purgeTries = 0;
+          purgePanel();
+        } catch (e) {}
+      }, CFG.purgeMs);
     }
     if (modalTimer === null && window.setInterval) {
       modalTimer = setInterval(function () {
