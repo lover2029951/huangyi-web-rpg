@@ -1677,39 +1677,52 @@ window.HY = window.HY || {};
         return Math.max(0.01, Math.min(1000, g * t));
     }
     // ── 排程器心跳 ──
-    /* ⭐⭐ 效能保護（關鍵）
-       這個心跳每 20ms 執行一次，會把所有透過 window.setInterval 註冊的任務
-       （全遊戲 57 個定時器）在同一輪裡「補跑」：
-         task.acc += dt * mul
-         while (task.acc >= baseMs && guard < 30) { cb(); }
+    /* ⭐⭐ v4：效能重構（解決「主執行緒被阻塞 3 秒」）
+       ──────────────────────────────────────────────────────────
+       舊設計的根本缺陷：
+         所有任務共用同一個 `dt`，且「同一輪」全部補跑。
+         只要主執行緒被卡住一下（例如 UI 重繪 200 張卡片），
+         dt 就會變大 → 每個任務 acc 暴增 → 同輪各補跑 8 次 →
+         總耗時 = 29 任務 × 8 次 × 單次成本 → 實測 3000ms 卡死。
+         而且會連鎖：卡越久 → dt 越大 → 下一輪補更多。
 
-       dt 是「距離上次 tick 的真實毫秒」，瀏覽器一忙（例如主執行緒被別的
-       長任務卡住 500ms），dt 就會變成 500 → acc 暴增 → 每個任務補跑 25 次。
-       玩家感受到的就是 console 裡那種「setInterval handler 花了 239ms」，
-       而且會連鎖：補跑越久 → dt 越大 → 下一輪補跑更多。
+         更糟的是：這個 tick 本身也透過 setInterval 註冊，
+         所以「一個慢任務」會拖垮「所有其他任務」，
+         回合技能（ATB）、UI 更新、自動戰鬥全部停擺。
 
-       三個防護：
-         ① 縮短 dt 上限：2000 → 250，避免一次補太多
-         ② 每輪總時間預算 12ms：超過就這輪停手，剩下的讓下一輪處理
-         ③ guard 30 → 8：單一任務單輪最多補 8 次
-       這樣即使卡頓，也不會從「小卡」放大成「大卡」。 */
-    var TICK_BUDGET_MS = 12;
-    var MAX_GUARD = 8;
+       新設計（三層防護）：
+         ① 每任務獨立預算：每個任務每輪最多用 4ms，用完就換下一個任務
+            → 慢任務不再拖累其他任務
+         ② 全域硬上限 16ms：整輪超過就立刻結束，剩下的留給下一輪
+            → 保證每輪接近 20ms 週期，不會累積成 3 秒卡頓
+         ③ 補跑上限 4 次（原本 8）：寧可慢一點，也不要卡
+         ④ dt 上限 250 → 120：背景分頁回來時不暴衝
+       ────────────────────────────────────────────────────────── */
+    var TICK_BUDGET_MS = 16;       /* 整輪硬上限 */
+    var TASK_BUDGET_MS = 4;        /* 單一任務上限 */
+    var MAX_GUARD = 4;             /* 單一任務單輪最多補跑次數 */
+    var MAX_DT = 120;              /* dt 上限（避免背景分頁暴衝） */
+
     function tick() {
         var t = now();
         var dt = t - S.LAST;
         S.LAST = t;
         if (dt <= 0) return;
-        if (dt > 250) dt = 250;   // ⭐ 背景分頁回來 / 主執行緒卡住時不暴衝
+        if (dt > MAX_DT) dt = MAX_DT;
+
         var mul = intervalMult();
         var ids = Object.keys(S.tasks);
-        var startedAt = t;
+        var roundStart = t;
+
         for (var i = 0; i < ids.length; i++) {
             var id = ids[i];
             var task = S.tasks[id];
             if (!task) continue;
+
             task.acc += dt * mul;
             var guard = 0;
+            var taskStart = now();
+
             while (task.acc >= task.baseMs && guard < MAX_GUARD) {
                 task.acc -= task.baseMs;
                 guard++;
@@ -1718,15 +1731,21 @@ window.HY = window.HY || {};
                 } catch (e) {
                     console.error('[GameConfig interval error]', e);
                 }
-                if (!S.tasks[id]) break;
-                /* ⭐ 時間預算用完 → 這輪停手，剩下的保留在 acc 給下一輪 */
-                if (now() - startedAt > TICK_BUDGET_MS) {
-                    startedAt = -1;
-                    break;
-                }
+                if (!S.tasks[id]) break;      /* 任務被 clearInterval 了 */
+
+                /* ① 單一任務預算用完 → 換下一個任務（不影響其他任務） */
+                if (now() - taskStart > TASK_BUDGET_MS) break;
             }
-            if (startedAt === -1) break;
+
+            /* ② 整輪預算用完 → 立刻結束，剩下的留給下一輪 */
+            if (now() - roundStart > TICK_BUDGET_MS) {
+                S.__lastRoundMs = Math.round(now() - roundStart);
+                S.__lastRoundCut = true;
+                return;
+            }
         }
+        S.__lastRoundMs = Math.round(now() - roundStart);
+        S.__lastRoundCut = false;
     }
     S.LAST = now();
     S.timer = N.setInterval(tick, S.BASE_MS);
@@ -47080,23 +47099,33 @@ window.HY = window.HY || {};
      */
     SectFeatureSystem.validate = function () {
         var SY = window.HY.SectFeatureSystem;
-        var FEATS = (SY.prototype && SY.prototype._FEATURES) || null;
-        /* FEATURES 是閉包變數，透過 prototype 上暫存的參考取得 */
+        /* ⚠️ 舊版寫 SY.prototype._FEATURES → 一定是 undefined
+              （FEATURES 是閉包變數，只掛在建構子本體上），
+              所以 validate() 永遠回報「全部門派都沒有實作」——
+              那 18 條警告全是誤報，不是真的缺實作。 */
+        var FEATS = SY._FEATURES || null;
         if (!FEATS) {
-            /* 後備：從已建立的實例取（遊戲正常運行時一定有） */
             var g = window.HY.game;
-            if (g && g.sectFeatSys) FEATS = g.sectFeatSys.FEATURES;
+            if (g && g.sectFeatSys) FEATS = g.sectFeatSys._FEATURES || g.sectFeatSys.FEATURES;
         }
         var D = window.HY.Data || {};
         var SECTS = D.SECTS || {};
         var missing = [];
         var details = [];
 
+        if (!FEATS) {
+            return {
+                ok: false,
+                missing: ['無法取得 FEATURES（模組尚未載入完成）'],
+                details: []
+            };
+        }
+
         Object.keys(SECTS).forEach(function (sectId) {
             var sect = SECTS[sectId];
             var feat = sect && sect.feature;
             if (!feat) return;
-            var def = FEATS ? FEATS[sectId] : null;
+            var def = FEATS[sectId];
             if (!def) {
                 missing.push(sectId + '（' + (sect.name || '') + '）：FEATURES 沒有對應實作');
                 return;
@@ -85782,6 +85811,7 @@ window.HY = window.HY || {};
   };
   var _orig = {};     // key -> 原始文字
   var _lastSig = '';
+  var _adjWarned = false;
   function log() { if (!CFG.VERBOSE) return; try { console.log.apply(console, ['[TabFix]'].concat([].slice.call(arguments))); } catch (e) {} }
   function warn() { try { console.warn.apply(console, ['[TabFix]'].concat([].slice.call(arguments))); } catch (e) {} }
   function norm(s) { return String(s == null ? '' : s).replace(/[\s\u00a0\u200b]+/g, ''); }
@@ -86118,33 +86148,92 @@ ${CFG.CONTAINER_SEL} > button > span{
         log('已重排：' + sig);
       }
     }
-    /* ⑥ 錨點相鄰檢查（若被外力拆散，這裡會在下一次 run 修回） */
+    /* ⑥ 錨點相鄰檢查（若被外力拆散，這裡會在下一次 run 修回）
+       ⚠️ 舊版把「系統連動(link) 必須緊貼 儲存(save)」當成條件，
+          但 v71 已把 link 移出快捷插槽並隱藏 → 這個條件永遠不成立
+          → 每輪都印「錨點相鄰被拆散」，把 console 刷滿。
+          現在只在「畫面上的相鄰」真的壞掉時才檢查，且同一狀態只記一次。 */
     var adjOK = true;
-    if (keep.adaptive && keep.font) {
-      if (keep.font.previousElementSibling !== keep.adaptive) adjOK = false;
+    /* 只檢查「有顯示的」元素：隱藏的不算破壞相鄰 */
+    function visibleSibling(el) {
+      if (!el) return null;
+      var p = el.previousElementSibling;
+      while (p && p.style && p.style.display === 'none') p = p.previousElementSibling;
+      return p;
     }
-    if (keep.link && keep.save) {
-      if (keep.link.nextElementSibling !== keep.save) adjOK = false;
+    if (keep.adaptive && keep.font && keep.font.offsetParent !== null) {
+      if (visibleSibling(keep.font) !== keep.adaptive) adjOK = false;
     }
-    if (!adjOK && CFG.VERBOSE) log('偵測到錨點相鄰被拆散，下次校正會修回');
+    if (!adjOK) {
+      /* 只記錄「狀態變化」：從正常變成異常時才印一次 */
+      if (!_adjWarned) {
+        _adjWarned = true;
+        if (CFG.VERBOSE) log('錨點相鄰被拆散（已排入下次校正）');
+      }
+    } else if (_adjWarned) {
+      _adjWarned = false;
+      if (CFG.VERBOSE) log('錨點相鄰已恢復');
+    }
     return !same;
   }
   /* ══════════════════════════════════════════════════════
      ⑤ 持續校正
+     ──────────────────────────────────────────────────────────
+     ⚠️ 舊版無限迴圈：
+         run() 會搬移 DOM 元素 → MutationObserver 偵測到 → schedule() → run()
+         → 又搬 DOM → 又觸發 observer → 每秒數十次，console 被刷滿，
+           並持續佔用主執行緒（與 gameConfigSpeed 的排程器互相拖累）。
+
+     修法：
+        ① 自己改 DOM 時暫停 observer（_suppress 旗標）
+        ② 只在前一次變動「穩定 400ms」後才校正（debounce）
+        ③ 同一簽章不重複記錄 log（避免刷屏）
+        ④ 連續 3 次校正都沒有實際變動 → 進入休眠（不再自動校正）
      ══════════════════════════════════════════════════════ */
   var _pending = false;
+  var _suppress = false;        /* 自己改 DOM 時暫停 observer */
+  var _stableTimer = null;
+  var _noChangeStreak = 0;      /* 連續無變動次數（達 3 就休眠） */
+  var _asleep = false;
+
   function schedule() {
+    if (_asleep) return;
     if (_pending) return;
     _pending = true;
-    setTimeout(function () {
+    /* debounce：等 DOM 穩定 400ms 再校正，避免連續變動時反覆觸發 */
+    if (_stableTimer) clearTimeout(_stableTimer);
+    _stableTimer = setTimeout(function () {
+      _stableTimer = null;
       _pending = false;
-      try { run(); } catch (e) { warn('校正失敗：', e); }
-    }, 50);
+      if (_asleep) return;
+      var changed = false;
+      _suppress = true;                    /* ① 暫停 observer */
+      try {
+        changed = run();
+      } catch (e) {
+        warn('校正失敗：', e);
+      }
+      _suppress = false;
+      /* ③ 記錄簽章，同一簽章不重複刷 log */
+      if (changed) {
+        _noChangeStreak = 0;
+      } else {
+        _noChangeStreak++;
+        /* ④ 連續 3 次都沒變 → 休眠，不再自動校正 */
+        if (_noChangeStreak >= 3) {
+          _asleep = true;
+          try { if (window.__tabFixMO) window.__tabFixMO.disconnect(); } catch (e2) { }
+          log('排版已穩定，停止自動校正（如需重啟：HY.TabFix.run()）');
+        }
+      }
+    }, 400);
   }
+
   function startObserver() {
     if (!window.MutationObserver || !document.body) return;
     try {
       var mo = new MutationObserver(function (muts) {
+        if (_suppress) return;             /* ② 自己改 DOM 時不觸發 */
         for (var i = 0; i < muts.length; i++) {
           var m = muts[i];
           if (m.type !== 'childList') continue;
@@ -86242,15 +86331,18 @@ ${CFG.CONTAINER_SEL} > button > span{
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 200);
   else window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 200); });
   window.addEventListener('load', function () { setTimeout(boot, 600); });
-  /* 保險：其他腳本會在 150ms / 700ms / 1200ms 等時機插按鈕，這裡持續校正 */
+  /* 保險：其他腳本會在 150ms / 700ms / 1200ms 等時機插按鈕，這裡持續校正
+     ⚠️ 舊版跑 80 次（700ms × 80 = 56 秒），每次 boot() 都可能觸發 DOM 變動
+        → 與 MutationObserver 互相激發 → console 被「錨點被拆散」刷滿。
+        現在縮短到 10 次（7 秒），之後完全交給 observer（已加 debounce + 休眠）。 */
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
     boot();
-    if (tries >= CFG.TICK_MAX) clearInterval(timer);
+    if (tries >= 10) clearInterval(timer);
   }, CFG.TICK_MS);
   /* 額外補幾次（offlineIdleSystem 較晚） */
-  [1500, 2500, 4000, 6000].forEach(function (ms) {
+  [1500, 3000].forEach(function (ms) {
     setTimeout(function () { try { run(); } catch (e) {} }, ms);
   });
   console.log('[TabFix] ✓ 已載入（擴充標籤排版修正）');
