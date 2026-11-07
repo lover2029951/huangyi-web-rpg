@@ -45729,10 +45729,23 @@ window.HY = window.HY || {};
                 var EX = window.HY && window.HY.CombatMechanicsExtra;
                 if (!EX || !EX.esInit) return null;
                 var c = ctx.char;
-                var max = (c && c.mx && c.mx.qiMax) || 0;
-                if (max <= 0 && st && st.mx) max = st.mx.qiMax || 0;
+                if (!c) return null;
+
+                /* ⭐ 一律讀 derived stats 的 mx（characterSystem 已統一輸出）
+                   ⚠️ 舊版這裡誤用了未宣告的 st 變數 → ReferenceError
+                      （console 的「defMods error: st is not defined」就是這個） */
+                var st = null;
+                try {
+                    var cs = window.HY.game && window.HY.game.charSys;
+                    st = cs ? cs.getDerivedStatsForChar(c) : null;
+                } catch (eS) { }
+
+                var mx = (st && st.mx) ? st.mx : null;
+                var max = (mx && mx.qiMax) || (c.mx && c.mx.qiMax) || 0;
                 if (max <= 0) return null;
-                var cur = (st && st.mx) ? (st.mx.qiCur || 0) : ((c && c.mx && c.mx.qiCur) || 0);
+                var cur = (mx && typeof mx.qiCur === 'number') ? mx.qiCur
+                        : ((c.mx && typeof c.mx.qiCur === 'number') ? c.mx.qiCur : max);
+
                 /* 罡氣滿檔時額外減傷 8% */
                 if (cur >= max * 0.999) return { defMult: 1.08 };
                 return null;
