@@ -137217,6 +137217,13 @@ window.HY = window.HY || {};
 function __HY_FINISH_BOOT__() {
   try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) { console.error(e); }
 
+  /* ⭐ v62：標記 body.hy-ready
+     index.html 的 #top-bar 被抬到遮罩之上（z-index:100000），
+     但載入完成前是 pointer-events:none（避免誤觸「重啟時空」）。
+     打包版不會執行 bootLoader.js，所以必須在這裡自己解除鎖定，
+     否則整條頂部列會永遠點不動。 */
+  try { document.body.classList.add('hy-ready'); } catch (e) {}
+
   /* 移除開機遮罩（原本由 bootLoader.js 負責，內聯後需自己處理） */
   var ov = document.getElementById('hy-boot-overlay');
   if (!ov) return;
