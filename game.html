@@ -31168,7 +31168,7 @@ window.HY = window.HY || {};
                 this._toastTimer = setTimeout(function () {
                     el.style.opacity = '0';
                     el.style.transform = 'translateX(-50%) translateY(-10px)';
-                }, 1400);
+                }, 1900);
             } catch (e) { }
         }
         load() {
@@ -102304,21 +102304,31 @@ window.HY = window.HY || {};
       const btnSave = document.getElementById('btn-save');
       if (btnSave) {
         btnSave.addEventListener('click', () => {
-          /* ⭐ v498：按鈕文字帶上存檔時間，讓玩家隨時看得到狀態 */
+          /* ⭐ v500：不要在按鈕上改文字
+             ──────────────────────────────────────────────────────────
+             使用者反映「手動存檔一次 標籤會消失」。
+
+             根因：uiTabFix 每 700ms 會校正工具列按鈕的顯示文字
+             （applyCompact 會把 textContent 強制寫回 '💾 儲存'），
+             而 v498 我把按鈕文字改成「💾 已存檔 HH:MM:SS」，
+             下一輪校正就把它覆寫掉 —— 看起來就像標籤消失了、
+             而且會一直閃爍。
+
+             現在改成「只改樣式、不改文字」：
+               · 邊框與文字轉綠
+               · 加一圈柔光暈
+             文字維持「💾 儲存」不動，uiTabFix 沒有東西可校正。 */
           var ok = this.saveSys.save();
-          if (ok && typeof this.saveSys.lastSaveText === 'function') {
-            var t = this.saveSys.lastSaveText();
-            if (t) {
-              btnSave.textContent = '💾 已存檔 ' + t;
-              btnSave.style.borderColor = '#10b981';
-              btnSave.style.color = '#6ee7b7';
-              clearTimeout(btnSave.__resetT);
-              btnSave.__resetT = setTimeout(function () {
-                btnSave.textContent = '💾 儲存進度';
-                btnSave.style.borderColor = '';
-                btnSave.style.color = '';
-              }, 2600);
-            }
+          if (ok) {
+            btnSave.style.borderColor = '#10b981';
+            btnSave.style.color = '#6ee7b7';
+            btnSave.style.boxShadow = '0 0 12px rgba(16,185,129,.75)';
+            clearTimeout(btnSave.__resetT);
+            btnSave.__resetT = setTimeout(function () {
+              btnSave.style.borderColor = '';
+              btnSave.style.color = '';
+              btnSave.style.boxShadow = '';
+            }, 1600);
           }
         });
       }
@@ -148775,6 +148785,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
