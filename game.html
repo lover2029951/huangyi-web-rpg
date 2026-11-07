@@ -29791,6 +29791,48 @@ window.HY = window.HY || {};
                    ⚠ 必須放在乘法加成「之後」，否則 maxEs 會是未放大的舊值。 */
                 out.maxEs = num2(out.energyShield, 0);
 
+                /* ⭐⭐ v423：罡氣統一（機制層 ↔ derived stats 的單一來源）
+                   ──────────────────────────────────────────────────────────
+                   問題：罡氣值存在兩處
+                     · c.mx.qiMax / qiCur  ← wuxiaSectMechanicsPro 的機制層
+                     · out.energyShield / esCurrent ← 裝備/天賦/門派給的
+                   UI 血條讀後者、明細面板讀前者 → 顯示不同步
+                   （實測血條 357/357、明細 882/1010）。
+
+                   解法：以「兩者的最大值」為上限（機制層算的是內力 45%，
+                        裝備/天賦可能更高），並把結果寫回 out.mx。
+                        全遊戲只讀 out.mx / out.esCurrent，永遠一致。
+
+                   ⚠️ 不可呼叫 EX.esInit()：它會呼叫 getDerivedStatsForChar
+                      → 遞迴。 */
+                (function () {
+                    var fromStats = num2(out.energyShield, 0);
+                    var fromMx = (c.mx ? num2(c.mx.qiMax, 0) : 0);
+                    var max = Math.max(fromStats, fromMx);
+
+                    if (max <= 0) {
+                        out.energyShield = 0;
+                        out.maxEs = 0;
+                        out.esCurrent = 0;
+                        out.mx = { qiMax: 0, qiCur: 0 };
+                        return;
+                    }
+
+                    /* 當前值：機制層有紀錄就用它，否則預設滿檔 */
+                    var cur;
+                    if (c.mx && num2(c.mx.qiCur, -1) >= 0 && fromMx > 0) {
+                        cur = num2(c.mx.qiCur, max);
+                    } else {
+                        cur = max;
+                    }
+                    cur = Math.max(0, Math.min(max, cur));
+
+                    out.energyShield = max;
+                    out.maxEs = max;
+                    out.esCurrent = cur;
+                    out.mx = { qiMax: max, qiCur: cur };
+                })();
+
                 /* ⭐⭐⭐ v54：把「武俠天賦」的元素／持續傷害加成寫進 out
                    ──────────────────────────────────────────────────
                    這些值來自 WuxiaStatParser 解析出的 more.elemDmg / more.dotDmg
@@ -45329,28 +45371,37 @@ window.HY = window.HY || {};
                 if (!EX || !EX.esInit) return null;
                 var c = ctx.char;
                 var max = (c && c.mx && c.mx.qiMax) || 0;
-                if (max <= 0) { max = EX.esInit(c) || 0; }
+                if (max <= 0 && st && st.mx) max = st.mx.qiMax || 0;
                 if (max <= 0) return null;
-                var cur = (c && c.mx && c.mx.qiCur) || 0;
+                var cur = (st && st.mx) ? (st.mx.qiCur || 0) : ((c && c.mx && c.mx.qiCur) || 0);
                 /* 罡氣滿檔時額外減傷 8% */
                 if (cur >= max * 0.999) return { defMult: 1.08 };
                 return null;
             },
             summary: function (sys, ctx) {
-                var EX = window.HY && window.HY.CombatMechanicsExtra;
                 var c = ctx.char;
-                var max = (c && c.mx && c.mx.qiMax) || 0;
-                if (max <= 0) max = (EX && EX.esInit) ? (EX.esInit(c) || 0) : 0;
+                /* ⭐ v423：一律讀 derived stats 的 mx（已由 characterSystem 統一） */
+                var st = null;
+                try {
+                    var cs = window.HY.game && window.HY.game.charSys;
+                    st = cs ? cs.getDerivedStatsForChar(c) : null;
+                } catch (eS) { }
+                var mx = (st && st.mx) ? st.mx : null;
+                var max = Math.round((mx && mx.qiMax) || 0);
                 if (max <= 0) return '罡氣 0';
-                var cur = Math.round((c.mx && c.mx.qiCur) || 0);
-                return '罡氣 ' + cur + '/' + Math.round(max);
+                var cur = Math.round((mx && mx.qiCur) || 0);
+                return '罡氣 ' + cur + '/' + max;
             },
             statusRows: function (sys, ctx) {
-                var EX = window.HY && window.HY.CombatMechanicsExtra;
                 var c = ctx.char;
-                var max = (c && c.mx && c.mx.qiMax) || 0;
-                if (max <= 0) max = (EX && EX.esInit) ? (EX.esInit(c) || 0) : 0;
-                var cur = Math.round((c.mx && c.mx.qiCur) || 0);
+                var st = null;
+                try {
+                    var cs2 = window.HY.game && window.HY.game.charSys;
+                    st = cs2 ? cs2.getDerivedStatsForChar(c) : null;
+                } catch (eS2) { }
+                var mx = (st && st.mx) ? st.mx : {};
+                var max = Math.round(mx.qiMax || 0);
+                var cur = Math.round(mx.qiCur || 0);
                 var pct = max > 0 ? Math.round(cur / max * 100) : 0;
                 return [
                     { k: '罡氣值', v: cur + ' / ' + Math.round(max) + '（' + pct + '%）', hl: true },
@@ -63911,6 +63962,7 @@ window.HY = window.HY || {};
             var st = window.HY.game && window.HY.game.charSys && window.HY.game.charSys.state;
             if (st && members.indexOf(st) < 0) members.push(st);
 
+            var EX = window.HY.CombatMechanicsExtra;
             members.forEach(function (c) {
                 if (!c) return;
                 init(c);
@@ -63918,6 +63970,11 @@ window.HY = window.HY || {};
                 try {
                     if (window.HY.WuxiaArts) window.HY.WuxiaArts.initFor(c);
                 } catch (e) { }
+                /* ⭐ v423：罡氣開場補滿（慈航靜齋等有罡氣的門派）
+                   沒有這一步，c.mx.qiMax 會是 0 → 血條與明細都顯示 0。 */
+                try {
+                    if (EX && typeof EX.esInit === 'function') EX.esInit(c);
+                } catch (eEs) { }
             });
         },
 
@@ -64007,8 +64064,14 @@ window.HY = window.HY || {};
                 try { EX.shadowOnHit(c); } catch (e3) { }
             }
 
-            /* ④ 回合機制 tick（月相／長生用出手次數，這裡只推進計數） */
-            if (c._battle) c._battle.yyHits = num(c._battle.yyHits, 0) + 1;
+            /* ④ 回合機制 tick
+               ⚠️ 不可在這裡推進 c._battle.yyHits！
+                  combatAtbSystem.js 的 executeUnitFullAtbTurn() 已經在
+                  「真正出手」的那一刻統一推進（那是唯一能保證
+                  「出手一次 = 次數 +1」的位置）。
+                  這裡若再加一次，回合計數會翻倍 →
+                  絕情谷陰陽刀劍、鬼谷陣門、冰火島元素輪轉全部跳號錯亂。
+                  本檔只負責「讀取」yyHits 做結算，不負責推進。 */
 
             /* ⑤ 延遲型機制結算 */
             try {
@@ -64302,13 +64365,30 @@ window.HY = window.HY || {};
         if (!c) return 0;
         var st = statsOf(c);
         if (!st) return 0;
-        /* 罡氣上限：內力 45% + 裝備罡氣值（若天賦有給） */
+        /* 罡氣上限：內力 45% + 裝備罡氣值（若天賦有給）
+           ⚠️ 這是「計算上限」的唯一公式。characterSystem 的 derived stats
+              也會用同一個概念推導，但那邊不呼叫本函式（避免遞迴）。 */
         var base = num(st.maxMp, 0) * 0.45;
         var fromGear = num(st.esShield, 0);
-        var max = Math.floor(base + fromGear);
+        var computed = Math.floor(base + fromGear);
+
+        /* 若 derived stats 已經算出 energyShield（代表裝備/天賦有給罡氣），
+           以那個值為準，避免兩邊算出不同上限。 */
+        var esFromStats = num(st.energyShield, 0);
+        var max = esFromStats > 0 ? esFromStats : computed;
+
+        var prevMax = num(mxs(c, 'qiMax', 0), 0);
         setMx(c, 'qiMax', max);
-        if (mxs(c, 'qiCur', 0) <= 0) setMx(c, 'qiCur', max);
-        setMx(c, 'qiCur', clamp(mxs(c, 'qiCur', 0), 0, max));
+
+        /* 首次初始化 → 補滿；上限變動 → 依比例調整當前值 */
+        var cur = num(mxs(c, 'qiCur', 0), 0);
+        if (cur <= 0 || prevMax <= 0) {
+            setMx(c, 'qiCur', max);
+        } else if (max !== prevMax && prevMax > 0) {
+            setMx(c, 'qiCur', clamp(Math.round(cur * max / prevMax), 0, max));
+        } else {
+            setMx(c, 'qiCur', clamp(cur, 0, max));
+        }
         return max;
     }
 
@@ -66419,17 +66499,29 @@ window.HY = window.HY || {};
             const mpBar = document.getElementById('mp-bar');
             if (mpBar) mpBar.style.width = Math.min(100, (st.currentMp / d.maxMp) * 100) + '%';
 
-            /* ⭐ v53：能量護盾條（有護盾上限才顯示，否則隱藏讓面板保持精簡） */
+            /* ⭐ v423：罡氣條（有罡氣上限才顯示）
+               ──────────────────────────────────────────────────────────
+               ⚠️ 不同步的根因（兩個 bug 疊在一起）：
+                 ① 罡氣值存在兩處：c.mx.qiMax/qiCur 與 derived 的 energyShield
+                 ② 這裡的 `st` 是「角色物件」，不是 derived stats
+                    （derived stats 是 `d`）→ 讀 st.mx 永遠 undefined
+
+               解法：統一讀 `d.mx`（characterSystem 已把機制層統一輸出到這裡），
+                     全遊戲只有一份罡氣資料。 */
             const esRow = document.getElementById('es-bar-row');
             const esBar = document.getElementById('es-bar');
-            const esMax = Math.round(Number(d.energyShield) || 0);
+            const esText = document.getElementById('es-text');
+
+            var mxQ = (d && d.mx) ? d.mx : null;
+            const esMax = Math.round(Number(mxQ ? mxQ.qiMax : d.energyShield) || 0);
+
             if (esRow) {
                 if (esMax > 0) {
                     esRow.style.display = '';
-                    const esCur = (typeof st.esCurrent === 'number')
-                        ? Math.max(0, Math.min(esMax, Math.round(st.esCurrent)))
-                        : esMax;
-                    const esText = document.getElementById('es-text');
+                    var curRaw = (mxQ && typeof mxQ.qiCur === 'number')
+                        ? mxQ.qiCur
+                        : (typeof d.esCurrent === 'number' ? d.esCurrent : esMax);
+                    const esCur = Math.max(0, Math.min(esMax, Math.round(curRaw)));
                     if (esText) esText.textContent = esCur + ' / ' + esMax;
                     if (esBar) {
                         esBar.style.width = Math.min(100, (esCur / esMax) * 100) + '%';
