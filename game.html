@@ -40574,16 +40574,42 @@ window.HY = window.HY || {};
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
                     if (both) {
-                        ctx.strokeStyle = 'rgba(125,211,252,0.98)';
+                        /* ⭐ v65：已點出的連線【不改線寬】，只把顏色明顯化。
+                           ──────────────────────────────────────────
+                           原本 rgba(125,211,252,.98) 是柔和的淡粉藍，
+                           在深色插畫背景上與未點連線的亮度差太小，
+                           玩家看不出「這一段是自己走過的路」。
+
+                           改為高飽和電光藍 #7CF3FF：
+                             · 色相偏青、亮度拉高 → 與背景對比大幅提升
+                             · 內層再疊一道近白的細核心 → 產生「通電」感
+                               （寬度比主線更細，不是加粗）
+                             · 光暈從 12 提到 16，讓邊緣自然發光 */
+                        ctx.strokeStyle = '#7CF3FF';
                         ctx.lineWidth = Math.max(2.6, 4.0 * s);
-                        ctx.shadowColor = 'rgba(56,189,248,0.85)';
-                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = 'rgba(34,211,238,0.95)';
+                        ctx.shadowBlur = 16;
                     } else {
                         ctx.strokeStyle = 'rgba(168,192,216,0.95)';
                         ctx.lineWidth = Math.max(2.0, 2.8 * s);
                         ctx.shadowBlur = 0;
                     }
                     ctx.stroke();
+                    /* ⭐ v65：已點出的連線再加一道「白色細核心」
+                       ──────────────────────────────────────────
+                       注意：核心比主線【更細】，不是加粗 ——
+                       目的是在電光藍上疊出高光，讓已走過的路徑有
+                       「通電發亮」的層次，而不是變成一條粗線。
+                       未點出的連線不畫核心，保持低調。 */
+                    if (both) {
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.strokeStyle = 'rgba(240,253,255,0.92)';
+                        ctx.lineWidth = Math.max(0.7, 1.1 * s);
+                        ctx.shadowBlur = 0;
+                        ctx.stroke();
+                    }
                     ctx.shadowBlur = 0;
                 });
             });
@@ -107547,7 +107573,12 @@ window.HY = window.HY || {};
                        診斷證實：原本 #6a5a42 + alpha 0.78 幾乎與背景同亮度，
                        玩家會以為「連線消失」。改用更亮的 #9c8a6b 並提高不透明度。 */
                     if (bothAlloc) {
-                        ctx.strokeStyle = '#f0c674';
+                        /* ⭐ v65：已點出的連線【不改線寬】，只把顏色明顯化。
+                           原本 #f0c674 是柔和的土金，與未點連線 #cbb894
+                           亮度接近，看不出「哪一段是自己點的」。
+                           改為高飽和亮金 #FFD84D（更黃更亮），
+                           並在下方疊一道白色細核心製造通電感。 */
+                        ctx.strokeStyle = '#FFD84D';
                         ctx.globalAlpha = 1.0;
                     } else if (isFrontier) {
                         ctx.strokeStyle = '#7dd3fc';
@@ -107570,6 +107601,9 @@ window.HY = window.HY || {};
                     }
                     /* ⭐ v61：記下主色，供「暗底描邊 + 主線」兩段繪製使用 */
                     var _prevStyle = ctx.strokeStyle;
+                    /* ⭐ v65：記下「這條線兩端是否都已點出」，
+                       供主線之上疊加白色細核心使用（不改線寬）。 */
+                    var _isLive = bothAlloc;
                 /* ══════════════════════════════════════════════════
                    ⭐ POE 原版連線演算法（PassiveTree.lua:BuildConnector）
                    ──────────────────────────────────────────────────
@@ -107628,6 +107662,8 @@ window.HY = window.HY || {};
                     };
                     _drawArc(edgeW + 3.6, '#05080c', 0.92);   /* ⭐ v62：暗底描邊加粗 2.2→3.6 */
                     _drawArc(edgeW, _prevStyle, ctx.globalAlpha);  /* 主線 */
+                    /* ⭐ v65：已點出的弧線疊一道白色細核心（比主線細，不是加粗） */
+                    if (_isLive) _drawArc(Math.max(0.8, edgeW * 0.34), 'rgba(255,252,224,0.95)', 1.0);
                 } else {
                     var seg = trimSegment(sa.x, sa.y, sb.x, sb.y, nodeVisR(n), nodeVisR(NODES[nextId]));
                     if (seg) {
@@ -107652,10 +107688,29 @@ window.HY = window.HY || {};
                         ctx.globalAlpha = _prevAlpha;
                         ctx.strokeStyle = _prevStyle;
                         ctx.lineWidth = edgeW;
+                        /* ⭐ v65：已點出的連線加上光暈（只改光暈顏色，不改線寬），
+                           與未點出的連線拉開明顯的視覺差距。 */
+                        if (_isLive) {
+                            ctx.shadowColor = 'rgba(255,196,64,0.85)';
+                            ctx.shadowBlur = 10;
+                        } else {
+                            ctx.shadowBlur = 0;
+                        }
                         ctx.beginPath();
                         ctx.moveTo(seg.x1, seg.y1);
                         ctx.lineTo(seg.x2, seg.y2);
                         ctx.stroke();
+                        ctx.shadowBlur = 0;
+                        /* ⭐ v65：已點出的直線疊一道白色細核心
+                           （比主線細很多，只為提升可辨識度，不是加粗） */
+                        if (_isLive) {
+                            ctx.strokeStyle = 'rgba(255,252,224,0.95)';
+                            ctx.lineWidth = Math.max(0.8, edgeW * 0.34);
+                            ctx.beginPath();
+                            ctx.moveTo(seg.x1, seg.y1);
+                            ctx.lineTo(seg.x2, seg.y2);
+                            ctx.stroke();
+                        }
                     }
                 }
                 });
