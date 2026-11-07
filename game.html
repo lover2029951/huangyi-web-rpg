@@ -16564,706 +16564,181 @@ window.HY.Data = window.HY.Data || {};
 })();
 
 
-/* ===== 47 / 246 : wuxiaAscendancyData.js ===== */
-// js/wuxiaAscendancyData.js  (v2)
-// ⭐ 武俠昇華：7 職業 × 3 分支 = 21 條武俠分支
+/* ===== 47 / 246 : ascendancyZhNames.js ===== */
+// js/ascendancyZhNames.js  (v1)
+// ⭐ 職業昇華：只改「名稱」為仙俠風，完全不動節點內容
 //
 // ══════════════════════════════════════════════════════════════
-// 【設計原則（依使用者指示）】
-//   保留「職業 → 分支」的體系，但內容全部武俠化。
-//   不為每個門派各建分支 —— 門派透過 SECT_CLASS 對照到 7 職業，
-//   每個職業再給 3 條武俠分支供選擇。
+// 【需求】
+//   使用者原話：「我只是要改變名稱仙俠而已」
 //
-// 【7 職業（沿用既有 id，只改顯示名）】
-//   Scion    俠客   —— 名門之後，全能均衡
-//   Marauder 力士   —— 外功蠻力
-//   Ranger   遊俠   —— 身法與遠程
-//   Witch    術士   —— 內功與咒法
-//   Duelist  劍客   —— 兵刃與劍術
-//   Templar  護法   —— 佛道護體
-//   Shadow   刺客   —— 暗殺與毒計
+//   也就是說：
+//     · 昇華天賦的 21 條分支、每個節點的數值與連線 —— 全部保留原樣
+//     · 只把「職業名稱」與「分支名稱」的英文改成仙俠中文
 //
-// 【分支數】
-//   21 條（7 × 3），每條 10 個節點（1 起點 + 3 小 + 3 中 + 3 大）
-//   合計 210 個節點
+// 【做法】
+//   1. 不改 ascendancyData.js（那是 456 行的官方資料，改了就回不去）
+//   2. 本檔在載入後，就地改寫：
+//        Data.ASCENDANCY_CLASSES[classId][i].name
+//        Data.ASCENDANCY_GEO 不變（分支 id 不變）
+//        Data.ASCENDANCY_NODES 不變（節點內容不變）
+//   3. 節點名稱本身由 ascendancyZh.js 負責翻譯（已存在），不動
 //
-// 【為什麼保留職業 id 而不改】
-//   ascendancySystem 的 SECT_CLASS（門派 → 職業）已有 46 筆對照，
-//   改 id 會全部失效。只替換「分支清單與節點內容」最安全。
+//   ⚠️ 只改 name 欄位，不改 id —— 因為：
+//        SECT_CLASS（門派 → 職業）的 46 筆對照、
+//        ASCENDANCY_BY_BRANCH（分支 → 節點）的 key
+//        全部依賴 id。改 id 會讓所有存檔的昇華配置失效。
 // ══════════════════════════════════════════════════════════
 window.HY = window.HY || {};
-window.HY.Data = window.HY.Data || {};
-
-(function () {
+(function (HY) {
     'use strict';
-    var D = window.HY.Data;
+
+    function D() { return window.HY.Data || {}; }
 
     /* ══════════════════════════════════════════════════════
-       一、設定
-       ══════════════════════════════════════════════════════ */
-    D.WUXIA_ASC_CONFIG = {
-        POINTS_PER_LEVEL: 10,   /* 每 10 級 +1 昇華點 */
-        MAX_POINTS: 8,          /* 上限 8 點 */
-        NODES_PER_BRANCH: 10,
-        FREE_RESET: 2,
-        RESET_COST_GOLD: 20000
-    };
-
-    /* 職業顯示名（id 沿用 POE，避免破壞 SECT_CLASS 對照） */
-    D.WUXIA_CLASS_NAMES = {
-        Scion:    { name: '俠客', icon: '🎖️', color: '#f0c674',
-                    desc: '名門之後，博採眾長。樣樣通，樣樣不精。' },
-        Marauder: { name: '力士', icon: '💪', color: '#ef4444',
-                    desc: '外功剛猛，以力破巧。氣血最厚，攻勢最沉。' },
-        Ranger:   { name: '遊俠', icon: '🏹', color: '#4ade80',
-                    desc: '身法矯健，來去如風。以速度與距離取勝。' },
-        Witch:    { name: '術士', icon: '🔮', color: '#a855f7',
-                    desc: '內功深厚，擅咒法與召喚。以智取勝。' },
-        Duelist:  { name: '劍客', icon: '⚔️', color: '#38bdf8',
-                    desc: '兵刃為命，劍術為魂。一擊致命。' },
-        Templar:  { name: '護法', icon: '🛡️', color: '#fbbf24',
-                    desc: '佛道護體，金剛不壞。以守為攻。' },
-        Shadow:   { name: '刺客', icon: '🗡️', color: '#818cf8',
-                    desc: '暗夜行者，毒計與機關。不擇手段。' }
-    };
-
-    /* ══════════════════════════════════════════════════════
-       二、分支節點產生器
+       一、職業名稱（7 個）
        ──────────────────────────────────────────────────────────
-       環形佈局：起點在中心，內圈 3 小、中圈 3 中、外圈 3 大。
+       保留 POE 職業 id，只換顯示名為仙俠風。
        ══════════════════════════════════════════════════════ */
-    function buildBranch(branchId, cfg) {
-        var nodes = [];
-        var W = 260, H = 260;
-        var R_IN = 24, R_MID = 66, R_OUT = 112;
+    var CLASS_NAMES = {
+        Scion:    { name: '俠客', icon: '🎖️', color: '#f0c674',
+                    desc: '名門之後，博採眾長。' },
+        Marauder: { name: '力士', icon: '💪', color: '#ef4444',
+                    desc: '外功剛猛，以力破巧。' },
+        Ranger:   { name: '遊俠', icon: '🏹', color: '#4ade80',
+                    desc: '身法矯健，來去如風。' },
+        Witch:    { name: '術士', icon: '🔮', color: '#a855f7',
+                    desc: '內功深厚，擅咒法與召喚。' },
+        Duelist:  { name: '劍客', icon: '⚔️', color: '#38bdf8',
+                    desc: '兵刃為命，劍術為魂。' },
+        Templar:  { name: '護法', icon: '🛡️', color: '#fbbf24',
+                    desc: '佛道護體，金剛不壞。' },
+        Shadow:   { name: '刺客', icon: '🗡️', color: '#818cf8',
+                    desc: '暗夜行者，毒計與機關。' }
+    };
 
-        function pt(r, i, n) {
-            var ang = -Math.PI / 2 + (i / n) * Math.PI * 2;
-            return {
-                x: Math.round((W / 2 + r * Math.cos(ang)) * 10) / 10,
-                y: Math.round((H / 2 + r * Math.sin(ang)) * 10) / 10
-            };
-        }
+    /* ══════════════════════════════════════════════════════
+       二、分支名稱（21 條）
+       ──────────────────────────────────────────────────────────
+       key 是原本的 POE 分支 id，只換 name 為仙俠名。
+       ══════════════════════════════════════════════════════ */
+    var BRANCH_NAMES = {
+        /* ── Scion 俠客 ── */
+        Ascendant:   { name: '天驕',   icon: '🎖️', color: '#f0c674' },
+        Reliquarian: { name: '藏珍',   icon: '🏺', color: '#fbbf24' },
+        Luminary:    { name: '明燭',   icon: '🕯️', color: '#fcd34d' },
 
-        /* ① 起點 */
-        nodes.push({
-            id: branchId + '_start',
-            branchId: branchId,
-            name: cfg.startName || '入道',
-            icon: cfg.icon,
-            x: W / 2, y: H / 2,
-            orbit: 0, orbitIndex: 0, type: 3,
-            out: [branchId + '_s0', branchId + '_s1', branchId + '_s2'],
-            stats: [],
-            asc: branchId,
-            isStart: true
+        /* ── Marauder 力士 ── */
+        Juggernaut:  { name: '鐵壁',   icon: '🛡️', color: '#6ee7b7' },
+        Berserker:   { name: '狂戰',   icon: '💥', color: '#ef4444' },
+        Chieftain:   { name: '蠻酋',   icon: '🔥', color: '#f97316' },
+
+        /* ── Ranger 遊俠 ── */
+        Raider:      { name: '疾風',   icon: '💨', color: '#4ade80' },
+        Deadeye:     { name: '獵影',   icon: '🎯', color: '#38bdf8' },
+        Pathfinder:  { name: '尋蹤',   icon: '🧭', color: '#34d399' },
+
+        /* ── Witch 術士 ── */
+        Occultist:   { name: '玄陰',   icon: '🌑', color: '#a855f7' },
+        Elementalist:{ name: '五行',   icon: '🌀', color: '#f97316' },
+        Necromancer: { name: '御魂',   icon: '💀', color: '#818cf8' },
+
+        /* ── Duelist 劍客 ── */
+        Slayer:      { name: '斬龍',   icon: '🗡️', color: '#f0c674' },
+        Gladiator:   { name: '刀客',   icon: '⚔️', color: '#fbbf24' },
+        Champion:    { name: '戰神',   icon: '🏆', color: '#f43f5e' },
+
+        /* ── Templar 護法 ── */
+        Inquisitor:  { name: '業火',   icon: '🔥', color: '#f97316' },
+        Hierophant:  { name: '陣師',   icon: '🔯', color: '#c084fc' },
+        Guardian:    { name: '金剛',   icon: '🛡️', color: '#fbbf24' },
+
+        /* ── Shadow 刺客 ── */
+        Assassin:    { name: '暗殺',   icon: '🗡️', color: '#818cf8' },
+        Trickster:   { name: '幻影',   icon: '👤', color: '#a78bfa' },
+        Saboteur:    { name: '機關',   icon: '⚙️', color: '#a3e635' }
+    };
+
+    /* ══════════════════════════════════════════════════════
+       三、套用
+       ══════════════════════════════════════════════════════ */
+    var _done = false, _stat = { classes: 0, branches: 0 };
+
+    function apply() {
+        if (_done) return _stat;
+        var Data = D();
+        if (!Data.ASCENDANCY_CLASSES) return _stat;
+
+        /* ① 職業 → 分支清單：只改 name，id 不動 */
+        Object.keys(Data.ASCENDANCY_CLASSES).forEach(function (classId) {
+            var list = Data.ASCENDANCY_CLASSES[classId];
+            if (!Array.isArray(list)) return;
+            list.forEach(function (b) {
+                var bn = BRANCH_NAMES[b.id];
+                if (bn) {
+                    if (!b.__poeName) b.__poeName = b.name;
+                    b.name = bn.name;
+                    b.icon = bn.icon;
+                    b.color = bn.color;
+                    _stat.branches++;
+                }
+            });
+            _stat.classes++;
         });
 
-        /* ② 小節點（內圈） */
-        for (var i = 0; i < 3; i++) {
-            var p = pt(R_IN, i, 3);
-            nodes.push({
-                id: branchId + '_s' + i,
-                branchId: branchId,
-                name: cfg.small[i].n,
-                icon: cfg.small[i].i || cfg.icon,
-                x: p.x, y: p.y,
-                orbit: 1, orbitIndex: i, type: 0,
-                out: [branchId + '_m' + i],
-                stats: [cfg.small[i].d],
-                asc: branchId
-            });
-        }
-
-        /* ③ 中節點（中圈） */
-        for (var j = 0; j < 3; j++) {
-            var p2 = pt(R_MID, j, 3);
-            nodes.push({
-                id: branchId + '_m' + j,
-                branchId: branchId,
-                name: cfg.medium[j].n,
-                icon: cfg.medium[j].i || cfg.icon,
-                x: p2.x, y: p2.y,
-                orbit: 2, orbitIndex: j, type: 0,
-                out: [branchId + '_l' + j],
-                stats: [cfg.medium[j].d],
-                asc: branchId
-            });
-        }
-
-        /* ④ 大節點（外圈，關鍵天賦） */
-        for (var k = 0; k < 3; k++) {
-            var p3 = pt(R_OUT, k, 3);
-            nodes.push({
-                id: branchId + '_l' + k,
-                branchId: branchId,
-                name: cfg.large[k].n,
-                icon: cfg.large[k].i || cfg.icon,
-                x: p3.x, y: p3.y,
-                orbit: 3, orbitIndex: k, type: 2,
-                out: [],
-                stats: Array.isArray(cfg.large[k].d) ? cfg.large[k].d : [cfg.large[k].d],
-                asc: branchId,
-                isNotable: true
-            });
-        }
-
-        return { nodes: nodes, geo: { w: W, h: H, n: nodes.length } };
+        _done = true;
+        console.log('[HY AscZhNames] ✓ 已中文化 ' + _stat.classes + ' 個職業 / ' +
+            _stat.branches + ' 條升華分支（節點內容完全不變）');
+        return _stat;
     }
 
-    /* ══════════════════════════════════════════════════════
-       三、21 條武俠分支定義
-       ══════════════════════════════════════════════════════ */
-    var CLASS_BRANCHES = {
+    /* 分支名查詢（給 UI 用） */
+    function branchName(branchId) {
+        var bn = BRANCH_NAMES[branchId];
+        return bn ? bn.name : branchId;
+    }
+    /* 職業名查詢 */
+    function className(classId) {
+        var cn = CLASS_NAMES[classId];
+        return cn ? cn.name : classId;
+    }
+    function classInfo(classId) {
+        return CLASS_NAMES[classId] || null;
+    }
+    function branchInfo(branchId) {
+        return BRANCH_NAMES[branchId] || null;
+    }
 
-        /* ══════════ 俠客 Scion（全能）══════════ */
-        Scion: [
-            {
-                id: 'xia_tianjiao', name: '天驕', icon: '🎖️', color: '#f0c674',
-                desc: '博採眾長，全屬性均衡提升。',
-                startName: '名門',
-                small: [
-                    { n: '根基', d: '全屬性 +6%' },
-                    { n: '歷練', d: '氣血上限 +8%' },
-                    { n: '見識', d: '內力上限 +10%' }
-                ],
-                medium: [
-                    { n: '博學', d: '全屬性 +10%、心法效果 +12%' },
-                    { n: '通達', d: '出手速度 +10%、命中 +10' },
-                    { n: '沉穩', d: '減傷 +5%、全抗性 +10%' }
-                ],
-                large: [
-                    { n: '【天驕之姿】', d: ['全屬性 +18%', '全元素傷害 +18%'] },
-                    { n: '【博採眾長】', d: ['心法效果 +30%', '氣血上限 +18%'] },
-                    { n: '【名門之後】', d: ['全屬性 +25%', '每回合回復 2%'] }
-                ]
-            },
-            {
-                id: 'xia_quangui', name: '權貴', icon: '👑', color: '#fbbf24',
-                desc: '家世顯赫，資源與收益全面領先。',
-                startName: '世族',
-                small: [
-                    { n: '家學', d: '經驗獲取 +10%' },
-                    { n: '產業', d: '銀兩獲取 +12%' },
-                    { n: '人脈', d: '物品稀有度 +10%' }
-                ],
-                medium: [
-                    { n: '門蔭', d: '全屬性 +8%、經驗 +15%' },
-                    { n: '商路', d: '銀兩 +25%、稀有度 +20%' },
-                    { n: '朝堂', d: '氣血上限 +12%、全抗性 +12%' }
-                ],
-                large: [
-                    { n: '【富可敵國】', d: ['銀兩 +60%', '稀有度 +50%'] },
-                    { n: '【權傾朝野】', d: ['全屬性 +20%', '經驗 +35%'] },
-                    { n: '【世家之主】', d: ['氣血上限 +25%', '全隊全屬性 +8%'] }
-                ]
-            },
-            {
-                id: 'xia_wudao', name: '悟道', icon: '☯️', color: '#c084fc',
-                desc: '心法共鳴，以內功馭萬法。',
-                startName: '問道',
-                small: [
-                    { n: '靜心', d: '內力上限 +12%' },
-                    { n: '參悟', d: '心法效果 +10%' },
-                    { n: '通玄', d: '五行內勁 +10%' }
-                ],
-                medium: [
-                    { n: '心法共鳴', d: '心法效果 +22%' },
-                    { n: '天人合一', d: '五行內勁 +22%' },
-                    { n: '玄之又玄', d: '內力上限 +22%、內力回復 +30%' }
-                ],
-                large: [
-                    { n: '【萬法歸一】', d: ['心法效果 +45%', '五行內勁 +35%'] },
-                    { n: '【道法自然】', d: ['內力上限 +40%', '每擊回復 3% 內力'] },
-                    { n: '【悟道之人】', d: ['全屬性 +20%', '異常施加 +30%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 力士 Marauder（外功）══════════ */
-        Marauder: [
-            {
-                id: 'li_kuangzhan', name: '狂戰', icon: '💥', color: '#ef4444',
-                desc: '以攻代守，越戰越猛。',
-                startName: '蠻力',
-                small: [
-                    { n: '蠻勁', d: '攻擊 +10%' },
-                    { n: '血氣', d: '氣血上限 +10%' },
-                    { n: '悍勇', d: '暴擊 +5%' }
-                ],
-                medium: [
-                    { n: '狂怒', d: '攻擊 +20%、出手速度 +8%' },
-                    { n: '破軍', d: '暴擊傷害 +30%' },
-                    { n: '不動如山', d: '氣血上限 +18%、減傷 +5%' }
-                ],
-                large: [
-                    { n: '【狂戰之魂】', d: ['攻擊 +35%', '出手速度 +20%'] },
-                    { n: '【力拔山河】', d: ['攻擊 +30%', '暴擊 +15%'] },
-                    { n: '【不死狂徒】', d: ['氣血上限 +30%', '吸血 10%'] }
-                ]
-            },
-            {
-                id: 'li_tiebi', name: '鐵壁', icon: '🛡️', color: '#6ee7b7',
-                desc: '金剛之軀，堅不可摧。',
-                startName: '錘鍊',
-                small: [
-                    { n: '硬功', d: '防禦 +10%' },
-                    { n: '皮糙', d: '氣血上限 +10%' },
-                    { n: '抗打', d: '減傷 +4%' }
-                ],
-                medium: [
-                    { n: '鐵布衫', d: '減傷 +8%、防禦 +15%' },
-                    { n: '金鐘罩', d: '全抗性 +18%' },
-                    { n: '橫練', d: '氣血上限 +22%' }
-                ],
-                large: [
-                    { n: '【鐵壁銅牆】', d: ['減傷 +14%', '防禦 +30%'] },
-                    { n: '【金剛不壞】', d: ['氣血上限 +35%', '減傷 +10%'] },
-                    { n: '【以身為盾】', d: ['全隊減傷 +10%', '反震 +30%'] }
-                ]
-            },
-            {
-                id: 'li_xuenu', name: '血怒', icon: '🩸', color: '#dc2626',
-                desc: '以血換力，殘血最強。',
-                startName: '血誓',
-                small: [
-                    { n: '血勇', d: '攻擊 +8%' },
-                    { n: '血氣', d: '氣血上限 +8%' },
-                    { n: '嗜血', d: '吸血 4%' }
-                ],
-                medium: [
-                    { n: '血怒沸騰', d: '殘血時攻擊 +30%' },
-                    { n: '浴血', d: '吸血 +8%' },
-                    { n: '狂血', d: '每損失 10% 氣血攻擊 +4%' }
-                ],
-                large: [
-                    { n: '【血怒狂潮】', d: ['殘血傷害 +70%', '吸血 15%'] },
-                    { n: '【不死血身】', d: ['受到致命傷免疫一次', '氣血上限 +28%'] },
-                    { n: '【以血證道】', d: ['每損失 10% 氣血攻擊 +8%', '攻擊 +25%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 遊俠 Ranger（身法）══════════ */
-        Ranger: [
-            {
-                id: 'you_jifeng', name: '疾風', icon: '💨', color: '#4ade80',
-                desc: '來去如風，以速度取勝。',
-                startName: '輕身',
-                small: [
-                    { n: '快步', d: '出手速度 +10%' },
-                    { n: '輕身', d: '閃避 +10' },
-                    { n: '靈巧', d: '命中 +8' }
-                ],
-                medium: [
-                    { n: '疾風步', d: '出手速度 +22%、閃避 +12' },
-                    { n: '無影', d: '閃避 +20' },
-                    { n: '連環', d: '每 3 擊追加 1 擊' }
-                ],
-                large: [
-                    { n: '【疾風迅雷】', d: ['出手速度 +35%', '閃避 +25'] },
-                    { n: '【無影無蹤】', d: ['每 2 擊追加 1 擊', '命中 +20'] },
-                    { n: '【風行者】', d: ['攻擊 +28%', '出手速度 +30%'] }
-                ]
-            },
-            {
-                id: 'you_lieying', name: '獵影', icon: '🎯', color: '#38bdf8',
-                desc: '精準獵殺，一擊致命。',
-                startName: '瞄準',
-                small: [
-                    { n: '銳眼', d: '暴擊 +6%' },
-                    { n: '穩手', d: '命中 +10' },
-                    { n: '冷靜', d: '暴擊傷害 +15%' }
-                ],
-                medium: [
-                    { n: '獵影', d: '暴擊 +12%、命中 +15' },
-                    { n: '致命一擊', d: '暴擊傷害 +40%' },
-                    { n: '瞄準要害', d: '無視 15% 防禦' }
-                ],
-                large: [
-                    { n: '【鷹眼】', d: ['暴擊 +18%', '命中 +25'] },
-                    { n: '【一擊必殺】', d: ['暴擊傷害 +80%', '無視 25% 防禦'] },
-                    { n: '【獵人本能】', d: ['攻擊 +30%', '暴擊 +15%'] }
-                ]
-            },
-            {
-                id: 'you_yushou', name: '御獸', icon: '🐺', color: '#a3e635',
-                desc: '與靈獸同心，共戰強敵。',
-                startName: '親和',
-                small: [
-                    { n: '馴養', d: '靈獸傷害 +15%' },
-                    { n: '同心', d: '靈獸氣血 +15%' },
-                    { n: '感應', d: '靈獸攻速 +10%' }
-                ],
-                medium: [
-                    { n: '御獸之術', d: '靈獸傷害 +30%' },
-                    { n: '獸血', d: '靈獸氣血 +30%、攻速 +15%' },
-                    { n: '共生', d: '靈獸存在時自身攻擊 +15%' }
-                ],
-                large: [
-                    { n: '【萬獸之主】', d: ['靈獸傷害 +60%', '靈獸數量 +1'] },
-                    { n: '【同心同命】', d: ['靈獸與自身共享 30% 傷害', '靈獸氣血 +50%'] },
-                    { n: '【獸王之姿】', d: ['靈獸攻擊 +50%', '靈獸存在時自身全屬性 +15%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 術士 Witch（內功）══════════ */
-        Witch: [
-            {
-                id: 'shu_xuanyin', name: '玄陰', icon: '🌑', color: '#a855f7',
-                desc: '至陰之力，毒與冰的掌控者。',
-                startName: '引陰',
-                small: [
-                    { n: '陰氣', d: '毒勁傷害 +12%' },
-                    { n: '寒息', d: '冰勁傷害 +12%' },
-                    { n: '凝神', d: '內力上限 +10%' }
-                ],
-                medium: [
-                    { n: '玄陰真氣', d: '毒勁 +22%、冰勁 +22%' },
-                    { n: '陰煞', d: '異常施加 +25%' },
-                    { n: '侵蝕', d: '持續傷害 +30%' }
-                ],
-                large: [
-                    { n: '【玄陰之體】', d: ['毒勁 +35%', '冰勁 +35%'] },
-                    { n: '【萬物凋零】', d: ['持續傷害 +60%', '異常持續 +2 回合'] },
-                    { n: '【玄陰之主】', d: ['異常施加 +40%', '毒冰傷害翻倍'] }
-                ]
-            },
-            {
-                id: 'shu_wuxing', name: '五行', icon: '🔥', color: '#f97316',
-                desc: '五行相生相剋，元素宗師。',
-                startName: '感氣',
-                small: [
-                    { n: '火感', d: '火勁傷害 +12%' },
-                    { n: '雷感', d: '雷勁傷害 +12%' },
-                    { n: '氣感', d: '五行內勁 +10%' }
-                ],
-                medium: [
-                    { n: '五行精通', d: '五行內勁 +25%' },
-                    { n: '相生', d: '全元素抗性 +20%' },
-                    { n: '相剋', d: '無視 15% 全抗性' }
-                ],
-                large: [
-                    { n: '【五行歸元】', d: ['五行內勁 +45%', '全抗性 +30%'] },
-                    { n: '【天雷地火】', d: ['火勁 +40%、雷勁 +40%'] },
-                    { n: '【五行宗師】', d: ['全元素傷害 +55%', '無視 25% 抗性'] }
-                ]
-            },
-            {
-                id: 'shu_youming', name: '幽冥', icon: '👻', color: '#818cf8',
-                desc: '召喚亡魂與靈體，以眾擊寡。',
-                startName: '通冥',
-                small: [
-                    { n: '聚魂', d: '靈獸傷害 +15%' },
-                    { n: '陰兵', d: '靈獸氣血 +15%' },
-                    { n: '幽冥', d: '內力上限 +12%' }
-                ],
-                medium: [
-                    { n: '召魂術', d: '靈獸傷害 +30%、數量 +1' },
-                    { n: '幽冥之氣', d: '靈獸攻擊無視 15% 防禦' },
-                    { n: '陰陽兩界', d: '靈獸存在時自身減傷 +8%' }
-                ],
-                large: [
-                    { n: '【萬魂歸位】', d: ['靈獸數量 +2', '靈獸傷害 +50%'] },
-                    { n: '【幽冥之主】', d: ['靈獸氣血 +60%、攻速 +25%'] },
-                    { n: '【亡者大軍】', d: ['靈獸全屬性 +50%', '靈獸存在時自身攻擊 +20%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 劍客 Duelist（劍術）══════════ */
-        Duelist: [
-            {
-                id: 'jian_kuaijian', name: '快劍', icon: '⚡', color: '#38bdf8',
-                desc: '劍速如電，以連擊取勝。',
-                startName: '起手',
-                small: [
-                    { n: '快劍', d: '出手速度 +10%' },
-                    { n: '連綿', d: '攻擊 +8%' },
-                    { n: '輕靈', d: '閃避 +8' }
-                ],
-                medium: [
-                    { n: '劍如流星', d: '出手速度 +25%、攻擊 +15%' },
-                    { n: '連續斬', d: '每 3 擊追加 1 擊' },
-                    { n: '劍舞', d: '閃避 +18、命中 +12' }
-                ],
-                large: [
-                    { n: '【劍光如電】', d: ['出手速度 +40%', '每 2 擊追加 1 擊'] },
-                    { n: '【千劍連擊】', d: ['攻擊 +32%', '攻速 +30%'] },
-                    { n: '【萬劍齊發】', d: ['範圍傷害 +50%', '命中 +25'] }
-                ]
-            },
-            {
-                id: 'jian_zhongjian', name: '重劍', icon: '🗡️', color: '#f0c674',
-                desc: '一劍破萬法，重劍無鋒。',
-                startName: '蓄勢',
-                small: [
-                    { n: '沉劍', d: '攻擊 +12%' },
-                    { n: '蓄勢', d: '暴擊傷害 +20%' },
-                    { n: '厚實', d: '氣血上限 +8%' }
-                ],
-                medium: [
-                    { n: '重劍無鋒', d: '攻擊 +28%、無視 12% 防禦' },
-                    { n: '一擊必殺', d: '暴擊傷害 +50%' },
-                    { n: '鐵劍', d: '氣血上限 +18%、減傷 +5%' }
-                ],
-                large: [
-                    { n: '【大巧不工】', d: ['攻擊 +40%', '無視 22% 防禦'] },
-                    { n: '【一劍穿心】', d: ['暴擊 +18%', '暴傷 +90%'] },
-                    { n: '【重劍宗師】', d: ['攻擊 +35%', '氣血上限 +25%'] }
-                ]
-            },
-            {
-                id: 'jian_jianxin', name: '劍心', icon: '💫', color: '#7dd3fc',
-                desc: '劍意通明，人劍合一。',
-                startName: '養劍',
-                small: [
-                    { n: '劍意', d: '劍意上限 +2 層' },
-                    { n: '通明', d: '命中 +10' },
-                    { n: '鋒銳', d: '暴擊 +6%' }
-                ],
-                medium: [
-                    { n: '人劍合一', d: '劍意每層攻擊 +3%' },
-                    { n: '劍心通明', d: '暴擊 +12%、命中 +15' },
-                    { n: '劍氣縱橫', d: '無視 15% 防禦' }
-                ],
-                large: [
-                    { n: '【劍心通明】', d: ['劍意上限 +5 層', '效果翻倍'] },
-                    { n: '【一劍破萬法】', d: ['無視 30% 防禦', '暴擊 +18%'] },
-                    { n: '【劍道大成】', d: ['攻擊 +35%', '暴擊傷害 +70%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 護法 Templar（護體）══════════ */
-        Templar: [
-            {
-                id: 'hu_jingang', name: '金剛', icon: '🛡️', color: '#fbbf24',
-                desc: '金剛不壞之身，減傷反震。',
-                startName: '淬體',
-                small: [
-                    { n: '硬骨', d: '防禦 +10%' },
-                    { n: '氣血', d: '氣血上限 +10%' },
-                    { n: '反震', d: '反震 +6%' }
-                ],
-                medium: [
-                    { n: '金剛體', d: '減傷 +9%、防禦 +18%' },
-                    { n: '不動明王', d: '全抗性 +20%' },
-                    { n: '反震之道', d: '反震 +25%' }
-                ],
-                large: [
-                    { n: '【金剛不壞】', d: ['減傷 +15%', '氣血上限 +35%'] },
-                    { n: '【不動明王】', d: ['全抗性 +35%', '受到攻擊時反擊'] },
-                    { n: '【金身羅漢】', d: ['防禦 +40%', '反震 +60%'] }
-                ]
-            },
-            {
-                id: 'hu_cibei', name: '慈悲', icon: '💚', color: '#34d399',
-                desc: '慈航普渡，庇佑眾生。',
-                startName: '發心',
-                small: [
-                    { n: '慈悲', d: '治療效果 +15%' },
-                    { n: '清心', d: '內力上限 +10%' },
-                    { n: '護念', d: '全抗性 +8%' }
-                ],
-                medium: [
-                    { n: '慈航普渡', d: '治療量 +35%' },
-                    { n: '普賢行願', d: '每回合回復 3% 氣血' },
-                    { n: '庇佑', d: '全隊氣血上限 +10%' }
-                ],
-                large: [
-                    { n: '【慈悲為懷】', d: ['治療量 +70%', '每回合回復 5%'] },
-                    { n: '【普渡眾生】', d: ['全隊氣血上限 +20%', '全隊減傷 +10%'] },
-                    { n: '【菩薩低眉】', d: ['受到致命傷時回復 50%', '免疫一次'] }
-                ]
-            },
-            {
-                id: 'hu_yehuo', name: '業火', icon: '🔥', color: '#f97316',
-                desc: '以業火焚盡罪孽，神聖傷害。',
-                startName: '燃業',
-                small: [
-                    { n: '業火', d: '火勁傷害 +12%' },
-                    { n: '聖光', d: '五行內勁 +10%' },
-                    { n: '虔誠', d: '暴擊 +5%' }
-                ],
-                medium: [
-                    { n: '業火焚身', d: '火勁傷害 +28%' },
-                    { n: '聖光普照', d: '五行內勁 +25%' },
-                    { n: '除魔', d: '對異常目標傷害 +20%' }
-                ],
-                large: [
-                    { n: '【業火焚天】', d: ['火勁傷害 +50%', '點燃機率 +40%'] },
-                    { n: '【聖光審判】', d: ['五行內勁 +45%', '暴擊 +15%'] },
-                    { n: '【除魔衛道】', d: ['對首領傷害 +40%', '攻擊 +30%'] }
-                ]
-            }
-        ],
-
-        /* ══════════ 刺客 Shadow（暗殺）══════════ */
-        Shadow: [
-            {
-                id: 'ci_ansha', name: '暗殺', icon: '🗡️', color: '#818cf8',
-                desc: '潛行潛殺，一擊斃命。',
-                startName: '潛行',
-                small: [
-                    { n: '隱匿', d: '閃避 +10' },
-                    { n: '致命', d: '暴擊 +6%' },
-                    { n: '冷酷', d: '暴擊傷害 +15%' }
-                ],
-                medium: [
-                    { n: '暗殺術', d: '暴擊 +14%、暴傷 +35%' },
-                    { n: '致命一擊', d: '對低血目標傷害 +50%' },
-                    { n: '消失', d: '閃避 +22、出手速度 +12%' }
-                ],
-                large: [
-                    { n: '【一擊必殺】', d: ['暴擊傷害 +100%', '低血目標必暴擊'] },
-                    { n: '【暗影突襲】', d: ['出手速度 +35%', '閃避 +30'] },
-                    { n: '【死神之吻】', d: ['攻擊 +32%', '暴擊 +20%'] }
-                ]
-            },
-            {
-                id: 'ci_judu', name: '劇毒', icon: '☠️', color: '#22c55e',
-                desc: '以毒蠶食，越拖越強。',
-                startName: '試毒',
-                small: [
-                    { n: '毒術', d: '毒勁傷害 +12%' },
-                    { n: '耐毒', d: '氣血上限 +8%' },
-                    { n: '滲透', d: '異常施加 +12%' }
-                ],
-                medium: [
-                    { n: '劇毒', d: '中毒傷害 +40%' },
-                    { n: '萬毒穿心', d: '中毒上限 +2 層' },
-                    { n: '毒爆', d: '中毒死亡時引爆' }
-                ],
-                large: [
-                    { n: '【萬毒噬心】', d: ['中毒上限 +5 層', '毒傷翻倍'] },
-                    { n: '【毒爆連鎖】', d: ['毒爆無限連鎖', '範圍 +60%'] },
-                    { n: '【劇毒宗師】', d: ['毒勁傷害 +60%', '異常持續 +3 回合'] }
-                ]
-            },
-            {
-                id: 'ci_jiguan', name: '機關', icon: '⚙️', color: '#a3e635',
-                desc: '陷阱與機關，算計於先。',
-                startName: '設伏',
-                small: [
-                    { n: '巧手', d: '機關上限 +1' },
-                    { n: '預判', d: '命中 +10' },
-                    { n: '精算', d: '攻擊 +8%' }
-                ],
-                medium: [
-                    { n: '機關術', d: '機關傷害 +45%' },
-                    { n: '連環陷阱', d: '機關觸發 2 次' },
-                    { n: '天羅地網', d: '機關減速 +2 回合' }
-                ],
-                large: [
-                    { n: '【千機萬巧】', d: ['機關上限 +3', '傷害 +55%'] },
-                    { n: '【天羅地網】', d: ['機關傷害翻倍', '全體觸發'] },
-                    { n: '【暗器宗師】', d: ['暗器傷害 +55%', '每回合自動布 1 個'] }
-                ]
-            }
-        ]
+    window.HY.AscendancyZhNames = {
+        apply: apply,
+        branchName: branchName,
+        className: className,
+        classInfo: classInfo,
+        branchInfo: branchInfo,
+        CLASS_NAMES: CLASS_NAMES,
+        BRANCH_NAMES: BRANCH_NAMES
     };
 
-    /* ══════════════════════════════════════════════════════
-       四、產生所有分支並覆寫舊 POE 資料
-       ══════════════════════════════════════════════════════ */
-    (function buildAndOverride() {
-        var Dx = window.HY.Data;
-
-        /* 保留舊資料供除錯 */
-        if (!Dx.__POE_ASCENDANCY_CLASSES && Dx.ASCENDANCY_CLASSES) {
-            Dx.__POE_ASCENDANCY_CLASSES = Dx.ASCENDANCY_CLASSES;
-        }
-        if (!Dx.__POE_ASCENDANCY_NODES && Dx.ASCENDANCY_NODES) {
-            Dx.__POE_ASCENDANCY_NODES = Dx.ASCENDANCY_NODES;
-        }
-        if (!Dx.__POE_ASCENDANCY_BY_BRANCH && Dx.ASCENDANCY_BY_BRANCH) {
-            Dx.__POE_ASCENDANCY_BY_BRANCH = Dx.ASCENDANCY_BY_BRANCH;
-        }
-        if (!Dx.__POE_ASCENDANCY_GEO && Dx.ASCENDANCY_GEO) {
-            Dx.__POE_ASCENDANCY_GEO = Dx.ASCENDANCY_GEO;
-        }
-
-        var classes = {};
-        var geo = {};
-        var nodesAll = {};
-        var byBranch = {};
-        var flat = {};   /* branchId → { def, nodes } */
-
-        Object.keys(CLASS_BRANCHES).forEach(function (classId) {
-            classes[classId] = [];
-            CLASS_BRANCHES[classId].forEach(function (cfg) {
-                var b = buildBranch(cfg.id, cfg);
-                classes[classId].push({ id: cfg.id, name: cfg.name });
-
-                /* 補上職業資訊到節點，UI 可顯示 */
-                b.nodes.forEach(function (n) {
-                    n.classId = classId;
-                    n.branchName = cfg.name;
-                    n.branchColor = cfg.color;
-                    nodesAll[n.id] = n;
-                });
-
-                geo[cfg.id] = b.geo;
-                byBranch[cfg.id] = b.nodes.map(function (n) { return n.id; });
-                flat[cfg.id] = {
-                    id: cfg.id, classId: classId,
-                    name: cfg.name, icon: cfg.icon, color: cfg.color,
-                    desc: cfg.desc, nodes: b.nodes, geo: b.geo
-                };
-            });
-        });
-
-        Dx.ASCENDANCY_CLASSES = classes;
-        Dx.ASCENDANCY_GEO = geo;
-        Dx.ASCENDANCY_NODES = nodesAll;
-        Dx.ASCENDANCY_BY_BRANCH = byBranch;
-        Dx.WUXIA_ASC_BRANCH_FLAT = flat;
-
-        /* 對外 API */
-        window.HY.WuxiaAscendancy = {
-            classes: classes,
-            branches: flat,
-            nodeIndex: nodesAll,
-            classOf: function (sectClassId) {
-                return Dx.WUXIA_CLASS_NAMES[sectClassId] || null;
-            },
-            branchOf: function (branchId) {
-                return flat[branchId] || null;
-            },
-            nodesOf: function (branchId) {
-                return (flat[branchId] || {}).nodes || [];
-            },
-            totalPoints: function (charObj) {
-                var cfg = Dx.WUXIA_ASC_CONFIG || {};
-                var lv = (charObj && charObj.lv) ? charObj.lv : 1;
-                var p = Math.floor(lv / (cfg.POINTS_PER_LEVEL || 10));
-                return Math.min(cfg.MAX_POINTS || 8, p);
-            },
-            /** 該職業的分支清單（給 UI） */
-            branchesOfClass: function (classId) {
-                return (classes[classId] || []).map(function (b) {
-                    var f = flat[b.id];
-                    return {
-                        id: b.id, name: b.name,
-                        icon: f ? f.icon : '',
-                        color: f ? f.color : '#94a3b8',
-                        desc: f ? f.desc : '',
-                        nodeCount: f ? f.nodes.length : 0
-                    };
-                });
+    /* 輪詢等待資料載入（bootLoader 非同步） */
+    var tries = 0;
+    var timer = setInterval(function () {
+        tries++;
+        var ok = false;
+        try {
+            var Data = D();
+            if (Data.ASCENDANCY_CLASSES &&
+                Object.keys(Data.ASCENDANCY_CLASSES).length >= 7) {
+                apply();
+                ok = _done;
             }
-        };
+        } catch (e) { }
+        if (ok || tries > 90) clearInterval(timer);
+    }, 200);
 
-        var totalNodes = Object.keys(nodesAll).length;
-        var totalBranch = Object.keys(flat).length;
-        console.log('[HY WuxiaAscendancy] ✓ 已建立 ' +
-            Object.keys(classes).length + ' 職業 × 3 分支 = ' +
-            totalBranch + ' 條武俠昇華分支 / ' + totalNodes + ' 個節點' +
-            '（取代 POE 21 條分支）');
-    })();
-})();
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function () { try { apply(); } catch (e) { } }, 150);
+    }
+})(window.HY);
 
 
 /* ===== 48 / 246 : talentMasteryData.js ===== */
@@ -37745,7 +37220,7 @@ window.HY = window.HY || {};
         /* ──────────────────────────────────────────────────────────
            分支選擇
            ────────────────────────────────────────────────────────── */
-        /** 該角色所屬職業（沿用 POE 職業 id，顯示名已武俠化） */
+        /** 該角色所屬職業（id 沿用 POE，顯示名已仙俠化） */
         poeClassOf(charObj) {
             var c = charObj || (this.charSys && this.charSys.state);
             if (!c) return 'Scion';
@@ -37754,49 +37229,48 @@ window.HY = window.HY || {};
 
         /** ⭐ 該角色可選的昇華分支（依職業，3 條）
             ──────────────────────────────────────────────────────────
-            v3：改回「職業 → 3 分支」的體系（使用者指示），
-                但分支內容全部換成武俠（wuxiaAscendancyData.js）。
-                ASCENDANCY_CLASSES 已被覆寫成武俠分支清單，
-                因此這裡的 tbl[cls] 拿到的就是該職業的 3 條武俠分支。 */
+            v4：完全還原成原本的「職業 → 3 分支」體系。
+                節點、連線、數值全部保留 POE 原始資料；
+                唯一改動是「職業名／分支名」換成仙俠中文
+                （由 ascendancyZhNames.js 就地改寫 name 欄位）。
+                本函式只負責把名稱包成 UI 要的格式。 */
         branchesFor(charObj) {
             var cls = this.poeClassOf(charObj);
             var tbl = this.classTable();
             var ZH = HY.AscendancyZh || null;
+            var ZN = HY.AscendancyZhNames || null;
             var byBranch = this.byBranch();
-            var WA = window.HY.WuxiaAscendancy;
 
             var list = [];
 
-            /* ① 本職業的 3 條分支 */
+            /* 本職業的 3 條分支 */
             (tbl[cls] || []).forEach(function (b) {
-                var f = WA && WA.branchOf ? WA.branchOf(b.id) : null;
+                var bi = ZN && ZN.branchInfo ? ZN.branchInfo(b.id) : null;
                 list.push({
                     id: b.id,
-                    name: f ? f.name : b.name,
-                    nameZh: f ? f.name : ((ZH && ZH.branch) ? ZH.branch(b.id) : b.id),
+                    name: b.name,
+                    nameZh: b.name || ((ZH && ZH.branch) ? ZH.branch(b.id) : b.id),
                     isMine: true,
-                    nodeCount: f ? f.nodes.length : (byBranch[b.id] || []).length,
-                    icon: f ? f.icon : '',
-                    color: f ? f.color : '#94a3b8',
-                    desc: f ? f.desc : '',
-                    isWuxia: true
+                    nodeCount: (byBranch[b.id] || []).length,
+                    icon: bi ? bi.icon : '',
+                    color: bi ? bi.color : '#94a3b8',
+                    desc: ''
                 });
             });
 
-            /* ② 若職業對照失敗（舊存檔異常）→ 退回全部列出 */
+            /* 若職業對照失敗（舊存檔異常）→ 退回全部列出 */
             if (!list.length) {
                 Object.keys(byBranch).forEach(function (id) {
-                    var f = WA && WA.branchOf ? WA.branchOf(id) : null;
+                    var bi = ZN && ZN.branchInfo ? ZN.branchInfo(id) : null;
                     list.push({
                         id: id,
-                        name: f ? f.name : id,
-                        nameZh: f ? f.name : ((ZH && ZH.branch) ? ZH.branch(id) : id),
+                        name: (ZN && ZN.branchName) ? ZN.branchName(id) : id,
+                        nameZh: (ZN && ZN.branchName) ? ZN.branchName(id) : id,
                         isMine: false,
                         nodeCount: (byBranch[id] || []).length,
-                        icon: f ? f.icon : '',
-                        color: f ? f.color : '#94a3b8',
-                        desc: f ? f.desc : '',
-                        isWuxia: true
+                        icon: bi ? bi.icon : '',
+                        color: bi ? bi.color : '#94a3b8',
+                        desc: ''
                     });
                 });
             }
@@ -40690,8 +40164,12 @@ window.HY = window.HY || {};
             var c = this.char;
             var a = sys.ensureState(c);
             var ZH = HY.AscendancyZh;
+            var ZN = HY.AscendancyZhNames;
             var list = sys.branchesFor(c);
-            var clsZh = ZH ? ZH.classZh(sys.poeClassOf(c)) : sys.poeClassOf(c);
+            /* ⭐ v4：職業名優先序（仙俠名 > 舊譯名 > id） */
+            var _cls = sys.poeClassOf(c);
+            var clsZh = (ZN && ZN.className) ? ZN.className(_cls)
+                      : (ZH ? ZH.classZh(_cls) : _cls);
 
             var mine = list.filter(function (b) { return b.isMine; });
             var others = list.filter(function (b) { return !b.isMine; });
@@ -40754,8 +40232,7 @@ window.HY = window.HY || {};
                     if (cur.branch) {
                         /* 已加入某分支 → 點其他分支只提示，不切換 */
                         if (cur.branch !== id) {
-                            self._toast('已加入「' + cur.branch + '」，需先重置才能更換');
-                        }
+                            self._toast('已加入「' + cur.branch + '」，需先重置才能更換');                        }
                         return;
                     }
                     self.sys.previewBranch(id);
@@ -40794,8 +40271,15 @@ window.HY = window.HY || {};
                 var joined = sys.isJoined(c);
                 if (viewing && !joined) {
                     this.el.btnJoin.style.display = '';
+                    /* ⭐ v4：名稱優先序
+                       ① AscendancyZhNames（仙俠名，本輪新增）
+                       ② AscendancyZh（舊的中文翻譯層）
+                       ③ 原始 id
+                       （原本只查 ②，所以按鈕還顯示「秘術師」這種舊譯名） */
+                    var ZN = HY.AscendancyZhNames;
                     var ZH = HY.AscendancyZh;
-                    var nm = (ZH && ZH.branch) ? ZH.branch(viewing) : viewing;
+                    var nm = (ZN && ZN.branchName) ? ZN.branchName(viewing)
+                           : ((ZH && ZH.branch) ? ZH.branch(viewing) : viewing);
                     this.el.btnJoin.textContent = '✦ 加入「' + nm + '」';
                 } else {
                     this.el.btnJoin.style.display = 'none';
@@ -40812,7 +40296,9 @@ window.HY = window.HY || {};
             var br = sys.activeBranch(c);
             if (!br) { this._toast('請先選擇一個昇華'); return; }
             var ZH = HY.AscendancyZh;
-            var nm = (ZH && ZH.branch) ? ZH.branch(br) : br;
+            var ZN = HY.AscendancyZhNames;
+            var nm = (ZN && ZN.branchName) ? ZN.branchName(br)
+                   : ((ZH && ZH.branch) ? ZH.branch(br) : br);
 
             /* 已有遮罩就重用 */
             var mask = document.getElementById('asc-confirm-mask');
@@ -40873,7 +40359,9 @@ window.HY = window.HY || {};
             /* ⭐ v3：預覽模式給明確提示，避免玩家誤以為已生效 */
             if (!joined && viewing) {
                 var ZH2 = HY.AscendancyZh;
-                var vn = (ZH2 && ZH2.branch) ? ZH2.branch(viewing) : viewing;
+                var ZN2 = HY.AscendancyZhNames;
+                var vn = (ZN2 && ZN2.branchName) ? ZN2.branchName(viewing)
+                       : ((ZH2 && ZH2.branch) ? ZH2.branch(viewing) : viewing);
                 html = '<div class="asc-sh">👁 預覽中</div>';
                 html += '<div class="asc-empty" style="color:#fbbf24;line-height:1.9;">' +
                     '正在預覽「<b>' + vn + '</b>」的天賦內容。<br>' +
@@ -123952,11 +123440,38 @@ window.HY = window.HY || {};
             this._chipKey = key;
 
             chip.className = harsh ? 'harsh' : '';
+            /* ⭐ v2：天候標籤原本在白底容器裡幾乎看不見
+               ──────────────────────────────────────────────────
+               原因有兩個：
+                 ① 插入點 .system-controls 旁的按鈕是白底，
+                    外層樣式（背景/顏色）被繼承到 chip 上
+                 ② 天氣色（晴朗 #fbbf24、飛雪 #67e8f9）在白底上對比不足
+
+               解法：全部改用「內聯樣式 + 高對比深色底」，
+                     不依賴外部 CSS（inline 優先權最高，不會被覆蓋）。 */
+            var weColor = (we && we.color) ? we.color : '#fbbf24';
+            chip.style.cssText = [
+                'display:inline-flex', 'align-items:center', 'gap:6px',
+                'background:#0f1720', 'border:1px solid ' + (harsh ? weColor : '#3b4d63'),
+                'border-radius:5px', 'padding:5px 11px',
+                'font-size:.8rem', 'font-weight:bold', 'line-height:1.2',
+                'color:#e2e8f0', 'cursor:pointer', 'white-space:nowrap',
+                'box-shadow:' + (harsh ? '0 0 10px ' + weColor + '66' : '0 1px 4px rgba(0,0,0,.5)'),
+                'transition:border-color .15s,box-shadow .15s'
+            ].join(';');
+
             chip.innerHTML =
-                '<span class="wc-i">' + (sh ? sh.icon : '') + (we ? we.icon : '') + '</span>' +
-                '<span class="wc-t" style="color:' + esc((we && we.color) || '#cbd5e1') + '">' +
-                esc(sh ? sh.name : '') + '·' + esc(we ? we.name : '') + '</span>' +
-                '<span class="wc-cd">' + fmtMs(n.weatherLeftMs) + '</span>';
+                '<span style="font-size:.95rem;line-height:1">' +
+                    (sh ? sh.icon : '') + (we ? we.icon : '') + '</span>' +
+                /* 時辰名用亮黃、天候名用天候色，都加陰影確保可讀 */
+                '<span style="color:#f0c674;text-shadow:0 1px 2px #000">' +
+                    esc(sh ? sh.name : '') + '</span>' +
+                '<span style="color:#64748b">·</span>' +
+                '<span style="color:' + esc(weColor) + ';text-shadow:0 1px 2px #000">' +
+                    esc(we ? we.name : '') + '</span>' +
+                '<span style="color:#7dd3fc;font-size:.72rem;' +
+                    'font-variant-numeric:tabular-nums;text-shadow:0 1px 2px #000">' +
+                    fmtMs(n.weatherLeftMs) + '</span>';
             chip.title = '點擊查看天候時辰詳情\n' +
                 (sh ? sh.name + '：' + sh.desc : '') + '\n' +
                 (we ? we.name + '：' + we.desc : '');
