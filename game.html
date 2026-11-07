@@ -30941,12 +30941,73 @@ window.HY = window.HY || {};
             try {
                 const data = JSON.stringify(this.charSys.rootState);
                 localStorage.setItem(SAVE_KEY, data);
+                /* ⭐ v498：記錄存檔時間（供讀檔時顯示「上次存檔」） */
+                try {
+                    localStorage.setItem(SAVE_KEY + '_TS', String(Date.now()));
+                } catch (eTS) { }
                 if (!silent) {
                     this.logger.add('💾 全隊角色與時空進度已成功寫入本地存檔。', 'wealth');
+                    /* ⭐ v498：存檔要有「看得見」的回饋
+                       ──────────────────────────────────────────────────────────
+                       使用者反映「存檔好像有問題」。實測存檔完全正常，
+                       問題在於成功訊息只寫進右側日誌面板 ——
+                       而右側日誌預設收在抽屜裡，玩家根本看不到，
+                       按了按鈕毫無反應，自然覺得壞了。
+
+                       這裡額外加一個短暫的浮動提示（不依賴任何面板）。 */
+                    this._toast('💾 存檔成功　' + this.lastSaveText(), '#10b981');
                 }
+                return true;
             } catch (err) {
-                this.logger.add('❌ 存檔失敗：瀏覽器儲存空間受限。', 'system');
+                this.logger.add('❌ 存檔失敗：' + (err && err.name === 'QuotaExceededError'
+                    ? '瀏覽器儲存空間已滿（請清理 site data）'
+                    : '瀏覽器儲存空間受限'), 'system');
+                this._toast('❌ 存檔失敗', '#ef4444');
+                return false;
             }
+        }
+
+        /** 上次存檔時間（人類可讀） */
+        lastSaveText() {
+            var ts = 0;
+            try { ts = Number(localStorage.getItem(SAVE_KEY + '_TS')) || 0; } catch (e) { ts = 0; }
+            if (!ts) return '';
+            var d = new Date(ts);
+            function p(n) { return (n < 10 ? '0' : '') + n; }
+            return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+        }
+
+        /** 浮動提示（存檔／讀檔的即時回饋，不依賴日誌面板） */
+        _toast(text, color) {
+            try {
+                var el = document.getElementById('hy-save-toast');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = 'hy-save-toast';
+                    el.style.cssText =
+                        'position:fixed;left:50%;top:18%;transform:translateX(-50%) translateY(-10px);' +
+                        'z-index:99999;pointer-events:none;opacity:0;' +
+                        'padding:10px 22px;border-radius:8px;' +
+                        'background:rgba(12,20,28,.95);' +
+                        'font-size:1.02rem;font-weight:bold;letter-spacing:.08em;' +
+                        'white-space:nowrap;' +
+                        'transition:opacity .2s ease, transform .2s ease;';
+                    document.body.appendChild(el);
+                }
+                el.style.border = '1px solid ' + color;
+                el.style.color = color;
+                el.style.boxShadow = '0 0 22px ' + color + '99';
+                el.textContent = text;
+                /* 強制 reflow 讓 transition 生效 */
+                void el.offsetWidth;
+                el.style.opacity = '1';
+                el.style.transform = 'translateX(-50%) translateY(0)';
+                if (this._toastTimer) clearTimeout(this._toastTimer);
+                this._toastTimer = setTimeout(function () {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateX(-50%) translateY(-10px)';
+                }, 1400);
+            } catch (e) { }
         }
         load() {
             try {
@@ -30967,11 +31028,62 @@ window.HY = window.HY || {};
                         這樣「舊存檔」也能自動修好，不需要玩家重開角色。 */
                 this._repairVitals();
 
+                /* ⭐ v498：載入後補齊「存檔缺少的關鍵結構」
+                   ──────────────────────────────────────────────────────────
+                   Object.assign 只會覆蓋「存檔有的鍵」，
+                   但若存檔來自舊版本、缺少某些新結構，
+                   後續系統直接存取就會拋錯或寫入 undefined。
+
+                   這裡只補「必須存在才能運作」的容器，
+                   不覆蓋任何已有資料。 */
+                this._ensureRootShape(parsed);
+
+                var _st = this.charSys.rootState;
+                var _rc = (_st.roster && _st.roster.length) || 0;
+                console.log('[saveSystem] ✓ 已載入存檔（角色 ' + _rc + ' 名，' +
+                    Math.round(raw.length / 1024) + ' KB）');
+
                 this.logger.add('📂 成功讀取上次的時空小隊歷練紀錄！', 'system');
                 return true;
             } catch (err) {
+                console.error('[saveSystem] 載入失敗', err);
                 return false;
             }
+        }
+
+        /** ⭐ v498：補齊必要結構（不覆蓋既有資料） */
+        _ensureRootShape(parsed) {
+            var st = this.charSys.rootState;
+            if (!st) return;
+            if (!Array.isArray(st.roster) || !st.roster.length) {
+                console.warn('[saveSystem] 存檔沒有角色名冊，改用預設值');
+                st.roster = [this.charSys.createSingleCharTemplate('char_1', '時空浪人・壹')];
+                st.activeCharIndex = 0;
+            }
+            if (typeof st.activeCharIndex !== 'number' ||
+                st.activeCharIndex < 0 || st.activeCharIndex >= st.roster.length) {
+                st.activeCharIndex = 0;
+            }
+            if (!Array.isArray(st.party) || !st.party.length) {
+                st.party = [st.roster[0].id];
+            }
+            if (!Array.isArray(st.equipBag)) st.equipBag = [];
+            if (typeof st.gold !== 'number' || !isFinite(st.gold)) st.gold = 150;
+            if (typeof st.sp !== 'number' || !isFinite(st.sp)) st.sp = 50;
+            if (!st.inventory || typeof st.inventory !== 'object') st.inventory = { pill_hp: 3 };
+            if (!st.petExpeditions || typeof st.petExpeditions !== 'object') st.petExpeditions = {};
+            /* 每個角色的必要欄位 */
+            st.roster.forEach(function (c) {
+                if (!c || typeof c !== 'object') return;
+                if (!c.stats || typeof c.stats !== 'object') c.stats = {};
+                if (!c.skills || typeof c.skills !== 'object') c.skills = {};
+                if (!c.xinfa || typeof c.xinfa !== 'object') c.xinfa = {};
+                if (!c.qinggong || typeof c.qinggong !== 'object') c.qinggong = {};
+                if (!c.meridians || typeof c.meridians !== 'object') c.meridians = {};
+                if (!c.equipment || typeof c.equipment !== 'object') c.equipment = {};
+                if (!c.activeBuffs || typeof c.activeBuffs !== 'object') c.activeBuffs = {};
+                if (typeof c.lv !== 'number' || !isFinite(c.lv)) c.lv = 1;
+            });
         }
         /** ⭐ v472：修復所有角色的氣血／內力為有效數字 */
         _repairVitals() {
@@ -102029,7 +102141,24 @@ window.HY = window.HY || {};
       }
       const btnSave = document.getElementById('btn-save');
       if (btnSave) {
-        btnSave.addEventListener('click', () => this.saveSys.save());
+        btnSave.addEventListener('click', () => {
+          /* ⭐ v498：按鈕文字帶上存檔時間，讓玩家隨時看得到狀態 */
+          var ok = this.saveSys.save();
+          if (ok && typeof this.saveSys.lastSaveText === 'function') {
+            var t = this.saveSys.lastSaveText();
+            if (t) {
+              btnSave.textContent = '💾 已存檔 ' + t;
+              btnSave.style.borderColor = '#10b981';
+              btnSave.style.color = '#6ee7b7';
+              clearTimeout(btnSave.__resetT);
+              btnSave.__resetT = setTimeout(function () {
+                btnSave.textContent = '💾 儲存進度';
+                btnSave.style.borderColor = '';
+                btnSave.style.color = '';
+              }, 2600);
+            }
+          }
+        });
       }
       const btnReset = document.getElementById('btn-reset');
       if (btnReset) {
@@ -148484,6 +148613,7 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
 
 
 
