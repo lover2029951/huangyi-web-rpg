@@ -147480,23 +147480,119 @@ window.HY = window.HY || {};
 
             /* ── 邊緣提示光條（純視覺，pointer-events:none 不影響操作） ── */
             '.hy-edge-hint{' +
-                'position:fixed;z-index:8999;pointer-events:none;' +
-                'opacity:.55;transition:opacity .25s;' +
+                'position:fixed;z-index:9003;pointer-events:none;' +
+                'opacity:1;transition:opacity .25s, box-shadow .25s, background .25s;' +
             '}',
             'body.hy-edge-hover-left  .hy-edge-hint[data-k="left"],' +
             'body.hy-edge-hover-right .hy-edge-hint[data-k="right"],' +
             'body.hy-edge-hover-top   .hy-edge-hint[data-k="top"]{opacity:1;}',
             '.hy-edge-hint[data-k="left"]{' +
-                'left:0;top:12%;bottom:12%;width:2px;' +
-                'background:linear-gradient(180deg,transparent,#00e5ff,transparent);' +
+                'left:0;top:0;bottom:0;width:16px;' +
+                'background:linear-gradient(90deg,' +
+                    'rgba(0,229,255,.95) 0px,rgba(0,229,255,.95) 4px,' +
+                    'rgba(0,229,255,.35) 7px,rgba(0,229,255,.08) 12px,rgba(0,229,255,0) 16px);' +
+                'border-left:1px solid rgba(140,245,255,.95);' +
             '}',
             '.hy-edge-hint[data-k="right"]{' +
-                'right:0;top:12%;bottom:12%;width:2px;' +
-                'background:linear-gradient(180deg,transparent,#00e5ff,transparent);' +
+                'right:0;top:0;bottom:0;width:16px;' +
+                'background:linear-gradient(270deg,' +
+                    'rgba(0,229,255,.95) 0px,rgba(0,229,255,.95) 4px,' +
+                    'rgba(0,229,255,.35) 7px,rgba(0,229,255,.08) 12px,rgba(0,229,255,0) 16px);' +
+                'border-right:1px solid rgba(140,245,255,.95);' +
             '}',
             '.hy-edge-hint[data-k="top"]{' +
-                'top:0;left:30%;right:30%;height:2px;' +
-                'background:linear-gradient(90deg,transparent,#00e5ff,transparent);' +
+                'top:0;left:0;right:0;height:16px;' +
+                'background:linear-gradient(180deg,' +
+                    'rgba(0,229,255,.95) 0px,rgba(0,229,255,.95) 4px,' +
+                    'rgba(0,229,255,.35) 7px,rgba(0,229,255,.08) 12px,rgba(0,229,255,0) 16px);' +
+                'border-top:1px solid rgba(140,245,255,.95);' +
+            '}',
+            /* 滑鼠靠近時整條亮起 */
+            'body.hy-edge-hover-left  .hy-edge-hint[data-k="left"]{' +
+                'background:linear-gradient(90deg,#00e5ff,rgba(0,229,255,.15));' +
+                'box-shadow:0 0 16px rgba(0,229,255,.85);' +
+            '}',
+            'body.hy-edge-hover-right .hy-edge-hint[data-k="right"]{' +
+                'background:linear-gradient(270deg,#00e5ff,rgba(0,229,255,.15));' +
+                'box-shadow:0 0 16px rgba(0,229,255,.85);' +
+            '}',
+            'body.hy-edge-hover-top   .hy-edge-hint[data-k="top"]{' +
+                'background:linear-gradient(180deg,#00e5ff,rgba(0,229,255,.15));' +
+                'box-shadow:0 0 16px rgba(0,229,255,.85);' +
+            '}',
+
+            /* ── 常駐外框：讓「畫面邊界在哪」一眼可見 ──
+               ⚠️ 用 inset box-shadow 而不是 border，
+                  這樣不會撐大任何元素、也不會觸發重排。 */
+            /* ── 常駐外框：讓「畫面邊界在哪」一眼可見 ──
+               ⚠️ 用 inset box-shadow 而不是 border，
+                  這樣不會撐大任何元素、也不會觸發重排。
+               ⚠️ z-index 必須高於抽屜面板（9000/9001），
+                  否則面板滑出時會把邊框蓋掉，「邊界感」就消失了。 */
+            '.hy-edge-frame{' +
+                'position:fixed;inset:0;z-index:9004;pointer-events:none;' +
+                'box-shadow:' +
+                    'inset 0 0 0 2px rgba(0,190,220,.55),' +
+                    'inset 0 0 30px rgba(0,229,255,.16),' +
+                    'inset 0 0 80px rgba(0,229,255,.08);' +
+            '}',
+
+            /* ⭐ v491b：body 直接掛 outline。
+               有些瀏覽器/縮放比例下 fixed 元素的 box-shadow 內描邊
+               在極右緣會被裁掉 1px（實測截圖右側消失），
+               outline 畫在 body 自身邊界上，不吃 inset，更保險。 */
+            'body.hy-edge-mode{' +
+                'outline:2px solid rgba(0,214,246,.72);' +
+                'outline-offset:-2px;' +
+            '}',
+
+            /* ── 四角定位括號：視覺上直接標出「這裡就是邊」 ── */
+            '.hy-edge-corner{' +
+                'position:fixed;z-index:9005;pointer-events:none;' +
+                'width:46px;height:46px;' +
+                'border:4px solid rgba(0,229,255,.95);' +
+                'box-shadow:0 0 16px rgba(0,229,255,.85), inset 0 0 12px rgba(0,229,255,.35);' +
+                'transition:border-color .25s, box-shadow .25s;' +
+            '}',
+            '.hy-edge-corner[data-c="tl"]{top:0;left:0;border-right:none;border-bottom:none;border-radius:7px 0 0 0;}' +
+            '.hy-edge-corner[data-c="tr"]{top:0;right:0;border-left:none;border-bottom:none;border-radius:0 7px 0 0;}' +
+            '.hy-edge-corner[data-c="bl"]{bottom:0;left:0;border-right:none;border-top:none;border-radius:0 0 0 7px;}' +
+            '.hy-edge-corner[data-c="br"]{bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 7px 0;}',
+
+            /* ── ⭐ 邊緣拉把（握把）：實體可見的小卡榫，直接告訴玩家
+                  「這裡可以拉出面板」。三條邊各兩處（上 25% / 左中右…）。 ── */
+            '.hy-edge-grip{' +
+                'position:fixed;z-index:9005;pointer-events:none;' +
+                'background:rgba(0,229,255,.85);' +
+                'box-shadow:0 0 10px rgba(0,229,255,.9);' +
+                'border-radius:2px;' +
+                'transition:background .2s, box-shadow .2s;' +
+            '}',
+            /* 上緣：兩段短橫把 */
+            '.hy-edge-grip[data-g="top1"]{top:4px;left:22%;width:56px;height:4px;}' +
+            '.hy-edge-grip[data-g="top2"]{top:4px;left:calc(78% - 56px);width:56px;height:4px;}',
+            /* 左右：兩段短縱把 */
+            '.hy-edge-grip[data-g="left1"]{left:4px;top:calc(50% - 74px);width:4px;height:56px;}' +
+            '.hy-edge-grip[data-g="left2"]{left:4px;top:calc(50% + 18px);width:4px;height:56px;}' +
+            '.hy-edge-grip[data-g="right1"]{right:4px;top:calc(50% - 74px);width:4px;height:56px;}' +
+            '.hy-edge-grip[data-g="right2"]{right:4px;top:calc(50% + 18px);width:4px;height:56px;}',
+            'body.hy-edge-hover-left .hy-edge-grip[data-g="left1"],' +
+            'body.hy-edge-hover-left .hy-edge-grip[data-g="left2"],' +
+            'body.hy-edge-hover-right .hy-edge-grip[data-g="right1"],' +
+            'body.hy-edge-hover-right .hy-edge-grip[data-g="right2"],' +
+            'body.hy-edge-hover-top .hy-edge-grip[data-g="top1"],' +
+            'body.hy-edge-hover-top .hy-edge-grip[data-g="top2"]{' +
+                'background:#7df3ff;' +
+                'box-shadow:0 0 18px rgba(0,229,255,1);' +
+            '}',
+            'body.hy-edge-hover-left .hy-edge-corner[data-c="tl"],' +
+            'body.hy-edge-hover-left .hy-edge-corner[data-c="bl"],' +
+            'body.hy-edge-hover-right .hy-edge-corner[data-c="tr"],' +
+            'body.hy-edge-hover-right .hy-edge-corner[data-c="br"],' +
+            'body.hy-edge-hover-top .hy-edge-corner[data-c="tl"],' +
+            'body.hy-edge-hover-top .hy-edge-corner[data-c="tr"]{' +
+                'border-color:#00e5ff;' +
+                'box-shadow:0 0 14px rgba(0,229,255,.9);' +
             '}',
 
             /* ── 標籤本體 ── */
@@ -147563,10 +147659,32 @@ window.HY = window.HY || {};
             /* ── 全螢幕子頁面（昇華／輿圖／天賦樹／礦坑／藏書閣…）開啟時，
                   抽屜標籤會被壓在上面。這裡讓它們自動讓位。 ── */
             'body.hy-edge-blocked .hy-edge-tab,' +
-            'body.hy-edge-blocked .hy-edge-hint{' +
+            'body.hy-edge-blocked .hy-edge-hint,' +
+            'body.hy-edge-blocked .hy-edge-corner,' +
+            'body.hy-edge-blocked .hy-edge-frame{' +
                 'opacity:0 !important;' +
                 'pointer-events:none !important;' +
-            '}'
+            '}',
+
+            /* ── 底部邊緣（日誌收起時下方也要有視覺邊界） ── */
+            '.hy-edge-hint[data-k="bottom"]{' +
+                'left:0;right:0;bottom:0;height:16px;' +
+                'background:linear-gradient(0deg,' +
+                    'rgba(0,229,255,.75) 0px,rgba(0,229,255,.75) 4px,' +
+                    'rgba(0,229,255,.28) 7px,rgba(0,229,255,.06) 12px,rgba(0,229,255,0) 16px);' +
+                'border-bottom:1px solid rgba(140,245,255,.75);' +
+            '}',
+            /* 底部不開啟面板，只作為視覺邊界 + 提示三條邊可拉出 */
+            '.hy-edge-footnote{' +
+                'position:fixed;left:50%;bottom:9px;transform:translateX(-50%);' +
+                'z-index:8999;pointer-events:none;' +
+                'font-size:.72rem;letter-spacing:.18em;font-weight:bold;' +
+                'color:rgba(125,211,252,.85);' +
+                'text-shadow:0 0 12px rgba(0,229,255,.9), 0 0 3px rgba(0,0,0,.9);' +
+                'white-space:nowrap;' +
+                'transition:opacity .25s;' +
+            '}',
+            'body.hy-edge-blocked .hy-edge-footnote{opacity:0 !important;}'
         ].join('');
 
         var st = document.createElement('style');
@@ -147617,6 +147735,50 @@ window.HY = window.HY || {};
             panel.classList.remove('hy-edge-open');
         });
 
+        /* ⭐ v491：常駐外框 + 四角定位括號 + 底部邊界
+           ──────────────────────────────────────────────────────────
+           使用者反映「邊緣不明顯，很難抓到底在哪」。
+           抽屜的感應區只有 34px，全黑背景下完全看不出來。
+           現在加：
+             ① 整圈 1px 霓虹外框（inset box-shadow，不影響版面）
+             ② 四角 L 型括號（26px，直接標出四個角落）
+             ③ 底部光條（下緣也要有邊界感）
+             ④ 底部小字提示「↑ 滑鼠靠近上／左／右邊緣」
+           全部 pointer-events:none，不會擋任何操作。 */
+        var frame = document.createElement('div');
+        frame.className = 'hy-edge-frame';
+        document.body.appendChild(frame);
+        this.elFrame = frame;
+
+        ['tl', 'tr', 'bl', 'br'].forEach(function (c) {
+            var el = document.createElement('div');
+            el.className = 'hy-edge-corner';
+            el.setAttribute('data-c', c);
+            document.body.appendChild(el);
+        });
+
+        /* ⭐ v491b：邊緣拉把（實體卡榫）
+           光暈在深色背景上不夠顯眼，玩家仍然看不出「哪一段可以拉」。
+           這裡放 6 個實心小條（上 2、左 2、右 2），滑鼠靠近時整段轉亮。 */
+        ['top1', 'top2', 'left1', 'left2', 'right1', 'right2'].forEach(function (g) {
+            var el = document.createElement('div');
+            el.className = 'hy-edge-grip';
+            el.setAttribute('data-g', g);
+            document.body.appendChild(el);
+        });
+
+        var bottomHint = document.createElement('div');
+        bottomHint.className = 'hy-edge-hint';
+        bottomHint.setAttribute('data-k', 'bottom');
+        document.body.appendChild(bottomHint);
+        this.elBottomHint = bottomHint;
+
+        var note = document.createElement('div');
+        note.className = 'hy-edge-footnote';
+        note.textContent = '▲ ◀ 滑鼠靠近邊緣　▶ 面板';
+        document.body.appendChild(note);
+        this.elFootNote = note;
+
         this._built = true;
         document.body.classList.add('hy-edge-mode');
     };
@@ -147635,6 +147797,17 @@ window.HY = window.HY || {};
             var nearTop = (y <= EDGE_PX);
             var nearLeft = (x <= EDGE_PX);
             var nearRight = (x >= w - EDGE_PX);
+            var nearBottom = (y >= h - EDGE_PX);
+
+            /* ⭐ v491：除了靠近時高亮對應邊，也要讓「常駐外框」知道
+               現在靠著哪一邊 —— 四角括號會跟著亮起來。 */
+            document.body.classList.toggle('hy-edge-hover-top', nearTop);
+            document.body.classList.toggle('hy-edge-hover-left', nearLeft && !nearTop);
+            document.body.classList.toggle('hy-edge-hover-right', nearRight && !nearTop);
+
+            /* 底部沒有面板，只讓下緣光條亮一下作為「這裡是邊界」的回饋 */
+            if (self.elBottomHint) self.elBottomHint.style.opacity = nearBottom ? '1' : '';
+            if (self.elFootNote) self.elFootNote.style.opacity = nearBottom ? '0' : '';
 
             /* 角落優先序：上 → 左 → 右（上方面積最小，優先讓給它） */
             if (nearTop) self._peek('top');
@@ -147920,3 +148093,4 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
+
