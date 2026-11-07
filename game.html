@@ -73024,7 +73024,26 @@ window.HY = window.HY || {};
       el.addEventListener('mousemove', function (e) { placePair(e.clientX, e.clientY); });
       el.addEventListener('mouseleave', hidePair);
       el.addEventListener('contextmenu', function (e) { e.preventDefault(); hidePair(); slotMenu(e.clientX, e.clientY, sid); });
-      el.addEventListener('click', function () { _selUid = uidOf(it); renderModal(); });
+      /* ⭐⭐ v61 修正「點選角色裝備，目標只會鎖定武器」
+         ──────────────────────────────────────────────────────────
+         Bug：這裡原本只寫 `_selUid = uidOf(it); renderModal();`
+              → 只設了「行囊選取」，卻沒有呼叫 selectCraft()
+              → poeSys.selectedTargetUid 完全沒變
+              → 「✔ 目標」徽章永遠停在第一次選的那件（通常就是武器）
+
+         正確：呼叫 selectCraft(it, false)，它會
+               ① 設定 poeSys.selectedTargetUid
+               ② 重繪面板（renderModal）
+               ③ 依 ctUid 重新計算每一格是否為 target
+
+         ⚠️ 同時補上「即時重算 it」——原本 it 是綁定時的快照，
+            若之後換了裝備，閉包裡的 it 會是舊物件（uid 對不上）。 */
+      el.addEventListener('click', function () {
+        var live = (ACC.equipped() || {})[sid];
+        if (!live) { toast('此部位已無裝備', 'err'); return; }
+        _selUid = uidOf(live);
+        selectCraft(live, false);
+      });
     });
     /* 網格 */
     _els.body.querySelectorAll('[data-uid]').forEach(function (el) {
@@ -73066,14 +73085,19 @@ window.HY = window.HY || {};
   }
   function bindStash() {
     if (!_els || !_els.body) return;
-    /* 十部位：點擊選為目標 */
+    /* 十部位：點擊選為目標
+       ⚠️ v61：it 必須在點擊「當下」重新取得。
+          原本綁定時就把 it 快照進閉包，若之後換裝備，
+          點擊會把「已卸下的舊裝備」選為目標（uid 對不上當前裝備）。 */
     _els.body.querySelectorAll('[data-slot]').forEach(function (el) {
       var sid = el.getAttribute('data-slot');
-      var it = (ACC.equipped() || {})[sid];
       el.addEventListener('click', function () {
-        if (!it) { toast('此部位沒有裝備', 'err'); return; }
-        selectCraft(it, false);
+        var live = (ACC.equipped() || {})[sid];
+        if (!live) { toast('此部位沒有裝備', 'err'); return; }
+        selectCraft(live, false);
       });
+      /* 提示框仍可用綁定時的 it（滑鼠移入時該格內容不會變） */
+      var it = (ACC.equipped() || {})[sid];
       if (it) {
         el.addEventListener('mouseenter', function (e) {
           var x = e.clientX, y = e.clientY;
