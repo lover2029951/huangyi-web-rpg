@@ -68421,11 +68421,25 @@ window.HY = window.HY || {};
                 const locked = charLv < reqLv;
                 const bonusStr = app.equipSys.formatBonusText(sect.bonus);
                 const feat = sect.feature;
+                /* ⭐ v427：機制只顯示當前門派
+                   ──────────────────────────────────────────────────────────
+                   舊版把 46 個門派的機制完整說明全部列出，玩家要讀 46 段
+                   機制描述才能找到自己的，而且容易誤以為自己能同時擁有這些機制。
+
+                   新版：
+                     · 當前門派 → 完整機制說明（標題 + 效果描述）
+                     · 其他門派 → 只顯示機制「名稱」，不寫效果細節
+                   這樣一眼就知道「我擁有的是哪一個」，其餘當作圖鑑瀏覽。 */
                 const featHtml = feat
-                    ? '<div style="background:rgba(0,0,0,0.35); border-left:3px solid ' + feat.color + '; padding:8px; margin:8px 0; border-radius:4px;">' +
-                        '<strong style="color:' + feat.color + '; font-size:0.9rem;">' + feat.icon + ' 專屬門派特色：【' + feat.name + '】</strong>' +
-                        '<div style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">' + feat.desc + '</div>' +
-                      '</div>'
+                    ? (isCurrent
+                        ? '<div style="background:rgba(0,0,0,0.35); border-left:3px solid ' + feat.color + '; padding:8px; margin:8px 0; border-radius:4px;">' +
+                            '<strong style="color:' + feat.color + '; font-size:0.9rem;">' + feat.icon + ' 專屬門派特色：【' + feat.name + '】</strong>' +
+                            '<div style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">' + feat.desc + '</div>' +
+                          '</div>'
+                        : '<div style="margin:8px 0; padding:5px 8px; border-left:2px solid ' + feat.color + '55; border-radius:3px;">' +
+                            '<span style="color:' + feat.color + '88; font-size:0.82rem;">' + feat.icon + ' 機制：' + feat.name + '</span>' +
+                            '<span style="color:#475569; font-size:0.76rem;">（拜入後可查看詳細效果）</span>' +
+                          '</div>')
                     : '';
                 const card = document.createElement('div');
                 card.className = 'card-item';
@@ -95887,13 +95901,37 @@ window.HY = window.HY || {};
                     if (freeBox) detailsRoot.querySelector('.details-body').appendChild(freeBox);
                 }
                 var h3Combat = h3List[1];
-                if (h3Combat && atkEl) {
-                    var cGrid = atkEl.closest('.stat-grid');
-                    var detailsCombat = this.createCollapsibleBox('char-details-combat', '⚔️ 戰鬥與抗性面板 (點擊展開/收合)', '#f87171', true);
+                /* ⭐ v427：詳細戰鬥與抗性面板改為可折疊
+                   ──────────────────────────────────────────────────────────
+                   舊版條件是 `atkEl`（舊面板的 stat-atk 元素），
+                   但該元素已被 stat-panel-full 取代 → 折疊邏輯從不觸發。
+
+                   新版直接包住 stat-panel-full（60 項完整屬性），
+                   預設收合 —— 面板很長，收合後左欄可一眼看完角色概要。 */
+                var fullPanel = document.getElementById('stat-panel-full');
+                if (h3Combat && fullPanel) {
+                    var detailsCombat = this.createCollapsibleBox(
+                        'char-details-combat',
+                        '⚔️ 詳細戰鬥與抗性面板 (點擊展開/收合)',
+                        '#f87171',
+                        false               /* 預設收合 */
+                    );
                     h3Combat.parentNode.insertBefore(detailsCombat, h3Combat);
                     h3Combat.remove();
+                    detailsCombat.querySelector('.details-body').appendChild(fullPanel);
+                } else if (h3Combat && atkEl) {
+                    /* 後備：若完整面板還沒建立，退回舊邏輯 */
+                    var cGrid = atkEl.closest('.stat-grid');
+                    var detailsCombat2 = this.createCollapsibleBox(
+                        'char-details-combat',
+                        '⚔️ 詳細戰鬥與抗性面板 (點擊展開/收合)',
+                        '#f87171',
+                        false
+                    );
+                    h3Combat.parentNode.insertBefore(detailsCombat2, h3Combat);
+                    h3Combat.remove();
                     if (cGrid) {
-                        detailsCombat.querySelector('.details-body').appendChild(cGrid);
+                        detailsCombat2.querySelector('.details-body').appendChild(cGrid);
                         this.appendElementRows(cGrid);
                     }
                 }
