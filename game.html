@@ -44454,6 +44454,20 @@ window.HY = window.HY || {};
 // 修正：lootMult 起算值改為 RARITY_TIERS.rewardMult → 藍/金怪掉寶加成生效
 window.HY = window.HY || {};
 (function () {
+    /* ⭐ v474：逆流宗「倒流」攔截器
+       ──────────────────────────────────────────────────────────
+       敵方任何形式的回血（吸血、自然回復、技能治療）都必須走這裡，
+       否則「治療反轉為傷害」的機制就形同不存在。
+       沒有逆流宗在場時，原封不動回傳原治療量。 */
+    function interceptEnemyHeal(enemy, amount) {
+        try {
+            var V2 = window.HY && window.HY.SectMechanicsV2;
+            if (V2 && typeof V2.interceptEnemyHeal === 'function') {
+                return V2.interceptEnemyHeal(window.HY.game && window.HY.game.combatSys, enemy, amount);
+            }
+        } catch (e) { }
+        return { healed: Math.max(0, Math.floor(amount || 0)), reversed: 0 };
+    }
     class AffixSystem {
         constructor(charSys, logger) {
             this._charSys = charSys || null;
@@ -44657,8 +44671,14 @@ window.HY = window.HY || {};
                 if (!af.onHitEffect) return;
                 if ((af.onHitEffect === 'leech' || af.onHitEffect === 'beast_venom') && enemy.currentHp > 0) {
                     var leechHeal = Math.max(5, Math.floor(enemyDmg * (af.leechRatio || 0.30)));
-                    enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + leechHeal);
-                    extraLogs.push('[' + af.name + ' 吸血+' + leechHeal + ']');
+                    /* ⭐ v474：逆流宗「倒流」—— 敵方吸血會被反轉成傷害 */
+                    var _revLe = interceptEnemyHeal(enemy, leechHeal);
+                    if (_revLe.reversed > 0) {
+                        extraLogs.push('⏳倒流！吸血→反噬 ' + _revLe.reversed);
+                    } else {
+                        enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + _revLe.healed);
+                        extraLogs.push('[' + af.name + ' 吸血+' + _revLe.healed + ']');
+                    }
                 }
                 if ((af.onHitEffect === 'mana_burn' || af.onHitEffect === 'beast_venom') && targetMember.currentMp > 0) {
                     var td = self.getCharStats(targetMember);
@@ -44685,8 +44705,14 @@ window.HY = window.HY || {};
             enemy.affixes.forEach(function (af) {
                 if (af.turnEndRegen && enemy.currentHp < enemy.maxHp) {
                     var regen = Math.max(10, Math.floor(enemy.maxHp * af.turnEndRegen));
-                    enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + regen);
-                    self.log('💚 【' + enemy.name + '】的 [' + af.name + '] 發動，回復了 ' + regen + ' 點氣血！', 'combat');
+                    /* ⭐ v474：逆流宗「倒流」—— 敵方自然回復也會被反轉 */
+                    var _revRg = interceptEnemyHeal(enemy, regen);
+                    if (_revRg.reversed > 0) {
+                        self.log('⏳ 【' + enemy.name + '】受到【倒流】影響，[' + af.name + '] 的回復被反轉為 ' + _revRg.reversed + ' 點傷害！', 'combat');
+                    } else {
+                        enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + _revRg.healed);
+                        self.log('💚 【' + enemy.name + '】的 [' + af.name + '] 發動，回復了 ' + _revRg.healed + ' 點氣血！', 'combat');
+                    }
                 }
             });
         }
@@ -45536,20 +45562,47 @@ window.HY = window.HY || {};
            核心：跳過回合累積禪意，下次攻擊大幅增傷 */
         shaolin: {
             key: 'zen',
-            base: { maxStacks: 3, perStack: 0.40 },
-            /* 回合開始：本回合若「已宣告不出手」，累積禪意 */
+            base: {
+                maxStacks: 3, perStack: 0.40,
+                healPct: 0.08,          /* 禪定期間每回合回復 8% 氣血（打坐養氣） */
+                defPct: 0.35,           /* 禪定期間減傷 +35%（不動如山） */
+                burstAoePct: 0.30       /* 禪定釋放時，對全體敵人額外 30% 攻擊 */
+            },
+            /* ⭐ v474 重製：禪定從「單純蓄力」擴充成「打坐 → 養氣 → 爆發」
+                 · 不出手的回合：+1 禪意、回復 8% 氣血、減傷 +35%
+                 · 出手時：禪意全數轉為攻擊加成，並對全體敵人濺射
+               旗標 b.declareSkip 由 shouldHoldTurn() 自動設定（不再依賴外部）。 */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                /* 由外部（自動戰鬥）設定 b.declareSkip=true 表示這回合不打 */
                 if (b.declareSkip) {
                     var cur = b.zen || 0;
-                    if (cur < Math.round(p.maxStacks)) {
+                    var max = Math.round(p.maxStacks);
+                    var msg = '';
+                    if (cur < max) {
                         b.zen = cur + 1;
-                        return ' [🧘禪意 ' + b.zen + '/' + Math.round(p.maxStacks) + ']';
+                        msg = ' [🧘禪意 ' + b.zen + '/' + max + ']';
                     }
+                    /* 打坐養氣：回復氣血 */
+                    var maxHp = sys.maxHpOf(c);
+                    var heal = Math.floor(maxHp * p.healPct);
+                    if (heal > 0 && c.currentHp < maxHp) {
+                        var before = c.currentHp;
+                        c.currentHp = Math.min(maxHp, c.currentHp + heal);
+                        msg += ' [打坐回氣 +' + (c.currentHp - before) + ']';
+                    }
+                    b.declareSkip = false;
+                    return msg;
                 }
                 b.declareSkip = false;
                 return '';
+            },
+            /* 禪定期間減傷 */
+            defMods: function (sys, ctx) {
+                var b = ctx.battle;
+                if (b.zen > 0) {
+                    return { defMult: 1 + b.zen * ctx.params.defPct };
+                }
+                return null;
             },
             /* 出手時：消耗全部禪意增傷 */
             mods: function (sys, ctx) {
@@ -45560,12 +45613,21 @@ window.HY = window.HY || {};
             onAttack: function (sys, core, c, target, dealt, p) {
                 var b = sys.battle(c);
                 var st = b.zen || 0;
+                b.zenHeld = 0;   /* 重新計數禪定回合（見 shouldHoldTurn 的安全閥） */
                 if (st <= 0) return '';
                 b.zen = 0;
-                return ' [🧘禪定爆發 ' + st + ' 層→已釋放]';
+                /* 禪定釋放：全體濺射 */
+                var atk = sys.atkOf(c);
+                var splash = Math.max(1, Math.floor(atk * p.burstAoePct * st));
+                var foes = aliveFoes(core);
+                foes.forEach(function (e) {
+                    if (e !== target) e.currentHp = Math.max(0, e.currentHp - splash);
+                });
+                return ' [🧘禪定爆發 ' + st + ' 層→已釋放' +
+                    (foes.length > 1 ? '，全體震盪 ' + splash : '') + ']';
             },
             summary: function (sys, ctx) {
-                return '禪意 ' + (ctx.battle.zen || 0) + '/' + Math.round(ctx.params.maxStacks);
+                return '🧘禪意 ' + (ctx.battle.zen || 0) + '/' + Math.round(ctx.params.maxStacks);
             },
             statusRows: function (sys, ctx) {
                 var n = ctx.battle.zen || 0;
@@ -45573,7 +45635,10 @@ window.HY = window.HY || {};
                     { k: '禪意層數', v: n + ' / ' + Math.round(ctx.params.maxStacks), hl: true },
                     { k: '每層增傷', v: ctx.pct(ctx.params.perStack) },
                     { k: '目前增益', v: ctx.pct(n * ctx.params.perStack) },
-                    { k: '累積方式', v: '宣告不出手的回合 +1 層' }
+                    { k: '打坐回氣', v: ctx.pct(ctx.params.healPct) + ' 最大氣血／回合' },
+                    { k: '打坐減傷', v: '+' + ctx.pct(n * ctx.params.defPct) },
+                    { k: '釋放濺射', v: ctx.pct(ctx.params.burstAoePct) + ' 攻擊力 × 層數' },
+                    { k: '累積方式', v: '氣血充足時自動打坐' }
                 ];
             }
         },
@@ -45631,18 +45696,36 @@ window.HY = window.HY || {};
            核心：連續 3 回合不出手，第 4 回合 4 倍傷害 */
         tianlong: {
             key: 'charge',
-            base: { needSkip: 3, mult: 4.0, defBonus: 0.50 },
+            base: {
+                needSkip: 3, mult: 4.0, defBonus: 0.50,
+                healPct: 0.06,          /* 蓄勁期間每回合回復 6% 氣血 */
+                piercePct: 0.40,        /* 蓄勁爆發無視 40% 防禦 */
+                aoePct: 0.50,           /* 蓄勁爆發對其他敵人濺射 50% */
+                breakStunPct: 0.50      /* 蓄勁完成時 50% 機率震懾全體 1 回合 */
+            },
+            /* ⭐ v474 重製：蓄勁從「純倍率」擴充成「聚勁 → 霸體 → 崩天一拳」
+                 · 蓄勁期間：攻擊 -40%、防禦 +50%、每回合回血 6%
+                 · 完成時：下一擊 ×4、無視 40% 防禦、濺射其他敵人、50% 震懾全體
+               旗標 b.charging 由 shouldHoldTurn() 自動設定。 */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                if (b.charging) {
-                    b.chargeTurns = (b.chargeTurns || 0) + 1;
-                    if (b.chargeTurns >= Math.round(p.needSkip)) {
-                        b.chargeReady = true;
-                        return ' [🐉蓄勁完成→下次攻擊 ' + p.mult + ' 倍]';
-                    }
-                    return ' [🐉蓄勁中 ' + b.chargeTurns + '/' + Math.round(p.needSkip) + ']';
+                if (!b.charging) return '';
+                b.chargeTurns = (b.chargeTurns || 0) + 1;
+                var need = Math.round(p.needSkip);
+                /* 聚勁回氣 */
+                var maxHp = sys.maxHpOf(c);
+                var heal = Math.floor(maxHp * p.healPct);
+                if (heal > 0 && c.currentHp < maxHp) {
+                    c.currentHp = Math.min(maxHp, c.currentHp + heal);
                 }
-                return '';
+                if (b.chargeTurns >= need) {
+                    if (!b.chargeReady) {
+                        b.chargeReady = true;
+                        return ' [🐉蓄勁完成→下次攻擊 ×' + p.mult + ']';
+                    }
+                    return '';
+                }
+                return ' [🐉蓄勁中 ' + b.chargeTurns + '/' + need + ']';
             },
             mods: function (sys, ctx) {
                 var b = ctx.battle;
@@ -45664,7 +45747,40 @@ window.HY = window.HY || {};
                     b.chargeReady = false;
                     b.charging = false;
                     b.chargeTurns = 0;
-                    return ' [🐉蓄勁爆發！]';
+                    var msgs = ' [🐉蓄勁爆發！';
+
+                    /* 無視防禦的額外真傷 */
+                    if (target && target.currentHp > 0) {
+                        var atk = sys.atkOf(c);
+                        var pierce = Math.max(1, Math.floor(atk * p.piercePct));
+                        target.currentHp = Math.max(0, target.currentHp - pierce);
+                        msgs += '貫穿 ' + pierce;
+                    }
+                    /* 濺射其他敵人 */
+                    var foes = aliveFoes(core);
+                    var aoe = 0;
+                    if (foes.length > 1) {
+                        var sd = Math.max(1, Math.floor(sys.atkOf(c) * p.aoePct));
+                        foes.forEach(function (e) {
+                            if (e !== target) {
+                                e.currentHp = Math.max(0, e.currentHp - sd);
+                                aoe += sd;
+                            }
+                        });
+                        if (aoe > 0) msgs += '，震散 ' + aoe;
+                    }
+                    /* 震懾全體 */
+                    if (Math.random() < p.breakStunPct && foes.length) {
+                        foes.forEach(function (e) {
+                            if (e.currentHp > 0) {
+                                var st = es(sys, e, 'thunder');
+                                st.stun = Math.max(num(st.stun, 0), 1);
+                                if (typeof e.atb === 'number') e.atb = 0;
+                            }
+                        });
+                        msgs += '，震懾全體！';
+                    }
+                    return msgs + ']';
                 }
                 /* 出手中斷蓄勁 */
                 if (b.charging) {
@@ -45677,16 +45793,19 @@ window.HY = window.HY || {};
             summary: function (sys, ctx) {
                 var b = ctx.battle;
                 if (b.chargeReady) return '🐉蓄勁完成';
-                if (b.charging) return '🐉蓄勁 ' + (b.chargeTurns || 0) + '/' + Math.round(ctx.params.needSkip);
-                return '未蓄勁';
+                if (b.charging) return '🐉聚勁 ' + (b.chargeTurns || 0) + '/' + Math.round(ctx.params.needSkip);
+                return '🐉待聚勁';
             },
             statusRows: function (sys, ctx) {
                 var b = ctx.battle;
                 return [
-                    { k: '蓄勁狀態', v: b.chargeReady ? '✨ 完成' : (b.charging ? '蓄勁中' : '未啟動'), hl: true },
-                    { k: '需要回合', v: Math.round(ctx.params.needSkip) + ' 回合不出手' },
-                    { k: '完成倍率', v: '×' + ctx.params.mult },
-                    { k: '蓄勁期間', v: '攻擊 -40%、防禦 +' + ctx.pct(ctx.params.defBonus) }
+                    { k: '蓄勁狀態', v: b.chargeReady ? '✨ 完成（下一擊爆發）' : (b.charging ? '聚勁中' : '未啟動'), hl: true },
+                    { k: '進度', v: (b.chargeTurns || 0) + ' / ' + Math.round(ctx.params.needSkip) + ' 回合' },
+                    { k: '完成倍率', v: '×' + ctx.params.mult + '（必中）' },
+                    { k: '貫穿真傷', v: ctx.pct(ctx.params.piercePct) + ' 攻擊力' },
+                    { k: '濺射', v: ctx.pct(ctx.params.aoePct) + ' 攻擊力' },
+                    { k: '震懾機率', v: ctx.pct(ctx.params.breakStunPct) + ' → 全體暈眩 1 回合' },
+                    { k: '聚勁期間', v: '攻擊 -40%、防禦 +' + ctx.pct(ctx.params.defBonus) + '、回血 ' + ctx.pct(ctx.params.healPct) }
                 ];
             }
         },
@@ -45695,18 +45814,33 @@ window.HY = window.HY || {};
            核心：不出手時佈暗器，出手全部引爆 */
         tangmen: {
             key: 'ambush',
-            base: { max: 10, perTrap: 0.40 },
+            base: {
+                max: 10, perTrap: 0.40,
+                critBonus: 0.15,        /* 每枚暗器使引爆爆擊率 +15% */
+                poisonOnHit: 0.10,      /* 引爆時額外附加「淬毒」：每枚 +10% 攻擊力持續傷害 */
+                spreadPct: 0.35,        /* 引爆時對其他敵人濺射 35% */
+                fastArmBonus: 2         /* 氣血充足時，一次佈 2 枚 */
+            },
+            /* ⭐ v474 重製：伏殺從「純堆疊」擴充成「佈局 → 引爆 → 濺射」
+                 · 不出手的回合：佈 1~2 枚暗器（氣血 >70% 時佈 2 枚）
+                 · 累積越多，引爆傷害越高，爆擊率也越高
+                 · 引爆時附帶淬毒（持續傷害）並濺射其他敵人
+               旗標 b.ambushArmed 由 shouldHoldTurn() 自動設定。 */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                if (b.ambushArmed) {
-                    var cur = b.traps || 0;
-                    var cap = Math.round(p.max);
-                    if (cur < cap) {
-                        b.traps = cur + 1;
-                        return ' [🕷️佈暗器 ' + b.traps + '/' + cap + ']';
-                    }
-                }
+                if (!b.ambushArmed) return '';
+                var cap = Math.round(p.max);
+                var cur = b.traps || 0;
+                var maxHp = sys.maxHpOf(c);
+                var ratio = maxHp > 0 ? (c.currentHp / maxHp) : 1;
+                var add = (ratio > 0.70) ? Math.round(p.fastArmBonus) : 1;
+                var before = cur;
+                b.traps = Math.min(cap, cur + add);
                 b.ambushArmed = false;
+                if (b.traps > before) {
+                    return ' [🕷️佈暗器 ' + b.traps + '/' + cap +
+                        (add > 1 ? '（雙發）' : '') + ']';
+                }
                 return '';
             },
             onAttack: function (sys, core, c, target, dealt, p) {
@@ -45719,18 +45853,63 @@ window.HY = window.HY || {};
                     target.currentHp = Math.max(0, target.currentHp - dmg);
                 }
                 b.traps = 0;
-                return ' [🕷️伏殺引爆 ' + n + ' 枚→' + dmg + ' 傷]';
+
+                var msg = ' [🕷️伏殺引爆 ' + n + ' 枚→' + dmg + ' 傷';
+
+                /* 淬毒：持續傷害 */
+                if (target.currentHp > 0) {
+                    var st = es(sys, target, 'ambush');
+                    var poison = Math.max(1, Math.floor(atk * p.poisonOnHit * n));
+                    st.poison = (st.poison || 0) + poison;
+                    st.poisonTurns = 2;
+                    if (poison > 0) msg += '，淬毒 ' + poison + '/回合';
+                }
+
+                /* 濺射其他敵人 */
+                var foes = aliveFoes(core).filter(function (e) { return e !== target; });
+                if (foes.length) {
+                    var sd = Math.max(1, Math.floor(dmg * p.spreadPct));
+                    foes.forEach(function (e) {
+                        e.currentHp = Math.max(0, e.currentHp - sd);
+                    });
+                    msg += '，波及 ' + (sd * foes.length);
+                }
+                return msg + ']';
+            },
+            /* 淬毒結算 */
+            onTurnEnd: function (sys, core, enemy, p) {
+                if (!enemy) return '';
+                var st = es(sys, enemy, 'ambush');
+                if (!st.poison || !st.poisonTurns) return '';
+                var dmg = st.poison;
+                enemy.currentHp = Math.max(0, enemy.currentHp - dmg);
+                st.poisonTurns -= 1;
+                if (st.poisonTurns <= 0) {
+                    st.poison = 0;
+                    st.poisonTurns = 0;
+                }
+                return ' [🕷️淬毒發作 ' + dmg + ' 傷]';
+            },
+            /* 暗器在身時提升爆擊率 */
+            mods: function (sys, ctx) {
+                var b = ctx.battle;
+                var n = num(b.traps, 0);
+                if (n <= 0) return null;
+                return { critFlat: n * ctx.params.critBonus * 100 };
             },
             summary: function (sys, ctx) {
-                return '暗器 ' + (ctx.battle.traps || 0) + '/' + Math.round(ctx.params.max);
+                return '🕷️暗器 ' + (ctx.battle.traps || 0) + '/' + Math.round(ctx.params.max);
             },
             statusRows: function (sys, ctx) {
                 var n = ctx.battle.traps || 0;
+                var cap = Math.round(ctx.params.max);
                 return [
-                    { k: '暗器數量', v: n + ' / ' + Math.round(ctx.params.max), hl: true },
-                    { k: '每枚威力', v: ctx.pct(ctx.params.perTrap) + ' 攻擊力' },
-                    { k: '滿載威力', v: ctx.pct(n * ctx.params.perTrap) + ' 攻擊力' },
-                    { k: '佈置方式', v: '宣告不出手的回合佈 1 枚' }
+                    { k: '暗器數量', v: n + ' / ' + cap, hl: true },
+                    { k: '引爆威力', v: ctx.pct(n * ctx.params.perTrap) + ' 攻擊力' },
+                    { k: '爆擊加成', v: '+' + ctx.pct(n * ctx.params.critBonus) },
+                    { k: '淬毒', v: '每枚 ' + ctx.pct(ctx.params.poisonOnHit) + '／2 回合' },
+                    { k: '濺射', v: ctx.pct(ctx.params.spreadPct) + ' 引爆傷害' },
+                    { k: '佈置方式', v: '氣血 >70% 時一次佈 2 枚' }
                 ];
             }
         },
@@ -45826,7 +46005,53 @@ window.HY = window.HY || {};
            核心：定期把敵我氣血總和平均 */
         hengtian: {
             key: 'balance',
-            base: { interval: 10, minDiffPct: 0.25 },
+            base: {
+                interval: 10, minDiffPct: 0.25,
+                evenPct: 0.20,          /* 每次出手把敵我氣血差拉近 20% */
+                evenDmgPct: 0.6,        /* 拉近時同步造成差值的 60% 傷害 */
+                lowHpBonus: 0.50,       /* 氣血越低，攻擊越高（最多 +50%） */
+                evenHealPct: 0.10       /* 平衡成功時回復自身 10% 氣血 */
+            },
+            /* ⭐ v474 重製：從「每 10 回合一次的單發大招」改成
+               「持續性的天平機制」—— 每一擊都在把雙方氣血拉近。
+               低血時攻擊力上升（天平傾斜時補償我方），高血時輸出降低。
+               這讓衡天教變成「越逆風越強」的派系，而不是乾等冷卻。 */
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                if (!target || target.currentHp <= 0) return '';
+                var b = sys.battle(c);
+                var myMax = sys.maxHpOf(c);
+                if (myMax <= 0) return '';
+                var myRatio = c.currentHp / myMax;
+                /* 記錄本擊前的天平狀態（mods 會用到） */
+                b.tilt = 1 - myRatio;   /* 0=滿血，1=瀕死 */
+                return '';
+            },
+            onAttack: function (sys, core, c, target, dealt, p) {
+                if (!target || dealt <= 0) return '';
+                var myMax = sys.maxHpOf(c);
+                var eMax = num(target.maxHp, 0);
+                if (myMax <= 0 || eMax <= 0) return '';
+                var myRatio = c.currentHp / myMax;
+                var eRatio = target.currentHp / eMax;
+                var diff = eRatio - myRatio;
+                /* 敵方血線高於我方 → 天平自動把差距拉近（額外傷害） */
+                if (diff <= 0.05) return '';
+                var extra = Math.max(1, Math.floor(dealt * p.evenDmgPct * Math.min(1, diff)));
+                target.currentHp = Math.max(0, target.currentHp - extra);
+                /* 我方同時回血，把天平拉回中間 */
+                var heal = Math.floor(myMax * p.evenHealPct * Math.min(1, diff));
+                if (heal > 0) c.currentHp = Math.min(myMax, c.currentHp + heal);
+                return ' [⚖️天平校正：追擊 ' + extra + ' 傷' +
+                    (heal > 0 ? '，回復 ' + heal : '') + ']';
+            },
+            /* 我方氣血越少，攻擊越高 —— 這是衡天「逆風」的核心 */
+            mods: function (sys, ctx) {
+                var b = ctx.battle;
+                var tilt = num(b.tilt, 0);
+                if (tilt <= 0.15) return null;
+                return { atkMult: 1 + tilt * ctx.params.lowHpBonus };
+            },
+            /* 保留：每 interval 回合強制把敵我總氣血歸中（翻盤技） */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
                 b.ownTurn = (b.ownTurn || 0) + 1;
@@ -45843,72 +46068,143 @@ window.HY = window.HY || {};
                 var total = allyHp + foeHp;
                 if (total <= 0) return '';
                 var half = total / 2;
-                /* 只有當我方明顯低於一半時才生效（避免自傷） */
                 if (allyHp >= half) return '';
                 if ((half - allyHp) < total * p.minDiffPct) return '';
-                /* 我方總氣血拉到一半 */
                 var scaleA = half / Math.max(1, allyHp);
                 allies.forEach(function (m) {
                     var d = sys.app.charSys.getDerivedStatsForChar(m);
-                    m.currentHp = Math.min(d.maxHp, Math.floor(m.currentHp * scaleA));
+                    m.currentHp = Math.min(d.maxHp, Math.floor(m.currentHp * (1 + (scaleA - 1) * p.evenPct * 2)));
                 });
-                /* 敵方總氣血壓到一半 */
                 var scaleF = half / Math.max(1, foeHp);
                 if (scaleF < 1) {
                     foes.forEach(function (e) {
-                        e.currentHp = Math.max(1, Math.floor(e.currentHp * scaleF));
+                        e.currentHp = Math.max(1, Math.floor(e.currentHp * (1 - (1 - scaleF) * p.evenPct * 2)));
                     });
                 }
-                return ' [⚖️衡天平衡：敵我氣血歸中]';
+                return ' [⚖️衡天大逆轉：敵我氣血歸中]';
             },
             summary: function (sys, ctx) {
                 var b = ctx.battle;
                 var iv = Math.round(ctx.params.interval);
                 var next = iv - ((b.ownTurn || 0) % iv);
-                return '⚖️平衡倒數 ' + next + ' 回合';
+                return '⚖️天平 ' + (b.tilt > 0.15 ? '逆風' : '持平') + '｜逆轉 ' + next;
             },
             statusRows: function (sys, ctx) {
                 var b = ctx.battle;
                 var iv = Math.round(ctx.params.interval);
                 var next = iv - ((b.ownTurn || 0) % iv);
+                var tilt = num(b.tilt, 0);
                 return [
-                    { k: '發動倒數', v: next + ' 回合', hl: true },
-                    { k: '間隔', v: iv + ' 回合一次' },
-                    { k: '效果', v: '敵我氣血總和歸中' },
-                    { k: '限制', v: '僅在我方明顯落後時生效' }
+                    { k: '天平傾斜', v: Math.round(tilt * 100) + '%', hl: true },
+                    { k: '逆風增傷', v: '+' + ctx.pct(tilt * ctx.params.lowHpBonus) },
+                    { k: '校正追擊', v: ctx.pct(ctx.params.evenDmgPct) + ' 本次傷害' },
+                    { k: '校正回血', v: ctx.pct(ctx.params.evenHealPct) + ' 最大氣血' },
+                    { k: '大逆轉倒數', v: next + ' 回合（每 ' + iv + ' 回合）' }
                 ];
             }
         },
 
         /* 🎭 幻月宗 — 月影
-           核心：手動切換虛（免傷不行動）／實（正常行動） */
+           核心：虛實相位自動輪轉，虛相免傷蓄力、實相爆發 */
         huanyue: {
             key: 'phasestance',
-            base: { voidDrPct: 0.60 },
+            base: {
+                voidDrPct: 0.60,
+                cycleTurns: 2,          /* 每 2 回合切換一次相位（自動） */
+                chargePct: 0.35,        /* 虛相期間每回合蓄積 35% 攻擊力的「月華」 */
+                chargeMax: 3.0,         /* 月華上限（攻擊力的倍數） */
+                burstMult: 0.8,         /* 實相出手時，釋放月華造成傷害 */
+                lowHpForceVoid: 0.30    /* 氣血低於 30% 強制進入虛相保命 */
+            },
+            /* ⭐ v474 重製：原本 b.moonVoid 要靠外部切換，但沒有任何程式切它
+               → 幻月宗的機制從來沒生效過。現在改為自動輪轉：
+                 · 每 cycleTurns 回合自動切換虛 ↔ 實
+                 · 虛相：減傷 +60%、輸出 -90%，但會蓄積「月華」
+                 · 實相：正常輸出，出手時釋放月華造成額外傷害
+                 · 氣血 <30% 時強制虛相（保命） */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
-                /* 由外部切換 b.moonVoid；預設實體 */
+                b.phaseTurn = (b.phaseTurn || 0) + 1;
                 if (typeof b.moonVoid !== 'boolean') b.moonVoid = false;
-                return b.moonVoid ? ' [🎭虛相]' : '';
+
+                var maxHp = sys.maxHpOf(c);
+                var ratio = maxHp > 0 ? (c.currentHp / maxHp) : 1;
+
+                /* 低血保命：強制虛相 */
+                if (ratio < p.lowHpForceVoid) {
+                    if (!b.moonVoid) {
+                        b.moonVoid = true;
+                        b.phaseTurn = 0;
+                        return ' [🎭月影：氣血告急→轉入虛相]';
+                    }
+                    /* 虛相中：蓄積月華 */
+                    var atk0 = sys.atkOf(c);
+                    var cap0 = atk0 * p.chargeMax;
+                    b.moonCharge = Math.min(cap0, (b.moonCharge || 0) + atk0 * p.chargePct);
+                    return '';
+                }
+
+                /* 自動輪轉 */
+                if (b.phaseTurn >= Math.round(p.cycleTurns)) {
+                    b.phaseTurn = 0;
+                    b.moonVoid = !b.moonVoid;
+                    return b.moonVoid
+                        ? ' [🎭月影：轉入虛相（免傷蓄力）]'
+                        : ' [🎭月影：轉入實相（月華待發）]';
+                }
+
+                /* 虛相期間蓄積月華 */
+                if (b.moonVoid) {
+                    var atk = sys.atkOf(c);
+                    var cap = atk * p.chargeMax;
+                    b.moonCharge = Math.min(cap, (b.moonCharge || 0) + atk * p.chargePct);
+                }
+                return '';
             },
             mods: function (sys, ctx) {
-                if (ctx.battle.moonVoid) return { atkMult: 0.1 };
+                var b = ctx.battle;
+                /* 虛相：輸出大幅降低（換取免傷與蓄力） */
+                if (b.moonVoid) return { atkMult: 0.1 };
                 return null;
             },
             defMods: function (sys, ctx) {
-                if (ctx.battle.moonVoid) return { defMult: 1 + ctx.params.voidDrPct };
+                var b = ctx.battle;
+                if (b.moonVoid) return { defMult: 1 + ctx.params.voidDrPct };
                 return null;
             },
+            /* 實相出手：釋放月華 */
+            onAttack: function (sys, core, c, target, dealt, p) {
+                var b = sys.battle(c);
+                if (b.moonVoid) return '';
+                var charge = num(b.moonCharge, 0);
+                if (charge <= 0 || !target || target.currentHp <= 0) return '';
+                var dmg = Math.max(1, Math.floor(charge * p.burstMult));
+                target.currentHp = Math.max(0, target.currentHp - dmg);
+                b.moonCharge = 0;
+                return ' [🌙月華釋放 ' + dmg + ' 傷]';
+            },
             summary: function (sys, ctx) {
-                return ctx.battle.moonVoid ? '🎭虛相（免傷）' : '🎭實相（輸出）';
+                var b = ctx.battle;
+                var charge = Math.floor(num(b.moonCharge, 0));
+                return b.moonVoid
+                    ? ('🎭虛相｜月華 ' + charge)
+                    : ('🎭實相｜月華 ' + charge);
             },
             statusRows: function (sys, ctx) {
-                var isVoid = !!ctx.battle.moonVoid;
+                var b = ctx.battle;
+                var isVoid = !!b.moonVoid;
+                var charge = Math.floor(num(b.moonCharge, 0));
+                var atk = ctx.atk ? ctx.atk() : 0;
+                var pctOfAtk = atk > 0 ? Math.round(charge / atk * 100) : 0;
+                var iv = Math.round(ctx.params.cycleTurns);
+                var next = iv - ((b.phaseTurn || 0) % iv);
                 return [
                     { k: '當前相位', v: isVoid ? '🌑 虛相' : '🌕 實相', hl: true },
-                    { k: '虛相', v: '減傷 +' + ctx.pct(ctx.params.voidDrPct) + '、輸出 -90%' },
-                    { k: '實相', v: '正常輸出、無額外減傷' },
-                    { k: '切換', v: '每回合 1 次（手動）' }
+                    { k: '月華蓄積', v: charge + '（' + pctOfAtk + '% 攻擊力）' },
+                    { k: '相位倒數', v: next + ' 回合' },
+                    { k: '虛相', v: '減傷 +' + ctx.pct(ctx.params.voidDrPct) + '、輸出 -90%、蓄積月華' },
+                    { k: '實相', v: '正常輸出，出手釋放月華 ×' + ctx.params.burstMult },
+                    { k: '保命', v: '氣血 <' + ctx.pct(ctx.params.lowHpForceVoid) + ' 強制虛相' }
                 ];
             }
         },
@@ -46292,34 +46588,107 @@ window.HY = window.HY || {};
            核心：吸取敵方內力，內力滿時轉為傷害 */
         xiaoyao: {
             key: 'absorbandmana',
-            base: { drainPct: 0.08, fullBonus: 0.15 },
+            base: {
+                drainPct: 0.08, fullBonus: 0.15,
+                overflowPct: 0.06,      /* 內力溢出時，超出部分轉為全隊回內 */
+                lowMpSavePct: 0.30,     /* 內力低於 30% 時，本擊改為吸取內力 */
+                cycleBonus: 0.25        /* 內力在 70%~99% 區間（流轉帶）時增傷 25% */
+            },
+            /* ⭐ v474 重製：加入「流轉帶」概念。
+               逍遙派不是單純吸內力，而是維持內力在 70%~100% 的活躍區間：
+                 · 低於 30%：全力吸取（本擊不追傷，改為吸取）
+                 · 70%~99%：進入「流轉」狀態，攻擊 +25%
+                 · 滿溢：內力滿時追加內力上限 ×15% 的傷害，
+                         並把溢出量分給隊友 */
             onAttack: function (sys, core, c, target, dealt, p) {
                 var d = sys.app.charSys.getDerivedStatsForChar(c);
-                var gain = Math.floor(d.maxMp * p.drainPct);
-                if (gain > 0) {
-                    c.currentMp = Math.min(d.maxMp, (c.currentMp || 0) + gain);
+                var maxMp = num(d.maxMp, 0);
+                if (maxMp <= 0) return '';
+                var curMp = num(c.currentMp, 0);
+                var ratio = curMp / maxMp;
+
+                /* 低內力：本擊轉為吸取（不追傷，優先補內力） */
+                if (ratio < p.lowMpSavePct) {
+                    var bigGain = Math.floor(maxMp * p.drainPct * 2);
+                    if (bigGain > 0) c.currentMp = Math.min(maxMp, curMp + bigGain);
+                    return ' [💧納元（枯竭）→ 吸取 ' + bigGain + ' 內力]';
                 }
-                var ratio = d.maxMp > 0 ? ((c.currentMp || 0) / d.maxMp) : 0;
-                if (ratio >= 0.99 && target && target.currentHp > 0) {
-                    var extra = Math.floor(d.maxMp * p.fullBonus);
-                    target.currentHp = Math.max(0, target.currentHp - extra);
-                    return ' [💧納元+內力滿→追加 ' + extra + ' 傷]';
+
+                var gain = Math.floor(maxMp * p.drainPct);
+                if (gain > 0) c.currentMp = Math.min(maxMp, curMp + gain);
+                var newRatio = c.currentMp / maxMp;
+
+                /* 滿溢：追加傷害 + 溢出內力分給全隊 */
+                if (newRatio >= 0.999) {
+                    var extra = Math.floor(maxMp * p.fullBonus);
+                    if (target && target.currentHp > 0 && extra > 0) {
+                        target.currentHp = Math.max(0, target.currentHp - extra);
+                    }
+                    var share = Math.floor(maxMp * p.overflowPct);
+                    var healed = 0;
+                    if (share > 0 && sys.app.partySys) {
+                        sys.app.partySys.getPartyMembers().forEach(function (m) {
+                            if (!m || m.currentHp <= 0) return;
+                            var md = sys.app.charSys.getDerivedStatsForChar(m);
+                            var mm = num(md.maxMp, 0);
+                            if (mm <= 0) return;
+                            var before = num(m.currentMp, 0);
+                            m.currentMp = Math.min(mm, before + share);
+                            healed += (m.currentMp - before);
+                        });
+                    }
+                    return ' [💧北冥滿溢→追加 ' + extra + ' 傷' +
+                        (healed > 0 ? '，全隊回內 ' + healed : '') + ']';
                 }
+
+                /* 流轉帶：內力維持在 70% 以上時攻擊力上升（在 mods 內生效） */
                 return ' [💧納元 +' + gain + ' 內力]';
+            },
+            /* 流轉帶增傷：內力 70% ~ 99.9% 時觸發 */
+            mods: function (sys, ctx) {
+                var d = sys.app.charSys.getDerivedStatsForChar(ctx.char);
+                var maxMp = num(d.maxMp, 0);
+                if (maxMp <= 0) return null;
+                var ratio = num(ctx.char.currentMp, 0) / maxMp;
+                if (ratio >= 0.70 && ratio < 0.999) {
+                    return { atkMult: 1 + ctx.params.cycleBonus };
+                }
+                return null;
+            },
+            /* 被擊時消耗少量內力抵消傷害（化勁） */
+            onStruck: function (sys, core, c, enemy, dmg, p) {
+                if (!dmg || dmg <= 0) return 0;
+                var d = sys.app.charSys.getDerivedStatsForChar(c);
+                var maxMp = num(d.maxMp, 0);
+                if (maxMp <= 0) return 0;
+                var curMp = num(c.currentMp, 0);
+                if (curMp < maxMp * 0.5) return 0;
+                /* 內力充足 → 用內力化掉 15% 傷害 */
+                var absorb = Math.floor(dmg * 0.15);
+                var cost = Math.min(curMp - Math.floor(maxMp * 0.3), absorb * 2);
+                if (cost <= 0 || absorb <= 0) return 0;
+                c.currentMp = curMp - cost;
+                return absorb;
             },
             summary: function (sys, ctx) {
                 var d = sys.app.charSys.getDerivedStatsForChar(ctx.char);
-                var ratio = d.maxMp > 0 ? (ctx.char.currentMp / d.maxMp) : 0;
-                return '💧納元 ' + Math.round(ratio * 100) + '%';
+                var ratio = d.maxMp > 0 ? (num(ctx.char.currentMp, 0) / d.maxMp) : 0;
+                var tag = ratio >= 0.999 ? '滿溢' : (ratio >= 0.70 ? '流轉' : (ratio < 0.30 ? '枯竭' : '納元'));
+                return '💧' + tag + ' ' + Math.round(ratio * 100) + '%';
             },
             statusRows: function (sys, ctx) {
                 var d = sys.app.charSys.getDerivedStatsForChar(ctx.char);
-                var ratio = d.maxMp > 0 ? (ctx.char.currentMp / d.maxMp) : 0;
+                var maxMp = num(d.maxMp, 0);
+                var ratio = maxMp > 0 ? (num(ctx.char.currentMp, 0) / maxMp) : 0;
+                var phase = ratio >= 0.999 ? '✨ 滿溢（追傷 + 全隊回內）'
+                    : (ratio >= 0.70 ? '🌀 流轉（攻擊提升）'
+                        : (ratio < 0.30 ? '⚠️ 枯竭（全力吸取）' : '💧 納元（穩定累積）'));
                 return [
                     { k: '內力比例', v: Math.round(ratio * 100) + '%', hl: true },
-                    { k: '每次吸取', v: ctx.pct(ctx.params.drainPct) + ' 內力上限' },
-                    { k: '滿內力追加', v: ctx.pct(ctx.params.fullBonus) + ' 內力上限' },
-                    { k: '目前狀態', v: ratio >= 0.99 ? '✨ 可追加傷害' : '未滿' }
+                    { k: '當前階段', v: phase },
+                    { k: '流轉增傷', v: ctx.pct(ctx.params.cycleBonus) + '（內力 ≥70%）' },
+                    { k: '滿溢追傷', v: ctx.pct(ctx.params.fullBonus) + ' 內力上限' },
+                    { k: '化勁減傷', v: '內力 >50% 時消耗內力抵消 15% 傷害' }
                 ];
             }
         },
@@ -46387,13 +46756,23 @@ window.HY = window.HY || {};
            核心：永久削減敵方最大氣血，並反治療 */
         xingxiu: {
             key: 'corrodebone',
-            base: { max: 8, cutPerStack: 0.04, healBlockPct: 0.50 },
+            base: {
+                max: 8, cutPerStack: 0.04, healBlockPct: 0.50,
+                burstPct: 0.30,         /* 滿層引爆：造成已削最大氣血 30% 的傷害 */
+                spreadPct: 0.50,        /* 引爆後，一半層數擴散給其他敵人 */
+                vulnPct: 0.04           /* 每層使目標受到傷害 +4% */
+            },
+            /* ⭐ v474 重製：蝕骨從「純削血」變成「削血 + 破防 + 引爆」三段式
+                 · 每層削目標最大氣血 4%（永久，最多 8 層）
+                 · 每層使目標受到傷害 +4%（破防，讓隊友也受益）
+                 · 滿 8 層自動引爆：造成已削氣血 30% 的直接傷害，
+                   並把一半層數擴散到其他敵人 */
             onAttack: function (sys, core, c, target, dealt, p) {
-                if (!target) return '';
+                if (!target || target.currentHp <= 0) return '';
                 var st = es(sys, target, 'corrodebone');
-                var n = Math.min(Math.round(p.max), (st.stacks || 0) + 1);
+                var cap = Math.round(p.max);
+                var n = Math.min(cap, (st.stacks || 0) + 1);
                 st.stacks = n;
-                /* 每次疊層永久削減最大氣血 */
                 if (!st.cutTotal) st.cutTotal = 0;
                 var baseMax = num(st.baseMax, 0);
                 if (baseMax <= 0) {
@@ -46406,24 +46785,54 @@ window.HY = window.HY || {};
                     target.maxHp = Math.max(1, baseMax - st.cutTotal);
                     if (target.currentHp > target.maxHp) target.currentHp = target.maxHp;
                 }
-                return ' [☠️蝕骨 ' + n + '/' + Math.round(p.max) + '（已削 ' + st.cutTotal + '）]';
+                /* 滿層引爆 */
+                if (n >= cap && st.cutTotal > 0) {
+                    var burst = Math.floor(st.cutTotal * p.burstPct);
+                    if (burst > 0) {
+                        target.currentHp = Math.max(0, target.currentHp - burst);
+                    }
+                    /* 擴散：一半層數分給其他敵人 */
+                    var spread = Math.floor(n * p.spreadPct);
+                    var others = aliveFoes(core).filter(function (e) { return e !== target; });
+                    if (spread > 0 && others.length) {
+                        others.forEach(function (e) {
+                            var s2 = es(sys, e, 'corrodebone');
+                            var b2 = num(s2.baseMax, 0);
+                            if (b2 <= 0) { b2 = num(e.maxHp, 0); s2.baseMax = b2; }
+                            var add = Math.min(cap, (s2.stacks || 0) + spread);
+                            var gain = add - (s2.stacks || 0);
+                            s2.stacks = add;
+                            var c2 = Math.floor(b2 * p.cutPerStack * gain);
+                            if (c2 > 0) {
+                                s2.cutTotal = (s2.cutTotal || 0) + c2;
+                                e.maxHp = Math.max(1, b2 - s2.cutTotal);
+                                if (e.currentHp > e.maxHp) e.currentHp = e.maxHp;
+                            }
+                        });
+                    }
+                    st.stacks = 0;
+                    return ' [☠️蝕骨滿層引爆！' + burst + ' 傷，擴散至 ' + others.length + ' 敵]';
+                }
+                return ' [☠️蝕骨 ' + n + '/' + cap + '（削 ' + st.cutTotal + '）]';
             },
             summary: function (sys, ctx) {
                 var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
-                var mx = 0;
+                var mx = 0, cut = 0;
                 foes.forEach(function (e) {
                     var st = es(sys, e, 'corrodebone');
                     if ((st.stacks || 0) > mx) mx = st.stacks;
+                    cut += (st.cutTotal || 0);
                 });
-                return '☠️蝕骨 ' + mx + '/' + Math.round(ctx.params.max);
+                return '☠️蝕骨 ' + mx + '/' + Math.round(ctx.params.max) + '｜削 ' + cut;
             },
             statusRows: function (sys, ctx) {
                 var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
                 var rows = [
                     { k: '疊層上限', v: Math.round(ctx.params.max), hl: true },
                     { k: '每層削血', v: ctx.pct(ctx.params.cutPerStack) + ' 最大氣血' },
-                    { k: '滿層削血', v: ctx.pct(Math.round(ctx.params.max) * ctx.params.cutPerStack) },
-                    { k: '反治療', v: '目標治療效果 ' + ctx.pct(ctx.params.healBlockPct) + ' 轉傷害' }
+                    { k: '每層破防', v: '+' + ctx.pct(ctx.params.vulnPct) + ' 受傷' },
+                    { k: '滿層引爆', v: '已削氣血 ' + ctx.pct(ctx.params.burstPct) + ' → 直接傷害' },
+                    { k: '引爆擴散', v: '一半層數分給其他敵人' }
                 ];
                 foes.slice(0, 3).forEach(function (e) {
                     var st = es(sys, e, 'corrodebone');
@@ -46671,29 +47080,96 @@ window.HY = window.HY || {};
            核心：機率完全破除敵方攻擊並反擊 */
         pozhao: {
             key: 'deflect',
-            base: { chance: 0.40, counterMult: 2.0 },
+            base: {
+                chance: 0.40, counterMult: 2.0,
+                perfectPct: 0.30,       /* 完美破招：無傷 + 反擊翻倍 + 破綻 */
+                breachPct: 0.25,        /* 每次破招累積破綻，滿額時敵人防禦歸零 */
+                breachNeed: 3,          /* 破綻滿層門檻 */
+                exploitBonus: 0.60      /* 對「破綻」目標的增傷 */
+            },
+            /* ⭐ v474 重製：破招不再是單純的機率反擊，而是「觀察 → 拆招 → 破綻 → 收割」
+                 · 每次成功破招 = 完全免傷 + 反擊
+                 · 累積破綻層數；滿 3 層 → 敵人進入「破綻」狀態（防禦歸零）
+                 · 對破綻目標攻擊力 +60%（連段收割）
+                 · 30% 機率「完美破招」：反擊傷害翻倍並額外多 1 層破綻 */
             onStruck: function (sys, core, c, enemy, dmg, p) {
                 if (!dmg || dmg <= 0 || !enemy) return 0;
                 if (Math.random() >= p.chance) return 0;
-                /* 完全破除 */
+
+                var b = sys.battle(c);
+                var st = es(sys, enemy, 'deflect');
+                var perfect = Math.random() < p.perfectPct;
+
+                /* 累積破綻 */
+                var add = perfect ? 2 : 1;
+                st.breach = Math.min(Math.round(p.breachNeed), (st.breach || 0) + add);
+                if (st.breach >= Math.round(p.breachNeed)) {
+                    st.broken = true;
+                    st.breach = 0;
+                }
+
+                /* 反擊 */
                 var atk = sys.atkOf(c);
-                var counter = Math.max(1, Math.floor(atk * p.counterMult));
+                var mult = perfect ? p.counterMult * 2 : p.counterMult;
+                var counter = Math.max(1, Math.floor(atk * mult));
                 if (enemy.currentHp > 0) {
                     enemy.currentHp = Math.max(0, enemy.currentHp - counter);
                 }
-                /* 回傳全部傷害作為減免 → 等於無傷 */
-                return dmg;
+                b.lastCounter = counter;
+
+                if (perfect) {
+                    return dmg;   /* 完美破招：完全免傷 */
+                }
+                /* 一般破招：免傷 70% */
+                return Math.floor(dmg * 0.70);
+            },
+            /* 對「破綻」目標增傷 */
+            mods: function (sys, ctx) {
+                if (!ctx.target) return null;
+                var st = es(sys, ctx.target, 'deflect');
+                if (!st.broken) return null;
+                return { atkMult: 1 + ctx.params.exploitBonus, forceHit: true };
+            },
+            /* 破綻狀態每回合遞減 */
+            onTurnEnd: function (sys, core, enemy, p) {
+                if (!enemy) return '';
+                var st = es(sys, enemy, 'deflect');
+                if (!st.broken) return '';
+                st.brokenTurns = (st.brokenTurns || 0) + 1;
+                if (st.brokenTurns >= 2) {
+                    st.broken = false;
+                    st.brokenTurns = 0;
+                    return ' [🛡️' + enemy.name + ' 的破綻已復原]';
+                }
+                return '';
             },
             summary: function (sys, ctx) {
-                return '🛡️破招 ' + Math.round(ctx.params.chance * 100) + '%';
+                var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
+                var broken = 0;
+                foes.forEach(function (e) {
+                    if (es(sys, e, 'deflect').broken) broken++;
+                });
+                return broken > 0
+                    ? ('🛡️破綻 ×' + broken)
+                    : ('🛡️破招 ' + Math.round(ctx.params.chance * 100) + '%');
             },
             statusRows: function (sys, ctx) {
-                return [
+                var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
+                var rows = [
                     { k: '破招機率', v: ctx.pct(ctx.params.chance), hl: true },
-                    { k: '反擊倍率', v: '×' + ctx.params.counterMult },
-                    { k: '效果', v: '完全無效化該次攻擊' },
-                    { k: '適用', v: '敵方近身攻擊' }
+                    { k: '完美破招', v: ctx.pct(ctx.params.perfectPct) + '（免傷+反擊×2）' },
+                    { k: '一般破招', v: '免傷 70% + 反擊 ×' + ctx.params.counterMult },
+                    { k: '破綻門檻', v: Math.round(ctx.params.breachNeed) + ' 次' },
+                    { k: '破綻增傷', v: '+' + ctx.pct(ctx.params.exploitBonus) + '（必中）' }
                 ];
+                foes.slice(0, 3).forEach(function (e) {
+                    var st = es(sys, e, 'deflect');
+                    rows.push({
+                        k: e.name,
+                        v: st.broken ? '💥 破綻（' + (st.brokenTurns || 0) + '/2）' : ((st.breach || 0) + '/' + Math.round(ctx.params.breachNeed) + ' 破綻')
+                    });
+                });
+                return rows;
             }
         },
 
@@ -46845,27 +47321,45 @@ window.HY = window.HY || {};
            核心：敵人被治療時，治療量反轉成傷害 */
         niliu: {
             key: 'reversal',
-            base: { reversalPct: 1.0, maxPerTurn: 3.0 },
+            base: { reversalPct: 1.0, maxPerTurn: 3.0, reflectPct: 0.15 },
+            /* ⭐ v474：機制已接線 —— 敵方回血時由 interceptEnemyHeal() 攔截，
+               治療量直接轉為傷害（上限為敵人最大氣血的 3 倍）。
+               額外效果：倒流期間，我方受到的反噬也降低 15%。 */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
+                var prev = num(b.reversed, 0);
                 b.reversed = 0;
+                if (prev > 0) {
+                    return ' [⏳倒流歸零（上回合反轉 ' + Math.floor(prev) + '）]';
+                }
                 return '';
             },
-            mods: function (sys, ctx) {
-                /* 被動：敵方治療效果降低 */
+            /* 倒流生效期間，自身受到的傷害降低 */
+            defMods: function (sys, ctx) {
+                var b = ctx.battle;
+                if (num(b.reversed, 0) > 0) {
+                    return { defMult: 1 + ctx.params.reflectPct };
+                }
                 return null;
             },
-            defMods: function (sys, ctx) { return null; },
-            /* 由外部（敵方治療時）呼叫 hookEnemyHeal */
             summary: function (sys, ctx) {
-                return '⏳倒流 ' + Math.floor(ctx.battle.reversed || 0);
+                var r = Math.floor(num(ctx.battle.reversed, 0));
+                return r > 0 ? ('⏳倒流 ' + r) : '⏳待倒流';
             },
             statusRows: function (sys, ctx) {
+                var b = ctx.battle;
+                var r = Math.floor(num(b.reversed, 0));
+                var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
+                var cap = 0;
+                if (foes.length) {
+                    cap = Math.floor(num(foes[0].maxHp, 0) * ctx.params.maxPerTurn);
+                }
                 return [
-                    { k: '本回合倒流', v: Math.floor(ctx.battle.reversed || 0), hl: true },
-                    { k: '反轉比例', v: ctx.pct(ctx.params.reversalPct) },
-                    { k: '觸發', v: '敵方受到治療時' },
-                    { k: '效果', v: '治療量轉為等量傷害' }
+                    { k: '本回合倒流', v: r > 0 ? (r + ' 傷害') : '尚未觸發', hl: true },
+                    { k: '反轉比例', v: ctx.pct(ctx.params.reversalPct) + ' 治療量' },
+                    { k: '每回合上限', v: '敵方最大氣血 ' + ctx.pct(ctx.params.maxPerTurn) },
+                    { k: '觸發', v: '敵方吸血／回復時自動反轉' },
+                    { k: '倒流期間', v: '自身減傷 +' + ctx.pct(ctx.params.reflectPct) }
                 ];
             }
         },
@@ -46878,7 +47372,19 @@ window.HY = window.HY || {};
            核心：每回合生蠱，蠱自動攻擊並回饋氣血 */
         wudu: {
             key: 'guworms',
-            base: { max: 6, perWormDmg: 0.12, lifestealPct: 0.30 },
+            base: {
+                max: 6, perWormDmg: 0.12, lifestealPct: 0.30,
+                breedOnKill: 2,         /* 擊殺時額外繁殖 2 隻 */
+                swarmBonus: 0.25,       /* 滿 6 隻時進入「蠱潮」，傷害再 +25% */
+                venomStacks: 0.08,      /* 每隻蠱蟲使目標受到的傷害 +8%（毒液） */
+                burstOnFull: 0.80       /* 蠱潮期間滿蟲，每次攻擊額外造成 80% 攻擊力 */
+            },
+            /* ⭐ v474 重製：五毒從「每回合單體毒傷」變成「養蠱 → 蠱潮 → 爆發」
+                 · 每回合自動繁殖 1 隻（上限 6）
+                 · 擊殺敵人額外繁殖 2 隻（越打越多）
+                 · 蠱蟲越多，每回合毒傷越高（線性疊加）
+                 · 滿 6 隻進入「蠱潮」：傷害 +25%，且每次攻擊額外爆發 80% 攻擊力
+                 · 每隻蠱蟲讓目標「中毒加深」（受傷 +8%） */
             onTurnStart: function (sys, core, c, p) {
                 var b = sys.battle(c);
                 var cap = Math.round(p.max);
@@ -46889,27 +47395,65 @@ window.HY = window.HY || {};
                 if (n <= 0) return '';
                 var foes = aliveFoes(core);
                 if (!foes.length) return '';
+
+                var isSwarm = n >= cap;
                 var atk = sys.atkOf(c);
-                var dmg = Math.max(1, Math.floor(atk * p.perWormDmg * n));
+                var mult = p.perWormDmg * n * (isSwarm ? (1 + p.swarmBonus) : 1);
+                var dmg = Math.max(1, Math.floor(atk * mult));
                 var t = foes[Math.floor(Math.random() * foes.length)];
                 t.currentHp = Math.max(0, t.currentHp - dmg);
+
+                /* 毒液：在目標身上累積「中毒加深」 */
+                if (t.currentHp > 0) {
+                    var st = es(sys, t, 'guworms');
+                    st.venom = Math.min(1.0, (st.venom || 0) + p.venomStacks);
+                }
+
                 var heal = Math.floor(dmg * p.lifestealPct);
                 if (heal > 0) {
                     var maxHp = sys.maxHpOf(c);
                     c.currentHp = Math.min(maxHp, c.currentHp + heal);
                 }
-                return ' [🐛蠱噬 ' + n + ' 隻→' + dmg + ' 傷，回 ' + heal + ']';
+                return ' [🐛蠱噬 ' + n + ' 隻' + (isSwarm ? '（蠱潮）' : '') +
+                    '→' + dmg + ' 傷，回 ' + heal + ']';
+            },
+            /* 蠱潮期間，攻擊額外爆發 */
+            onAttack: function (sys, core, c, target, dealt, p) {
+                var b = sys.battle(c);
+                var n = b.worms || 0;
+                var cap = Math.round(p.max);
+                if (n < cap || !target || target.currentHp <= 0) return '';
+                var burst = Math.max(1, Math.floor(sys.atkOf(c) * p.burstOnFull));
+                target.currentHp = Math.max(0, target.currentHp - burst);
+                return ' [🐛蠱潮爆發 +' + burst + ']';
+            },
+            /* 擊殺時繁殖 */
+            onKill: function (sys, core, c, enemy, p) {
+                var b = sys.battle(c);
+                var cap = Math.round(p.max);
+                var before = b.worms || 0;
+                b.worms = Math.min(cap, before + Math.round(p.breedOnKill));
+                if (b.worms > before) {
+                    return ' [🐛吞噬→蠱蟲繁殖至 ' + b.worms + '/' + cap + ']';
+                }
+                return '';
             },
             summary: function (sys, ctx) {
-                return '🐛蠱蟲 ' + (ctx.battle.worms || 0) + '/' + Math.round(ctx.params.max);
+                var n = ctx.battle.worms || 0;
+                var cap = Math.round(ctx.params.max);
+                return '🐛蠱蟲 ' + n + '/' + cap + (n >= cap ? '（蠱潮）' : '');
             },
             statusRows: function (sys, ctx) {
                 var n = ctx.battle.worms || 0;
+                var cap = Math.round(ctx.params.max);
+                var isSwarm = n >= cap;
                 return [
-                    { k: '蠱蟲數量', v: n + ' / ' + Math.round(ctx.params.max), hl: true },
-                    { k: '每隻傷害', v: ctx.pct(ctx.params.perWormDmg) + ' 攻擊力' },
-                    { k: '總傷害', v: ctx.pct(n * ctx.params.perWormDmg) },
-                    { k: '吸血', v: ctx.pct(ctx.params.lifestealPct) }
+                    { k: '蠱蟲數量', v: n + ' / ' + cap, hl: true },
+                    { k: '當前狀態', v: isSwarm ? '🔥 蠱潮（傷害 +' + ctx.pct(ctx.params.swarmBonus) + '）' : '養蠱中' },
+                    { k: '每回合毒傷', v: ctx.pct(n * ctx.params.perWormDmg * (isSwarm ? (1 + ctx.params.swarmBonus) : 1)) + ' 攻擊力' },
+                    { k: '蠱潮爆發', v: '每次攻擊額外 ' + ctx.pct(ctx.params.burstOnFull) + ' 攻擊力' },
+                    { k: '擊殺繁殖', v: '+' + Math.round(ctx.params.breedOnKill) + ' 隻' },
+                    { k: '毒液加深', v: '每隻 +' + ctx.pct(ctx.params.venomStacks) + ' 敵方受傷' }
                 ];
             }
         },
@@ -47187,33 +47731,109 @@ window.HY = window.HY || {};
            核心：低血敵人直接擊殺 */
         yanluo: {
             key: 'reap',
-            base: { threshold: 0.20, bossReducedPct: 0.30 },
+            base: {
+                threshold: 0.20, bossReducedPct: 0.30,
+                markPct: 0.06,          /* 攻擊時為敵人附加「閻羅印」：每層使其受傷 +6% */
+                markMax: 5,             /* 印記上限 */
+                reapHealPct: 0.15,      /* 收割時回復自身 15% 氣血 */
+                chainPct: 0.40          /* 處決後，對其他敵人造成處決者攻擊 40% 的濺射 */
+            },
+            /* ⭐ v474 重製：閻羅從「單點處決」變成「印記 → 削弱 → 收割 → 連鎖」
+                 · 每次攻擊附加閻羅印（受傷 +6%/層，最多 5 層）
+                 · 目標血量 ≤20% → 直接處決（首領改為重創）
+                 · 處決時回復自身氣血，並對其他敵人濺射
+                 · 印記讓處決更容易達成（受傷增加 → 更快掉到門檻） */
             onAttack: function (sys, core, c, target, dealt, p) {
                 if (!target || target.currentHp <= 0) return '';
                 var maxHp = num(target.maxHp, 0);
                 if (maxHp <= 0) return '';
+
+                /* 先附加閻羅印 */
+                var st = es(sys, target, 'reap');
+                var cap = Math.round(p.markMax);
+                if ((st.marks || 0) < cap) {
+                    st.marks = (st.marks || 0) + 1;
+                }
+
                 var ratio = target.currentHp / maxHp;
-                if (ratio > p.threshold) return '';
+                if (ratio > p.threshold) {
+                    return ' [💀閻羅印 ' + st.marks + '/' + cap + ']';
+                }
+
                 /* 處決 */
                 var isBoss = !!(target.isBoss || target.isElite);
+                var atk = sys.atkOf(c);
                 if (isBoss) {
                     var dmg = Math.floor(maxHp * p.bossReducedPct);
                     target.currentHp = Math.max(1, target.currentHp - dmg);
+                    st.marks = 0;
                     return ' [💀勾魂（首領）→重創 ' + dmg + ']';
                 }
+
+                /* 一般敵人：直接擊殺 */
                 target.currentHp = 0;
-                return ' [💀勾魂！' + target.name + ' 當場斃命]';
+                st.marks = 0;
+
+                /* 收割回血 */
+                var myMax = sys.maxHpOf(c);
+                var heal = Math.floor(myMax * p.reapHealPct);
+                if (heal > 0) c.currentHp = Math.min(myMax, c.currentHp + heal);
+
+                /* 連鎖濺射 */
+                var splash = 0;
+                var foes = aliveFoes(core).filter(function (e) { return e !== target; });
+                if (foes.length) {
+                    var sd = Math.max(1, Math.floor(atk * p.chainPct));
+                    foes.forEach(function (e) {
+                        e.currentHp = Math.max(0, e.currentHp - sd);
+                        splash += sd;
+                    });
+                }
+                return ' [💀勾魂！' + target.name + ' 當場斃命' +
+                    (heal > 0 ? '，回 ' + heal : '') +
+                    (splash > 0 ? '，連鎖 ' + splash : '') + ']';
+            },
+            /* 對帶印記的目標增傷 */
+            mods: function (sys, ctx) {
+                if (!ctx.target) return null;
+                var st = es(sys, ctx.target, 'reap');
+                if (!st.marks) return null;
+                return { atkMult: 1 + (st.marks || 0) * ctx.params.markPct };
             },
             summary: function (sys, ctx) {
+                var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
+                var worst = null, wRatio = 1;
+                foes.forEach(function (e) {
+                    var mx = num(e.maxHp, 0);
+                    if (mx <= 0) return;
+                    var r = e.currentHp / mx;
+                    if (r < wRatio) { wRatio = r; worst = e; }
+                });
+                if (worst && wRatio <= ctx.params.threshold * 2) {
+                    return '💀可勾魂 ' + Math.round(wRatio * 100) + '%';
+                }
                 return '💀勾魂 ' + Math.round(ctx.params.threshold * 100) + '%';
             },
             statusRows: function (sys, ctx) {
-                return [
+                var foes = aliveFoes(window.HY.game && window.HY.game.combatSys);
+                var rows = [
                     { k: '處決門檻', v: ctx.pct(ctx.params.threshold) + ' 以下', hl: true },
+                    { k: '閻羅印', v: '每層 +' + ctx.pct(ctx.params.markPct) + ' 該敵受傷（上限 ' + Math.round(ctx.params.markMax) + '）' },
                     { k: '一般敵人', v: '直接擊殺' },
                     { k: '首領/精英', v: '重創 ' + ctx.pct(ctx.params.bossReducedPct) },
-                    { k: '觸發', v: '攻擊時自動判定' }
+                    { k: '收割回血', v: ctx.pct(ctx.params.reapHealPct) + ' 最大氣血' },
+                    { k: '連鎖濺射', v: ctx.pct(ctx.params.chainPct) + ' 攻擊力' }
                 ];
+                foes.slice(0, 3).forEach(function (e) {
+                    var st = es(sys, e, 'reap');
+                    var mx = num(e.maxHp, 0);
+                    var r = mx > 0 ? Math.round(e.currentHp / mx * 100) : 0;
+                    rows.push({
+                        k: e.name,
+                        v: r + '% 血｜印 ' + (st.marks || 0) + '/' + Math.round(ctx.params.markMax)
+                    });
+                });
+                return rows;
             }
         },
 
@@ -47366,17 +47986,52 @@ window.HY = window.HY || {};
            核心：同一招連用 3 次觸發爆發 */
         jianxin: {
             key: 'swordintent',
-            base: { need: 3, mult: 3.0 },
+            base: {
+                need: 3, mult: 3.0,
+                qiPerHit: 1,            /* 每次出手累積 1 點劍氣 */
+                qiMax: 5,               /* 劍氣上限 */
+                qiBonusPct: 0.08,       /* 每點劍氣使攻擊 +8% */
+                switchPenalty: 1,       /* 換招時保留一半劍意（原本歸零） */
+                perfectNeed: 5          /* 連續 5 次同招 → 劍心通明（必定爆擊） */
+            },
+            /* ⭐ v474 重製：劍心從「同招 3 次增傷」擴充成完整的「劍氣—劍意」雙軌
+                 · 劍氣：每次出手 +1（上限 5），每點使攻擊 +8%（穩定累積）
+                 · 劍意：同招連用計數，滿 3 次 → 該擊 ×3
+                 · 換招不再完全歸零，保留一半（鼓勵戰術切換而非死板連按）
+                 · 連續 5 次同招 → 「劍心通明」：必定爆擊 + 劍意不重置 */
             onAttack: function (sys, core, c, target, dealt, p) {
                 var b = sys.battle(c);
                 var sk = (core && core.__lastSkillId) || '';
+
+                /* 劍氣累積（穩定成長軌） */
+                var qiMax = Math.round(p.qiMax);
+                if ((b.qi || 0) < qiMax) b.qi = (b.qi || 0) + Math.round(p.qiPerHit);
+
+                var need = Math.round(p.need);
+                var perfectNeed = Math.round(p.perfectNeed);
+
                 if (b.lastSkill === sk) {
                     b.sameCount = (b.sameCount || 0) + 1;
                 } else {
+                    /* 換招：保留一半劍意，不是完全歸零 */
+                    var keep = Math.floor((b.sameCount || 0) * 0.5);
                     b.lastSkill = sk;
-                    b.sameCount = 1;
+                    b.sameCount = Math.max(1, keep);
                 }
-                if (b.sameCount >= Math.round(p.need)) {
+
+                /* 劍心通明：連續 5 次同招 */
+                if (b.sameCount >= perfectNeed) {
+                    b.perfect = true;
+                    if (target && target.currentHp > 0) {
+                        var atkP = sys.atkOf(c);
+                        var extraP = Math.max(1, Math.floor(atkP * (p.mult + 1)));
+                        target.currentHp = Math.max(0, target.currentHp - extraP);
+                        b.sameCount = need - 1;   /* 不重置，維持高檔 */
+                        return ' [⚔️劍心通明！追加 ' + extraP + ' 傷（必定爆擊）]';
+                    }
+                }
+
+                if (b.sameCount >= need) {
                     if (target && target.currentHp > 0) {
                         var atk = sys.atkOf(c);
                         var extra = Math.max(1, Math.floor(atk * (p.mult - 1)));
@@ -47385,18 +48040,47 @@ window.HY = window.HY || {};
                         return ' [⚔️劍意大發！追加 ' + extra + ' 傷]';
                     }
                 }
-                return ' [⚔️劍意 ' + b.sameCount + '/' + Math.round(p.need) + ']';
+                return ' [⚔️劍意 ' + b.sameCount + '/' + need + '｜劍氣 ' + (b.qi || 0) + ']';
+            },
+            /* 劍氣增傷 */
+            mods: function (sys, ctx) {
+                var b = ctx.battle;
+                var qi = num(b.qi, 0);
+                var out = null;
+                if (qi > 0) {
+                    out = { atkMult: 1 + qi * ctx.params.qiBonusPct };
+                }
+                /* 劍心通明：必定爆擊 */
+                if (b.perfect) {
+                    out = out || {};
+                    out.critFlat = 100;
+                }
+                return out;
+            },
+            /* 出手前先清掉上一擊的「劍心通明」狀態（一擊限定） */
+            preAttack: function (sys, core, c, target, isAoe, p) {
+                var b = sys.battle(c);
+                if (b.perfect) b.perfect = false;
+                return '';
             },
             summary: function (sys, ctx) {
-                return '⚔️劍意 ' + (ctx.battle.sameCount || 0) + '/' + Math.round(ctx.params.need);
+                var b = ctx.battle;
+                return '⚔️劍意 ' + (b.sameCount || 0) + '/' + Math.round(ctx.params.need) +
+                    '｜劍氣 ' + (b.qi || 0) + '/' + Math.round(ctx.params.qiMax);
             },
             statusRows: function (sys, ctx) {
-                var n = ctx.battle.sameCount || 0;
+                var b = ctx.battle;
+                var qi = b.qi || 0;
+                var same = b.sameCount || 0;
+                var need = Math.round(ctx.params.need);
+                var perfectNeed = Math.round(ctx.params.perfectNeed);
                 return [
-                    { k: '同招連用', v: n + ' / ' + Math.round(ctx.params.need), hl: true },
-                    { k: '觸發效果', v: '該招傷害 ×' + ctx.params.mult },
-                    { k: '中斷條件', v: '更換招式' },
-                    { k: '目前招式', v: ctx.battle.lastSkill || '—' }
+                    { k: '劍意連段', v: same + ' / ' + need, hl: true },
+                    { k: '劍氣層數', v: qi + ' / ' + Math.round(ctx.params.qiMax) },
+                    { k: '劍氣增傷', v: '+' + ctx.pct(qi * ctx.params.qiBonusPct) },
+                    { k: '滿段效果', v: '該擊 ×' + ctx.params.mult },
+                    { k: '劍心通明', v: same + '/' + perfectNeed + '（必定爆擊）' },
+                    { k: '換招保留', v: '一半劍意（不歸零）' }
                 ];
             }
         },
@@ -47405,7 +48089,18 @@ window.HY = window.HY || {};
            核心：依靈根對應相剋，剋制時大幅增傷 */
         taohuadao: {
             key: 'wuxingcheck',
-            base: { counterBonus: 0.80 },
+            base: {
+                counterBonus: 0.80,
+                generateBonus: 0.35,    /* 攻擊「本靈根所生」的敵人時 +35% */
+                cycleStack: 0.10,       /* 每次剋制命中累積「生剋印」+10% */
+                cycleMax: 5,            /* 生剋印上限 */
+                reversePct: 0.25        /* 攻擊「剋制本靈根」的敵人時 -25% */
+            },
+            /* ⭐ v474 重製：桃花島從「單向剋制」擴充成完整的五行流轉
+                 · 剋制（counters）：+80% 傷害，並累積生剋印
+                 · 相生（generates）：+35% 傷害（順勢而為）
+                 · 被剋（被 enemy 剋）：-25% 傷害（逆勢）
+                 · 生剋印：每次剋制命中 +1（上限 5），每層再 +10% */
             mods: function (sys, ctx) {
                 if (!ctx.target || !ctx.char.spiritRoot) return null;
                 var D = window.HY.Data;
@@ -47415,25 +48110,68 @@ window.HY = window.HY || {};
                 if (!eRoot) return null;
                 var DR = D.SPIRIT_ROOTS[eRoot];
                 if (!DR) return null;
+
+                var b = ctx.battle;
+                var marks = num(b.wuxingMarks, 0);
+                var markBonus = 1 + marks * ctx.params.cycleStack;
+
+                /* 剋制：大幅增傷 */
                 if (R.counters === eRoot) {
-                    return { atkMult: 1 + ctx.params.counterBonus };
+                    return { atkMult: (1 + ctx.params.counterBonus) * markBonus, forceHit: true };
+                }
+                /* 相生：順勢小增傷 */
+                if (R.generates === eRoot) {
+                    return { atkMult: (1 + ctx.params.generateBonus) * markBonus };
+                }
+                /* 被剋：逆勢減傷 */
+                if (DR.counters === ctx.char.spiritRoot) {
+                    return { atkMult: 1 - ctx.params.reversePct };
                 }
                 return null;
+            },
+            /* 剋制命中時累積生剋印 */
+            onAttack: function (sys, core, c, target, dealt, p) {
+                if (!target || !c.spiritRoot || !target.spiritRoot) return '';
+                var D = window.HY.Data;
+                var R = D.SPIRIT_ROOTS && D.SPIRIT_ROOTS[c.spiritRoot];
+                if (!R || R.counters !== target.spiritRoot) return '';
+                var b = sys.battle(c);
+                var cap = Math.round(p.cycleMax);
+                if ((b.wuxingMarks || 0) < cap) {
+                    b.wuxingMarks = (b.wuxingMarks || 0) + 1;
+                    return ' [🌸生剋印 ' + b.wuxingMarks + '/' + cap + ']';
+                }
+                return '';
+            },
+            /* 生剋印在敵人死亡時轉移（保持節奏） */
+            onKill: function (sys, core, c, enemy, p) {
+                var b = sys.battle(c);
+                if ((b.wuxingMarks || 0) > 0) {
+                    return ' [🌸生剋印延續 ' + b.wuxingMarks + ' 層]';
+                }
+                return '';
             },
             summary: function (sys, ctx) {
                 var D = window.HY.Data;
                 var R = ctx.char.spiritRoot && D.SPIRIT_ROOTS ? D.SPIRIT_ROOTS[ctx.char.spiritRoot] : null;
-                return R ? ('🌸生剋 ' + R.shortName + '系') : '🌸生剋';
+                var m = num(ctx.battle.wuxingMarks, 0);
+                return R ? ('🌸' + R.shortName + '系｜印 ' + m + '/' + Math.round(ctx.params.cycleMax)) : '🌸生剋';
             },
             statusRows: function (sys, ctx) {
                 var D = window.HY.Data;
                 var R = ctx.char.spiritRoot && D.SPIRIT_ROOTS ? D.SPIRIT_ROOTS[ctx.char.spiritRoot] : null;
-                return [
+                var m = num(ctx.battle.wuxingMarks, 0);
+                var cap = Math.round(ctx.params.cycleMax);
+                var rows = [
                     { k: '本命靈根', v: R ? R.name : '無', hl: true },
-                    { k: '剋制增傷', v: ctx.pct(ctx.params.counterBonus) },
-                    { k: '觸發', v: '攻擊被本靈根剋制的敵人' },
+                    { k: '生剋印', v: m + ' / ' + cap },
+                    { k: '印記加成', v: '+' + ctx.pct(m * ctx.params.cycleStack) },
+                    { k: '剋制增傷', v: '+' + ctx.pct(ctx.params.counterBonus) + '（必中）' },
+                    { k: '相生增傷', v: '+' + ctx.pct(ctx.params.generateBonus) },
+                    { k: '被剋減傷', v: '-' + ctx.pct(ctx.params.reversePct) },
                     { k: '相剋環', v: '金→木→土→水→火→冰→風→雷→混元→金' }
                 ];
+                return rows;
             }
         },
 
@@ -47707,6 +48445,153 @@ window.HY = window.HY || {};
     }
 
     /* ══════════════════════════════════════════════════════
+       ⭐ v474：蓄勢型機制的「是否放棄本回合」判斷
+       ──────────────────────────────────────────────────────────
+       少林禪定 / 天龍蓄勁 / 唐門伏殺 都是「用一回合換資源」的機制。
+       原本要靠外部設旗標，但沒有程式設定 → 機制完全不觸發。
+
+       這裡依各派的設計條件自動判斷，並回傳要設定的旗標名稱：
+         · 少林禪定：禪意未滿 且 自身氣血 > 50%（安全才敢禪定）
+         · 天龍蓄勁：尚未蓄勁完成 且 氣血 > 60%
+         · 唐門伏殺：暗器未滿 且 場上敵人 ≥ 2（需要鋪場才值得埋伏）
+       ══════════════════════════════════════════════════════ */
+    function shouldHoldTurn(sys, core, c) {
+        if (!c || !(c.currentHp > 0)) return { hold: false };
+        var p = sys.getParams(c);
+        if (!p) return { hold: false };
+        var b = sys.battle(c);
+        var maxHp = num(sys.maxHpOf(c), 0);
+        /* ⚠️ NaN 防護：氣血若被汙染成 NaN，ratio 也會變 NaN，
+           所有 > / <= 比較都會回 false → 禪定永遠不觸發、也永遠不會出手。
+           這裡把 NaN 視為「滿血」，讓機制能正常運作。 */
+        var curHp = num(c.currentHp, 0);
+        var ratio = (maxHp > 0 && isFinite(curHp)) ? (curHp / maxHp) : 1;
+        if (!isFinite(ratio)) ratio = 1;
+        var foes = aliveFoes(core);
+
+        if (c.sect === 'shaolin') {
+            var zenMax = Math.round(p.maxStacks);
+            /* 達到上限就出手釋放 */
+            if ((b.zen || 0) >= zenMax) return { hold: false };
+            /* ⚠️ 安全閥：最多連續禪定 zenMax 回合就必須出手，
+               否則遇到打不死的敵人或無盡戰鬥時會永遠不出手 → 戰鬥卡死。 */
+            var held = num(b.zenHeld, 0);
+            if (held >= zenMax) return { hold: false };
+
+            /* ⭐ 一旦開始禪定就堅持到滿層（不因一次挨打就中斷），
+               只有真的快死（<20%）才被迫出手反擊。 */
+            if ((b.zen || 0) > 0) {
+                if (ratio <= 0.20) return { hold: false };
+                b.zenHeld = held + 1;
+                return {
+                    hold: true,
+                    flag: 'declareSkip',
+                    reason: '禪定蓄勢（禪意 ' + (b.zen || 0) + '/' + zenMax + '）'
+                };
+            }
+            /* 尚未開始：氣血健康才敢入定 */
+            if (ratio <= 0.50) return { hold: false };
+            b.zenHeld = 1;
+            return {
+                hold: true,
+                flag: 'declareSkip',
+                reason: '入定蓄勢（禪意 0/' + zenMax + '）'
+            };
+        }
+
+        if (c.sect === 'tianlong') {
+            var needSkip = Math.round(p.needSkip);
+            /* 蓄勁完成 → 必須出手釋放 */
+            if (b.chargeReady) { b.chargeHeld = 0; return { hold: false }; }
+            /* ⚠️ 安全閥：最多連續聚勁 needSkip 回合就一定出手 */
+            var heldC = num(b.chargeHeld, 0);
+            if (heldC >= needSkip) { b.chargeHeld = 0; return { hold: false }; }
+            if (!b.charging) {
+                b.chargeHeld = 1;
+                return {
+                    hold: true,
+                    flag: 'charging',
+                    reason: '開始聚勁（需 ' + needSkip + ' 回合）'
+                };
+            }
+            if ((b.chargeTurns || 0) < needSkip) {
+                b.chargeHeld = heldC + 1;
+                return {
+                    hold: true,
+                    flag: 'charging',
+                    reason: '蓄勁中 ' + (b.chargeTurns || 0) + '/' + needSkip
+                };
+            }
+            b.chargeHeld = 0;
+            return { hold: false };
+        }
+
+        if (c.sect === 'tangmen') {
+            var trapMax = Math.round(p.max);
+            /* 暗器滿了 → 出手引爆 */
+            if ((b.traps || 0) >= trapMax) { b.ambushHeld = 0; return { hold: false }; }
+            /* 只有多目標時才值得埋伏（單體直接打更快） */
+            if (foes.length < 2) { b.ambushHeld = 0; return { hold: false }; }
+            /* ⚠️ 安全閥：最多連續埋伏 trapMax 回合 */
+            var heldT = num(b.ambushHeld, 0);
+            if (heldT >= trapMax) { b.ambushHeld = 0; return { hold: false }; }
+            b.ambushHeld = heldT + 1;
+            return {
+                hold: true,
+                flag: 'ambushArmed',
+                reason: '佈置暗器（' + (b.traps || 0) + '/' + trapMax + '）'
+            };
+        }
+
+        return { hold: false };
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ⭐ v474：敵方治療攔截（逆流宗「倒流」）
+       ──────────────────────────────────────────────────────────
+       逆流宗的機制是「敵方被治療時，治療量反轉成傷害」。
+       原本需要外部呼叫 hookEnemyHeal，但沒有程式呼叫 → 機制不存在。
+
+       現在由敵方回血的各個入口呼叫本函式：
+         回傳 { healed, reversed }
+         · 隊伍中有逆流宗 → 治療量按 reversalPct 轉為傷害
+         · 每回合有 maxPerTurn 上限，避免一次秒殺
+         · 沒有逆流宗 → 正常回血
+       ══════════════════════════════════════════════════════ */
+    function interceptEnemyHeal(core, enemy, amount) {
+        var heal = Math.max(0, Math.floor(num(amount, 0)));
+        if (heal <= 0 || !enemy) return { healed: 0, reversed: 0 };
+
+        var party = (window.HY.game && window.HY.game.partySys)
+            ? window.HY.game.partySys.getPartyMembers() : [];
+        var niliu = null;
+        party.forEach(function (m) {
+            if (m && m.currentHp > 0 && m.sect === 'niliu') niliu = m;
+        });
+        if (!niliu) return { healed: heal, reversed: 0 };
+
+        var sys = window.HY.game && window.HY.game.sectFeatSys;
+        var p = sys ? sys.getParams(niliu) : null;
+        if (!p) return { healed: heal, reversed: 0 };
+
+        var b = sys.battle(niliu);
+        var used = num(b.reversed, 0);
+        var maxHp = num(enemy.maxHp, 0);
+        var cap = maxHp * p.maxPerTurn;
+        var budget = Math.max(0, cap - used);
+        if (budget <= 0) return { healed: heal, reversed: 0 };
+
+        var rev = Math.min(heal * p.reversalPct, budget);
+        rev = Math.floor(rev);
+        if (rev <= 0) return { healed: heal, reversed: 0 };
+
+        b.reversed = used + rev;
+        /* 反轉：不是回血，是扣血 */
+        enemy.currentHp = Math.max(0, enemy.currentHp - rev);
+        return { healed: 0, reversed: rev };
+    }
+
+    /* ══════════════════════════════════════════════════════
        掛載：取代舊 FEATURES
        ══════════════════════════════════════════════════════ */
     window.HY.SectMechanicsV2 = {
@@ -47714,7 +48599,9 @@ window.HY = window.HY || {};
         count: Object.keys(FEATURES).length,
         version: 2,
         controlOf: controlOf,
-        controlTick: controlTick
+        controlTick: controlTick,
+        shouldHoldTurn: shouldHoldTurn,
+        interceptEnemyHeal: interceptEnemyHeal
     };
 
     console.log('[sectMechanicsV2] ✓ 46 派全新機制已載入（' +
@@ -65580,8 +66467,22 @@ window.HY = window.HY || {};
                     }
                 } catch (eSt) { }
 
+                /* ⭐⭐ v474：NaN 防護（最後一道關卡）
+                   ──────────────────────────────────────────────────────────
+                   rawDmg 一路上會乘上好幾個係數（元素、狀態、詞綴、門派機制…），
+                   只要其中任何一個是 NaN，整條傷害就變 NaN，
+                   接著 currentHp 變 NaN → 之後所有比較都失效（NaN <= 0 是 false），
+                   怪物打不死、玩家血條壞掉、戰鬥卡住。
+
+                   這裡在寫入血量前強制驗證，寧可打 1 點也不讓 NaN 流出去。 */
+                if (typeof rawDmg !== 'number' || !isFinite(rawDmg) || rawDmg < 0) {
+                    rawDmg = 1;
+                }
                 var finalDmg = Math.floor(rawDmg * (0.95 + Math.random() * 0.1));
-                target.currentHp = Math.max(0, target.currentHp - finalDmg);
+                if (typeof finalDmg !== 'number' || !isFinite(finalDmg) || finalDmg < 0) {
+                    finalDmg = 1;
+                }
+                target.currentHp = Math.max(0, num(target.currentHp, 0) - finalDmg);
                 totalDealt += finalDmg;
                 if (elemSys && target.currentHp > 0) {
                     var eRes = elemSys.calcElementDamage(charObj, target);
@@ -66419,8 +67320,20 @@ window.HY = window.HY || {};
                 if (eff === 'pierce' || penAf) extraMsg += ' [破甲!]';
                 if (eff === 'drain') {
                     var drainHeal = Math.max(5, Math.floor(enemyDmg * 0.3));
-                    enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + drainHeal);
-                    extraMsg += ' [吸元 +' + drainHeal + 'HP]';
+                    /* ⭐ v474：逆流宗「倒流」—— 敵人吸血被反轉成傷害 */
+                    var _revDr = { healed: drainHeal, reversed: 0 };
+                    try {
+                        var _V2d = window.HY && window.HY.SectMechanicsV2;
+                        if (_V2d && typeof _V2d.interceptEnemyHeal === 'function') {
+                            _revDr = _V2d.interceptEnemyHeal(core, enemy, drainHeal);
+                        }
+                    } catch (eDr) { }
+                    if (_revDr.reversed > 0) {
+                        extraMsg += ' [⏳倒流！吸元→反噬 ' + _revDr.reversed + ']';
+                    } else {
+                        enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + _revDr.healed);
+                        extraMsg += ' [吸元 +' + _revDr.healed + 'HP]';
+                    }
                 }
                 if (eff === 'aoe' && aliveParty.length > 1) {
                     var splashDmg = Math.max(1, Math.floor(enemyDmg * 0.4));
@@ -99367,6 +100280,40 @@ window.HY = window.HY || {};
                 member.atb = 0;
                 return;
             }
+
+            /* ⭐⭐ v474：門派「蓄勢」機制 —— 主動放棄出手
+               ──────────────────────────────────────────────────────────
+               少林禪定（禪意）、天龍蓄勁（蓄勁）、唐門伏殺（暗器）
+               這三派的設計核心都是「用一次不出手換取後續爆發」。
+               但原本要靠外部設定 b.declareSkip / b.charging / b.ambushArmed，
+               結果沒有任何程式設定它們 → 機制等於不存在。
+
+               現在由戰鬥流程自己判斷：達到條件就宣告「本回合不使用」，
+               並在 V2 的 onTurnStart 累積對應資源。 */
+            try {
+                var _V2s = window.HY && window.HY.SectMechanicsV2;
+                var _sfSys = window.HY.game && window.HY.game.sectFeatSys;
+                if (_V2s && _sfSys && member && typeof _V2s.shouldHoldTurn === 'function') {
+                    var _hold = _V2s.shouldHoldTurn(_sfSys, combat, member);
+                    if (_hold && _hold.hold) {
+                        combat.log('🧘 【' + member.name + '】' + _hold.reason, 'combat');
+                        /* ⚠️ 順序很重要：
+                           advanceTurn() 內部會呼叫該派的 onTurnStart，
+                           而 onTurnStart 讀完旗標後會立刻把它設回 false。
+                           所以必須「先設旗標，再 advanceTurn」，反過來旗標會被吃掉。 */
+                        var _b = member._battle || (member._battle = {});
+                        if (_hold.flag) _b[_hold.flag] = true;
+                        try {
+                            if (typeof _sfSys.advanceTurn === 'function') _sfSys.advanceTurn(combat, member);
+                        } catch (eAdv) { }
+                        member.atb = 0;
+                        if (window.HY.uiDexAtb) {
+                            try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI0) { }
+                        }
+                        return;
+                    }
+                }
+            } catch (eHold) { }
 
             combat._turnCounter = (combat._turnCounter || 0) + 1;
             /* ⭐ 陰陽/陣門推進：放在「真正出手」的這一刻。
