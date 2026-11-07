@@ -31557,6 +31557,16 @@ window.HY = window.HY || {};
 
                 var addExt = function (key, val) {
                     if (!key || !isFinite(val) || val === 0) return;
+                    /* ⭐⭐⭐ v482：罡氣／護盾機制完整移除
+                       ──────────────────────────────────────────────────────────
+                       門派／心法／身法（xinfaExtra、qinggongExtra、sectDataExtra2）
+                       仍然用 energyShield 這個鍵在給值。
+                       這裡直接把它改寫成 maxHp，等同「罡氣 1:1 轉為氣血」，
+                       玩家不會因為機制下架而白白損失數值。
+                       esShield / maxEs 也一併轉（POE 詞綴引擎的通道）。 */
+                    if (key === 'energyShield' || key === 'esShield' || key === 'maxEs') {
+                        key = 'maxHp';
+                    }
                     ext[key] = (ext[key] || 0) + val;
                 };
 
@@ -31945,7 +31955,11 @@ window.HY = window.HY || {};
                            舊寫法直接 return，導致裝備詞綴寫進 ext 的數值全部落空
                            （例如 dmgReduce 永遠是 0、atkSpd 永遠是 100）。
                            這裡針對「加成型」屬性改成相加。 */
-                        var ADDITIVE = { dmgReduce: 1, atkSpd: 1, critDmg: 1 };
+                        /* ⭐ v482：maxHp / maxMp 也要累加 ——
+                           罡氣機制移除後，energyShield 會被 addExt 改寫成 maxHp，
+                           若這裡不累加，那些數值會直接消失（實測慈航身法只 +85，
+                           應為 +250）。 */
+                        var ADDITIVE = { dmgReduce: 1, atkSpd: 1, critDmg: 1, maxHp: 1, maxMp: 1 };
                         if (ADDITIVE[k] && typeof out[k] === 'number') {
                             out[k] += ext[k];
                         }
@@ -31983,10 +31997,38 @@ window.HY = window.HY || {};
                      · ext.esShield     ← poeStatEngine（POE 詞綴引擎）
                      · ext.energyShield ← 門派／心法／身法（addExt 累加）
                    三者互不重疊（不同來源寫不同 key），所以直接相加安全。 */
-                var _esFromMaxEs    = (typeof ext.maxEs === 'number' && ext.maxEs > 0) ? ext.maxEs : 0;
-                var _esFromPoe      = (typeof ext.esShield === 'number' && ext.esShield > 0) ? ext.esShield : 0;
-                var _esFromSect     = (typeof ext.energyShield === 'number' && ext.energyShield > 0) ? ext.energyShield : 0;
-                var _esTotal        = _esFromMaxEs + _esFromPoe + _esFromSect;
+                /* ⭐⭐⭐ v482：罡氣（能量護盾）機制已「完整移除」
+                   ──────────────────────────────────────────────────────────
+                   原本這裡會把三個來源（ext.maxEs / ext.esShield / ext.energyShield）
+                   加總成 out.energyShield，並套用天賦的 % 放大，
+                   形成一條獨立於氣血、戰鬥中優先吸收傷害的護盾層。
+
+                   移除後：
+                     · 三個來源全部歸零，不參與任何計算
+                     · out.energyShield / maxEs / esCurrent 一律輸出 0
+                     · 所有原本給罡氣的詞條已在 wuxiaStatParser 改映射到「氣血上限」
+                       （玩家點那些節點仍有收益，只是不再形成獨立護盾）
+                     · 戰鬥層的 esAbsorb 呼叫會拿到 null，自動跳過吸收
+                     · UI 端因為上限為 0，護盾條不會被繪製
+
+                   ⚠️ 保留 out 欄位（值為 0）而不是刪除鍵，
+                      是因為周邊有數十處讀取這些欄位，
+                      刪掉會變成 undefined 進而產生 NaN。 */
+                out.energyShield = 0;
+                out.maxEs = 0;
+                out.esCurrent = 0;
+                out.mx = { qiMax: 0, qiCur: 0 };
+                /* 機制層同步歸零，避免殘留舊值被 esInit 讀回 */
+                if (c.mx && typeof c.mx === 'object') {
+                    c.mx.qiMax = 0;
+                    c.mx.qiCur = 0;
+                }
+                /* ── 以下為舊護盾計算，已停用 ── */
+                if (false) {
+                    var _esFromMaxEs    = 0;
+                    var _esFromPoe      = 0;
+                    var _esFromSect     = 0;
+                    var _esTotal        = 0;
 
                 /* ⭐⭐ v55：護盾基底（關鍵修正）
                    ──────────────────────────────────────────────────
@@ -32030,7 +32072,7 @@ window.HY = window.HY || {};
                          Lv.100 約 22（舊版 228 的十分之一）。 */
                     _esTotal = Math.round(2 + lv * 0.2);
                 }
-                if (_esTotal > 0) {
+                if (false && _esTotal > 0) {
                     out.energyShield = num2(out.energyShield, 0) + _esTotal;
                 }
                 /* ⭐⭐ v53：套用天賦樹的「increased maximum Energy Shield」
@@ -32038,12 +32080,19 @@ window.HY = window.HY || {};
                    天賦 more 通道算出的 maxEs 比例（例如 0.11 = +11%）
                    要乘在「最終護盾值」上。必須放在所有護盾來源合併之後，
                    這樣門派基礎 + 心法 + 身法 + 詞綴都會一起被放大。 */
-                if (typeof _tmMaxEsBonus === 'number' && _tmMaxEsBonus > 0) {
+                if (false && typeof _tmMaxEsBonus === 'number' && _tmMaxEsBonus > 0) {
                     var _esBase = num2(out.energyShield, 0);
                     if (_esBase > 0) {
                         out.energyShield = Math.floor(_esBase * (1 + _tmMaxEsBonus));
                     }
                 }
+                }
+                /* ⭐ v482：護盾相關欄位一律歸零（放在停用區塊之後，
+                   確保沒有任何殘留計算能覆蓋掉）。 */
+                out.energyShield = 0;
+                out.maxEs = 0;
+                out.esCurrent = 0;
+                out.mx = { qiMax: 0, qiCur: 0 };
                 /* ⭐ maxEs 別名：讓「天賦面板列出 +70 護盾」與「實際護盾值」對得上。
                    有些 UI / 戰鬥層讀 out.maxEs，有些讀 out.energyShield，
                    兩個都指向同一個數字，避免其中一邊永遠是 undefined。
@@ -32118,7 +32167,15 @@ window.HY = window.HY || {};
 
                    ⚠️ 不可呼叫 EX.esInit()：它會呼叫 getDerivedStatsForChar
                       → 遞迴。 */
-                (function () {
+                /* ⭐⭐⭐ v482：罡氣同步區塊已停用（罡氣機制完整移除）
+                   ──────────────────────────────────────────────────────────
+                   這段原本負責把「機制層 c.mx」與「derived energyShield」
+                   統一成同一個來源，並回寫 c.mx。
+
+                   罡氣移除後完全不需要，且若保留會把上面的歸零覆蓋掉
+                   （它會重新算出 max 並寫回 out.energyShield）。
+                   因此整段以 if(false) 停用，並在後面重新歸零。 */
+                if (false) (function () {
                     var fromStats = num2(out.energyShield, 0);
                     var fromMx = (c.mx ? num2(c.mx.qiMax, 0) : 0);
                     var max = Math.max(fromStats, fromMx);
@@ -32128,18 +32185,13 @@ window.HY = window.HY || {};
                         out.maxEs = 0;
                         out.esCurrent = 0;
                         out.mx = { qiMax: 0, qiCur: 0 };
-                        /* ⭐ v466：同步回機制層，避免 c.mx 留存舊值 */
                         if (c.mx) { c.mx.qiMax = 0; c.mx.qiCur = 0; }
                         return;
                     }
 
-                    /* 當前值：機制層有紀錄就用它，否則預設滿檔 */
                     var cur;
                     if (c.mx && num2(c.mx.qiCur, -1) >= 0 && fromMx > 0) {
                         cur = num2(c.mx.qiCur, max);
-                        /* ⭐ v466：若機制層的上限比最終上限小，當前值要按比例放大
-                           （例：c.mx.qiMax 957、最終 max 1010 → cur 357/957 應變 377/1010）
-                           否則會出現「當前值 / 上限」比例失真。 */
                         if (fromMx > 0 && max > fromMx) {
                             cur = Math.round(cur * max / fromMx);
                         }
@@ -32153,21 +32205,21 @@ window.HY = window.HY || {};
                     out.esCurrent = cur;
                     out.mx = { qiMax: max, qiCur: cur };
 
-                    /* ⭐⭐ v466：把最終結果「寫回機制層」
-                       ──────────────────────────────────────────────────
-                       原本只有 out.mx 更新，c.mx 仍是機制層自己算的舊值。
-                       造成三個地方各讀各的：
-                         · 血條讀 out.mx（正確）
-                         · 機制層回復/吸收讀 c.mx（舊值）
-                         · 狀態面板讀 out.mx（但被快取卡住）
-                       現在統一：以 out.mx 為唯一權威，回寫 c.mx。
-                       ⚠️ 這是「derived → 機制層」的單向同步，
-                          不會反向污染（esInit 讀 energyShield 時已是最終值）。 */
                     if (c.mx && typeof c.mx === 'object') {
                         if (c.mx.qiMax !== max) c.mx.qiMax = max;
                         if (c.mx.qiCur !== cur) c.mx.qiCur = cur;
                     }
                 })();
+
+                /* ⭐ v482：最終歸零（唯一權威，放在停用區塊之後） */
+                out.energyShield = 0;
+                out.maxEs = 0;
+                out.esCurrent = 0;
+                out.mx = { qiMax: 0, qiCur: 0 };
+                if (c.mx && typeof c.mx === 'object') {
+                    c.mx.qiMax = 0;
+                    c.mx.qiCur = 0;
+                }
 
                 /* ⭐⭐⭐ v54：把「武俠天賦」的元素／持續傷害加成寫進 out
                    ──────────────────────────────────────────────────
@@ -38090,13 +38142,26 @@ window.HY = window.HY || {};
        順序很重要：越具體的放越前面（「五行抗性上限」要在「五行抗性」前）。
        ══════════════════════════════════════════════════════ */
     var TERMS = [
-        /* 資源 */
+        /* 資源
+           ⭐⭐ v482：罡氣（能量護盾）機制已「完整移除」。
+           ──────────────────────────────────────────────────────────
+           原本「罡氣上限／罡氣」會寫進 maxEs，再由 characterSystem 換算成
+           energyShield（一條獨立於氣血的護盾條，戰鬥中優先吸收傷害）。
+
+           移除後改為：所有罡氣詞條一律映射到「氣血上限」。
+             · 數值 1:1 轉換，不讓既有天賦/裝備/心法變成廢詞
+             · 不保留任何護盾通道（maxEs / esShield / energyShield 不再被讀取）
+             · 玩家點這些節點仍然有明確收益（氣血變厚），只是不再是獨立護盾層
+           ⚠️ 保留詞條名稱本身，是因為舊存檔與既有資料都用「罡氣」二字，
+              直接改資料會波及數十個檔案、上千筆詞條，風險遠高於這裡映射。 */
         { re: /^氣血上限$/, key: 'maxHp', kind: 'more' },
         { re: /^內力上限$/, key: 'maxMp', kind: 'more' },
-        { re: /^罡氣上限$/, key: 'maxEs', kind: 'more' },
+        { re: /^罡氣上限$/, key: 'maxHp', kind: 'more' },   /* v482：罡氣 → 氣血 */
         { re: /^氣血$/, key: 'maxHp', kind: 'flat' },
         { re: /^內力$/, key: 'maxMp', kind: 'flat' },
-        { re: /^罡氣$/, key: 'maxEs', kind: 'flat' },
+        { re: /^罡氣$/, key: 'maxHp', kind: 'flat' },       /* v482：罡氣 → 氣血 */
+        { re: /^能量護盾$/, key: 'maxHp', kind: 'flat' },    /* v482：舊 POE 用語 */
+        { re: /^能量護盾上限$/, key: 'maxHp', kind: 'more' },
 
         /* 四維 */
         { re: /^力道$/, key: 'str', kind: 'attr' },
@@ -68911,37 +68976,21 @@ window.HY = window.HY || {};
                  3. ES 上限為 0 時完全跳過，不影響既有門派
                ────────────────────────────────────────────────────── */
             var esTag = '';
-            var _ESX = window.HY && window.HY.CombatMechanicsExtra;
-            if (_ESX && typeof _ESX.esAbsorb === 'function' && enemyDmg > 0) {
-                /* ⭐ v473：esAbsorb 在「無罡氣上限」或「罡氣已空」時回傳 null，
-                   原本直接讀 _esR.absorbed 會拋
-                   TypeError: Cannot read properties of null (reading 'absorbed')
-                   造成整個 ATB tick 中斷。必須先檢查回傳值。 */
-                var _esR = _ESX.esAbsorb(targetMember, enemyDmg);
-                if (_esR && _esR.absorbed > 0) {
-                    enemyDmg = _esR.remaining;
-                    esTag = ' [🔵罡氣吸收 ' + _esR.absorbed + '（餘 ' + _esR.current + '/' + _esR.max + '，' + _esR.pct + '%）]';
-                    if (_esR.broke) esTag += ' [💔罡氣破裂]';
-                }
-            }
+            /* ⭐⭐⭐ v482：罡氣／護盾機制已完整移除
+               ──────────────────────────────────────────────────────────
+               原本這裡會先讓護盾吸收傷害，剩下的才扣氣血。
+               護盾移除後，傷害一律直接扣氣血（沒有中間層）。
+
+               注意：不是刪掉整段就沒事 —— 下方組字串時有引用 esTag，
+               保留變數但永遠為空字串，避免影響傷害訊息格式。 */
             targetMember.currentHp = Math.max(0, targetMember.currentHp - enemyDmg);
             var elemTag = '';
             if (elemSys && targetMember.currentHp > 0) {
                 var eRes = elemSys.calcEnemyElementDamage(enemy, targetMember);
                 if (eRes && eRes.total > 0) {
-                    /* ⭐ v51：元素傷害也要先扣護盾（原本直接扣血，繞過 ES → 護盾形同無效） */
+                    /* ⭐ v51 / v482：元素傷害原本也先扣護盾，護盾移除後直接扣氣血 */
                     var _elemDmg = eRes.total;
                     try {
-                        var _ESX2 = window.HY && window.HY.CombatMechanicsExtra;
-                        if (_ESX2 && typeof _ESX2.esAbsorb === 'function' && _elemDmg > 0) {
-                            var _esR2 = _ESX2.esAbsorb(targetMember, _elemDmg);
-                            /* ⭐ v473：同上，esAbsorb 可能回傳 null */
-                            if (_esR2 && _esR2.absorbed > 0) {
-                                _elemDmg = _esR2.remaining;
-                                esTag += ' [🔵罡氣吸收內勁 ' + _esR2.absorbed + '（餘 ' + _esR2.current + '/' + _esR2.max + '）]';
-                                if (_esR2.broke) esTag += ' [💔罡氣破裂]';
-                            }
-                        }
                     } catch (eES2) { }
                     if (_elemDmg > 0) {
                         targetMember.currentHp = Math.max(0, targetMember.currentHp - _elemDmg);
@@ -70041,11 +70090,7 @@ window.HY = window.HY || {};
                 try {
                     if (window.HY.WuxiaArts) window.HY.WuxiaArts.initFor(c);
                 } catch (e) { }
-                /* ⭐ v423：罡氣開場補滿（慈航靜齋等有罡氣的門派）
-                   沒有這一步，c.mx.qiMax 會是 0 → 血條與明細都顯示 0。 */
-                try {
-                    if (EX && typeof EX.esInit === 'function') EX.esInit(c);
-                } catch (eEs) { }
+                /* ⭐ v482：罡氣機制已完整移除，開場不再初始化護盾 */
             });
         },
 
@@ -70139,11 +70184,7 @@ window.HY = window.HY || {};
                 }
             } catch (eAMt) { }
             try {
-                /* 罡氣回復（通用，保留） */
-                if (EX && EX.esRecharge && c.sect === 'cihang') {
-                    var got = EX.esRecharge(c);
-                    if (got > 0) _core.log('🔵 罡氣回復 ' + got, 'combat');
-                }
+                /* ⭐ v482：罡氣回復已移除（機制完整下架，不再每回合補護盾） */
             } catch (e4) { }
 
             /* ⑥ 敵人身上的持續效果結算
@@ -72735,24 +72776,13 @@ window.HY = window.HY || {};
             const esBar = document.getElementById('es-bar');
             const esText = document.getElementById('es-text');
 
-            var mxQ = (d && d.mx) ? d.mx : null;
-            const esMax = Math.round(Number(mxQ ? mxQ.qiMax : d.energyShield) || 0);
-
-            if (esRow) {
-                if (esMax > 0) {
-                    esRow.style.display = '';
-                    var curRaw = (mxQ && typeof mxQ.qiCur === 'number')
-                        ? mxQ.qiCur
-                        : (typeof d.esCurrent === 'number' ? d.esCurrent : esMax);
-                    const esCur = Math.max(0, Math.min(esMax, Math.round(curRaw)));
-                    if (esText) esText.textContent = esCur + ' / ' + esMax;
-                    if (esBar) {
-                        esBar.style.width = Math.min(100, (esCur / esMax) * 100) + '%';
-                    }
-                } else {
-                    esRow.style.display = 'none';
-                }
-            }
+            /* ⭐⭐⭐ v482：罡氣／護盾機制已完整移除
+               ──────────────────────────────────────────────────────────
+               這裡原本會顯示「🔵 罡氣 357 / 1010」的獨立條。
+               機制移除後直接永久隱藏，不再讀取任何護盾資料。 */
+            if (esRow) esRow.style.display = 'none';
+            if (esText) esText.textContent = '';
+            if (esBar) esBar.style.width = '0%';
             setText('stat-con', st.stats.con);
             setText('stat-str', st.stats.str);
             setText('stat-agi', st.stats.agi);
@@ -73410,19 +73440,10 @@ window.HY = window.HY || {};
             '</div>';
         }
 
-        /** ⭐ v57：能量護盾條（有護盾上限才產生 HTML） */
+        /** ⭐ v57：能量護盾條
+            ⭐⭐⭐ v482：罡氣／護盾機制已完整移除 → 一律回傳空字串 */
         buildEsBar(cur, max, isEnemy) {
-            var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
-            if (safeMax <= 0) return '';
-            var safeCur = Math.max(0, Math.min(
-                (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax, safeMax));
-            var pct = (safeCur / safeMax) * 100;
-            var label = '🔵 ' + Math.floor(safeCur).toLocaleString() +
-                ' / ' + Math.floor(safeMax).toLocaleString();
-            return '<div class="hpmp-bar es' + (isEnemy ? ' enemy-es' : '') + '">' +
-                '<div class="fi" style="width:' + pct.toFixed(1) + '%;"></div>' +
-                '<div class="tx">' + label + '</div>' +
-            '</div>';
+            return '';
         }
         renderExploreAndCombat() {
             const Data = window.HY.Data;
@@ -95772,7 +95793,10 @@ window.HY.Data = window.HY.Data || {};
             ]
         },
         {
-            id: 'wx_es', name: '罡罩', statKey: 'esShield', genType: 1, unit: '', pct: false,
+            /* ⭐ v482：罡氣機制已移除 → 這條詞綴改為「厚生（氣血）」
+               statKey 從 esShield 改成 maxHp，數值不變（1:1 轉為氣血），
+               避免既有裝備變成空詞。 */
+            id: 'wx_es', name: '厚生', statKey: 'maxHp', genType: 1, unit: '', pct: false,
             slots: slots(G.HEAD, G.BODY, G.BELT, G.OFFHAND),
             tiers: [
                 { reqLv: 20, min: 50, max: 110 },
@@ -102727,18 +102751,11 @@ window.HY = window.HY || {};
             return num(e.energyShield, 0);
         }
         buildEsBar(idPrefix, cur, max, isEnemy) {
-            var safeMax = Math.floor((typeof max === 'number' && max > 0) ? max : 0);
-            if (safeMax <= 0) return '';
-            var safeCur = Math.max(0, Math.min(
-                (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax,
-                safeMax));
-            var pct = (safeCur / safeMax) * 100;
-            var label = '🔵 ' + Math.floor(safeCur).toLocaleString() +
-                ' / ' + Math.floor(safeMax).toLocaleString();
-            return '<div class="hpmp-bar es' + (isEnemy ? ' enemy-es' : '') + '">' +
-                '<div class="fi" id="' + idPrefix + '-fill" style="width:' + pct.toFixed(1) + '%;"></div>' +
-                '<div class="tx" id="' + idPrefix + '-text">' + label + '</div>' +
-            '</div>';
+            /* ⭐⭐⭐ v482：罡氣／護盾條已完整移除
+               ──────────────────────────────────────────────────────────
+               一律回傳空字串 —— 不論上限是多少都不再繪製護盾條。
+               保留函式本體是為了不讓呼叫端（3 處）報錯。 */
+            return '';
         }
         /* ⭐ 集氣條滿時「下一招預告」
            顯示格式：〈招式名稱〉 目標 〈對象〉
@@ -103336,35 +103353,14 @@ window.HY = window.HY || {};
                 setEsBar('ally-es-' + idx,
                     this._esCurOf(m, md),
                     this._esMaxOf(md));
-                /* ⭐⭐ v477：同步更新「角色面板」的罡氣條
+                /* ⭐⭐⭐ v482：罡氣／護盾機制已完整移除
                    ──────────────────────────────────────────────────────────
-                   角色面板（uiCharacterParty）的 #es-bar/#es-text 只在
-                   renderCharacterPanel() 被呼叫時才重繪 ——
-                   而那個函式只在「切換角色、點加點、開關面板」時觸發，
-                   戰鬥中完全不會跑。
-
-                   於是出現：戰鬥面板罡氣已經打到 0，
-                   但角色面板那一條還停在滿檔（實測 410 → 410 → 410）。
-                   這就是使用者回報的「罡氣條沒有同步」。
-
-                   修法：由戰鬥面板每 tick 順手把角色面板那一條也更新掉。
-                   只更新罡氣（不動其他欄位），避免整塊重繪造成卡頓。 */
+                   原本這裡會更新戰鬥面板與角色面板兩處的護盾條。
+                   現在兩條都不存在了，只剩「確保它被隱藏」這一步 ——
+                   避免舊存檔或樣式殘留讓它又冒出來。 */
                 try {
-                    var _isActive = (m === app.charSys.state);
-                    if (_isActive) {
-                        var _curEl = this._esCurOf(m, md);
-                        var _maxEl = this._esMaxOf(md);
-                        var _rowEl = document.getElementById('es-bar-row');
-                        var _barEl = document.getElementById('es-bar');
-                        var _txtEl = document.getElementById('es-text');
-                        if (_maxEl > 0) {
-                            if (_rowEl) _rowEl.style.display = '';
-                            if (_barEl) _barEl.style.width = Math.min(100, (_curEl / _maxEl) * 100) + '%';
-                            if (_txtEl) _txtEl.textContent = Math.floor(_curEl) + ' / ' + Math.floor(_maxEl);
-                        } else if (_rowEl) {
-                            _rowEl.style.display = 'none';
-                        }
-                    }
+                    var _rowEl0 = document.getElementById('es-bar-row');
+                    if (_rowEl0) _rowEl0.style.display = 'none';
                 } catch (eSyncEs) { }
                 // ⭐ v56：戰力每 tick 更新
                 var pwEl = document.getElementById('ally-pw-' + idx);
@@ -103568,19 +103564,11 @@ window.HY = window.HY || {};
             '</div>';
     }
 
-    /** ⭐ v57：能量護盾條（max <= 0 時回傳空字串，不佔版面） */
+    /** ⭐ v57：能量護盾條
+        ⭐⭐⭐ v482：罡氣／護盾機制已完整移除 → 一律回傳空字串。
+        （保留函式簽章，避免 3 處呼叫端報錯） */
     function esBarHtml(cur, max, isEnemy, idPrefix) {
-        var safeMax = Math.max(0, Math.floor(num(max, 0)));
-        if (safeMax <= 0) return '';
-        var rawCur = (typeof cur === 'number' && isFinite(cur)) ? cur : safeMax;
-        var safeCur = Math.max(0, Math.min(rawCur, safeMax));
-        var pct = (safeCur / safeMax) * 100;
-        var idAttr = idPrefix ? ' id="' + idPrefix + '"' : '';
-        var txId = idPrefix ? ' id="' + idPrefix + '-tx"' : '';
-        return '<div class="cp-es' + (isEnemy ? ' enemy' : '') + '"' + idAttr + '>' +
-            '<div class="cp-fi" style="width:' + pct.toFixed(1) + '%"></div>' +
-            '<div class="cp-tx"' + txId + '>🔵 ' + fmt(safeCur) + ' / ' + fmt(safeMax) + '</div>' +
-            '</div>';
+        return '';
     }
 
     /** ATB 條
@@ -116659,9 +116647,7 @@ window.HY = window.HY || {};
             h += row('護體防禦', fmt(st.def || 0), 'up');
             h += row('最大氣血', fmt(st.maxHp || 0), 'up');
             h += row('最大內力', fmt(st.maxMp || 0), 'up');
-            if (num(st.energyShield, 0) > 0) {
-                h += row('🔵 罡氣', fmt(st.energyShield), 'up');
-            }
+            /* ⭐ v482：罡氣條目已移除（機制完整下架） */
             h += row('精準命中', fmt(st.hit || 0) + '%');
             h += row('輕功閃避', fmt(st.eva || 0) + '%');
             h += row('會心爆擊', num(st.crit, 0).toFixed(1) + '%');
@@ -128175,20 +128161,8 @@ window.HY = window.HY || {};
                 var isMain = (leader && m.id === leader.id);
                 var atbPct = inBattle ? Math.min(100, Math.floor(num(m.atb, 0))) : 0;
 
-                /* ⭐ v58：能量護盾條
-                   上限取 derived stats 的 energyShield（慈航護體／天賦護盾共用同一個值），
-                   目前值優先讀 esCurrent（戰鬥中會被扣），沒有就視為滿檔。 */
-                var esMax = Math.round(num(d.energyShield, 0));
+                /* ⭐⭐⭐ v482：罡氣／護盾機制已完整移除 → 不再產生護盾條 HTML */
                 var esHtml = '';
-                if (esMax > 0) {
-                    var esCur = (typeof m.esCurrent === 'number' && isFinite(m.esCurrent))
-                        ? Math.max(0, Math.min(m.esCurrent, esMax))
-                        : esMax;
-                    var esPct = (esCur / esMax) * 100;
-                    esHtml = '<div class="at-es">' +
-                        '<div class="fi" style="width:' + esPct.toFixed(1) + '%"></div>' +
-                        '<div class="tx">🔵 ' + fmt(esCur) + ' / ' + fmt(esMax) + '</div></div>';
-                }
 
                 var sectName = (m.sect && Data.SECTS && Data.SECTS[m.sect]) ? Data.SECTS[m.sect].name : '無門無派';
                 var xfName = (m.activeXinfa && Data.XINFA && Data.XINFA[m.activeXinfa]) ? Data.XINFA[m.activeXinfa].name : '未運功';
@@ -128532,18 +128506,8 @@ window.HY = window.HY || {};
                 var eCurMp = (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp;
                 var mpPct = Math.min(100, (eCurMp / Math.max(1, eMaxMp)) * 100);
 
-                /* ⭐ v58：敵方能量護盾（怪物有護盾詞綴才有） */
-                var eEsMax = Math.round(num(e.energyShield, num(e.maxEs, 0)));
+                /* ⭐⭐⭐ v482：敵方護盾也已移除 → 不產生護盾條 HTML */
                 var eEsHtml = '';
-                if (eEsMax > 0) {
-                    var eEsCur = (typeof e.currentEs === 'number') ? e.currentEs
-                        : (typeof e.esCurrent === 'number') ? e.esCurrent : eEsMax;
-                    eEsCur = Math.max(0, Math.min(eEsCur, eEsMax));
-                    var eEsPct = (eEsCur / eEsMax) * 100;
-                    eEsHtml = '<div class="at-es enemy">' +
-                        '<div class="fi" style="width:' + eEsPct.toFixed(1) + '%"></div>' +
-                        '<div class="tx">🔵 ' + fmt(eEsCur) + ' / ' + fmt(eEsMax) + '</div></div>';
-                }
 
                 /* 稀有度標籤 */
                 var rarName = e.rarityName || '普通';
@@ -142033,11 +141997,11 @@ HY.Data.STAT_CODEX = {
                     tags: ['生存', '防禦']
                 },
                 {
-                    key: 'maxEs', name: '罡氣', abbr: 'ES', unit: '點',
-                    desc: '額外的護體能量，戰鬥中優先於氣血吸收傷害。罡氣耗盡後才開始扣氣血。',
-                    formula: '罡氣上限 = 天賦加成 × (1 + 罡氣上限%)',
-                    note: '天賦樹的「罡氣 +N」是固定值，「罡氣上限 +N%」才是百分比放大。兩者分開計算，不會互相膨脹。',
-                    tags: ['生存', '護體']
+                    key: 'maxEs', name: '罡氣（已移除）', abbr: 'ES', unit: '點',
+                    desc: '⚠️ 罡氣機制已於 v482 完整移除。原本的罡氣數值全部轉為「氣血上限」，不再有獨立的護盾層。',
+                    formula: '—（機制已下架，相關數值已計入氣血上限）',
+                    note: '天賦／裝備上若還寫著「罡氣 +N」，實際效果已改為「氣血上限 +N」。',
+                    tags: ['已移除']
                 },
                 {
                     key: 'thorns', name: '反傷', abbr: 'Thorns', unit: '%',
@@ -142247,18 +142211,18 @@ HY.Data.STAT_CODEX = {
                     tags: ['防禦', '機率']
                 },
                 {
-                    key: 'esShield', name: '罡氣', abbr: 'ES', unit: '點',
-                    desc: '額外的護盾值。罡氣在氣血之前承受傷害，且會自動回復。',
-                    formula: '受到傷害 → 先扣罡氣，罡氣歸零才扣氣血',
-                    note: '罡氣每回合會依「罡氣回復」恢復，是長期作戰的關鍵。',
-                    tags: ['防禦', '護盾']
+                    key: 'esShield', name: '罡氣（已移除）', abbr: 'ES', unit: '點',
+                    desc: '⚠️ 罡氣機制已於 v482 完整移除。此詞條若出現在裝備／心法上，實際效果為「氣血上限 +N」。',
+                    formula: '—（機制已下架）',
+                    note: '不再有獨立的護盾層，傷害一律直接扣氣血。',
+                    tags: ['已移除']
                 },
                 {
-                    key: 'esPct', name: '罡氣加成', abbr: 'ES%', unit: '%',
-                    desc: '按百分比提升罡氣上限。',
-                    formula: '最終罡氣 = 基礎罡氣 × (1 + 罡氣加成%)',
-                    note: '罡氣流的核心屬性。',
-                    tags: ['防禦', '護盾']
+                    key: 'esPct', name: '罡氣加成（已移除）', abbr: 'ES%', unit: '%',
+                    desc: '⚠️ 罡氣機制已於 v482 完整移除。此詞條若出現，實際效果為「氣血上限 +N%」。',
+                    formula: '—（機制已下架）',
+                    note: '不再有護盾層。',
+                    tags: ['已移除']
                 },
                 {
                     key: 'thornsDmg', name: '反傷', abbr: 'Thorns', unit: '%',
