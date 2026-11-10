@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黃易群俠傳 Web：時空浪人</title>
+    <meta name="description" content="Path of Exile 風格的武俠網頁 RPG —— 異界輿圖、地心礦坑、十五大門派、PoE 裝備工藝。">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%23c89d54' stroke-width='1.5' opacity='.6'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background: radial-gradient(ellipse at 50% 20%, #1a2433 0%, #0a0f16 70%);
+            color: #cbd5e1; font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 22px; padding: 28px 16px;
+        }
+
+        /* ── 標題區 ── */
+        .hero { text-align: center; }
+        h1 {
+            color: #f0c674; font-size: 1.9rem; margin: 0 0 8px;
+            text-shadow: 0 0 24px rgba(240,198,116,.55);
+            letter-spacing: 1px;
+        }
+        .sub { color: #94a3b8; font-size: .92rem; margin: 0; }
+
+        /* ── 進入按鈕 ── */
+        a.btn {
+            display: inline-block; padding: 15px 48px;
+            background: linear-gradient(135deg, #1e3a5f, #0f2438);
+            border: 2px solid #38bdf8; border-radius: 9px;
+            color: #7dd3fc; font-size: 1.08rem; font-weight: bold;
+            text-decoration: none; transition: all .2s;
+            box-shadow: 0 0 26px rgba(56,189,248,.35);
+            white-space: nowrap;
+        }
+        a.btn:hover {
+            background: linear-gradient(135deg, #2a4d7a, #16344d);
+            border-color: #7dd3fc;
+            box-shadow: 0 0 42px rgba(56,189,248,.65);
+            transform: translateY(-2px);
+        }
+
+        /* ── 更新公告 ── */
+        .news {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #f0c674;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .news-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(240,198,116,.13), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #f0c674;
+        }
+        .news-hd .ver {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .news-bd {
+            max-height: 320px; overflow-y: auto;
+            padding: 6px 16px 14px;
+        }
+        .news-bd::-webkit-scrollbar { width: 6px; }
+        .news-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        /* 單筆公告 */
+        .entry {
+            padding: 11px 0;
+            border-bottom: 1px dashed #1a2532;
+        }
+        .entry:last-child { border-bottom: none; }
+        .entry-hd {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 5px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 1px 7px; border-radius: 9px;
+            font-size: .64rem; font-weight: bold;
+            border: 1px solid;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .tag.new { color: #6ee7b7; border-color: #10b981; background: rgba(16,185,129,.14); }
+        .tag.fix { color: #fca5a5; border-color: #ef4444; background: rgba(239,68,68,.13); }
+        .tag.bal { color: #7dd3fc; border-color: #38bdf8; background: rgba(56,189,248,.13); }
+        .tag.add { color: #fbbf24; border-color: #f59e0b; background: rgba(245,158,11,.14); }
+
+        .entry-title {
+            font-size: .85rem; font-weight: bold; color: #e2e8f0;
+            flex: 1 1 auto; min-width: 0;
+        }
+        .entry-date {
+            font-size: .68rem; color: #475569;
+            flex: 0 0 auto; white-space: nowrap;
+        }
+        .entry ul {
+            margin: 0; padding-left: 18px;
+            font-size: .78rem; line-height: 1.85; color: #94a3b8;
+        }
+        .entry ul li { margin: 1px 0; }
+        .entry ul li b { color: #cbd5e1; }
+        .entry ul li code {
+            background: rgba(56,189,248,.10);
+            border: 1px solid #1e3a52;
+            border-radius: 3px;
+            padding: 0 4px;
+            font-size: .74rem;
+            color: #7dd3fc;
+            font-family: Consolas, monospace;
+        }
+
+        /* ── 底部提示 ── */
+        .note {
+            font-size: .76rem; color: #475569;
+            text-align: center; line-height: 1.9;
+        }
+        .note a { color: #475569; text-decoration: none; border-bottom: 1px dotted #334155; }
+        .note a:hover { color: #64748b; }
+
+        @media (max-width: 620px) {
+            h1 { font-size: 1.5rem; }
+            a.btn { padding: 13px 34px; font-size: 1rem; }
+            .news-bd { max-height: 260px; }
+            .entry-hd { flex-wrap: wrap; }
+            .entry-date { margin-left: auto; }
+        }
+        /* ── 玩法公告（卡片式） ── */
+        .guide {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #38bdf8;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .guide-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(56,189,248,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #7dd3fc;
+        }
+        .guide-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .guide-bd {
+            max-height: 420px; overflow-y: auto;
+            padding: 12px 16px 14px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+        }
+        .guide-bd::-webkit-scrollbar { width: 6px; }
+        .guide-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .card {
+            background: rgba(17, 24, 34, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            padding: 10px 12px;
+            transition: border-color .15s, background .15s;
+        }
+        .card:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .card-hd {
+            display: flex; align-items: center; gap: 7px;
+            font-size: .82rem; font-weight: bold; color: #e2e8f0;
+            margin-bottom: 6px;
+        }
+        .card-hd .ico { font-size: 1rem; flex: 0 0 auto; }
+        .card-bd {
+            font-size: .74rem; line-height: 1.8; color: #94a3b8;
+        }
+        .card-bd b { color: #cbd5e1; }
+        .card-bd code {
+            background: rgba(56,189,248,.10);
+            border: 1px solid #1e3a52;
+            border-radius: 3px;
+            padding: 0 4px;
+            font-size: .72rem;
+            color: #7dd3fc;
+            font-family: Consolas, monospace;
+        }
+        .card.span2 { grid-column: 1 / -1; }
+
+        /* 進階提示 */
+        .tip {
+            grid-column: 1 / -1;
+            background: rgba(245,158,11,.09);
+            border: 1px solid #f59e0b;
+            border-left: 3px solid #fbbf24;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: .74rem; line-height: 1.85; color: #fcd34d;
+        }
+        .tip b { color: #fde68a; }
+
+        @media (max-width: 620px) {
+            .guide-bd { grid-template-columns: 1fr; max-height: 380px; }
+        }
+
+        /* ── 我的隊伍 ── */
+        .team {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #10b981;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .team-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(16,185,129,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #6ee7b7;
+        }
+        .team-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .team-bd { padding: 12px 16px 14px; }
+
+        /* 隊伍成員格 */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .member {
+            position: relative;
+            background: rgba(15, 22, 30, .95);
+            border: 2px solid #1e2a36;
+            border-radius: 8px;
+            padding: 10px 8px 9px;
+            text-align: center;
+            transition: border-color .15s, background .15s, transform .15s;
+        }
+        .member.main {
+            border-color: #00e5ff;
+            background: rgba(0, 229, 255, .07);
+            box-shadow: 0 0 16px rgba(0,229,255,.25);
+        }
+        .member.empty {
+            border-style: dashed;
+            opacity: .45;
+        }
+        .member .slot-no {
+            position: absolute; left: 5px; top: 4px;
+            font-size: .6rem; color: #475569; font-weight: bold;
+        }
+        .member .crown {
+            position: absolute; right: 5px; top: 3px;
+            font-size: .66rem;
+        }
+        .member .avatar {
+            font-size: 1.6rem; line-height: 1;
+            margin: 4px 0 6px;
+        }
+        .member .m-name {
+            font-size: .74rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+        .member.main .m-name { color: #7dd3fc; }
+        .member .m-lv {
+            font-size: .66rem; color: #fbbf24; font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .member .m-sect {
+            font-size: .62rem; color: #94a3b8;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 6px;
+            min-height: 15px;
+        }
+        .member .m-bar {
+            height: 5px; border-radius: 3px; background: #0a0f16;
+            overflow: hidden; border: 1px solid #1e2a36;
+        }
+        .member .m-bar i {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, #10b981, #6ee7b7);
+            transition: width .3s;
+        }
+        .member .m-exp {
+            font-size: .58rem; color: #64748b; margin-top: 3px;
+        }
+        .member.empty .m-name { color: #475569; font-weight: normal; }
+
+        /* 隊伍統計列 */
+        .team-stat {
+            display: flex; flex-wrap: wrap; gap: 8px 18px;
+            margin-top: 12px; padding-top: 11px;
+            border-top: 1px dashed #1a2532;
+            font-size: .74rem; color: #94a3b8;
+        }
+        .team-stat span b { color: #6ee7b7; }
+
+        /* 空狀態 */
+        .team-empty {
+            text-align: center; padding: 20px 12px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .team-empty a {
+            color: #7dd3fc; text-decoration: none;
+            border-bottom: 1px dotted #38bdf8;
+        }
+
+        @media (max-width: 620px) {
+            .team-grid { grid-template-columns: repeat(3, 1fr); }
+            .team-grid .member:nth-child(n+4) { display: none; }
+        }
+
+        /* ── 全服排行 ── */
+        .rank {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #f0c674;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .rank-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(240,198,116,.15), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .rank-tabs {
+            display: flex; gap: 5px; padding: 9px 16px 0;
+            flex-wrap: wrap;
+        }
+        .rank-tab {
+            padding: 4px 11px; border-radius: 11px;
+            font-size: .72rem; cursor: pointer;
+            background: #16202c; color: #94a3b8;
+            border: 1px solid #253244;
+            transition: all .14s;
+        }
+        .rank-tab:hover { border-color: #38bdf8; color: #7dd3fc; }
+        .rank-tab.on {
+            background: rgba(240,198,116,.16); color: #f0c674;
+            border-color: #f0c674; font-weight: bold;
+        }
+        .rank-bd {
+            padding: 8px 16px 14px;
+            max-height: 380px; overflow-y: auto;
+        }
+        .rank-bd::-webkit-scrollbar { width: 6px; }
+        .rank-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .rank-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; margin-bottom: 5px;
+            background: rgba(15, 22, 30, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: border-color .14s, background .14s;
+        }
+        .rank-row:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .rank-row.me { border-color: #00e5ff; background: rgba(0,229,255,.07); }
+
+        .rank-no {
+            flex: 0 0 30px; text-align: center;
+            font-size: .82rem; font-weight: bold; color: #64748b;
+        }
+        .rank-no.g1 { color: #fbbf24; font-size: 1rem; }
+        .rank-no.g2 { color: #cbd5e1; font-size: .92rem; }
+        .rank-no.g3 { color: #d97706; font-size: .88rem; }
+
+        .rank-info { flex: 1 1 auto; min-width: 0; }
+        .rank-name {
+            font-size: .84rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-sub {
+            font-size: .68rem; color: #64748b; margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-val {
+            flex: 0 0 auto; text-align: right;
+        }
+        .rank-val .v {
+            font-size: .88rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-val .k {
+            font-size: .62rem; color: #475569; margin-top: 1px;
+        }
+
+        /* 展開的隊伍詳情 */
+        .rank-detail {
+            display: none;
+            padding: 8px 10px 10px 40px;
+            background: rgba(6, 10, 16, .7);
+            border-radius: 0 0 7px 7px;
+            margin: -3px 0 5px;
+            border: 1px solid #1e2a36;
+            border-top: none;
+        }
+        .rank-detail.open { display: block; }
+        .rd-char {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .74rem; padding: 3px 0;
+            color: #94a3b8;
+        }
+        .rd-char .rd-ico { flex: 0 0 16px; }
+        .rd-char .rd-nm {
+            flex: 1 1 auto; min-width: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            color: #cbd5e1;
+        }
+        .rd-char .rd-lv { flex: 0 0 auto; color: #fbbf24; font-weight: bold; }
+        .rd-char .rd-sect { flex: 0 0 auto; color: #64748b; font-size: .68rem; }
+
+        .rank-empty {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .rank-loading {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #475569;
+        }
+        .rank-spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #253244; border-top-color: #38bdf8;
+            border-radius: 50%; animation: rspin .8s linear infinite;
+            vertical-align: -2px; margin-right: 6px;
+        }
+        @keyframes rspin { to { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="hero">
+        <h1>🗡️ 黃易群俠傳 Web</h1>
+        <p class="sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
+    </div>
+
+    <a class="btn" href="game.html">▶ 進入遊戲</a>
+
+    <!-- ══════════════ 更新公告 ══════════════ -->
+    <div class="news">
+        <div class="news-hd">
+            <span>📢 更新公告</span>
+            <span class="ver" id="news-ver">v1.2 · 2026-11-05</span>
+        </div>
+        <div class="news-bd" id="news-body">
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag new">新增</span>
+                    <span class="entry-title">三套獨立戰鬥系統</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li><b>時空內掛</b>：一般戰鬥專用，每角色獨立戰術設定</li>
+                    <li><b>打圖戰術</b>：異界輿圖專用，41 項詳細設定</li>
+                    <li><b>礦坑戰術</b>：地心礦坑專用，43 項設定（含深度策略）</li>
+                    <li>三者完全互斥，同時只能進行一種戰鬥</li>
+                    <li>「直接衝霸主」為隊伍共識：任一人開啟即全隊生效</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag add">新增</span>
+                    <span class="entry-title">異界輿圖 T1~T16</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li><b>16 張專屬地圖石徽</b>：從 POE 樣板生成 I ~ XVI 羅馬數字</li>
+                    <li><b>地圖通貨改造</b>：蛻變／增幅／改造／點金／混沌／重鑄</li>
+                    <li><b>輿圖天賦樹</b>：33 節點、4 大精隨分支</li>
+                    <li><b>霸主系統</b>：25% 掉落高一階地圖，首殺永久 +1 天賦點</li>
+                    <li><b>精隨詞綴怪</b>：3% 機率出現，擊殺必定掉落對應精隨</li>
+                    <li>硫磺改為打圖掉落（不再由一般戰鬥產出）</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag add">新增</span>
+                    <span class="entry-title">地心礦坑獨立戰鬥</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li>礦坑戰鬥使用<b>獨立敵人容器</b>，與一般／輿圖完全隔離</li>
+                    <li>戰鬥面板比照打圖樣板：ATB 條、戰力、HP/MP、門派特色、下一招預告</li>
+                    <li>常駐工具列：不論是否戰鬥中都能開啟戰術設定</li>
+                    <li>深度策略：越深層自動提高血線與藥線</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag bal">平衡</span>
+                    <span class="entry-title">獎勵曲線重製（A+B 方案）</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li><b>方案 A</b>：怪物獎勵改用 <code>lv^0.8</code> 曲線，解決後期暴漲</li>
+                    <li><b>方案 B</b>：等級差衰減，打低等怪獎勵大幅打折（最低 2%）</li>
+                    <li>修正 <code>totalExp / 5</code> 與 <code>rewardRate 0.085</code> 的二次懲罰</li>
+                    <li>離線掛機同步套用新曲線</li>
+                    <li>實際效果：Lv1 約 7 場升級 → Lv300 約 1343 場（越後期越難練）</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag new">新增</span>
+                    <span class="entry-title">BUFF 丹藥自動服用</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li>6 種狀態丹藥：狂暴戰神、金剛不壞、天眼必中、太虛幻影、長生回春、五氣朝元</li>
+                    <li>自動續 BUFF：剩餘回合不足時自動補一顆</li>
+                    <li>可設定「只在霸主階段使用」節省丹藥</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag add">新增</span>
+                    <span class="entry-title">復活機制重製</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li>改為<b>每個角色獨立 3 次</b>復活（原本全隊共用 5 次）</li>
+                    <li><b>單一角色死亡即刻復活</b>，不需等全隊死亡</li>
+                    <li>復活技能：每張地圖每人只能被技能救起一次</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag fix">修正</span>
+                    <span class="entry-title">戰鬥面板預告顯示</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li>修正「怪物已死，預告仍指向死亡目標」</li>
+                    <li>已陣亡單位顯示 <b>💀 已陣亡</b>（刪除線）</li>
+                    <li>群攻技能目標顯示「<b>敵方群體</b>／<b>我方群體</b>」</li>
+                    <li>攻擊技能附帶回血會標註 💚</li>
+                    <li>敵方 5 隻分散攻擊不同角色，預告與實際 100% 一致</li>
+                    <li>敵方集氣條顏色與我方同步（金色漸層）</li>
+                </ul>
+            </div>
+
+            <div class="entry">
+                <div class="entry-hd">
+                    <span class="tag fix">修正</span>
+                    <span class="entry-title">其他系統修正</span>
+                    <span class="entry-date">2026-11-05</span>
+                </div>
+                <ul>
+                    <li>金司馬區倉庫容量 <b>×10</b>（200 → 2000）</li>
+                    <li>幫會祝福／後天改命貢獻消耗 <b>×10</b></li>
+                    <li>幫會建築每棟最多排班 <b>3 人</b></li>
+                    <li>地圖品質邊框加粗，珠寶／裝備同步</li>
+                    <li>修復 <code>num is not defined</code> 導致戰鬥卡死</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+    <!-- ══════════════ 更新公告結束 ══════════════ -->
+    <!-- ══════════════ 玩法公告 ══════════════ -->
+    <div class="guide">
+        <div class="guide-hd">
+            <span>🎮 玩法指南</span>
+            <span class="cnt">新手必讀</span>
+        </div>
+        <div class="guide-bd">
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⚔️</span>核心循環</div>
+                <div class="card-bd">
+                    打怪升等 → 累積裝備 → 挑戰高階地圖 → 取得更好的詞綴與精隨 → 再打更難的圖。
+                    <br><b>一般戰鬥</b>只給經驗／武點／銀兩；<b>裝備與通貨全部來自打圖</b>。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🗺️</span>異界輿圖（打圖）</div>
+                <div class="card-bd">
+                    倉庫 → <b>地圖倉庫</b> → 選一張圖 → 用通貨改造詞綴 → 右欄點「開啟地圖戰鬥」。
+                    <br>地圖分 <code>T1~T16</code>，階級越高獎勵越好，怪物也越強。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🛠️</span>地圖改造（重要）</div>
+                <div class="card-bd">
+                    地圖掉落時是<b>白圖</b>，沒有詞綴。用通貨洗詞綴：
+                    <br>蛻變（白→藍）→ 增幅（加詞綴）→ 點金（藍→黃）→ 混沌（重洗）
+                    <br>詞綴越好，<b>怪物數量／掉落／難度</b>同步提升。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">👑</span>霸主與地圖掉落</div>
+                <div class="card-bd">
+                    清完小怪後<b>霸主登場</b>。擊殺霸主有 <b>25%</b> 機率掉落高一階地圖。
+                    <br>首次擊敗每個階級的霸主 → 永久 <b>+1 輿圖天賦點</b>（每階只給一次）。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🌳</span>輿圖天賦樹</div>
+                <div class="card-bd">
+                    頂部「🌳 天賦樹」或輿圖內「🌟 輿圖天賦」開啟。
+                    <br>33 個節點、4 大分支全為<b>精隨主題</b>：掉落率／階級／改造／詞綴。
+                    <br>天賦點只在地圖內生效。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⛏️</span>地心礦坑</div>
+                <div class="card-bd">
+                    頂部「⛏️ 地心礦坑」進入。<b>無限深度</b>，越深怪物越強。
+                    <br>產出：<b>硫磺</b>（燃料）、<b>化石</b>（工藝）、<b>珠寶</b>。
+                    <br>硫磺主要由打圖取得。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">💊</span>三套自動戰鬥</div>
+                <div class="card-bd">
+                    分別對應三種戰鬥，設定完全獨立：
+                    <br>🎛️ <b>時空內掛</b>（一般戰鬥）｜🗺️ <b>打圖戰術</b>（輿圖）｜⛏️ <b>礦坑戰術</b>（礦坑）
+                    <br>每個角色各自獨立設定，切換操控角色會自動套用。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">💀</span>復活機制</div>
+                <div class="card-bd">
+                    每個角色<b>獨立 3 次</b>復活。角色死亡會<b>立刻消耗自己的次數</b>原地復活，不需等全隊死亡。
+                    <br>次數用完就真的倒下，需靠隊友或退出地圖。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🔮</span>精隨系統</div>
+                <div class="card-bd">
+                    打圖時約 <b>3%</b> 的怪物會帶「精隨禁錮」詞綴（紫色光環）。
+                    <br>擊殺<b>必定掉落</b>對應家族的 1 顆精隨。精隨可直接鑲上裝備，取代一條詞綴。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">🏯</span>幫會系統</div>
+                <div class="card-bd">
+                    八大建築可排班幫眾生產資源，<b>每棟最多 3 人</b>。
+                    <br>幫貢可用於「幫會祝福」（單角限 1 個生效）與「後天改命」（每角獨立）。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">⚓</span>金司馬區</div>
+                <div class="card-bd">
+                    建築經營、雇傭工人、船運貿易、符文鑲嵌、金司馬重組。
+                    <br>倉庫容量 <b>2000</b>（基本 200 × 10），適合囤放大量素材。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd"><span class="ico">📈</span>等級與獎勵曲線</div>
+                <div class="card-bd">
+                    上限 <b>Lv.300</b>。<b>越後期越難練</b>：
+                    <br>Lv1 約 7 場升一級 → Lv50 約 212 場 → Lv300 約 1343 場。
+                    <br>打比自己低 <b>5 級以上</b>的怪，獎勵會大幅衰減。
+                </div>
+            </div>
+
+            <div class="tip">
+                <b>💡 新手建議路線</b>：先在揚州城郊打到 Lv10 → 累積 3 張 T1 地圖合成 T2 →
+                進軍輿圖洗詞綴刷裝備 → 裝備成型後挑戰 T5+ 拿精隨 →
+                同時經營礦坑取得珠寶與化石 → 最後挑戰 T16 霸主。
+            </div>
+
+        </div>
+    </div>
+    <!-- ══════════════ 玩法公告結束 ══════════════ -->
+
+    <!-- ══════════════ 我的隊伍 ══════════════ -->
+    <div class="team">
+        <div class="team-hd">
+            <span>👥 我的隊伍</span>
+            <span class="cnt" id="team-cnt">讀取中…</span>
+        </div>
+        <div class="team-bd" id="team-bd">
+            <div class="team-empty" id="team-loading">正在讀取本機存檔…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 我的隊伍結束 ══════════════ -->
+    <script>
+    /* ══════════════════════════════════════════════════════════════
+       👥 我的隊伍 —— 從本機存檔讀取角色資料
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SAVE_KEY = 'HUANGYI_WEB_RPG_SAVE_V2';
+
+        /* 門派顯示對照 */
+        var SECT_INFO = {
+            emei:       { name: '峨嵋派',   icon: '💚' },
+            shaolin:    { name: '少林寺',   icon: '🧘' },
+            wudang:     { name: '武當派',   icon: '☯️' },
+            cihang:     { name: '慈航靜齋', icon: '🌸' },
+            yinkui:     { name: '陰癸派',   icon: '🌙' },
+            momon:      { name: '魔門',     icon: '😈' },
+            jingnian:   { name: '淨念禪院', icon: '🕉️' },
+            jueqing:    { name: '絕情谷',   icon: '❄️' },
+            guigu:      { name: '鬼谷',     icon: '🌀' },
+            tianlong:   { name: '天龍寺',   icon: '🐉' },
+            xingxiu:    { name: '星宿派',   icon: '☠️' },
+            mingjiao:   { name: '明教',     icon: '🔥' },
+            bugui:      { name: '補天閣',   icon: '🧵' },
+            huanhua:    { name: '花間派',   icon: '🌺' },
+            tianlian:   { name: '天蓮宗',   icon: '🪷' }
+        };
+
+        function sectOf(sect) {
+            if (!sect) return { name: '無門無派', icon: '⚪' };
+            return SECT_INFO[sect] || { name: String(sect), icon: '⚪' };
+        }
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+
+        function render() {
+            var bd = document.getElementById('team-bd');
+            var cntEl = document.getElementById('team-cnt');
+            if (!bd) return;
+
+            var raw = null;
+            try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { raw = null; }
+
+            if (!raw) {
+                if (cntEl) cntEl.textContent = '尚無存檔';
+                bd.innerHTML =
+                    '<div class="team-empty">' +
+                    '還沒有任何角色。<br>' +
+                    '<a href="game.html">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
+                    '</div>';
+                return;
+            }
+
+            var save = null;
+            try { save = JSON.parse(raw); } catch (e) { save = null; }
+            if (!save || !Array.isArray(save.roster) || !save.roster.length) {
+                if (cntEl) cntEl.textContent = '尚無角色';
+                bd.innerHTML = '<div class="team-empty">存檔中沒有角色資料。<br>' +
+                    '<a href="game.html">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
+                return;
+            }
+
+            var roster = save.roster;
+            var party = Array.isArray(save.party) ? save.party : [];
+            var activeIdx = (typeof save.activeCharIndex === 'number') ? save.activeCharIndex : 0;
+            var activeId = (roster[activeIdx] && roster[activeIdx].id) || null;
+
+            /* 只顯示「在隊伍中」的角色；若 party 為空則顯示全部 */
+            var inParty = roster.filter(function (c) {
+                return party.indexOf(c.id) !== -1;
+            });
+            var shown = inParty.length ? inParty : roster;
+
+            if (cntEl) {
+                cntEl.textContent = shown.length + ' / ' + roster.length + ' 名角色' +
+                    (party.length ? '　·　上陣 ' + party.length + ' 人' : '');
+            }
+
+            var h = '<div class="team-grid">';
+            for (var i = 0; i < 5; i++) {
+                var c = shown[i];
+                if (!c) {
+                    h += '<div class="member empty">' +
+                        '<span class="slot-no">' + (i + 1) + '</span>' +
+                        '<div class="avatar">👤</div>' +
+                        '<div class="m-name">空缺</div>' +
+                        '<div class="m-lv">—</div>' +
+                        '<div class="m-sect">未招募</div>' +
+                        '<div class="m-bar"><i style="width:0%"></i></div>' +
+                        '<div class="m-exp">—</div>' +
+                        '</div>';
+                    continue;
+                }
+                var isMain = (c.id === activeId);
+                var sec = sectOf(c.sect);
+                var exp = Number(c.exp) || 0;
+                var maxExp = Number(c.maxExp) || 1;
+                var pct = Math.min(100, Math.round(exp / maxExp * 100));
+                h += '<div class="member' + (isMain ? ' main' : '') + '">' +
+                    '<span class="slot-no">' + (i + 1) + '</span>' +
+                    (isMain ? '<span class="crown">👑</span>' : '') +
+                    '<div class="avatar">' + sec.icon + '</div>' +
+                    '<div class="m-name" title="' + esc(c.name) + '">' + esc(c.name) + '</div>' +
+                    '<div class="m-lv">Lv.' + (Number(c.lv) || 1) + '</div>' +
+                    '<div class="m-sect" title="' + esc(sec.name) + '">' + esc(sec.name) + '</div>' +
+                    '<div class="m-bar"><i style="width:' + pct + '%"></i></div>' +
+                    '<div class="m-exp">' + pct + '% · ' + fmt(exp) + '/' + fmt(maxExp) + '</div>' +
+                    '</div>';
+            }
+            h += '</div>';
+
+            /* 統計列 */
+            var maxLv = 0, totalLv = 0, sectCount = {};
+            roster.forEach(function (c) {
+                var lv = Number(c.lv) || 1;
+                totalLv += lv;
+                if (lv > maxLv) maxLv = lv;
+                if (c.sect) sectCount[c.sect] = (sectCount[c.sect] || 0) + 1;
+            });
+            var atlas = save.atlas || {};
+            var clears = Number(atlas.clears) || 0;
+            var bestTier = Number(atlas.bestTier) || 0;
+            var gold = Number(save.gold) || 0;
+
+            h += '<div class="team-stat">' +
+                '<span>👥 角色數 <b>' + roster.length + '</b></span>' +
+                '<span>🏆 最高等級 <b>Lv.' + maxLv + '</b></span>' +
+                '<span>📊 平均等級 <b>' + (roster.length ? Math.round(totalLv / roster.length) : 0) + '</b></span>' +
+                '<span>🗺️ 通關次數 <b>' + clears + '</b></span>' +
+                (bestTier > 0 ? '<span>⭐ 最高階級 <b>T' + bestTier + '</b></span>' : '') +
+                '<span>💰 紋銀 <b>' + fmt(gold) + '</b></span>' +
+                '</div>';
+
+            bd.innerHTML = h;
+        }
+
+        /* 頁面載入後渲染 */
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', render);
+        } else {
+            render();
+        }
+
+        /* 從遊戲分頁返回時自動刷新（存檔可能已更新） */
+        window.addEventListener('focus', render);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) render();
+        });
+    })();
+    </script>
+    <!-- ══════════════ 全服排行 ══════════════ -->
+    <div class="rank">
+        <div class="rank-hd">
+            <span>🏆 全服玩家排行</span>
+            <span class="cnt" id="rank-cnt">讀取中…</span>
+        </div>
+        <div class="rank-tabs">
+            <div class="rank-tab on" data-sort="max_lv">🏅 最高等級</div>
+            <div class="rank-tab" data-sort="clears">🗺️ 通關次數</div>
+            <div class="rank-tab" data-sort="best_tier">⭐ 最高階級</div>
+            <div class="rank-tab" data-sort="gold">💰 紋銀</div>
+        </div>
+        <div class="rank-bd" id="rank-bd">
+            <div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 全服排行結束 ══════════════ -->
+    <script>
+    /* ══════════════════════════════════════════════════════════════
+       🏆 全服玩家排行 —— 從 Supabase 讀取
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SUPABASE_URL = 'https://gcbdbywobmehbqxigmnw.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjYmRieXdvYm1laGJxeGlnbW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4MjE1NTksImV4cCI6MjEwOTM5NzU1OX0.rutr6p5pcSea-kfN5npCD9B3dCQcPV2eTmqCAlpxLiQ';
+        var MY_KEY = null;
+        try { MY_KEY = localStorage.getItem('HY_PLAYER_KEY'); } catch (e) { }
+
+        var SECT_ICON = {
+            emei: '💚', shaolin: '🧘', wudang: '☯️', cihang: '🌸',
+            yinkui: '🌙', momon: '😈', jingnian: '🕉️', jueqing: '❄️',
+            guigu: '🌀', tianlong: '🐉', xingxiu: '☠️', mingjiao: '🔥',
+            bugui: '🧵', huanhua: '🌺', tianlian: '🪷'
+        };
+        var SECT_NAME = {
+            emei: '峨嵋派', shaolin: '少林寺', wudang: '武當派', cihang: '慈航靜齋',
+            yinkui: '陰癸派', momon: '魔門', jingnian: '淨念禪院', jueqing: '絕情谷',
+            guigu: '鬼谷', tianlong: '天龍寺', xingxiu: '星宿派', mingjiao: '明教',
+            bugui: '補天閣', huanhua: '花間派', tianlian: '天蓮宗'
+        };
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 100000000) return (v / 100000000).toFixed(1) + 'E';
+            if (v >= 1000000) return (v / 1000000).toFixed(2) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+        function ago(ts) {
+            if (!ts) return '';
+            var d = Date.now() - new Date(ts).getTime();
+            if (d < 60000) return '剛剛';
+            if (d < 3600000) return Math.floor(d / 60000) + ' 分鐘前';
+            if (d < 86400000) return Math.floor(d / 3600000) + ' 小時前';
+            return Math.floor(d / 86400000) + ' 天前';
+        }
+
+        var curSort = 'max_lv';
+        var cache = [];
+
+        function headers() {
+            return {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function render() {
+            var bd = document.getElementById('rank-bd');
+            var cntEl = document.getElementById('rank-cnt');
+            if (!bd) return;
+
+            if (!cache.length) {
+                if (cntEl) cntEl.textContent = '0 位玩家';
+                bd.innerHTML = '<div class="rank-empty">' +
+                    '目前還沒有人上傳隊伍。<br>' +
+                    '<a href="game.html" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
+                    '，你的隊伍會自動出現在這裡。</div>';
+                return;
+            }
+
+            if (cntEl) cntEl.textContent = cache.length + ' 位玩家';
+
+            var keyMap = {
+                max_lv: { k: '最高等級', f: function (r) { return 'Lv.' + r.max_lv; } },
+                clears: { k: '通關次數', f: function (r) { return r.clears + ' 次'; } },
+                best_tier: { k: '最高階級', f: function (r) { return r.best_tier > 0 ? 'T' + r.best_tier : '—'; } },
+                gold: { k: '紋銀', f: function (r) { return fmt(r.gold); } }
+            };
+            var km = keyMap[curSort] || keyMap.max_lv;
+
+            var h = '';
+            cache.forEach(function (r, i) {
+                var rankCls = i === 0 ? ' g1' : (i === 1 ? ' g2' : (i === 2 ? ' g3' : ''));
+                var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : (i + 1)));
+                var isMe = (MY_KEY && r.player_key === MY_KEY);
+                var chars = Array.isArray(r.chars) ? r.chars : [];
+                var mainChar = chars.find(function (c) {
+                    return c.name === r.player_name;
+                }) || chars[0] || {};
+                var secIcon = SECT_ICON[mainChar.sect] || '⚪';
+                var secName = SECT_NAME[mainChar.sect] || '無門無派';
+
+                h += '<div class="rank-row' + (isMe ? ' me' : '') + '" data-idx="' + i + '">' +
+                    '<div class="rank-no' + rankCls + '">' + medal + '</div>' +
+                    '<div class="rank-info">' +
+                    '<div class="rank-name">' + secIcon + ' ' + esc(r.player_name) +
+                    (isMe ? ' <span style="color:#00e5ff;font-size:.66rem">(你)</span>' : '') + '</div>' +
+                    '<div class="rank-sub">' + chars.length + ' 名角色　·　均等 Lv.' + (r.avg_lv || 1) +
+                    '　·　' + esc(secName) + '　·　' + ago(r.updated_at) + '</div>' +
+                    '</div>' +
+                    '<div class="rank-val"><div class="v" style="color:' +
+                    (curSort === 'gold' ? '#6ee7b7' : (curSort === 'best_tier' ? '#c084fc' : '#f0c674')) +
+                    '">' + km.f(r) + '</div><div class="k">' + km.k + '</div></div>' +
+                    '</div>';
+
+                /* 展開的隊伍詳情 */
+                h += '<div class="rank-detail" id="rd-' + i + '">';
+                if (chars.length) {
+                    chars.forEach(function (c) {
+                        var ic = SECT_ICON[c.sect] || '⚪';
+                        var sn = SECT_NAME[c.sect] || '無門無派';
+                        h += '<div class="rd-char">' +
+                            '<span class="rd-ico">' + ic + '</span>' +
+                            '<span class="rd-nm">' + esc(c.name) + '</span>' +
+                            '<span class="rd-sect">' + esc(sn) + '</span>' +
+                            '<span class="rd-lv">Lv.' + (c.lv || 1) + '</span>' +
+                            '</div>';
+                    });
+                } else {
+                    h += '<div class="rd-char" style="color:#475569">（無角色資料）</div>';
+                }
+                h += '</div>';
+            });
+
+            bd.innerHTML = h;
+
+            /* 點擊展開／收合 */
+            bd.querySelectorAll('.rank-row').forEach(function (row) {
+                row.addEventListener('click', function () {
+                    var idx = row.getAttribute('data-idx');
+                    var det = document.getElementById('rd-' + idx);
+                    if (det) det.classList.toggle('open');
+                });
+            });
+        }
+
+        function load(sortBy) {
+            curSort = sortBy || curSort;
+            var bd = document.getElementById('rank-bd');
+            if (bd && !cache.length) {
+                bd.innerHTML = '<div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>';
+            }
+            var url = SUPABASE_URL + '/rest/v1/teams' +
+                '?select=player_key,player_name,chars,max_lv,avg_lv,clears,best_tier,gold,updated_at' +
+                '&order=' + curSort + '.desc,max_lv.desc' +
+                '&limit=50';
+
+            fetch(url, { headers: headers() })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function (rows) {
+                    cache = Array.isArray(rows) ? rows : [];
+                    render();
+                })
+                .catch(function (e) {
+                    var bd2 = document.getElementById('rank-bd');
+                    if (bd2) {
+                        bd2.innerHTML = '<div class="rank-empty">' +
+                            '無法連線全服伺服器。<br>' +
+                            '<span style="font-size:.72rem;color:#475569">' + esc(e.message) + '</span><br>' +
+                            '<span style="font-size:.72rem;color:#475569">請確認網路連線後重新整理</span></div>';
+                    }
+                    var cntEl = document.getElementById('rank-cnt');
+                    if (cntEl) cntEl.textContent = '連線失敗';
+                });
+        }
+
+        /* 排序切換 */
+        document.querySelectorAll('.rank-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.rank-tab').forEach(function (t) {
+                    t.classList.remove('on');
+                });
+                tab.classList.add('on');
+                cache = [];
+                load(tab.getAttribute('data-sort'));
+            });
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { load('max_lv'); });
+        } else {
+            load('max_lv');
+        }
+    })();
+    </script>
+
+
+    <div class="note">
+        建議使用 Chrome / Edge 瀏覽器　·　首次載入約需 3~5 秒<br>
+        <a href="https://github.com/lover2029951/huangyi-web-rpg" target="_blank" rel="noopener">原始碼倉庫</a>
+    </div>
+
+</body>
+</html>

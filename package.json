@@ -1,0 +1,12 @@
+{
+  "name": "huangyi-web-rpg",
+  "version": "1.0.0",
+  "description": "黃易群俠傳 Web：時空浪人 — Path of Exile 風格武俠網頁 RPG",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": ["rpg", "wuxia", "path-of-exile", "web-game"],
+  "license": "MIT"
+}
