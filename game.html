@@ -37684,11 +37684,56 @@ window.HY = window.HY || {};
     Data.SHJ_BEAST_BY_ID = {};
     Data.SHJ_BEASTS.forEach(function (b) { Data.SHJ_BEAST_BY_ID[b.id] = b; });
 
-    /* 依區域取（region 0~8） */
+    /* 山海經地圖異獸 id → 武魂定義 id（與 WUHUNS 不一致時） */
+    Data.SHJ_WUHUN_ALIAS = {
+        jiuweihu: 'fox',
+        yingshao: 'yingzhao',
+        lin: 'qilin',
+        hanba: 'nvba',
+        shayu: 'suanni',
+        bilin: 'bifang',
+        wenzhu: 'wenyaoyu',
+        ranyi: 'ranyiyu',
+        xueji: 'xiquzhu',
+        baifeng: 'fenghuang',
+        chiwen: 'lin',
+        xuanbei: 'shenlong'
+    };
+
+    /** 對應的武魂定義（必須有 art）；無則 null */
+    Data.shjWuhunDefOf = function (beast) {
+        if (!beast) return null;
+        var list = Data.WUHUNS;
+        var byId = Data.WUHUN_BY_ID;
+        if (!list || !list.length || !byId) return null;
+
+        var wid = beast.wuhunId || Data.SHJ_WUHUN_ALIAS[beast.id] || beast.id;
+        var def = byId[wid];
+        if (def && def.art) return def;
+
+        var nm = String(beast.name || '');
+        var i, w;
+        for (i = 0; i < list.length; i++) {
+            w = list[i];
+            if (!w.art) continue;
+            if (w.name === nm) return w;
+            if (nm.length >= 2 && w.name.indexOf(nm) === 0) return w;
+        }
+        return null;
+    };
+
+    /** 武魂山海經異獸圖路徑 */
+    Data.shjWuhunArtOf = function (beast) {
+        var def = Data.shjWuhunDefOf(beast);
+        return def && def.art ? def.art : '';
+    };
+
+    /* 依區域取（region 0~8）；僅含已有武魂繪圖者 */
     Data.shjBeastsInRegion = function (regionIdx) {
         var r = Number(regionIdx);
         return Data.SHJ_BEASTS.filter(function (b) {
-            return (b.region || []).indexOf(r) >= 0;
+            if ((b.region || []).indexOf(r) < 0) return false;
+            return !!Data.shjWuhunArtOf(b);
         });
     };
 
@@ -37812,8 +37857,14 @@ window.HY = window.HY || {};
                 'border:2px solid currentColor;',
                 'box-shadow:0 0 14px currentColor,0 0 30px currentColor,inset 0 0 12px rgba(0,0,0,.7);}',
                 '.shj-beast:hover{transform:scale(1.18);filter:brightness(1.25);z-index:5;}',
-                '.shj-beast .ic{font-size:1.5rem;line-height:1;',
-                'filter:drop-shadow(0 2px 4px rgba(0,0,0,.9));}',
+                '.shj-beast .ic{position:relative;width:48px;height:48px;',
+                'border-radius:50%;overflow:hidden;',
+                'display:flex;align-items:center;justify-content:center;',
+                'background:radial-gradient(circle,rgba(8,6,4,.55),transparent 70%);}',
+                '.shj-beast .ic img{width:175%;height:175%;max-width:none;max-height:none;',
+                'object-fit:contain;position:absolute;left:50%;top:50%;',
+                'transform:translate(-50%,-52%);pointer-events:none;',
+                'filter:drop-shadow(0 2px 6px rgba(0,0,0,.92));}',
                 '.shj-beast .lbl{position:absolute;top:calc(100% + 4px);left:50%;',
                 'transform:translateX(-50%);white-space:nowrap;font-size:.62rem;',
                 'font-weight:bold;color:#f0e4c8;text-shadow:0 1px 3px #000,0 0 6px #000;',
@@ -37838,7 +37889,11 @@ window.HY = window.HY || {};
                 'color:#d8cfc0;pointer-events:auto;}',
                 '.shj-tip .th{display:flex;align-items:center;gap:9px;margin-bottom:8px;',
                 'padding-bottom:8px;border-bottom:1px solid #3a3020;}',
-                '.shj-tip .ti{font-size:1.7rem;line-height:1;}',
+                '.shj-tip .ti{font-size:1.7rem;line-height:1;flex:0 0 auto;}',
+                '.shj-tip .ti.shj-tip-art{width:64px;height:64px;border-radius:10px;',
+                'overflow:hidden;background:rgba(0,0,0,.35);',
+                'border:1px solid rgba(200,170,110,.35);}',
+                '.shj-tip .ti.shj-tip-art img{width:100%;height:100%;object-fit:contain;display:block;}',
                 '.shj-tip .tn{font-size:1rem;font-weight:bold;color:#f0d090;letter-spacing:1px;}',
                 '.shj-tip .tr{margin-left:auto;font-size:.64rem;padding:1px 7px;border-radius:9px;',
                 'border:1px solid currentColor;font-weight:bold;}',
@@ -37972,16 +38027,25 @@ window.HY = window.HY || {};
                     rx += (Math.random() - 0.5) * cellW * 0.12;
                     ry += (Math.random() - 0.5) * cellH * 0.14;
 
-                    this._makeBeastNode(beast, rx, ry);
-                    total++;
+                    if (this._makeBeastNode(beast, rx, ry)) total++;
                 }, this);
             }
             this._beastCount = total;
         }
 
+        /** 武魂山海經異獸圖（無圖則空字串） */
+        _beastArtSrc(beast) {
+            var Data = window.HY.Data;
+            if (!Data || !Data.shjWuhunArtOf) return '';
+            return Data.shjWuhunArtOf(beast) || '';
+        }
+
         /** 建立單一異獸標記 */
         _makeBeastNode(beast, x, y) {
             var Data = window.HY.Data;
+            var art = this._beastArtSrc(beast);
+            if (!art) return null;
+
             var rar = Data.shjRarityOf(beast.rarity);
 
             var el = document.createElement('div');
@@ -37991,9 +38055,13 @@ window.HY = window.HY || {};
             el.style.color = rar.color;
             el.setAttribute('data-beast', beast.id);
             el.innerHTML =
-                '<span class="ic">' + beast.icon + '</span>' +
+                '<span class="ic">' +
+                    '<img src="' + esc(art) + '" alt="' + esc(beast.name) + '"' +
+                    ' loading="lazy" decoding="async" draggable="false"' +
+                    ' onerror="var n=this.closest(&quot;.shj-beast&quot;);if(n&amp;&amp;n.parentNode)n.parentNode.removeChild(n);">' +
+                '</span>' +
                 '<span class="lbl" style="border-color:' + rar.color + '66">' +
-                    beast.name + '</span>';
+                    esc(beast.name) + '</span>';
 
             var self = this;
 
@@ -38019,9 +38087,15 @@ window.HY = window.HY || {};
         _showBeastTip(beast, cx, cy) {
             var Data = window.HY.Data;
             var rar = Data.shjRarityOf(beast.rarity);
+            var art = this._beastArtSrc(beast);
+            var tipIcon = art
+                ? ('<span class="ti shj-tip-art"><img src="' + esc(art) + '" alt="' +
+                    esc(beast.name) + '"></span>')
+                : '';
 
             var old = document.getElementById('shj-beast-tip');
             if (old && old.parentNode) old.parentNode.removeChild(old);
+            if (!art) return;
 
             var tip = document.createElement('div');
             tip.id = 'shj-beast-tip';
@@ -38030,8 +38104,8 @@ window.HY = window.HY || {};
             tip.innerHTML =
                 '<span class="tx" id="shj-tip-x">✖</span>' +
                 '<div class="th">' +
-                    '<span class="ti">' + beast.icon + '</span>' +
-                    '<span class="tn">' + beast.name + '</span>' +
+                    tipIcon +
+                    '<span class="tn">' + esc(beast.name) + '</span>' +
                     '<span class="tr" style="color:' + rar.color + '">' + rar.name + '</span>' +
                 '</div>' +
                 '<div class="ts">' + (beast.source || '') + '</div>' +
