@@ -38930,11 +38930,15 @@ window.HY = window.HY || {};
                 'object-fit:contain;position:relative;',
                 'pointer-events:none;',
                 'filter:drop-shadow(0 2px 6px rgba(0,0,0,.85));}',
-                '.shj-beast .lbl{position:absolute;top:calc(100% + 12px);left:50%;',
-                'transform:translateX(-50%);white-space:nowrap;font-size:1.59rem;',
-                'font-weight:bold;color:#f0e4c8;text-shadow:0 1px 4px #000,0 0 8px #000;',
-                'background:rgba(10,7,4,.88);padding:4px 15px;border-radius:8px;',
-                'border:1px solid rgba(200,170,110,.4);pointer-events:none;}',
+                '.shj-beast .lbl{position:absolute;top:calc(100% + 10px);left:50%;',
+                'transform:translateX(-50%);transform-origin:top center;white-space:nowrap;',
+                'font-size:26px;line-height:1.25;letter-spacing:.08em;',
+                'font-weight:700;color:#fff4dc;',
+                'text-shadow:0 0 1px #000,0 1px 0 #000,0 2px 6px #000,0 0 12px rgba(0,0,0,.9);',
+                'background:linear-gradient(180deg,rgba(24,18,10,.96),rgba(8,6,4,.94));',
+                'padding:6px 16px;border-radius:10px;',
+                'border:2px solid rgba(220,178,96,.72);',
+                'box-shadow:0 4px 14px rgba(0,0,0,.85);pointer-events:none;}',
                 /* 詳情卡 */
                 '.shj-tip{position:fixed;z-index:9800;width:320px;max-width:88vw;',
                 'background:linear-gradient(160deg,#1d1610,#120d08 70%);',
@@ -39197,11 +39201,13 @@ window.HY = window.HY || {};
             el.style.left = x + 'px';
             el.style.top = y + 'px';
             el.style.color = rar.color;
+            el.title = beast.name || '';
             if (typeof beast._region === 'number' && Data.shjVeinOf) {
                 var vein = Data.shjVeinOf(beast._region);
                 el.style.boxShadow = '0 4px 14px rgba(0,0,0,.72),0 0 ' +
                     (8 + vein / 12) + 'px rgba(120,200,160,' + (0.12 + vein / 400) + ')';
-                el.title = (Data.SHJ_REGIONS && Data.SHJ_REGIONS[beast._region] || '') +
+                el.title = beast.name + ' · ' +
+                    (Data.SHJ_REGIONS && Data.SHJ_REGIONS[beast._region] || '') +
                     ' · 靈脈 ' + vein;
             }
             el.setAttribute('data-beast', beast.id);
@@ -39237,6 +39243,7 @@ window.HY = window.HY || {};
             });
 
             this.canvas.appendChild(el);
+            if (this._syncBeastLabelScale) this._syncBeastLabelScale();
             return el;
         }
 
@@ -39546,10 +39553,20 @@ window.HY = window.HY || {};
             this._updateZoom();
         }
 
+        _syncBeastLabelScale() {
+            if (!this.canvas || !this.scale) return;
+            var inv = 1 / Math.max(0.08, this.scale);
+            var cap = Math.min(inv, 5.5);
+            this.canvas.querySelectorAll('.shj-beast .lbl').forEach(function (lbl) {
+                lbl.style.transform = 'translateX(-50%) scale(' + cap + ')';
+            });
+        }
+
         _apply() {
             if (!this.canvas) return;
             this.canvas.style.transform =
                 'translate(' + this.x + 'px,' + this.y + 'px) scale(' + this.scale + ')';
+            this._syncBeastLabelScale();
         }
 
         _updateZoom() {
