@@ -39190,6 +39190,7 @@ window.HY = window.HY || {};
             if (!art) return null;
 
             var rar = Data.shjRarityOf(beast.rarity);
+            var whDef = Data.shjWuhunDefOf ? Data.shjWuhunDefOf(beast) : null;
 
             var el = document.createElement('div');
             el.className = 'shj-beast ' + beast.rarity + (beast._isChainBoss ? ' chain-boss' : '');
@@ -39207,11 +39208,24 @@ window.HY = window.HY || {};
             el.innerHTML =
                 '<span class="ic">' +
                     '<img src="' + esc(art) + '" alt="' + esc(beast.name) + '"' +
-                    ' loading="lazy" decoding="async" draggable="false"' +
-                    ' onerror="var n=this.closest(&quot;.shj-beast&quot;);if(n&amp;&amp;n.parentNode)n.parentNode.removeChild(n);">' +
+                    ' loading="lazy" decoding="async" draggable="false">' +
                 '</span>' +
                 '<span class="lbl" style="border-color:' + rar.color + '66">' +
                     (beast._isChainBoss ? '🔗 ' : '') + esc(beast.name) + '</span>';
+
+            var icWrap = el.querySelector('.ic');
+            var imgEl = icWrap && icWrap.querySelector('img');
+            if (imgEl) {
+                imgEl.addEventListener('error', function onShjArtErr() {
+                    imgEl.removeEventListener('error', onShjArtErr);
+                    var composite = Data.shjWuhunArtOf && Data.shjWuhunArtOf(beast);
+                    if (composite && imgEl.src.indexOf('_body.png') >= 0) {
+                        imgEl.src = composite;
+                        return;
+                    }
+                    icWrap.textContent = beast.icon || (whDef && whDef.icon) || '🐾';
+                });
+            }
 
             var self = this;
 
