@@ -453,7 +453,7 @@
         <p class="sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
     </div>
 
-    <a class="btn" href="game.html?v=611b">▶ 進入遊戲</a>
+    <a class="btn" href="game.html?v=676">▶ 進入遊戲</a>
 
     <!-- ══════════════ 更新公告 ══════════════ -->
     <div class="news">
@@ -770,7 +770,7 @@
                 bd.innerHTML =
                     '<div class="team-empty">' +
                     '還沒有任何角色。<br>' +
-                    '<a href="game.html?v=611b">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
+                    '<a href="game.html?v=676">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
                     '</div>';
                 return;
             }
@@ -780,7 +780,7 @@
             if (!save || !Array.isArray(save.roster) || !save.roster.length) {
                 if (cntEl) cntEl.textContent = '尚無角色';
                 bd.innerHTML = '<div class="team-empty">存檔中沒有角色資料。<br>' +
-                    '<a href="game.html?v=611b">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
+                    '<a href="game.html?v=676">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
                 return;
             }
 
@@ -953,7 +953,7 @@
                 if (cntEl) cntEl.textContent = '0 位玩家';
                 bd.innerHTML = '<div class="rank-empty">' +
                     '目前還沒有人上傳隊伍。<br>' +
-                    '<a href="game.html?v=611b" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
+                    '<a href="game.html?v=676" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
                     '，你的隊伍會自動出現在這裡。</div>';
                 return;
             }

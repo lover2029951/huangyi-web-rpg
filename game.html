@@ -55365,6 +55365,42 @@ window.HY = window.HY || {};
             return { ok: true, inc: inc, growth: after };
         }
 
+        /** 一次融合多隻同名武魂（直到成長值上限或清單用完） */
+        fuseMany(mainUid, subUids) {
+            var self = this;
+            if (!Array.isArray(subUids) || !subUids.length) {
+                return { ok: false, why: '沒有選擇要融合的武魂', count: 0, skipped: [] };
+            }
+            var fused = 0;
+            var totalInc = 0;
+            var lastGrowth = 0;
+            var skipped = [];
+            subUids.forEach(function (uid) {
+                if (!uid || uid === mainUid) return;
+                var chk = self.canFuse(mainUid, uid);
+                if (!chk.ok) {
+                    skipped.push({ uid: uid, why: chk.why || '無法融合' });
+                    return;
+                }
+                var r = self.fuse(mainUid, uid);
+                if (r.ok) {
+                    fused++;
+                    totalInc += num(r.inc, 0);
+                    lastGrowth = r.growth;
+                } else {
+                    skipped.push({ uid: uid, why: r.why || '融合失敗' });
+                }
+            });
+            return {
+                ok: fused > 0,
+                why: fused > 0 ? '' : (skipped[0] && skipped[0].why) || '沒有可融合的武魂',
+                count: fused,
+                totalInc: Math.round(totalInc * 100) / 100,
+                growth: lastGrowth,
+                skipped: skipped
+            };
+        }
+
         /* ══════════════════════════════════════════════════
            突破材料
            ══════════════════════════════════════════════════ */
@@ -116800,34 +116836,18 @@ window.HY = window.HY || {};
                  內容區 ≈ 730px ÷ 3 = 每列 243px（原 217px，角色間距更寬鬆）
             */
             'padding:76px 16px 14px;height:820px;box-sizing:border-box;' +
-            /* ⭐ v675：邊框與底色改暖色系（原 #1e3a4c 藍邊 + 深藍底） */
-            'border:1px solid #3a3026;' +
-            'background:radial-gradient(ellipse 66% 74% at 50% 40%,rgba(78,62,44,.34) 0%,rgba(16,13,10,.97) 74%),' +
-            'linear-gradient(180deg,#131009 0%,#171309 46%,#0a0806 100%);' +
-            'box-shadow:inset 0 0 60px rgba(0,0,0,.9),inset 0 1px 0 rgba(200,180,140,.08);' +
-            'transition:background .5s ease;}',
+            /* ⭐ v676：去掉場景底色，與主介面融為一體 */
+            'border:1px solid rgba(58,48,38,.45);' +
+            'background:transparent;' +
+            'box-shadow:none;}',
         /* ⭐ v649：沒有武魂時上留白只需 16px（招式名已移到下方，不再佔上方） */
         '.hy-stage:not([data-has-soul]){padding-top:16px;height:760px;}' +
 
-        /* ── 場景變體（只覆寫底色與光暈顏色） ── */
-        '.hy-stage.scene-default{background:radial-gradient(ellipse 60% 70% at 50% 42%,rgba(34,80,120,.42),rgba(10,16,24,.98) 72%),linear-gradient(180deg,#0a1220,#0d1622 46%,#080d14);}',
-        '.hy-stage.scene-void{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(99,102,241,.34),rgba(8,10,22,.98) 70%),linear-gradient(180deg,#080b18,#0d1024 46%,#05060f);}',
-        '.hy-stage.scene-tang{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(180,120,40,.30),rgba(16,12,8,.98) 70%),linear-gradient(180deg,#14100a,#1a1409 46%,#0a0805);}',
-        '.hy-stage.scene-warring{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(160,90,30,.28),rgba(14,12,10,.98) 70%),linear-gradient(180deg,#12100c,#181410 46%,#090807);}',
-        '.hy-stage.scene-steppe{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(200,150,60,.26),rgba(20,16,10,.98) 70%),linear-gradient(180deg,#161208,#1c170c 46%,#0b0905);}',
-        '.hy-stage.scene-wasteland{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(120,110,100,.24),rgba(14,14,16,.98) 70%),linear-gradient(180deg,#101012,#16161a 46%,#08080a);}',
-        '.hy-stage.scene-river{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(40,140,150,.30),rgba(8,16,20,.98) 70%),linear-gradient(180deg,#081418,#0a1a1e 46%,#040a0c);}',
-        '.hy-stage.scene-water{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(30,130,120,.30),rgba(6,14,16,.98) 70%),linear-gradient(180deg,#061214,#081a1c 46%,#030a0b);}',
-        '.hy-stage.scene-demon{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(150,50,140,.34),rgba(14,6,18,.98) 70%),linear-gradient(180deg,#100616,#16081e 46%,#08030b);}',
-        '.hy-stage.scene-heaven{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(220,190,90,.34),rgba(18,16,10,.98) 70%),linear-gradient(180deg,#16130a,#1e1a0c 46%,#0a0904);}',
-        '.hy-stage.scene-mine{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(150,45,35,.34),rgba(16,8,8,.98) 70%),linear-gradient(180deg,#140808,#1c0c0c 46%,#080404);}',
-        '.hy-stage.scene-boss{background:radial-gradient(ellipse 62% 72% at 50% 40%,rgba(190,140,40,.36),rgba(16,10,6,.98) 70%),linear-gradient(180deg,#14100a,#1e1608 46%,#0a0704);}',
+        /* ── 場景 class 保留（地圖仍會掛載），但不顯示底色 ── */
+        '.hy-stage[class*="scene-"]{background:transparent !important;}',
 
-        /* ── 中央光柱 ── */
-        '.hy-stage::before{content:"";position:absolute;left:50%;top:-14%;width:46%;height:120%;' +
-            'transform:translateX(-50%);pointer-events:none;' +
-            'background:radial-gradient(ellipse at 50% 26%,rgba(56,189,248,.16),transparent 68%);}',
-        /* ── 地面 / 背景（⭐ v675 水墨山水重製） ──
+        '.hy-stage::before{display:none;}',
+        /* ── 地面 / 背景裝飾（v676 預設不輸出 DOM，保留樣式供舊版快取） ──
            ──────────────────────────────────────────────────────────
            使用者回饋「太醜」，主因是青色霓虹網格與水墨仙俠立繪風格衝突。
            改成：
@@ -116839,6 +116859,7 @@ window.HY = window.HY || {};
            全部改用「暖色 + 灰墨」，不用任何青色霓虹。 */
         /* ③ 底部暗部：⭐ z-index 必須低於山脈（山在它上面），
            否則深色漸層會把山完全蓋掉（實測就是這個原因看不到山）。 */
+        '.hy-stage-ground,.hy-stage-scenery,.hy-stage-mist,.hy-stage-floorglow,.hy-stage-floor{display:none !important;}',
         '.hy-stage-ground{position:absolute;left:0;right:0;bottom:0;height:52%;pointer-events:none;z-index:0;' +
             'background:linear-gradient(180deg,transparent 0%,' +
             'rgba(20,16,12,.35) 34%,rgba(12,9,7,.86) 72%,rgba(6,5,4,.96) 100%);}',
@@ -116946,13 +116967,7 @@ window.HY = window.HY || {};
             'min-height:0;--h:270px;}',
         /* 每側參考線（⭐ v675：青色網格線已移除，改成極淡的暖色垂直分隔，
            避免與水墨風格衝突；九宮格對應仍靠 data-grow 控制，與此無關） */
-        '.hy-stage-side::before{content:"";position:absolute;inset:0;pointer-events:none;' +
-            'z-index:0;opacity:.16;' +
-            'background-image:linear-gradient(to right,rgba(200,180,140,.10) 1px,transparent 1px);' +
-            'background-size:calc(100% / 3) 100%;' +
-            'background-position:0 0;' +
-            'mask-image:radial-gradient(ellipse 70% 80% at 50% 60%,#000 40%,transparent 92%);' +
-            '-webkit-mask-image:radial-gradient(ellipse 70% 80% at 50% 60%,#000 40%,transparent 92%);}',
+        '.hy-stage-side::before{display:none;}',
         '.hy-stage-side.ally{padding-right:10px;}',
         '.hy-stage-side.foe{padding-left:10px;}',
         /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
@@ -118558,46 +118573,7 @@ window.HY = window.HY || {};
 
     function buildHtml(party, enemies) {
         var h = '';
-        /* ⭐ v675：水墨山水背景（單一 SVG 內含遠山 + 近山 + 霧帶）
-           viewBox 0 0 100 100 + preserveAspectRatio=none → 自動拉伸不變形。
-           ⚠️ 兩個 SVGGradient 放在同一個 <defs> 內才互相引用得到；
-              拆成兩個 SVG 會讓第二個找不到 url(#...) 而渲染成黑色。 */
-        h += '<svg class="hy-stage-scenery" viewBox="0 0 100 100" ' +
-            'preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
-            '<defs>' +
-                '<linearGradient id="hyMtnFar" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0%" stop-color="#a89c8c" stop-opacity=".80"/>' +
-                    '<stop offset="52%" stop-color="#6d6459" stop-opacity=".44"/>' +
-                    '<stop offset="100%" stop-color="#3a352e" stop-opacity="0"/>' +
-                '</linearGradient>' +
-                '<linearGradient id="hyMtnNear" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0%" stop-color="#635747" stop-opacity=".96"/>' +
-                    '<stop offset="42%" stop-color="#3b3428" stop-opacity=".94"/>' +
-                    '<stop offset="100%" stop-color="#0f0c09" stop-opacity=".99"/>' +
-                '</linearGradient>' +
-                '<linearGradient id="hyMistBand" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0%" stop-color="#f2eee4" stop-opacity="0"/>' +
-                    '<stop offset="46%" stop-color="#f2eee4" stop-opacity=".14"/>' +
-                    '<stop offset="100%" stop-color="#f2eee4" stop-opacity="0"/>' +
-                '</linearGradient>' +
-            '</defs>' +
-            /* 遠山（輪廓較高、顏色較淡） */
-            '<path class="mtn-far" fill="url(#hyMtnFar)" d="' +
-                'M0,100 L0,58 L6,46 L11,55 L17,36 L23,49 L29,30 L35,43 L41,24 ' +
-                'L47,41 L53,22 L59,37 L65,27 L71,44 L77,33 L83,48 L89,39 L95,52 ' +
-                'L100,43 L100,100 Z"/>' +
-            /* 近山（較矮、較深，疊在前面） */
-            '<path class="mtn-near" fill="url(#hyMtnNear)" d="' +
-                'M0,100 L0,78 L7,68 L13,77 L20,58 L27,71 L34,52 L41,67 L48,49 ' +
-                'L55,65 L62,53 L69,69 L76,59 L83,73 L90,63 L96,75 L100,67 L100,100 Z"/>' +
-            /* 山腰霧帶 */
-            '<rect x="0" y="52" width="100" height="24" fill="url(#hyMistBand)"/>' +
-            '</svg>';
-        h += '<div class="hy-stage-ground"></div>';
-        h += '<div class="hy-stage-mist m1"></div>';
-        h += '<div class="hy-stage-mist m2"></div>';
-        h += '<div class="hy-stage-floorglow"></div>';
-        h += '<div class="hy-stage-floor"></div>';
+        /* ⭐ v676：不再輸出山景／地面裝飾層（透明舞台） */
         /* ⭐ v511：攻擊軌跡線圖層（SVG，覆蓋全舞台） */
         h += '<svg class="hy-stage-fxline" xmlns="http://www.w3.org/2000/svg" ' +
             'preserveAspectRatio="none"></svg>';
@@ -121412,11 +121388,14 @@ window.HY = window.HY || {};
 
                 /* ⭐ v617：餵食 / 融合改為獨立彈窗（見下方 .wh-prow 樣式），
                    原本的內嵌 .wh-picker 面板已移除。 */
-                '.wh-feedbar{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}',
+                '.wh-feedbar{display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap;}',
                 '.wh-mini{padding:4px 10px;border-radius:4px;cursor:pointer;font-size:.78rem;',
                 'border:1px solid #35506b;background:#101d29;color:#94a3b8;transition:.12s;}',
                 '.wh-mini:hover{background:#1a2c3d;border-color:#38bdf8;color:#7dd3fc;}',
-                '.wh-feedsum{margin-left:auto;font-size:.78rem;color:#64748b;}',
+                '.wh-mini.warn{border-color:#7f1d1d;color:#fca5a5;}',
+                '.wh-mini.warn:hover{border-color:#ef4444;background:#2a1212;}',
+                '.wh-feedsum{flex:1 1 100%;font-size:.78rem;color:#64748b;margin-top:2px;}',
+                '@media(min-width:520px){.wh-feedsum{flex:1 1 auto;margin-top:0;margin-left:6px;}}',
 
                 /* ⭐ v617：餵食／融合改為獨立彈窗後的清單列
                    （沿用 .wh-pick-mask / .wh-pick-box 的置中窗體，
@@ -122301,8 +122280,8 @@ window.HY = window.HY || {};
             /* 說明 */
             h += '<div class="wh-sec"><h5>使用說明</h5><div class="wh-note">' +
                 '· 魂力 1 年 = 全屬性 +' + num(cfg.POWER_PER_YEAR, 0.01) + '（數值由魂力決定）<br>' +
-                '· <b>餵食</b>：把其他武魂餵給這隻，魂力疊加，被吃掉的武魂消失（可一次勾選多隻）<br>' +
-                '· <b>融合</b>：只限同名武魂，副武魂消失，成長值 +' +
+                '· <b>餵食</b>：魂力疊加，副武魂消失；可複選，並用批量鍵（未附身／同名／≤100年…）快速勾選<br>' +
+                '· <b>融合</b>：只限同名武魂，可複選批量融合，成長值 +' +
                 num(cfg.GROWTH_MIN, 0.1) + ' ~ +' + num(cfg.GROWTH_MAX, 0.3) + '<br>' +
                 '· 每個角色獨立附身，只能同時附身 1 隻武魂' +
                 '</div></div>';
@@ -122341,7 +122320,7 @@ window.HY = window.HY || {};
             /* ⭐ v568：附身/卸下按鈕已移除 —— 改用「右鍵 → 選擇角色附身」
                這裡只保留武魂本身的成長操作（餵食 / 融合）。 */
             h += '<button class="wh-btn gold" data-act="feed">🍽️ 餵食（可多選・疊加魂力）</button>';
-            h += '<button class="wh-btn gold" data-act="fuse">🔗 融合（同名武魂）</button>';
+            h += '<button class="wh-btn gold" data-act="fuse">🔗 融合（同名・可多選）</button>';
             h += '<button class="wh-btn" data-act="cancel">✖ 關閉選取</button>';
 
             this.el.acts.innerHTML = h;
@@ -122355,6 +122334,136 @@ window.HY = window.HY || {};
                     else if (act === 'cancel') { self._sel = null; self.render(); }
                 });
             });
+        }
+
+        /** 餵食／融合彈窗：批量篩選按鈕列 */
+        _batchBarHtml(kind, mainDefId) {
+            var isFeed = (kind === 'feed');
+            var h = '<div class="wh-feedbar" style="margin-bottom:2px">';
+            h += '<button type="button" class="wh-mini" data-batch="all">全選</button>';
+            h += '<button type="button" class="wh-mini" data-batch="none">全不選</button>';
+            h += '<button type="button" class="wh-mini" data-batch="invert">反選</button>';
+            h += '<button type="button" class="wh-mini" data-batch="free">僅未附身</button>';
+            if (isFeed) {
+                h += '<button type="button" class="wh-mini" data-batch="same">同名</button>';
+                h += '<button type="button" class="wh-mini" data-batch="diff">異名</button>';
+            }
+            h += '<button type="button" class="wh-mini" data-batch="y100">≤100年</button>';
+            h += '<button type="button" class="wh-mini" data-batch="y500">≤500年</button>';
+            h += '<button type="button" class="wh-mini" data-batch="low10">最低10隻</button>';
+            h += '<span class="wh-feedsum" data-batch-sum="1"></span></div>';
+            return h;
+        }
+
+        _bindBatchPicker(mask, opts) {
+            var self = this;
+            var sys = opts.sys;
+            var Data = opts.Data;
+            var mainUid = opts.mainUid;
+            var mainDefId = String(opts.mainDefId || '');
+            var kind = opts.kind;
+            var close = opts.close;
+            var isFeed = (kind === 'feed');
+            var cfg = Data.WUHUN_CONFIG || {};
+            var sumEl = mask.querySelector('[data-batch-sum]');
+            var cbs = function () {
+                return Array.prototype.slice.call(mask.querySelectorAll('[data-batchcb]'));
+            };
+            var rowOf = function (c) { return c.closest('.wh-prow'); };
+            var rowMeta = function (row) {
+                if (!row) return { owned: false, years: 0, def: '' };
+                return {
+                    owned: row.getAttribute('data-owned') === '1',
+                    years: num(row.getAttribute('data-years'), 0),
+                    def: String(row.getAttribute('data-def') || '')
+                };
+            };
+            var selUids = function () {
+                return cbs().filter(function (c) { return c.checked; })
+                    .map(function (c) { return c.getAttribute('data-batchcb'); });
+            };
+            var refreshSum = function () {
+                var uids = selUids();
+                if (isFeed) {
+                    var tot = 0;
+                    uids.forEach(function (u) {
+                        var w = sys.get(u);
+                        if (w) tot += num(w.years, 0);
+                    });
+                    if (sumEl) {
+                        sumEl.innerHTML = uids.length
+                            ? '已選 <b style="color:#f0c674">' + uids.length + '</b> 隻　魂力合計 <b style="color:#6ee7b7">+' +
+                              esc(Data.fmtYears(tot)) + '</b>'
+                            : '尚未選擇';
+                    }
+                } else {
+                    var gMin = num(cfg.GROWTH_MIN, 0.1);
+                    var gMax = num(cfg.GROWTH_MAX, 0.3);
+                    if (sumEl) {
+                        sumEl.innerHTML = uids.length
+                            ? '已選 <b style="color:#f0c674">' + uids.length + '</b> 隻　預估成長 <b style="color:#6ee7b7">+' +
+                              (uids.length * gMin).toFixed(2) + ' ~ +' + (uids.length * gMax).toFixed(2) + '</b>'
+                            : '尚未選擇（可批量融合同名武魂）';
+                    }
+                }
+                cbs().forEach(function (c) {
+                    var row = rowOf(c);
+                    if (row) row.classList.toggle('chk', c.checked);
+                });
+            };
+            var applyBatch = function (mode) {
+                var allCbs = cbs();
+                if (mode === 'all') {
+                    allCbs.forEach(function (c) { c.checked = true; });
+                } else if (mode === 'none') {
+                    allCbs.forEach(function (c) { c.checked = false; });
+                } else if (mode === 'invert') {
+                    allCbs.forEach(function (c) { c.checked = !c.checked; });
+                } else if (mode === 'low10') {
+                    var ranked = allCbs.map(function (c) {
+                        return { c: c, y: rowMeta(rowOf(c)).years };
+                    }).sort(function (a, b) { return a.y - b.y; });
+                    var pick = {};
+                    ranked.slice(0, 10).forEach(function (x) {
+                        pick[x.c.getAttribute('data-batchcb')] = true;
+                    });
+                    allCbs.forEach(function (c) {
+                        c.checked = !!pick[c.getAttribute('data-batchcb')];
+                    });
+                } else {
+                    allCbs.forEach(function (c) {
+                        var m = rowMeta(rowOf(c));
+                        var on = false;
+                        if (mode === 'free') on = !m.owned;
+                        else if (mode === 'same') on = m.def === mainDefId;
+                        else if (mode === 'diff') on = m.def !== mainDefId;
+                        else if (mode === 'y100') on = m.years <= 100;
+                        else if (mode === 'y500') on = m.years <= 500;
+                        c.checked = on;
+                    });
+                }
+                refreshSum();
+            };
+            mask.querySelectorAll('[data-batch]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    applyBatch(btn.getAttribute('data-batch'));
+                });
+            });
+            cbs().forEach(function (c) { c.addEventListener('change', refreshSum); });
+            var okBtn = mask.querySelector('[data-batch-ok]');
+            if (okBtn) {
+                okBtn.addEventListener('click', function () {
+                    var uids = selUids();
+                    if (!uids.length) {
+                        alert(isFeed ? '請先勾選要餵食的武魂' : '請先勾選要融合的武魂');
+                        return;
+                    }
+                    close();
+                    if (isFeed) self.doFeedMany(mainUid, uids);
+                    else self.doFuseMany(mainUid, uids);
+                });
+            }
+            refreshSum();
         }
 
         /* ══════════════════════════════════════════════════
@@ -122410,46 +122519,38 @@ window.HY = window.HY || {};
                           esc(main.name) + '】</span>'
                         : '沒有其他武魂可餵食') +
                     '</div>';
-            } else if (isFeed) {
-                /* ⭐ v588：餵食可複選
-                   ⭐ v614：標示「已附身」的武魂，避免誤以為它消失了。 */
-                h += '<div class="wh-feedbar" style="margin-bottom:2px">' +
-                    '<button class="wh-mini" data-feed-all="1">全選</button>' +
-                    '<button class="wh-mini" data-feed-none="1">全不選</button>' +
-                    '<span class="wh-feedsum" data-feed-sum="1"></span>' +
-                    '</div>';
+            } else {
+                /* ⭐ v620：餵食／融合皆可複選 + 批量篩選 */
+                h += self._batchBarHtml(kind, main.defId);
                 list.forEach(function (x) {
                     var ownId = eqOwner[x.uid];
                     var ownName = ownId ? (rosterMap[ownId] || ownId) : '';
-                    h += '<label class="wh-prow' + (ownId ? ' wh-own' : '') + '">' +
-                        '<input type="checkbox" data-feedcb="' + esc(x.uid) + '">' +
+                    var yrs = num(x.years, 0);
+                    h += '<label class="wh-prow' + (ownId ? ' wh-own' : '') + '" ' +
+                        'data-owned="' + (ownId ? '1' : '0') + '" data-years="' + yrs + '" ' +
+                        'data-def="' + esc(String(x.defId || '')) + '">' +
+                        '<input type="checkbox" data-batchcb="' + esc(x.uid) + '">' +
                         wuhunIconHtml(x, 38, 'wh-ic-pick') +
                         '<span class="nm">' + esc(x.name) +
                             (ownId
                                 ? '<span class="wh-owntag">✔ 附身·' + esc(ownName) + '</span>'
                                 : '') +
                         '</span>' +
-                        '<span class="y">' + esc(Data.fmtYears(x.years)) + '</span>' +
-                        '</label>';
-                });
-            } else {
-                list.forEach(function (x) {
-                    h += '<div class="wh-prow" data-pick="' + esc(x.uid) + '">' +
-                        wuhunIconHtml(x, 38, 'wh-ic-pick') +
-                        '<span class="nm">' + esc(x.name) + '</span>' +
                         '<span class="y">' + esc(Data.fmtYears(x.years)) +
-                        '　成長 ' + num(x.growth, 0).toFixed(2) +
-                        '</span></div>';
+                        (isFeed ? '' : '　成長 ' + num(x.growth, 0).toFixed(2)) +
+                        '</span></label>';
                 });
             }
 
             h += '</div>' +
                 '<div class="wh-pick-foot">' +
-                    (isFeed && list.length
-                        ? '<button class="wh-btn gold" data-feed-ok="1" style="flex:1 1 auto">🍽️ 餵食所選</button>'
+                    (list.length
+                        ? (isFeed
+                            ? '<button class="wh-btn gold" data-batch-ok="1" style="flex:1 1 auto">🍽️ 餵食所選</button>'
+                            : '<button class="wh-btn gold" data-batch-ok="1" style="flex:1 1 auto">🔗 融合所選</button>')
                         : '') +
                     '<button class="wh-btn" data-pk-cancel="1"' +
-                        (isFeed && list.length ? ' style="flex:0 0 auto"' : ' style="flex:1 1 auto"') +
+                        (list.length ? ' style="flex:0 0 auto"' : ' style="flex:1 1 auto"') +
                         '>取消</button>' +
                 '</div>' +
                 '</div></div>';
@@ -122475,59 +122576,14 @@ window.HY = window.HY || {};
                 el.addEventListener('click', close);
             });
 
-            if (isFeed) {
-                var sumEl = mask.querySelector('[data-feed-sum]');
-                var cbs = function () {
-                    return Array.prototype.slice.call(mask.querySelectorAll('[data-feedcb]'));
-                };
-                var selUids = function () {
-                    return cbs().filter(function (c) { return c.checked; })
-                        .map(function (c) { return c.getAttribute('data-feedcb'); });
-                };
-                var refreshSum = function () {
-                    var uids = selUids();
-                    var tot = 0;
-                    uids.forEach(function (u) {
-                        var w = sys.get(u);
-                        if (w) tot += num(w.years, 0);
-                    });
-                    if (sumEl) {
-                        sumEl.innerHTML = uids.length
-                            ? '已選 <b style="color:#f0c674">' + uids.length + '</b> 隻　魂力合計 <b style="color:#6ee7b7">+' +
-                              esc(Data.fmtYears(tot)) + '</b>'
-                            : '尚未選擇';
-                    }
-                    /* 勾選的列加高亮，一眼看出選了哪幾隻 */
-                    cbs().forEach(function (c) {
-                        var row = c.closest('.wh-prow');
-                        if (row) row.classList.toggle('chk', c.checked);
-                    });
-                };
-                cbs().forEach(function (c) { c.addEventListener('change', refreshSum); });
-                var all = mask.querySelector('[data-feed-all]');
-                if (all) all.addEventListener('click', function () {
-                    cbs().forEach(function (c) { c.checked = true; });
-                    refreshSum();
-                });
-                var none = mask.querySelector('[data-feed-none]');
-                if (none) none.addEventListener('click', function () {
-                    cbs().forEach(function (c) { c.checked = false; });
-                    refreshSum();
-                });
-                var okBtn = mask.querySelector('[data-feed-ok]');
-                if (okBtn) okBtn.addEventListener('click', function () {
-                    var uids = selUids();
-                    if (!uids.length) { alert('請先勾選要餵食的武魂'); return; }
-                    close();
-                    self.doFeedMany(mainUid, uids);
-                });
-                refreshSum();
-            } else {
-                mask.querySelectorAll('[data-pick]').forEach(function (el) {
-                    el.addEventListener('click', function () {
-                        close();
-                        self.doFuse(mainUid, el.getAttribute('data-pick'));
-                    });
+            if (list.length) {
+                self._bindBatchPicker(mask, {
+                    sys: sys,
+                    Data: Data,
+                    mainUid: mainUid,
+                    mainDefId: main.defId,
+                    kind: kind,
+                    close: close
                 });
             }
         }
@@ -122588,17 +122644,44 @@ window.HY = window.HY || {};
         }
 
         doFuse(mainUid, subUid) {
+            this.doFuseMany(mainUid, [subUid]);
+        }
+
+        doFuseMany(mainUid, subUids) {
             var sys = this.sys();
             var Data = D();
-            var sub = sys.get(subUid);
-            if (!sub) return;
-            if (!confirm('確定要融合？\n副武魂【' + sub.name + '】會消失，\n' +
-                '主武魂成長值隨機提升 +' + num((Data.WUHUN_CONFIG || {}).GROWTH_MIN, 0.1) +
-                ' ~ +' + num((Data.WUHUN_CONFIG || {}).GROWTH_MAX, 0.3) + '。')) return;
+            var main = sys.get(mainUid);
+            if (!main || !subUids || !subUids.length) return;
+            var cfg = Data.WUHUN_CONFIG || {};
+            var gMin = num(cfg.GROWTH_MIN, 0.1);
+            var gMax = num(cfg.GROWTH_MAX, 0.3);
+            var n = subUids.length;
+            var ownN = 0;
+            subUids.forEach(function (u) {
+                var w = sys.get(u);
+                if (!w) return;
+                var S = sys.state();
+                if (S && S.equip) {
+                    Object.keys(S.equip).forEach(function (chId) {
+                        if (S.equip[chId] === u) ownN++;
+                    });
+                }
+            });
+            var warn = ownN > 0
+                ? '\n\n⚠️ 其中 ' + ownN + ' 隻正附身於角色，融合後會自動卸下。'
+                : '';
+            if (!confirm('確定要讓【' + main.name + '】融合 ' + n + ' 隻同名武魂？\n' +
+                '副武魂會消失，預估成長值 +' + (n * gMin).toFixed(2) +
+                ' ~ +' + (n * gMax).toFixed(2) + '（隨機）。' + warn)) return;
 
-            var r = sys.fuse(mainUid, subUid);
-            if (!r.ok) { alert(r.why); return; }
-            alert('融合成功！成長值 +' + r.inc.toFixed(2) + ' → ' + r.growth.toFixed(2));
+            var r = sys.fuseMany(mainUid, subUids);
+            if (!r.ok) { alert(r.why || '融合失敗'); return; }
+            var msg = '融合成功！\n融合 ' + r.count + ' 隻　成長值合計 +' + num(r.totalInc, 0).toFixed(2) +
+                ' → ' + num(r.growth, 0).toFixed(2);
+            if (r.skipped && r.skipped.length) {
+                msg += '\n\n⚠️ ' + r.skipped.length + ' 隻未融合（已達上限或無效）';
+            }
+            alert(msg);
             try { if (G().renderAll) G().renderAll(true); } catch (e) { }
             this.render();
         }
