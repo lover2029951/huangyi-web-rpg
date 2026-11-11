@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v702 · 2026-11-11',
-        gameVer: 702,
+        newsVer: 'v703 · 2026-11-11',
+        gameVer: 703,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '刷圖營地自動開跑',
+            date: '2026-11-11',
+            bullets: [
+                '倉庫有圖但工人「等待投圖」→ 開面板／領獎後會<b>補試開跑</b>',
+                '狀態區分：真沒圖、待領取滿 40 張、有圖待命'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '區域 BOSS 九宮格對齊',

@@ -139126,6 +139126,7 @@ window.HY = window.HY || {};
             /* 戰利品太多先暫停，避免無限累積 */
             if ((r.pending || []).length >= CFG.MAX_PENDING) {
                 r.mode = 'reserve';
+                r.reserveWhy = 'pending';
                 return false;
             }
 
@@ -139133,10 +139134,12 @@ window.HY = window.HY || {};
             var pool = this.poolMaps();
             if (!pool.length) {
                 r.mode = 'reserve';       /* 沒圖了 → 等玩家投入 */
+                r.reserveWhy = 'pool';
                 r.currentMap = '';
                 r.currentUid = '';
                 return false;
             }
+            r.reserveWhy = '';
             var target = pool[0];
             var tier = num(target.tier, 1);
 
@@ -139226,6 +139229,9 @@ window.HY = window.HY || {};
                     if (t < num(r.finishAt, 0)) break;
                 }
             });
+
+            /* 有圖但工人卡在 reserve/idle（例如領獎後、重進遊戲）→ 補開跑 */
+            this._kickAll();
 
             if (done > 0) {
                 this.requestRender();
@@ -139374,6 +139380,7 @@ window.HY = window.HY || {};
             }, this);
             r.pending = [];
             this.log('🎁 跑圖收穫（' + list.length + ' 張）：' + (allMsg.length ? allMsg.join('、') : '空手而歸'));
+            this._kickAll();
             this.requestRender();
             return { ok: true, count: list.length, summary: allMsg };
         }
@@ -139404,8 +139411,57 @@ window.HY = window.HY || {};
                 k.runnerPending = [];
                 this.log('🎁 補發離職工人的戰利品（' + orphan.length + ' 張）。');
             }
-            if (n > 0) this.requestRender();
+            if (n > 0) {
+                this._kickAll();
+                this.requestRender();
+            }
             return n;
+        }
+
+        /** 開啟刷圖面板時補試：避免「倉庫有圖卻一直等圖」 */
+        maybeResumeRunners() {
+            var now = Date.now();
+            if (this._lastKick && now - this._lastKick < 1500) return;
+            var k = this.ensureState();
+            if (!k) return;
+            var stuck = k.runners.some(function (r) {
+                return r && r.mode !== 'run';
+            });
+            if (!stuck || !this.poolMaps().length) return;
+            this._lastKick = now;
+            this._kickAll();
+        }
+
+        /** 給 UI：常駐工人狀態文案（reserve 不只「沒圖」一種原因） */
+        runnerStatusLine(r) {
+            if (!r) return { main: '—', sub: '', color: '#94a3b8' };
+            if (r.mode === 'run') return { main: 'run', sub: '', color: '#38bdf8' };
+            var poolN = 0;
+            try { poolN = this.poolMaps().length; } catch (e) { poolN = 0; }
+            var pend = this.pendingCount(r);
+            if (pend >= CFG.MAX_PENDING) {
+                return {
+                    main: '⏸️ 待領取戰利品',
+                    sub: '待領取已滿（' + pend + '/' + CFG.MAX_PENDING +
+                        ' 張）— 請先按「領取」才會繼續刷圖',
+                    color: '#fbbf24'
+                };
+            }
+            if (poolN > 0 && (r.mode === 'reserve' || r.mode === 'idle')) {
+                return {
+                    main: '😴 待命（倉庫有圖）',
+                    sub: '若未自動開跑，請再投入一張或切換分頁刷新',
+                    color: '#a16207'
+                };
+            }
+            if (r.mode === 'reserve' || (r.reserveWhy === 'pool')) {
+                return {
+                    main: '⏸️ 等待投圖',
+                    sub: '下方倉庫連點 2 次投入地圖',
+                    color: '#fca5a5'
+                };
+            }
+            return { main: '⏹️ 閒置', sub: '', color: '#64748b' };
         }
 
         /* ══════════════════════════════════════════════════════
@@ -139954,9 +140010,15 @@ window.HY = window.HY || {};
                             sub = '<div style="color:#38bdf8;font-size:.66rem;margin-top:1px">' +
                                 '🗺️ ' + esc(rn.currentMap || '跑圖中') + '　剩 ' +
                                 mm + ':' + (ss < 10 ? '0' : '') + ss + '</div>';
-                        } else if (rn.mode === 'reserve') {
-                            sub = '<div style="color:#fca5a5;font-size:.66rem;margin-top:1px">' +
-                                '⏸️ 等圖中（倉庫沒地圖）</div>';
+                        } else if (rn.mode === 'reserve' || rn.mode === 'idle') {
+                            var stL = RS.runnerStatusLine ? RS.runnerStatusLine(rn) : null;
+                            if (stL && stL.main !== 'run') {
+                                sub = '<div style="color:' + stL.color + ';font-size:.66rem;margin-top:1px">' +
+                                    esc(stL.main) + '</div>';
+                                if (stL.sub) {
+                                    sub += '<div style="color:#64748b;font-size:.62rem">' + esc(stL.sub) + '</div>';
+                                }
+                            }
                         }
                     }
                     h += '<div class="km-worker"' + (isRunning ? ' style="border-color:#38bdf866;background:#0b1620;"' : '') + '>' +
@@ -140088,6 +140150,7 @@ window.HY = window.HY || {};
                 return '<div class="km-empty">刷圖系統未載入（kingsmarchMapRunners.js）。</div>';
             }
             R.ensureState();
+            if (typeof R.maybeResumeRunners === 'function') R.maybeResumeRunners();
             var sum = R.summary();
             var atlas = window.HY.game.atlasSys;
             var c = this.app.charSys.state;
@@ -140146,13 +140209,19 @@ window.HY = window.HY || {};
                         stColor = '#38bdf8';
                         subLine = '<div style="font-size:.68rem;color:#7dd3fc">剩 ' +
                             mm + '分' + (ss < 10 ? '0' : '') + ss + '秒</div>';
-                    } else if (r.mode === 'reserve') {
-                        stTxt = '⏸️ 等待投圖';
-                        stColor = '#fca5a5';
-                        subLine = '<div style="font-size:.68rem;color:#64748b">下方倉庫連點 2 次投入地圖</div>';
                     } else {
-                        stTxt = '⏹️ 閒置';
-                        stColor = '#64748b';
+                        var stRun = R.runnerStatusLine ? R.runnerStatusLine(r) : null;
+                        if (stRun && stRun.main !== 'run') {
+                            stTxt = stRun.main;
+                            stColor = stRun.color;
+                            if (stRun.sub) {
+                                subLine = '<div style="font-size:.68rem;color:#64748b">' +
+                                    esc(stRun.sub) + '</div>';
+                            }
+                        } else {
+                            stTxt = '⏹️ 閒置';
+                            stColor = '#64748b';
+                        }
                     }
 
                     /* 進度條 */
@@ -140272,7 +140341,12 @@ window.HY = window.HY || {};
                 if (campLv <= 0) { col = '#7f1d1d'; icon = '🚫'; msg = '尚未建造刷圖營地'; }
                 else if (!pool.length && !running.length) { col = '#7f1d1d'; icon = '⚠️'; msg = '倉庫沒圖，工人全部停擺'; }
                 else if (!pool.length) { col = '#a16207'; icon = '⏳'; msg = '倉庫已空，這批跑完就會停'; }
-                else if (!running.length) { col = '#a16207'; icon = '😴'; msg = '有圖但沒工人跑圖（工人沒派到營地？）'; }
+                else if (!running.length && list.length) {
+                    col = '#a16207'; icon = '😴';
+                    msg = '有圖，工人待命（若未開跑：先領取滿倉戰利品或重開本分頁）';
+                } else if (!running.length) {
+                    col = '#a16207'; icon = '😴'; msg = '有圖但尚未派工人到營地';
+                }
 
                 h += '<div style="background:' + col + '33;border:1px solid ' + col + ';' +
                     'border-radius:6px;padding:8px 11px;margin-bottom:9px;font-size:.76rem;">' +
