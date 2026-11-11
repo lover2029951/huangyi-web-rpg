@@ -116608,7 +116608,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css';
+    var STYLE_ID = 'hy-battle-stage-css-v677';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -116836,10 +116836,17 @@ window.HY = window.HY || {};
                  內容區 ≈ 730px ÷ 3 = 每列 243px（原 217px，角色間距更寬鬆）
             */
             'padding:76px 16px 14px;height:820px;box-sizing:border-box;' +
-            /* ⭐ v676：去掉場景底色，與主介面融為一體 */
-            'border:1px solid rgba(58,48,38,.45);' +
+            /* ⭐ v677：輕量質感 —— 透明底 + 金框 + 外緣光 */
+            'border:1px solid rgba(200,168,110,.38);' +
             'background:transparent;' +
-            'box-shadow:none;}',
+            'box-shadow:0 0 0 1px rgba(0,0,0,.35) inset,' +
+            '0 4px 28px rgba(0,0,0,.45),' +
+            '0 0 32px rgba(200,160,80,.10);}',
+        /* v677：四角 vignette，凸顯中央對戰區 */
+        '.hy-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;' +
+            'border-radius:inherit;' +
+            'box-shadow:inset 0 0 70px rgba(0,0,0,.55),inset 0 0 120px rgba(0,0,0,.28);' +
+            'background:radial-gradient(ellipse 88% 78% at 50% 48%,transparent 42%,rgba(0,0,0,.22) 100%);}',
         /* ⭐ v649：沒有武魂時上留白只需 16px（招式名已移到下方，不再佔上方） */
         '.hy-stage:not([data-has-soul]){padding-top:16px;height:760px;}' +
 
@@ -116847,7 +116854,13 @@ window.HY = window.HY || {};
         '.hy-stage[class*="scene-"]{background:transparent !important;}',
 
         '.hy-stage::before{display:none;}',
-        /* ── 地面 / 背景裝飾（v676 預設不輸出 DOM，保留樣式供舊版快取） ──
+        /* v677：中軸分隔（極淡） */
+        '.hy-stage-midline{position:absolute;left:50%;top:8%;bottom:10%;width:1px;' +
+            'transform:translateX(-50%);pointer-events:none;z-index:1;' +
+            'background:linear-gradient(180deg,transparent,rgba(200,180,140,.14) 28%,' +
+            'rgba(200,180,140,.18) 50%,rgba(200,180,140,.10) 72%,transparent);' +
+            'opacity:.85;}',
+        /* ── 地面 / 背景裝飾（v676 山景關閉；v677 僅腳下地光 + 地平線） ──
            ──────────────────────────────────────────────────────────
            使用者回饋「太醜」，主因是青色霓虹網格與水墨仙俠立繪風格衝突。
            改成：
@@ -116859,7 +116872,7 @@ window.HY = window.HY || {};
            全部改用「暖色 + 灰墨」，不用任何青色霓虹。 */
         /* ③ 底部暗部：⭐ z-index 必須低於山脈（山在它上面），
            否則深色漸層會把山完全蓋掉（實測就是這個原因看不到山）。 */
-        '.hy-stage-ground,.hy-stage-scenery,.hy-stage-mist,.hy-stage-floorglow,.hy-stage-floor{display:none !important;}',
+        '.hy-stage-ground,.hy-stage-scenery,.hy-stage-mist{display:none !important;}',
         '.hy-stage-ground{position:absolute;left:0;right:0;bottom:0;height:52%;pointer-events:none;z-index:0;' +
             'background:linear-gradient(180deg,transparent 0%,' +
             'rgba(20,16,12,.35) 34%,rgba(12,9,7,.86) 72%,rgba(6,5,4,.96) 100%);}',
@@ -116883,17 +116896,18 @@ window.HY = window.HY || {};
         '.hy-stage-mist.m1{height:18%;bottom:34%;filter:blur(10px);}',
         '.hy-stage-mist.m2{height:12%;bottom:20%;filter:blur(14px);opacity:.75;}',
 
-        /* ④ 角色腳下暖金光暈（取代原本的藍色） */
+        /* ④ 腳下地光（v677 弱化，只留重量感） */
         '.hy-stage-floorglow{position:absolute;left:50%;bottom:0;' +
-            'width:92%;height:30%;transform:translateX(-50%);pointer-events:none;z-index:2;' +
+            'width:88%;height:26%;transform:translateX(-50%);pointer-events:none;z-index:1;' +
             'background:radial-gradient(ellipse at 50% 100%,' +
-            'rgba(251,191,36,.13) 0%,rgba(217,119,6,.07) 34%,transparent 66%);' +
-            'filter:blur(4px);}',
+            'rgba(251,191,36,.09) 0%,rgba(217,119,6,.04) 38%,transparent 68%);' +
+            'filter:blur(5px);}',
 
-        /* ⑤ 地平線：極淡，只留一點分界感 */
-        '.hy-stage-floor{position:absolute;left:4%;right:4%;bottom:28%;height:1px;pointer-events:none;z-index:2;' +
-            'background:linear-gradient(90deg,transparent,rgba(200,180,140,.10),' +
-            'rgba(220,200,160,.16),rgba(200,180,140,.10),transparent);}',
+        /* ⑤ 地平線 */
+        '.hy-stage-floor{position:absolute;left:6%;right:6%;bottom:26%;height:1px;pointer-events:none;z-index:1;' +
+            'background:linear-gradient(90deg,transparent,rgba(200,180,140,.12),' +
+            'rgba(220,200,160,.22),rgba(200,180,140,.12),transparent);' +
+            'box-shadow:0 0 12px rgba(200,180,140,.08);}',
 
         /* ── 兩側站位 ── */
         /* ⭐ v627：「角色之間的距離」最大化
@@ -116967,7 +116981,18 @@ window.HY = window.HY || {};
             'min-height:0;--h:270px;}',
         /* 每側參考線（⭐ v675：青色網格線已移除，改成極淡的暖色垂直分隔，
            避免與水墨風格衝突；九宮格對應仍靠 data-grow 控制，與此無關） */
-        '.hy-stage-side::before{display:none;}',
+        '.hy-stage-side::before{content:"";position:absolute;inset:0;pointer-events:none;' +
+            'z-index:0;opacity:.11;' +
+            'background-image:linear-gradient(to right,rgba(200,180,140,.12) 1px,transparent 1px);' +
+            'background-size:calc(100% / 3) 100%;' +
+            'mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);' +
+            '-webkit-mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);}',
+        '.hy-stage-side::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;' +
+            'pointer-events:none;z-index:0;}',
+        '.hy-stage-side.ally::after{background:radial-gradient(ellipse 90% 100% at 50% 100%,' +
+            'rgba(56,189,248,.10) 0%,transparent 68%);}',
+        '.hy-stage-side.foe::after{background:radial-gradient(ellipse 90% 100% at 50% 100%,' +
+            'rgba(248,113,113,.09) 0%,transparent 68%);}',
         '.hy-stage-side.ally{padding-right:10px;}',
         '.hy-stage-side.foe{padding-left:10px;}',
         /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
@@ -116997,10 +117022,10 @@ window.HY = window.HY || {};
            位置貼齊立繪底部（bottom 對齊 tag 上方），z-index 低於立繪。 */
         '.hy-stage-unit::before{content:"";position:absolute;left:50%;' +
             'bottom:calc(var(--tag-h,44px) - 6px);' +
-            'width:66%;height:14px;transform:translateX(-50%);' +
-            'background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.72) 0%,' +
-            'rgba(0,0,0,.42) 42%,transparent 74%);' +
-            'filter:blur(4px);pointer-events:none;z-index:0;}',
+            'width:72%;height:16px;transform:translateX(-50%);' +
+            'background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.78) 0%,' +
+            'rgba(0,0,0,.48) 40%,transparent 76%);' +
+            'filter:blur(5px);pointer-events:none;z-index:0;}',
 
         /* ⭐ v510：可點擊的敵方（集火） */
         '.hy-stage-unit.foe{cursor:pointer;}',        '.hy-stage-unit.foe:hover .hy-stage-img{filter:drop-shadow(0 0 10px rgba(248,113,113,.75)) ' +
@@ -117391,9 +117416,9 @@ window.HY = window.HY || {};
 
         /* ⭐ v517：場景粒子層 */
         '.hy-stage-ambient{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;}',
-        '.hy-stage-ambient i{position:absolute;width:3px;height:3px;border-radius:50%;' +
-            'background:rgba(148,197,255,.62);' +
-            'box-shadow:0 0 6px rgba(56,189,248,.85);' +
+        '.hy-stage-ambient i{position:absolute;width:2px;height:2px;border-radius:50%;' +
+            'background:rgba(148,197,255,.38);' +
+            'box-shadow:0 0 5px rgba(56,189,248,.45);' +
             'animation:hy-amb-float linear infinite;}',
         '@keyframes hy-amb-float{0%{transform:translateY(0) translateX(0);opacity:0;}' +
             '12%{opacity:.85;}' +
@@ -117976,7 +118001,10 @@ window.HY = window.HY || {};
 
         /* ── 名字牌 + 血條 ── */
         '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:118px;margin-top:4px;' +
-            'text-align:center;line-height:1.1;}',
+            'text-align:center;line-height:1.1;padding:3px 5px 4px;border-radius:6px;' +
+            'background:linear-gradient(180deg,rgba(8,12,18,.55),rgba(4,8,12,.78));' +
+            'border:1px solid rgba(148,163,184,.22);' +
+            'box-shadow:0 2px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);}',
         /* ⭐ v654：角色稱號（名字上方的小字，淡金色） */
         '.hy-stage-ttl{display:block;font-size:.6rem;font-weight:bold;white-space:nowrap;' +
             'overflow:hidden;text-overflow:ellipsis;color:#fcd34d;opacity:.92;' +
@@ -117986,8 +118014,9 @@ window.HY = window.HY || {};
             'overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px #000;}',
         '.hy-stage-unit.ally .hy-stage-nm{color:#7dd3fc;}',
         '.hy-stage-unit.foe .hy-stage-nm{color:#fca5a5;}',
-        '.hy-stage-hp{height:7px;margin-top:2px;border-radius:3px;overflow:hidden;' +
-            'background:rgba(2,6,12,.92);border:1px solid rgba(127,29,29,.85);}',
+        '.hy-stage-hp{height:7px;margin-top:2px;border-radius:4px;overflow:hidden;' +
+            'background:rgba(2,6,12,.88);border:1px solid rgba(127,29,29,.75);' +
+            'box-shadow:inset 0 1px 2px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.25);}',
         '.hy-stage-hp i{display:block;height:100%;width:100%;' +
             'transition:width .22s linear,background .2s;}',
         '.hy-stage-unit.ally .hy-stage-hp i{background:linear-gradient(90deg,#dc2626,#ef4444 55%,#f87171);' +
@@ -117998,8 +118027,9 @@ window.HY = window.HY || {};
             'box-shadow:0 0 9px rgba(239,68,68,1);}',
 
         /* ⭐ v512：內力條（v516 放大，與氣血條同高） */
-        '.hy-stage-mp{height:7px;margin-top:2px;border-radius:3px;overflow:hidden;' +
-            'background:rgba(2,6,12,.92);border:1px solid rgba(30,58,74,.95);}',
+        '.hy-stage-mp{height:7px;margin-top:2px;border-radius:4px;overflow:hidden;' +
+            'background:rgba(2,6,12,.88);border:1px solid rgba(30,58,74,.75);' +
+            'box-shadow:inset 0 1px 2px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.25);}',
         '.hy-stage-mp i{display:block;height:100%;width:100%;' +
             'transition:width .22s linear;background:linear-gradient(90deg,#1d4ed8,#60a5fa 55%,#93c5fd);' +
             'box-shadow:0 0 6px rgba(96,165,250,.7);}',
@@ -118021,12 +118051,18 @@ window.HY = window.HY || {};
         '.hy-stage-fallback{width:54px;height:54px;border-radius:50%;object-fit:cover;' +
             'border:2px solid #334155;margin-bottom:6px;}',
 
-        /* ── 中央 VS ── */
+        /* ── 中央 VS（v677 徽章式） ── */
         '.hy-stage-vs{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);' +
-            'z-index:4;pointer-events:none;font-size:.76rem;font-weight:bold;letter-spacing:2px;' +
-            'color:#94a3b8;padding:4px 11px;border-radius:10px;' +
-            'background:rgba(6,12,20,.86);border:1px solid #1e3a4c;' +
-            'text-shadow:0 0 8px rgba(34,211,238,.6);}',
+            'z-index:5;pointer-events:none;font-size:.74rem;font-weight:800;letter-spacing:3px;' +
+            'color:#fde68a;padding:6px 14px;border-radius:999px;' +
+            'background:linear-gradient(180deg,rgba(28,22,12,.92),rgba(10,8,6,.94));' +
+            'border:1px solid rgba(200,168,110,.55);' +
+            'box-shadow:0 0 20px rgba(251,191,36,.22),0 4px 14px rgba(0,0,0,.55),' +
+            'inset 0 1px 0 rgba(255,255,255,.08);' +
+            'text-shadow:0 0 10px rgba(251,191,36,.75),0 1px 2px #000;' +
+            'animation:hy-vs-pulse 2.8s ease-in-out infinite;}',
+        '@keyframes hy-vs-pulse{0%,100%{box-shadow:0 0 16px rgba(251,191,36,.18),0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);}' +
+            '50%{box-shadow:0 0 26px rgba(251,191,36,.32),0 4px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.10);}}',
 
         /* ⭐ v510：底部戰鬥字幕條（v514 已移除，改為純日誌掃描） */
 
@@ -118046,11 +118082,30 @@ window.HY = window.HY || {};
     ].join('');
 
     function ensureStyle() {
-        if (document.getElementById(STYLE_ID)) return;
-        var st = document.createElement('style');
+        var st = document.getElementById(STYLE_ID);
+        if (st) {
+            st.textContent = CSS;
+            return;
+        }
+        st = document.createElement('style');
         st.id = STYLE_ID;
         st.textContent = CSS;
         document.head.appendChild(st);
+    }
+
+    /** v677：輕量裝飾層（腳地光／地平線／中軸） */
+    function ensureLightDecor(el) {
+        if (!el) return;
+        var names = ['hy-stage-floorglow', 'hy-stage-floor', 'hy-stage-midline'];
+        var anchor = el.querySelector('.hy-stage-fxline') || el.firstChild;
+        names.forEach(function (cls) {
+            if (el.querySelector('.' + cls)) return;
+            var node = document.createElement('div');
+            node.className = cls;
+            node.setAttribute('aria-hidden', 'true');
+            if (anchor) el.insertBefore(node, anchor);
+            else el.appendChild(node);
+        });
     }
 
     /* ══════════════════════════════════════════════════════
@@ -118240,6 +118295,7 @@ window.HY = window.HY || {};
         } else if (!el.querySelector('.hy-stage-ambient')) {
             ensureAmbient(el, sceneCls);
         }
+        ensureLightDecor(el);
 
         /* ⭐ v648：依「是否有武魂」動態決定上留白
            ──────────────────────────────────────────────────────────
@@ -118573,7 +118629,10 @@ window.HY = window.HY || {};
 
     function buildHtml(party, enemies) {
         var h = '';
-        /* ⭐ v676：不再輸出山景／地面裝飾層（透明舞台） */
+        /* ⭐ v677：輕量質感裝飾（無山景） */
+        h += '<div class="hy-stage-floorglow" aria-hidden="true"></div>';
+        h += '<div class="hy-stage-floor" aria-hidden="true"></div>';
+        h += '<div class="hy-stage-midline" aria-hidden="true"></div>';
         /* ⭐ v511：攻擊軌跡線圖層（SVG，覆蓋全舞台） */
         h += '<svg class="hy-stage-fxline" xmlns="http://www.w3.org/2000/svg" ' +
             'preserveAspectRatio="none"></svg>';
