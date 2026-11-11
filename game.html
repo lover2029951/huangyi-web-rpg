@@ -117313,7 +117313,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v690';
+    var STYLE_ID = 'hy-battle-stage-css-v692';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117517,7 +117517,7 @@ window.HY = window.HY || {};
     var CSS = [
         /* ── 舞台外框 ── */
         '.hy-stage{position:relative;margin:0 0 10px;border-radius:10px;overflow:hidden;' +
-            'display:flex;align-items:stretch;justify-content:space-between;' +
+            'display:block;' +
             /* ⭐ v574：頂部留白 76 → 104px，給武魂光圈上移的空間
                ⭐ v625：104 → 158px（招式名要浮在武魂之上）
                ⭐ v628：改成戰棋九宮格後，需要更大的縱深空間
@@ -117557,8 +117557,8 @@ window.HY = window.HY || {};
                  有武魂 820px、無武魂 760px（⭐ v671：各 +78px，舞台更高）
                  內容區 ≈ 730px ÷ 3 = 每列 243px（原 217px，角色間距更寬鬆）
             */
-            /* ⭐ v690：九宮格縱向拉滿（取消傷害佔比後縮減上留白、提高舞台） */
-            'padding:52px 12px 8px;height:920px;box-sizing:border-box;' +
+            /* ⭐ v692：九宮格絕對貼頂撐滿，覆蓋原傷害佔比／上留白區 */
+            'padding:0 10px 6px;height:900px;box-sizing:border-box;' +
             /* ⭐ v677：輕量質感 —— 透明底 + 金框 + 外緣光 */
             'border:1px solid rgba(200,168,110,.38);' +
             'background:transparent;' +
@@ -117571,7 +117571,8 @@ window.HY = window.HY || {};
             'box-shadow:inset 0 0 70px rgba(0,0,0,.55),inset 0 0 120px rgba(0,0,0,.28);' +
             'background:radial-gradient(ellipse 88% 78% at 50% 48%,transparent 42%,rgba(0,0,0,.22) 100%);}',
         /* ⭐ v649：沒有武魂時上留白只需 16px（招式名已移到下方，不再佔上方） */
-        '.hy-stage:not([data-has-soul]){padding-top:8px;height:880px;}' +
+        '.hy-stage[data-has-soul]{padding-top:0;}',
+        '.hy-stage:not([data-has-soul]){padding-top:0;height:900px;}' +
 
         /* ── 場景 class 保留（地圖仍會掛載），但不顯示底色 ── */
         '.hy-stage[class*="scene-"]{background:transparent !important;}',
@@ -117677,12 +117678,14 @@ window.HY = window.HY || {};
              第 3 列（前排）→ align-self:end    貼齊該列【底端】
            再加上 grid 容器本身 100% 撐滿內容區，
            三排就會往外擴散，最上排貼頂、最下排貼底。 */
-        '.hy-stage-side{position:relative;z-index:2;width:49.4%;' +
+        '.hy-stage-side{position:absolute;z-index:2;top:0;bottom:6px;' +
             'display:grid;' +
             'grid-template-columns:repeat(3,1fr);' +
             'grid-template-rows:repeat(3,minmax(0,1fr));' +
-            'align-items:stretch;justify-items:center;align-self:stretch;' +
-            'height:100%;min-height:100%;flex:1 1 auto;--h:270px;}',
+            'align-items:stretch;justify-items:center;' +
+            'height:auto;min-height:0;width:calc(50% - 20px);--h:270px;}',
+        '.hy-stage-side.ally{left:0;}',
+        '.hy-stage-side.foe{right:0;}',
         /* v683：九宮格參考線（與 grid 內容區對齊；須含 ally/foe 不對稱 padding） */
         '.hy-stage-side::before{content:"";position:absolute;pointer-events:none;z-index:0;' +
             'opacity:.48;border-radius:6px;' +
