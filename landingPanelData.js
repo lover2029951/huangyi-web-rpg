@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v692 · 2026-03-11',
-        gameVer: 692,
+        newsVer: 'v693 · 2026-03-11',
+        gameVer: 693,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '還原',
+            title: '九宮格版面還原',
+            date: '2026-03-11',
+            bullets: [
+                '恢復拉高實驗前舞台高度與 flex 半場佈局',
+                '保留格線對格線對齊、關閉傷害佔比、陣盤站位修正'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '九宮格貼頂撐滿',
