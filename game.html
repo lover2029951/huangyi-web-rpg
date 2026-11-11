@@ -38913,15 +38913,17 @@ window.HY = window.HY || {};
                 'will-change:transform;}',
 
                 /* ⭐ v683：山海經異獸標記 */
-                '.shj-beast{position:absolute;display:flex;align-items:center;',
+                '.shj-beast{position:absolute;z-index:2;display:flex;align-items:center;',
                 'justify-content:center;width:160px;height:160px;margin:-80px 0 0 -80px;',
-                'border-radius:50%;cursor:pointer;pointer-events:auto;',
-                'transition:transform .16s ease,filter .16s ease;',
+                'border-radius:50%;overflow:visible;cursor:pointer;pointer-events:auto;',
+                'transition:filter .16s ease;',
                 'background:rgba(12,9,6,.82);',
                 'border:2px solid currentColor;',
                 'box-shadow:0 4px 14px rgba(0,0,0,.72);}',
-                '.shj-beast:hover{transform:scale(1.12);filter:brightness(1.15);z-index:5;',
+                '.shj-beast:hover{filter:brightness(1.15);z-index:6;',
                 'box-shadow:0 6px 18px rgba(0,0,0,.82);}',
+                '.shj-beast:hover .ic{transform:scale(1.12);}',
+                '.shj-beast .ic{transition:transform .16s ease;}',
                 '.shj-beast .ic{position:relative;width:148px;height:148px;',
                 'border-radius:8px;overflow:hidden;',
                 'display:flex;align-items:center;justify-content:center;',
@@ -39004,9 +39006,10 @@ window.HY = window.HY || {};
                 '.shj-sky-btn{cursor:pointer;border:none;background:transparent;',
                 'border-bottom:1px dashed #8a6b34;padding:0 2px;font:inherit;}',
                 '.shj-sky-btn:hover{color:#f0d090;}',
-                '.shj-vein-aura{position:absolute;left:0;top:0;pointer-events:none;z-index:1;}',
+                '.shj-vein-aura{position:absolute;left:0;top:0;pointer-events:none;z-index:0;}',
                 '.shj-vein-cell-aura{position:absolute;pointer-events:none;transition:opacity .4s;}',
-                '.shj-beast.chain-boss{border-width:3px;box-shadow:0 0 28px rgba(255,200,80,.85);}',
+                '.shj-beast.chain-boss{z-index:3;border-width:3px;',
+                'box-shadow:0 0 28px rgba(255,200,80,.85);}',
                 '.shj-beast.chain-boss .lbl{color:#ffe8a0;border-color:#ffd060;}',
                 '.shj-era{font-size:.74rem;color:#d4a86a;margin-left:6px;cursor:pointer;',
                 'border:none;background:transparent;font:inherit;border-bottom:1px dashed #6b5636;}',
@@ -39029,6 +39032,9 @@ window.HY = window.HY || {};
         open() {
             var Data = window.HY && window.HY.Data;
             this._ensureStyle();
+            this.scale = 1;
+            this.x = 0;
+            this.y = 0;
             var old = document.getElementById(ROOT_ID);
             if (old && old.parentNode) old.parentNode.removeChild(old);
 
@@ -39091,8 +39097,19 @@ window.HY = window.HY || {};
             this._renderVeinAura();
             this._startVeinTick();
 
-            /* 初始位置：置中並略縮，讓整張圖一眼可見 */
-            requestAnimationFrame(function () { this._fit(); }.bind(this));
+            /* 初始位置：置中並略縮（雙幀避免視窗尚未排版導致標籤縮放錯誤） */
+            var self = this;
+            requestAnimationFrame(function () {
+                self._fit();
+                requestAnimationFrame(function () {
+                    if (!self.view || !self.view.clientWidth) {
+                        setTimeout(function () { self._fit(); }, 50);
+                    } else if (Math.abs(self.scale - 1) < 0.001 && self.view.clientWidth > 400) {
+                        self._fit();
+                    }
+                    self._syncBeastLabelScale();
+                });
+            });
 
             this._bind(view, box);
             this._updateZoom();
@@ -39111,6 +39128,7 @@ window.HY = window.HY || {};
         _spawnBeasts() {
             var Data = window.HY && window.HY.Data;
             if (!Data || !Data.SHJ_BEASTS) return;
+            if (!this.el) return;
 
             var layer = this.el.querySelector('#shj-canvas');
             if (!layer) return;
@@ -39168,6 +39186,7 @@ window.HY = window.HY || {};
                 }
             }
             this._beastCount = total;
+            if (this._syncBeastLabelScale) this._syncBeastLabelScale();
 
             var corner = this.el && this.el.querySelector('.shj-corner');
             if (corner && Data.shjRulesText) {
@@ -39460,8 +39479,9 @@ window.HY = window.HY || {};
                 aura.appendChild(cell);
             }
             var img = layer.querySelector('img');
-            if (img && img.nextSibling) layer.insertBefore(aura, img.nextSibling);
+            if (img) layer.insertBefore(aura, img.nextSibling);
             else layer.appendChild(aura);
+            if (this._syncBeastLabelScale) this._syncBeastLabelScale();
         }
 
         _startVeinTick() {
@@ -39554,11 +39574,15 @@ window.HY = window.HY || {};
         }
 
         _syncBeastLabelScale() {
-            if (!this.canvas || !this.scale) return;
-            var inv = 1 / Math.max(0.08, this.scale);
+            if (!this.canvas) return;
+            var sc = Number(this.scale);
+            if (!isFinite(sc) || sc <= 0) sc = 1;
+            var inv = 1 / Math.max(0.08, sc);
             var cap = Math.min(inv, 5.5);
             this.canvas.querySelectorAll('.shj-beast .lbl').forEach(function (lbl) {
-                lbl.style.transform = 'translateX(-50%) scale(' + cap + ')';
+                lbl.style.transform = 'translateX(-50%) scale(' + cap.toFixed(3) + ')';
+                lbl.style.visibility = 'visible';
+                lbl.style.opacity = '1';
             });
         }
 
@@ -39840,10 +39864,11 @@ window.HY = window.HY || {};
             if (_view && _view._renderVeinPanel) _view._renderVeinPanel();
         },
         refreshMapUi: function () {
-            if (!_view) return;
+            if (!_view || !_view.el || !document.getElementById(ROOT_ID)) return;
             if (_view._renderVeinPanel) _view._renderVeinPanel();
-            if (_view._renderVeinAura) _view._renderVeinAura();
             if (_view._spawnBeasts) _view._spawnBeasts();
+            if (_view._renderVeinAura) _view._renderVeinAura();
+            if (_view._apply) _view._apply();
         }
     };
 
@@ -115583,6 +115608,21 @@ window.HY = window.HY || {};
             } catch (e) { return false; }
         }
 
+        _ensureFormationBeforeStage(partyMembers) {
+            try {
+                var fg = this.app.formationGrid || (window.HY.game && window.HY.game.formationGrid);
+                if (!fg || !partyMembers || !partyMembers.length) return;
+                var S = fg.state && fg.state();
+                if (!S || !S.autoFill) return;
+                var cells = fg.cells() || {};
+                var placed = Object.keys(cells).filter(function (k) { return cells[k]; }).length;
+                var cov = fg.coverage ? fg.coverage() : { complete: placed >= partyMembers.length };
+                if (placed === 0 || !cov.complete) {
+                    if (typeof fg.autoLayout === 'function') fg.autoLayout();
+                }
+            } catch (eFG0) { }
+        }
+
         _stagePayload(BS, partyMembers, inMap, skipFoe) {
             var app = this.app;
             var combat = app.combatSys || {};
@@ -115591,6 +115631,8 @@ window.HY = window.HY || {};
             /* ── 我方 ── */
             var party = [];
             if (!inMap) {
+                /* ⭐ v678：開戰前先補齊陣盤，避免舞台先用預設格、幾秒後才對齊 */
+                self._ensureFormationBeforeStage(partyMembers);
                 /* ⭐ v632：讀取陣盤格位，讓戰鬥舞台站位與陣盤一致 */
                 var _fgCells = {};
                 try {
@@ -116608,7 +116650,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v677';
+    var STYLE_ID = 'hy-battle-stage-css-v678';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -116854,13 +116896,7 @@ window.HY = window.HY || {};
         '.hy-stage[class*="scene-"]{background:transparent !important;}',
 
         '.hy-stage::before{display:none;}',
-        /* v677：中軸分隔（極淡） */
-        '.hy-stage-midline{position:absolute;left:50%;top:8%;bottom:10%;width:1px;' +
-            'transform:translateX(-50%);pointer-events:none;z-index:1;' +
-            'background:linear-gradient(180deg,transparent,rgba(200,180,140,.14) 28%,' +
-            'rgba(200,180,140,.18) 50%,rgba(200,180,140,.10) 72%,transparent);' +
-            'opacity:.85;}',
-        /* ── 地面 / 背景裝飾（v676 山景關閉；v677 僅腳下地光 + 地平線） ──
+        /* ── 地面 / 背景裝飾（v678：關閉地光／地平線／中軸） ──
            ──────────────────────────────────────────────────────────
            使用者回饋「太醜」，主因是青色霓虹網格與水墨仙俠立繪風格衝突。
            改成：
@@ -116872,7 +116908,8 @@ window.HY = window.HY || {};
            全部改用「暖色 + 灰墨」，不用任何青色霓虹。 */
         /* ③ 底部暗部：⭐ z-index 必須低於山脈（山在它上面），
            否則深色漸層會把山完全蓋掉（實測就是這個原因看不到山）。 */
-        '.hy-stage-ground,.hy-stage-scenery,.hy-stage-mist{display:none !important;}',
+        '.hy-stage-ground,.hy-stage-scenery,.hy-stage-mist,' +
+            '.hy-stage-floorglow,.hy-stage-floor,.hy-stage-midline{display:none !important;}',
         '.hy-stage-ground{position:absolute;left:0;right:0;bottom:0;height:52%;pointer-events:none;z-index:0;' +
             'background:linear-gradient(180deg,transparent 0%,' +
             'rgba(20,16,12,.35) 34%,rgba(12,9,7,.86) 72%,rgba(6,5,4,.96) 100%);}',
@@ -116895,19 +116932,6 @@ window.HY = window.HY || {};
             'rgba(240,236,226,.20) 40%,rgba(240,236,226,.13) 64%,rgba(240,236,226,.06) 82%,transparent 100%);}',
         '.hy-stage-mist.m1{height:18%;bottom:34%;filter:blur(10px);}',
         '.hy-stage-mist.m2{height:12%;bottom:20%;filter:blur(14px);opacity:.75;}',
-
-        /* ④ 腳下地光（v677 弱化，只留重量感） */
-        '.hy-stage-floorglow{position:absolute;left:50%;bottom:0;' +
-            'width:88%;height:26%;transform:translateX(-50%);pointer-events:none;z-index:1;' +
-            'background:radial-gradient(ellipse at 50% 100%,' +
-            'rgba(251,191,36,.09) 0%,rgba(217,119,6,.04) 38%,transparent 68%);' +
-            'filter:blur(5px);}',
-
-        /* ⑤ 地平線 */
-        '.hy-stage-floor{position:absolute;left:6%;right:6%;bottom:26%;height:1px;pointer-events:none;z-index:1;' +
-            'background:linear-gradient(90deg,transparent,rgba(200,180,140,.12),' +
-            'rgba(220,200,160,.22),rgba(200,180,140,.12),transparent);' +
-            'box-shadow:0 0 12px rgba(200,180,140,.08);}',
 
         /* ── 兩側站位 ── */
         /* ⭐ v627：「角色之間的距離」最大化
@@ -116987,12 +117011,7 @@ window.HY = window.HY || {};
             'background-size:calc(100% / 3) 100%;' +
             'mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);' +
             '-webkit-mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);}',
-        '.hy-stage-side::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;' +
-            'pointer-events:none;z-index:0;}',
-        '.hy-stage-side.ally::after{background:radial-gradient(ellipse 90% 100% at 50% 100%,' +
-            'rgba(56,189,248,.10) 0%,transparent 68%);}',
-        '.hy-stage-side.foe::after{background:radial-gradient(ellipse 90% 100% at 50% 100%,' +
-            'rgba(248,113,113,.09) 0%,transparent 68%);}',
+        '.hy-stage-side::after{display:none;}',
         '.hy-stage-side.ally{padding-right:10px;}',
         '.hy-stage-side.foe{padding-left:10px;}',
         /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
@@ -117022,10 +117041,10 @@ window.HY = window.HY || {};
            位置貼齊立繪底部（bottom 對齊 tag 上方），z-index 低於立繪。 */
         '.hy-stage-unit::before{content:"";position:absolute;left:50%;' +
             'bottom:calc(var(--tag-h,44px) - 6px);' +
-            'width:72%;height:16px;transform:translateX(-50%);' +
-            'background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.78) 0%,' +
-            'rgba(0,0,0,.48) 40%,transparent 76%);' +
-            'filter:blur(5px);pointer-events:none;z-index:0;}',
+            'width:66%;height:14px;transform:translateX(-50%);' +
+            'background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.72) 0%,' +
+            'rgba(0,0,0,.42) 42%,transparent 74%);' +
+            'filter:blur(4px);pointer-events:none;z-index:0;}',
 
         /* ⭐ v510：可點擊的敵方（集火） */
         '.hy-stage-unit.foe{cursor:pointer;}',        '.hy-stage-unit.foe:hover .hy-stage-img{filter:drop-shadow(0 0 10px rgba(248,113,113,.75)) ' +
@@ -118093,18 +118112,12 @@ window.HY = window.HY || {};
         document.head.appendChild(st);
     }
 
-    /** v677：輕量裝飾層（腳地光／地平線／中軸） */
-    function ensureLightDecor(el) {
+    /** v678：移除 v677 地光／地平線／中軸 DOM（舊快取舞台） */
+    function stripLightDecor(el) {
         if (!el) return;
-        var names = ['hy-stage-floorglow', 'hy-stage-floor', 'hy-stage-midline'];
-        var anchor = el.querySelector('.hy-stage-fxline') || el.firstChild;
-        names.forEach(function (cls) {
-            if (el.querySelector('.' + cls)) return;
-            var node = document.createElement('div');
-            node.className = cls;
-            node.setAttribute('aria-hidden', 'true');
-            if (anchor) el.insertBefore(node, anchor);
-            else el.appendChild(node);
+        ['hy-stage-floorglow', 'hy-stage-floor', 'hy-stage-midline'].forEach(function (cls) {
+            var n = el.querySelector('.' + cls);
+            if (n && n.parentNode) n.parentNode.removeChild(n);
         });
     }
 
@@ -118295,7 +118308,7 @@ window.HY = window.HY || {};
         } else if (!el.querySelector('.hy-stage-ambient')) {
             ensureAmbient(el, sceneCls);
         }
-        ensureLightDecor(el);
+        stripLightDecor(el);
 
         /* ⭐ v648：依「是否有武魂」動態決定上留白
            ──────────────────────────────────────────────────────────
@@ -118324,15 +118337,25 @@ window.HY = window.HY || {};
         var allySig = sideSig(party);
         var foeSig = sideSig(enemies);
 
+        /* ⭐ v678：新開戰時強制整舞台重建，避免上一場殘留格位 + 只重建單側錯序 */
+        var battleSeq = 0;
+        try {
+            var csB = window.HY.game && window.HY.game.combatSys;
+            battleSeq = (csB && csB._battleSeq) || 0;
+        } catch (eBSeq) { }
+        var newBattle = battleSeq > 0 && el.__battleSeq !== battleSeq;
+
         var hadStage = !!el.querySelector('.hy-stage-side.ally');
-        var needFull = !hadStage;                      /* 第一次建立 → 全畫 */
+        var needFull = !hadStage || newBattle;
         if (needFull) {
             el.innerHTML = buildHtml(party, enemies);
             el.setAttribute('data-ally-sig', allySig);
             el.setAttribute('data-foe-sig', foeSig);
+            if (newBattle) el.__battleSeq = battleSeq;
         }
 
-        var rebuiltAlly = false, rebuiltFoe = false;
+        var rebuiltAlly = needFull;
+        var rebuiltFoe = needFull;
 
         if (!needFull && el.getAttribute('data-ally-sig') !== allySig) {
             var allyBox = el.querySelector('.hy-stage-side.ally');
@@ -118629,10 +118652,7 @@ window.HY = window.HY || {};
 
     function buildHtml(party, enemies) {
         var h = '';
-        /* ⭐ v677：輕量質感裝飾（無山景） */
-        h += '<div class="hy-stage-floorglow" aria-hidden="true"></div>';
-        h += '<div class="hy-stage-floor" aria-hidden="true"></div>';
-        h += '<div class="hy-stage-midline" aria-hidden="true"></div>';
+        /* ⭐ v678：不再輸出地光／地平線／中軸裝飾層 */
         /* ⭐ v511：攻擊軌跡線圖層（SVG，覆蓋全舞台） */
         h += '<svg class="hy-stage-fxline" xmlns="http://www.w3.org/2000/svg" ' +
             'preserveAspectRatio="none"></svg>';
@@ -118946,15 +118966,38 @@ window.HY = window.HY || {};
         var gridRow = row + 1;            /* ⭐ v661：與陣盤 UI 同向，不再鏡像 */
         return [col + 1, gridRow, row];
     }
-    function gridSlotOf(count, i, cells) {
-        /* ① 有陣盤資料 → 用玩家排的格位 */
+    function gridSlotOf(count, i, cells, cellDirect) {
+        /* ① 單位自身的格位（最可靠，不依賴 list 索引） */
+        if (cellDirect != null && cellDirect !== '' && isFinite(Number(cellDirect))) {
+            var s0 = slotFromCellIdx(cellDirect);
+            if (s0) return s0;
+        }
+        /* ② 陣盤資料陣列（相容舊路徑） */
         if (cells && cells.length && cells[i] != null) {
             var s = slotFromCellIdx(cells[i]);
             if (s) return s;
         }
-        /* ② 退回人數預設 */
+        /* ③ 退回人數預設 */
         var set = GRID_SLOTS[Math.max(1, Math.min(5, count))] || GRID_SLOTS[5];
         return set[i] || set[set.length - 1];
+    }
+
+    /** 同步九宮格格位（半重建時也校正，避免開戰初幾秒錯位） */
+    function applyUnitGrid(node, u, total, cellList) {
+        if (!node || !u) return;
+        var isShjMega = !!(u.shjBeastMega);
+        var slot = isShjMega ? [2, 2, 1] : gridSlotOf(total || 1,
+            Number(node.getAttribute('data-i') || 0), cellList, u.cell);
+        if (isShjMega) {
+            node.style.gridColumn = '1 / -1';
+            node.style.gridRow = '1 / -1';
+            node.style.zIndex = '4';
+        } else {
+            node.style.gridColumn = String(slot[0]);
+            node.style.gridRow = String(slot[1]);
+            node.style.zIndex = String(3 - slot[2]);
+        }
+        node.setAttribute('data-grow', String(slot[1]));
     }
 
     function unitHtml(u, side, i, total, cellList) {
@@ -118993,7 +119036,7 @@ window.HY = window.HY || {};
         var nmColor = u.color ? ' style="color:' + u.color + ';"' : '';
         /* ⭐ v628：把九宮格格位寫成 inline style（grid-column / grid-row / --u-scale）
            由 sideHtml 傳入 total，才知道要站哪一格。 */
-        var slot = isShjMega ? [2, 2, 1] : gridSlotOf(total || 1, i, cellList);
+        var slot = isShjMega ? [2, 2, 1] : gridSlotOf(total || 1, i, cellList, u.cell);
         /* ⭐ v633：使用者要求「角色不要有遠近縮放」
            ──────────────────────────────────────────────────────────
            原本依 depth 給 --u-scale .74 / .87 / 1，後排角色明顯變小，
@@ -119082,20 +119125,26 @@ window.HY = window.HY || {};
         if (!SNAPSHOT[stageId]) SNAPSHOT[stageId] = { ally: [], foe: [] };
         var prev = SNAPSHOT[stageId][side] || [];
 
+        var cellList = list.map(function (u0) {
+            return (u0 && u0.cell != null) ? u0.cell : null;
+        });
         var units = el.querySelectorAll('.hy-stage-unit[data-side="' + side + '"]');
         for (var i = 0; i < units.length; i++) {
             var node = units[i];
-            var u = list[i];
+            var di = Number(node.getAttribute('data-i'));
+            if (!isFinite(di)) di = i;
+            var u = list[di] || list[i];
             if (!u) continue;
+            applyUnitGrid(node, u, list.length, cellList);
 
             /* ── 血量差異 → 打擊特效 ── */
-            var p = prev[i];
+            var p = prev[di] || prev[i];
             if (!rebuilt && p) {
                 var d = (Number(u.cur) || 0) - (Number(p.cur) || 0);
                 if (d < -0.5) {
                     var dmg = Math.abs(d);
                     var crit = dmg >= Math.max(1, (Number(p.max) || 0) * 0.18);
-                    playHit(el, node, side, i, dmg, crit, null, u.element);
+                    playHit(el, node, side, di, dmg, crit, null, u.element);
                     /* ⭐ v513：我方打敵方 → 累積連擊 */
                     if (side === 'foe') bumpCombo(el, stageId);
                 } else if (d > 0.5) {
@@ -119171,7 +119220,7 @@ window.HY = window.HY || {};
             }
 
             /* ── 血條 ── */
-            var bar = node.querySelector('[data-hp="' + side + i + '"]');
+            var bar = node.querySelector('[data-hp="' + side + di + '"]');
             if (bar) {
                 var pct = 100;
                 if (typeof u.cur === 'number' && typeof u.max === 'number' && u.max > 0) {
@@ -119182,7 +119231,7 @@ window.HY = window.HY || {};
             }
 
             /* ⭐ v512：內力條 */
-            var mpBar = node.querySelector('[data-mp="' + side + i + '"]');
+            var mpBar = node.querySelector('[data-mp="' + side + di + '"]');
             if (mpBar) {
                 var mpPct = 100;
                 if (typeof u.mp === 'number' && typeof u.mpMax === 'number' && u.mpMax > 0) {
@@ -119195,7 +119244,7 @@ window.HY = window.HY || {};
             }
 
             /* ⭐ v512：集氣條（ATB） */
-            var atbBar = node.querySelector('[data-atb="' + side + i + '"]');
+            var atbBar = node.querySelector('[data-atb="' + side + di + '"]');
             if (atbBar) {
                 var atbPct = Math.max(0, Math.min(100, Number(u.atb || 0)));
                 atbBar.style.width = atbPct.toFixed(1) + '%';
