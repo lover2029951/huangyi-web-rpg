@@ -82603,6 +82603,12 @@ window.HY = window.HY || {};
                 }
             } catch (eForm0) { }
             this.runPluginHooks('onBattleStart', { enemies: this.enemies, partyMembers: partyMembers });
+            try {
+                var _uiDex = window.HY && window.HY.uiDexAtb;
+                if (_uiDex && typeof _uiDex.renderBattleStage === 'function') {
+                    _uiDex.renderBattleStage(partyMembers, false, false);
+                }
+            } catch (eStg0) { }
             if (this.isAutoBattle) {
                 this.autoTactics.startAutoLoop();
             }
@@ -115642,8 +115648,17 @@ window.HY = window.HY || {};
 
         /** 陣盤格位 0~8；無法從陣盤讀取時用與 autoPlace 相同的推薦序 */
         _partyCellOf(m, fg, slotOrder, usedCells) {
-            if (fg && m && m.id && typeof fg.cellOfChar === 'function') {
-                var ci = fg.cellOfChar(m.id);
+            if (fg && m && m.id != null) {
+                var ci = -1;
+                if (typeof fg.cellOfChar === 'function') ci = fg.cellOfChar(m.id);
+                if (ci < 0 && typeof fg.cells === 'function') {
+                    var cells = fg.cells() || {};
+                    var k, v, want = String(m.id);
+                    Object.keys(cells).forEach(function (key) {
+                        v = cells[key];
+                        if (v != null && String(v) === want) ci = Number(key);
+                    });
+                }
                 if (ci >= 0 && ci <= 8) return ci;
             }
             var order = slotOrder || [1, 4, 7, 3, 5, 0, 2, 6, 8];
@@ -115688,6 +115703,7 @@ window.HY = window.HY || {};
                     var meta = self._stageSkillMeta(m, false);
                     var layers = self._wuhunLayersOf(m);
                     party.push({
+                        charId: m.id,
                         name: m.name || '隊員',
                         cur: cur, max: maxHp,
                         mp: Number(m.currentMp) || 0,
@@ -116687,7 +116703,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v681';
+    var STYLE_ID = 'hy-battle-stage-css-v683';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117040,15 +117056,30 @@ window.HY = window.HY || {};
             'align-items:stretch;justify-items:center;' +
             'height:100%;' +
             'min-height:0;--h:270px;}',
-        /* 每側參考線（⭐ v675：青色網格線已移除，改成極淡的暖色垂直分隔，
-           避免與水墨風格衝突；九宮格對應仍靠 data-grow 控制，與此無關） */
-        '.hy-stage-side::before{content:"";position:absolute;inset:0;pointer-events:none;' +
-            'z-index:0;opacity:.11;' +
-            'background-image:linear-gradient(to right,rgba(200,180,140,.12) 1px,transparent 1px);' +
-            'background-size:calc(100% / 3) 100%;' +
-            'mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);' +
-            '-webkit-mask-image:radial-gradient(ellipse 75% 85% at 50% 62%,#000 35%,transparent 92%);}',
-        '.hy-stage-side::after{display:none;}',
+        /* v683：九宮格參考線（暖金雙向格線 + 外框，便於辨識站位） */
+        '.hy-stage-side::before{content:"";position:absolute;inset:6px 4px;' +
+            'pointer-events:none;z-index:0;opacity:.48;border-radius:6px;' +
+            'background-color:rgba(8,6,4,.12);' +
+            'background-image:' +
+            'linear-gradient(to right,rgba(220,178,96,.55) 1px,transparent 1px),' +
+            'linear-gradient(to bottom,rgba(220,178,96,.42) 1px,transparent 1px),' +
+            'linear-gradient(to right,rgba(200,168,110,.18) 1px,transparent 1px),' +
+            'linear-gradient(to bottom,rgba(200,168,110,.14) 1px,transparent 1px);' +
+            'background-size:calc(100% / 3) 100%,100% calc(100% / 3),' +
+            'calc(100% / 3) 100%,100% calc(100% / 3);' +
+            'background-position:0 0,0 0,0.5px 0.5px,0.5px 0.5px;' +
+            'box-shadow:inset 0 0 0 1px rgba(200,168,110,.38),' +
+            'inset 0 0 28px rgba(0,0,0,.22);}',
+        '.hy-stage-side::after{content:"";position:absolute;inset:5px 3px;' +
+            'pointer-events:none;z-index:0;border-radius:7px;opacity:.62;' +
+            'border:1px solid rgba(200,168,110,.32);' +
+            'box-shadow:0 0 12px rgba(200,160,80,.08);}',
+        '.hy-stage-side.ally::before{background-color:rgba(6,14,18,.1);' +
+            'box-shadow:inset 0 0 0 1px rgba(125,211,252,.22),inset 0 0 28px rgba(0,0,0,.22);}',
+        '.hy-stage-side.ally::after{border-color:rgba(125,211,252,.26);}',
+        '.hy-stage-side.foe::before{background-color:rgba(18,6,6,.12);' +
+            'box-shadow:inset 0 0 0 1px rgba(248,113,113,.22),inset 0 0 28px rgba(0,0,0,.22);}',
+        '.hy-stage-side.foe::after{border-color:rgba(248,113,113,.24);}',
         '.hy-stage-side.ally{padding-right:10px;}',
         '.hy-stage-side.foe{padding-left:10px;}',
         /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
@@ -118533,15 +118564,19 @@ window.HY = window.HY || {};
         applySide(el, party, 'ally', id, rebuilt);
         applySide(el, enemies, 'foe', id, rebuilt);
         /* v680：全量重建後再等版面穩定校正一次（避免開戰首幀錯格） */
-        if (needFull) {
+        if (needFull || newBattle) {
             var elRef = el;
             var partyRef = party;
             var foesRef = enemies;
             var idRef = id;
-            requestAnimationFrame(function () {
+            var syncGrids = function () {
                 if (!document.body.contains(elRef)) return;
                 applySide(elRef, partyRef, 'ally', idRef, false);
                 applySide(elRef, foesRef, 'foe', idRef, false);
+            };
+            requestAnimationFrame(function () {
+                syncGrids();
+                requestAnimationFrame(syncGrids);
             });
         }
         updateOrder(el, party, enemies);
@@ -118686,7 +118721,8 @@ window.HY = window.HY || {};
                現在把 name 拉出來單獨算進簽章。
                ⭐ v632：陣盤格位（u.cell）也要納入，
                   否則玩家在陣盤換位後舞台不會重建 → 看起來「不能換位」。 */
-            return (u.name || '') + '|' + (u.sprite || '') + '|' + (u.avatar || '') +
+            return (u.name || '') + '|' + String(u.charId || u.id || '') + '|' +
+                (u.sprite || '') + '|' + (u.avatar || '') +
                 '|' + (u.title || '') +
                 '|' + (u.wuhun || '') +
                 '|' + (u.wuhunHalo || '') + '|' + (u.wuhunBody || '') +
@@ -119029,6 +119065,35 @@ window.HY = window.HY || {};
         var gridRow = row + 1;            /* ⭐ v661：與陣盤 UI 同向，不再鏡像 */
         return [col + 1, gridRow, row];
     }
+    /** 取得單位在九宮格的 idx（0~8），優先陣盤／payload */
+    function resolveStageCell(u, side, i, total, cellList) {
+        if (!u) return 4;
+        var n;
+        if (u.cell != null && u.cell !== '' && isFinite(Number(u.cell))) {
+            n = Number(u.cell);
+            if (n >= 0 && n <= 8) return n;
+        }
+        if (side === 'ally') {
+            var cid = u.charId != null ? u.charId : u.id;
+            if (cid != null) {
+                try {
+                    var fg = window.HY.game && window.HY.game.formationGrid;
+                    if (fg && typeof fg.cellOfChar === 'function') {
+                        var c = fg.cellOfChar(cid);
+                        if (c >= 0 && c <= 8) return c;
+                    }
+                } catch (eCell) { }
+            }
+        }
+        if (cellList && cellList.length && cellList[i] != null && isFinite(Number(cellList[i]))) {
+            n = Number(cellList[i]);
+            if (n >= 0 && n <= 8) return n;
+        }
+        var slot = gridSlotOf(total || 1, i, cellList, null);
+        if (slot && slot.length >= 2) return (slot[0] - 1) + (slot[1] - 1) * 3;
+        return 4;
+    }
+
     function gridSlotOf(count, i, cells, cellDirect) {
         /* ① 單位自身的格位（最可靠，不依賴 list 索引） */
         if (cellDirect != null && cellDirect !== '' && isFinite(Number(cellDirect))) {
@@ -119057,8 +119122,11 @@ window.HY = window.HY || {};
         if (!node || !u) return;
         var side = node.getAttribute('data-side') || '';
         var mega = stageMegaKind(u, side);
-        var slot = mega ? [2, 2, 1] : gridSlotOf(total || 1,
-            Number(node.getAttribute('data-i') || 0), cellList, u.cell);
+        var di = Number(node.getAttribute('data-i'));
+        if (!isFinite(di)) di = 0;
+        var cellIdx = resolveStageCell(u, side, di, total, cellList);
+        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx) ||
+            gridSlotOf(total || 1, di, cellList, cellIdx));
         if (mega === 'shj') {
             node.style.gridColumn = '1 / -1';
             node.style.gridRow = '1 / -1';
@@ -119073,6 +119141,7 @@ window.HY = window.HY || {};
             node.style.zIndex = String(3 - slot[2]);
         }
         node.setAttribute('data-grow', String(slot[1]));
+        node.setAttribute('data-cell', String(cellIdx));
     }
 
     function unitHtml(u, side, i, total, cellList) {
@@ -119112,7 +119181,9 @@ window.HY = window.HY || {};
         var nmColor = u.color ? ' style="color:' + u.color + ';"' : '';
         /* ⭐ v628：把九宮格格位寫成 inline style（grid-column / grid-row / --u-scale）
            由 sideHtml 傳入 total，才知道要站哪一格。 */
-        var slot = mega ? [2, 2, 1] : gridSlotOf(total || 1, i, cellList, u.cell);
+        var cellIdx = resolveStageCell(u, side, i, total, cellList);
+        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx) ||
+            gridSlotOf(total || 1, i, cellList, cellIdx));
         /* ⭐ v633：使用者要求「角色不要有遠近縮放」
            ──────────────────────────────────────────────────────────
            原本依 depth 給 --u-scale .74 / .87 / 1，後排角色明顯變小，
@@ -119134,7 +119205,7 @@ window.HY = window.HY || {};
            ⚠️ 不用 [style*=...] 選擇器 —— 屬性字串比對容易被瀏覽器
               重新序列化（加空格、改順序）而失效，屬性選擇器才可靠。 */
         return '<div class="' + cls + '" data-i="' + i + '" data-side="' + side + '"' +
-            ' data-grow="' + slot[1] + '"' +
+            ' data-cell="' + cellIdx + '" data-grow="' + slot[1] + '"' +
             ' style="' + slotCss + '">' +
             img +
             '<div class="hy-stage-buffs"></div>' +
@@ -135528,12 +135599,9 @@ window.HY.Data = window.HY.Data || {};
     BUILD_COST_MULT: 100,
     /* ⭐ 航運出航費：貨值 × SHIP_FEE_RATE × 航線係數 × SHIP_FEE_MULT
        基準費率 0.1%。
-       ⭐ SHIP_FEE_MULT 已由 100 提高到 500,000（即再 ×5000），
-          有效費率 = 0.1% × 500,000 = 貨值的 500 倍。
-          長途另有 1 + (order-1)×0.35 加成（深淵約 1025 倍）。
-          → 出航變成極重的金幣消耗，玩家必須靠刷怪累積金幣才出得起。 */
+       ⭐ v684：出航費 ÷100（500,000 → 5,000），長途仍有航線 order 加成。 */
     SHIP_FEE_RATE: 0.001,
-    SHIP_FEE_MULT: 500000,
+    SHIP_FEE_MULT: 5000,
     /* 欠薪容忍：連續欠薪超過此週期數 → 士氣暴跌並隨機解雇 */
     WAGE_GRACE_TICKS: 5,
     /* 士氣上下限 */
@@ -158526,10 +158594,12 @@ window.HY = window.HY || {};
 
         /** 某角色在哪一格（-1 = 不在陣中） */
         cellOfChar(charId) {
+            if (charId == null || charId === '') return -1;
+            var want = String(charId);
             var cells = this.cells();
             var ks = Object.keys(cells);
             for (var i = 0; i < ks.length; i++) {
-                if (cells[ks[i]] === charId) return Number(ks[i]);
+                if (cells[ks[i]] != null && String(cells[ks[i]]) === want) return Number(ks[i]);
             }
             return -1;
         }
