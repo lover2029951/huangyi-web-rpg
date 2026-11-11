@@ -117313,7 +117313,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v693';
+    var STYLE_ID = 'hy-battle-stage-css-v696';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117557,7 +117557,8 @@ window.HY = window.HY || {};
                  有武魂 820px、無武魂 760px（⭐ v671：各 +78px，舞台更高）
                  內容區 ≈ 730px ÷ 3 = 每列 243px（原 217px，角色間距更寬鬆）
             */
-            'padding:76px 16px 14px;height:820px;box-sizing:border-box;' +
+            /* ⭐ v694：傷害佔比已關 → 縮上留白，九宮格吃滿內容區（維持 flex 半場） */
+            'padding:12px 16px 10px;height:840px;box-sizing:border-box;' +
             /* ⭐ v677：輕量質感 —— 透明底 + 金框 + 外緣光 */
             'border:1px solid rgba(200,168,110,.38);' +
             'background:transparent;' +
@@ -117570,7 +117571,8 @@ window.HY = window.HY || {};
             'box-shadow:inset 0 0 70px rgba(0,0,0,.55),inset 0 0 120px rgba(0,0,0,.28);' +
             'background:radial-gradient(ellipse 88% 78% at 50% 48%,transparent 42%,rgba(0,0,0,.22) 100%);}',
         /* ⭐ v649：沒有武魂時上留白只需 16px（招式名已移到下方，不再佔上方） */
-        '.hy-stage:not([data-has-soul]){padding-top:16px;height:760px;}' +
+        '.hy-stage[data-has-soul]{padding-top:22px;}',
+        '.hy-stage:not([data-has-soul]){padding-top:4px;height:800px;}' +
 
         /* ── 場景 class 保留（地圖仍會掛載），但不顯示底色 ── */
         '.hy-stage[class*="scene-"]{background:transparent !important;}',
@@ -117681,7 +117683,7 @@ window.HY = window.HY || {};
             'grid-template-columns:repeat(3,1fr);' +
             'grid-template-rows:repeat(3,minmax(0,1fr));' +
             'align-items:stretch;justify-items:center;align-self:stretch;' +
-            'height:100%;min-height:0;--h:270px;}',
+            'height:100%;min-height:100%;align-content:stretch;--h:270px;}',
         /* v683：九宮格參考線（與 grid 內容區對齊；須含 ally/foe 不對稱 padding） */
         '.hy-stage-side::before{content:"";position:absolute;pointer-events:none;z-index:0;' +
             'opacity:.48;border-radius:6px;' +
@@ -117711,18 +117713,28 @@ window.HY = window.HY || {};
         '.hy-stage-side.foe::after{inset:0 0 0 10px;border-color:rgba(248,113,113,.24);}',
         '.hy-stage-side.ally{padding-right:10px;box-sizing:border-box;}',
         '.hy-stage-side.foe{padding-left:10px;box-sizing:border-box;}',
-        /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
-           單元內部是 flex column（立繪 + 名牌），所以：
-             align-self:start → 整塊貼齊該列頂端（招式名會靠近舞台頂）
-             align-self:end   → 整塊貼齊該列底端（血條會靠近舞台底） */
-        '.hy-stage-side .hy-stage-unit[data-grow="1"]{align-self:start;}',
-        '.hy-stage-side .hy-stage-unit[data-grow="2"]{align-self:center;}',
-        '.hy-stage-side .hy-stage-unit[data-grow="3"]{align-self:end;}',
+        /* ⭐ v695/v696：單元撐滿格高，立繪＋武魂＋血條底緣對齊該格底線 */
+        '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe){' +
+            'align-self:stretch;justify-self:center;width:100%;max-width:132px;' +
+            'height:100%;min-height:0;box-sizing:border-box;' +
+            '--tag-h:56px;}',
 
         /* ── 單一單位 ── */
         '.hy-stage-unit{position:relative;flex:0 0 auto;display:flex;flex-direction:column;' +
             'align-items:center;justify-content:flex-end;transition:opacity .2s,filter .2s;' +
             'animation:hy-stage-in .34s ease-out both;}',
+        '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-wrap,' +
+            '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-vid,' +
+            '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .hy-stage-img,' +
+            '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .hy-stage-fallback{' +
+            'flex:0 0 auto;margin-top:auto;}',
+        '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) .hy-stage-tag{' +
+            'flex:0 0 auto;margin-top:2px;margin-bottom:0;}',
+        /* v696：武魂改錨定單元底（隨血條下移），立繪層仍供粒子定位 */
+        '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-wrap{' +
+            'position:static;}',
+        '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) .dyn-whole{' +
+            'position:relative;height:var(--h,180px);}',
         /* ⭐ v628：進場動畫改用 --u-scale（單一縮放來源）
            原本用 --depth 算 scale，與 CSS 的 transform:scale() 重複相乘，
            導致後排角色小到只剩 0.576 倍。現在只有這裡負責縮放。 */
@@ -117737,7 +117749,7 @@ window.HY = window.HY || {};
            放在 .hy-stage-unit 的 ::before，用橢圓 + blur 做出接地感。
            位置貼齊立繪底部（bottom 對齊 tag 上方），z-index 低於立繪。 */
         '.hy-stage-unit::before{content:"";position:absolute;left:50%;' +
-            'bottom:calc(var(--tag-h,44px) - 6px);' +
+            'bottom:calc(var(--tag-h,56px) - 6px);' +
             'width:66%;height:14px;transform:translateX(-50%);' +
             'background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.72) 0%,' +
             'rgba(0,0,0,.42) 42%,transparent 74%);' +
@@ -118040,6 +118052,10 @@ window.HY = window.HY || {};
                武魂這裡也用相同週期與幅度，兩者一起上下呼吸，
                水平方向則永遠保持精準對齊（不影響 translateX(-50%)）。 */
             'animation:hy-soul-wrap-drift 3.2s ease-in-out infinite;}' +
+        /* v696：九宮格內改以單元＋名牌高度為基準（隨血條貼格底線） */
+        '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) .dyn-soul-wrap{' +
+            'bottom:calc(var(--tag-h,56px) + var(--h,180px) * 0.83 - ' +
+                'min(calc(var(--h,180px) * 1.20), calc(var(--h,180px) * 0.69 + 96px)) / 2);}' +
         '@keyframes hy-soul-wrap-drift{' +
             '0%{transform:translate(-50%,0);}' +
             '25%{transform:translate(-50%,-4px);}' +
@@ -118111,7 +118127,7 @@ window.HY = window.HY || {};
         '.hy-stage-unit:nth-child(3) .dyn-soul-halo{animation-delay:-12s;}',
         '.hy-stage-unit:nth-child(4) .dyn-soul-halo{animation-delay:-18s;}',
         '.hy-stage-unit:nth-child(5) .dyn-soul-halo{animation-delay:-3s;}',
-        '.dyn-parts{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;}',
+        '.dyn-whole .dyn-parts{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;}',
         '.dyn-parts i{position:absolute;width:4px;height:4px;border-radius:50%;' +
             'background:var(--aura,rgba(125,211,252,.9));' +
             'box-shadow:0 0 8px var(--aura,rgba(56,189,248,.9));' +
@@ -118732,7 +118748,7 @@ window.HY = window.HY || {};
 
         /* ── 名字牌 + 血條 ── */
         '.hy-stage-tag{position:relative;z-index:3;width:100%;max-width:118px;margin-top:4px;' +
-            'text-align:center;line-height:1.1;padding:3px 5px 4px;border-radius:6px;' +
+            'text-align:center;line-height:1.1;padding:3px 5px 0;border-radius:6px 6px 0 0;' +
             'background:linear-gradient(180deg,rgba(8,12,18,.55),rgba(4,8,12,.78));' +
             'border:1px solid rgba(148,163,184,.22);' +
             'box-shadow:0 2px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);}',
@@ -119646,8 +119662,8 @@ window.HY = window.HY || {};
             '<div class="dyn-whole">' +
                 '<img src="' + src + '" alt="" decoding="async" draggable="false" ' +
                     'data-i="' + i + '" data-side="' + side + '">' +
+                parts +
             '</div>' +
-            parts +
         '</div>';
     }
 

@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v693 · 2026-03-11',
-        gameVer: 693,
+        newsVer: 'v696 · 2026-11-11',
+        gameVer: 696,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '對齊',
+            title: '九宮格底線對齊',
+            date: '2026-11-11',
+            bullets: [
+                '每格<b>立繪、武魂光圈、血條名牌</b>底緣貼齊該列格線',
+                '單元撐滿格高，內容隨格底一起下移'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '還原',
             title: '九宮格版面還原',
