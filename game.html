@@ -39428,6 +39428,8 @@ window.HY = window.HY || {};
                 '.shj-view.dragging{cursor:grabbing;}',
                 '.shj-canvas{position:absolute;left:0;top:0;transform-origin:0 0;',
                 'will-change:transform;}',
+                /* v698：名牌獨立於 canvas 縮放層，避免縮放／裁切後「消失」 */
+                '.shj-label-layer{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:4;}',
 
                 /* ⭐ v683：山海經異獸標記 */
                 '.shj-beast{position:absolute;z-index:2;display:flex;align-items:center;',
@@ -39449,15 +39451,16 @@ window.HY = window.HY || {};
                 'object-fit:contain;position:relative;',
                 'pointer-events:none;',
                 'filter:drop-shadow(0 2px 6px rgba(0,0,0,.85));}',
-                '.shj-beast .lbl{position:absolute;top:calc(100% + 10px);left:50%;',
-                'transform:translateX(-50%);transform-origin:top center;white-space:nowrap;',
-                'font-size:26px;line-height:1.25;letter-spacing:.08em;',
+                '.shj-label-layer .lbl{position:absolute;left:0;top:0;',
+                'transform:translate(-50%,0);transform-origin:top center;white-space:nowrap;',
+                'font-size:.82rem;line-height:1.25;letter-spacing:.06em;',
                 'font-weight:700;color:#fff4dc;',
                 'text-shadow:0 0 1px #000,0 1px 0 #000,0 2px 6px #000,0 0 12px rgba(0,0,0,.9);',
                 'background:linear-gradient(180deg,rgba(24,18,10,.96),rgba(8,6,4,.94));',
-                'padding:6px 16px;border-radius:10px;',
+                'padding:4px 10px;border-radius:8px;',
                 'border:2px solid rgba(220,178,96,.72);',
-                'box-shadow:0 4px 14px rgba(0,0,0,.85);pointer-events:none;}',
+                'box-shadow:0 4px 14px rgba(0,0,0,.85);pointer-events:none;' +
+                'visibility:visible;opacity:1;}',
                 /* 詳情卡 */
                 '.shj-tip{position:fixed;z-index:9800;width:320px;max-width:88vw;',
                 'background:linear-gradient(160deg,#1d1610,#120d08 70%);',
@@ -39527,7 +39530,7 @@ window.HY = window.HY || {};
                 '.shj-vein-cell-aura{position:absolute;pointer-events:none;transition:opacity .4s;}',
                 '.shj-beast.chain-boss{z-index:3;border-width:3px;',
                 'box-shadow:0 0 28px rgba(255,200,80,.85);}',
-                '.shj-beast.chain-boss .lbl{color:#ffe8a0;border-color:#ffd060;}',
+                '.shj-label-layer .lbl.chain-boss{color:#ffe8a0;border-color:#ffd060;}',
                 '.shj-era{font-size:.74rem;color:#d4a86a;margin-left:6px;cursor:pointer;',
                 'border:none;background:transparent;font:inherit;border-bottom:1px dashed #6b5636;}',
                 '.shj-chain-row{margin-top:16px;padding-top:12px;border-top:1px solid #3a3020;}',
@@ -39592,6 +39595,7 @@ window.HY = window.HY || {};
                     '<div class="shj-canvas" id="shj-canvas">' +
                         '<img src="' + IMG_SRC + '" alt="山海經圖">' +
                     '</div>' +
+                    '<div class="shj-label-layer" id="shj-label-layer"></div>' +
                     '<div class="shj-corner">' +
                         '<b>山海經</b>　九卷合圖：冰雪 · 山區 · 高原 · 沙漠 · 森林 · 海岬 · 河原 · 平原 · 群島<br>' +
                         '四海之內，有山有水，有神有獸。' +
@@ -39604,6 +39608,7 @@ window.HY = window.HY || {};
             var canvas = box.querySelector('#shj-canvas');
             this.view = view;
             this.canvas = canvas;
+            this.labelLayer = box.querySelector('#shj-label-layer');
 
             /* ⭐ v683：生成山海經異獸標記 */
             this._spawnBeasts();
@@ -39653,6 +39658,9 @@ window.HY = window.HY || {};
             layer.querySelectorAll('.shj-beast').forEach(function (n) {
                 if (n.parentNode) n.parentNode.removeChild(n);
             });
+            if (this.labelLayer) {
+                this.labelLayer.innerHTML = '';
+            }
 
             var spawns = (typeof Data.shjSyncSpawns === 'function')
                 ? Data.shjSyncSpawns()
@@ -39747,13 +39755,19 @@ window.HY = window.HY || {};
                     ' · 靈脈 ' + vein;
             }
             el.setAttribute('data-beast', beast.id);
+            el.setAttribute('data-mx', String(x));
+            el.setAttribute('data-my', String(y));
             el.innerHTML =
                 '<span class="ic">' +
                     '<img src="' + esc(art) + '" alt="' + esc(beast.name) + '"' +
                     ' loading="lazy" decoding="async" draggable="false">' +
-                '</span>' +
-                '<span class="lbl" style="border-color:' + rar.color + '66">' +
-                    (beast._isChainBoss ? '🔗 ' : '') + esc(beast.name) + '</span>';
+                '</span>';
+            var lbl = document.createElement('span');
+            lbl.className = 'lbl' + (beast._isChainBoss ? ' chain-boss' : '');
+            lbl.style.borderColor = rar.color + '66';
+            lbl.textContent = (beast._isChainBoss ? '🔗 ' : '') + (beast.name || '');
+            el._lblEl = lbl;
+            if (this.labelLayer) this.labelLayer.appendChild(lbl);
 
             var icWrap = el.querySelector('.ic');
             var imgEl = icWrap && icWrap.querySelector('img');
@@ -40091,15 +40105,28 @@ window.HY = window.HY || {};
         }
 
         _syncBeastLabelScale() {
-            if (!this.canvas) return;
+            if (!this.canvas || !this.view) return;
             var sc = Number(this.scale);
             if (!isFinite(sc) || sc <= 0) sc = 1;
-            var inv = 1 / Math.max(0.08, sc);
-            var cap = Math.min(inv, 5.5);
-            this.canvas.querySelectorAll('.shj-beast .lbl').forEach(function (lbl) {
-                lbl.style.transform = 'translateX(-50%) scale(' + cap.toFixed(3) + ')';
-                lbl.style.visibility = 'visible';
-                lbl.style.opacity = '1';
+            var ox = Number(this.x) || 0;
+            var oy = Number(this.y) || 0;
+            /* 圓心 data-mx/my；名牌在圓心下方（地圖座標 +96px） */
+            var labelOff = 96;
+            var vr = this.view.getBoundingClientRect();
+            this.canvas.querySelectorAll('.shj-beast').forEach(function (node) {
+                var lbl = node._lblEl;
+                if (!lbl) return;
+                var mx = parseFloat(node.getAttribute('data-mx'));
+                var my = parseFloat(node.getAttribute('data-my'));
+                if (!isFinite(mx) || !isFinite(my)) return;
+                var sx = ox + mx * sc;
+                var sy = oy + (my + labelOff) * sc;
+                /* 視窗外略留邊距，仍更新座標（避免拖回時不重算） */
+                lbl.style.left = sx + 'px';
+                lbl.style.top = sy + 'px';
+                var inView = sx > -40 && sy > -28 && sx < vr.width + 40 && sy < vr.height + 40;
+                lbl.style.visibility = inView ? 'visible' : 'hidden';
+                lbl.style.opacity = inView ? '1' : '0';
             });
         }
 
@@ -40306,6 +40333,7 @@ window.HY = window.HY || {};
             this.el = null;
             this.view = null;
             this.canvas = null;
+            this.labelLayer = null;
             this._dragging = false;
             if (this._escH) {
                 document.removeEventListener('keydown', this._escH);
@@ -40323,7 +40351,9 @@ window.HY = window.HY || {};
         injectEntry() {
             var panel = document.getElementById('hy-edge-bottom-panel');
             if (!panel) return false;
-            if (document.getElementById('shj-entry')) return true;
+            var existing = document.getElementById('shj-entry');
+            if (existing && existing.isConnected && panel.contains(existing)) return true;
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
             /* 找到面板內容區（原本的說明文字會被保留，入口放在最上面） */
             var wrap = document.createElement('div');
@@ -40429,26 +40459,33 @@ window.HY = window.HY || {};
     /* ══════════════════════════════════════════════════════
        自動注入（等底部抽屜建立後）
        ══════════════════════════════════════════════════════ */
+    function ensureShjEntryOnce() {
+        var panel = document.getElementById('hy-edge-bottom-panel');
+        if (panel && HY.ShanHaiJing) {
+            if (HY.ShanHaiJing.injectEntry()) {
+                if (!ensureShjEntryOnce.__logged) {
+                    ensureShjEntryOnce.__logged = true;
+                    console.log('[HY 山海經] ✓ 入口已加入底部抽屜');
+                }
+            }
+        }
+        installShjVictoryHook();
+    }
+
+    /* v698：面板可能晚於首屏才建立 → 持續補注入，不再 30s 放棄 */
     var tries = 0;
     function tick() {
         tries++;
-        if (tries > 200) return;   /* 約 30 秒後放棄 */
-        var panel = document.getElementById('hy-edge-bottom-panel');
-        if (panel) {
-            HY.ShanHaiJing.injectEntry();
-            installShjVictoryHook();
-            console.log('[HY 山海經] ✓ 入口已加入底部抽屜');
-            return;
-        }
-        if (window.HY && window.HY.game && window.HY.game.combatSys) installShjVictoryHook();
-        setTimeout(tick, 150);
+        ensureShjEntryOnce();
+        if (tries < 400) setTimeout(tick, 500);
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(tick, 600);
+        setTimeout(tick, 400);
     } else {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(tick, 600); });
+        window.addEventListener('DOMContentLoaded', function () { setTimeout(tick, 400); });
     }
+    setInterval(ensureShjEntryOnce, 8000);
 
 })(window.HY = window.HY || {});
 
@@ -78844,6 +78881,16 @@ window.HY = window.HY || {};
                     rv2 = r3.ok ? (' [✨復活【' + healTarget.name + '】+' + r3.hp + 'HP]')
                                 : (' [✨復活失敗：' + (r3.why || '不可復活') + ']');
                 }
+                if (!isTwinEcho) {
+                    try {
+                        var BS0 = window.HY && window.HY.BattleStage;
+                        if (BS0 && BS0.fx && partyMembers) {
+                            var aIdx0 = partyMembers.indexOf(charObj);
+                            BS0.fx.skill('hy-battle-stage', 'ally', aIdx0 >= 0 ? aIdx0 : 0,
+                                art.name, art.element || stats.spiritRoot);
+                        }
+                    } catch (eFX0) { }
+                }
                 core.log('✨ 【' + charObj.name + '】施展《' + art.name + '》' + rv2 + '！', 'combat');
                 if (!isTwinEcho) {
                     core.runPluginHooks('onAfterPlayerAttack',
@@ -78868,6 +78915,16 @@ window.HY = window.HY || {};
                         (core.enemies || []).filter(function (e) { return e && e.currentHp > 0; })[0],
                         art.isAoe) || '';
                 } catch (e) { preAtkLog = ''; }
+            }
+            if (!isTwinEcho) {
+                try {
+                    var BSa = window.HY && window.HY.BattleStage;
+                    if (BSa && BSa.fx && partyMembers) {
+                        var aIdx = partyMembers.indexOf(charObj);
+                        BSa.fx.skill('hy-battle-stage', 'ally', aIdx >= 0 ? aIdx : 0,
+                            art.name, art.element || stats.spiritRoot);
+                    }
+                } catch (eFXa) { }
             }
             targetList.forEach(function (target) {
                 // ⭐ v51：逐目標查詢門派特色修正
@@ -79878,6 +79935,15 @@ window.HY = window.HY || {};
                 this.regenMp(enemy, extraActionAffix);
                 return;
             }
+            try {
+                var BSe = window.HY && window.HY.BattleStage;
+                if (BSe && BSe.fx) {
+                    var eIdxS = (core.enemies || []).indexOf(enemy);
+                    var skNm = chosenSkill ? chosenSkill.name : '普攻';
+                    BSe.fx.skill('hy-battle-stage', 'foe', eIdxS >= 0 ? eIdxS : 0,
+                        skNm, enemy.element);
+                }
+            } catch (eFXs) { }
             var rawEnemyCrit = (enemy.crit || 10);
             var netEnemyCrit = Math.max(5, Math.min(75, rawEnemyCrit - targetStats.critRes));
             var isEnemyCrit = Math.random() * 100 < netEnemyCrit;
@@ -116321,7 +116387,8 @@ window.HY = window.HY || {};
                         alive: cur > 0,
                         ready: !!combat.currentEnemy && Number(m.atb || 0) >= 100,
                         atb: Number(m.atb || 0),
-                        skill: self._stageSkillName(m, false),
+                        /* v699：勿傳「預測招式」到舞台（會每 tick 閃爍）；實招由 combat → BS.fx.skill */
+                        skill: null,
                         element: meta.element,
                         aoe: meta.aoe,
                         /* ⭐ v654：角色稱號（顯示在戰鬥舞台名字上方） */
@@ -116374,7 +116441,7 @@ window.HY = window.HY || {};
                         alive: cur > 0,
                         ready: Number(e.atb || 0) >= 100,
                         atb: Number(e.atb || 0),
-                        skill: self._stageSkillName(e, true),
+                        skill: null,
                         element: eMeta.element,
                         aoe: eMeta.aoe,
                         sprite: BS.monSprite(e),
@@ -119995,44 +120062,7 @@ window.HY = window.HY || {};
             }
             node.classList.toggle('lowhp', u.alive !== false && hpPctForLow <= 25 && hpPctForLow > 0);
 
-            /* ⭐ v511：技能名稱浮現
-               ⭐ v623【關鍵修正】出招飄字不見了
-               ──────────────────────────────────────────────────────────
-               舊版條件 `!rebuilt && p && p.skill !== u.skill` 有兩個致命問題：
-
-               ① `!rebuilt`：v621 起 sideSig() 納入 u.name（為修改名不同步），
-                  任何名字／陣容變動都會 rebuilt=true → 該輪整批不播技能名。
-               ② `p.skill !== u.skill`：p 來自 SNAPSHOT（上一輪的值）。
-                  若重建恰好發生在技能已更新之後，p.skill 早已等於 u.skill
-                  → 永遠偵測不到「變化」→ 整場一次都不播。
-
-               改為【以 DOM 為準】：節點上目前顯示的技能名若與 u.skill 不同，
-               就播一次。重建後 DOM 是空的 → 一定會播；
-               同一招連打時 DOM 已有同名 → 不會重複閃。
-               這樣不依賴任何快照，也不會被 rebuild 打斷。 */
-            if (u.skill) {
-                var _skNow = node.querySelector('.hy-fx-skill');
-                var _skWant = '《' + u.skill + '》';
-                var _skSame = _skNow && _skNow.textContent === _skWant;
-                /* 節流：只在「同一招」時才需要防重複。
-                   換招必須立刻播（否則連招時第二招會被吃掉）。
-                   update 每 tick 都會跑，所以「同一招」需 900ms 冷卻，
-                   避免播完後下一輪又被補上造成無限閃爍。 */
-                var _nowSk = Date.now();
-                var _lastSk = Number(node.__lastSkillTs || 0);
-                var _lastName = String(node.__lastSkillName || '');
-                var _isNewSkill = _lastName !== String(u.skill);
-                if (!_skSame && (_isNewSkill || (_nowSk - _lastSk) > 900)) {
-                    node.__lastSkillTs = _nowSk;
-                    node.__lastSkillName = String(u.skill);
-                    showSkillName(node, u.skill, side, false);
-                    /* 治療型技能改成綠色 */
-                    if (/回|療|補|治|癒|復|春/.test(String(u.skill))) {
-                        var last = node.querySelector('.hy-fx-skill');
-                        if (last) last.style.color = '#6ee7b7';
-                    }
-                }
-            }
+            /* v699：招式飄字改由 combat 出招時呼叫 HY.BattleStage.fx.skill，不在此用預測 skill 重播 */
 
             /* ── 血條 ── */
             var bar = node.querySelector('[data-hp="' + side + di + '"]');
@@ -120758,6 +120788,13 @@ window.HY = window.HY || {};
        ⭐ v512：依屬性變色 */
     function showSkillName(node, name, side, isHeal, element) {
         if (!node || !name) return;
+        var now = Date.now();
+        if (String(node.__lastSkillName || '') === String(name) &&
+            (now - Number(node.__lastSkillTs || 0)) < 750) {
+            return;
+        }
+        node.__lastSkillTs = now;
+        node.__lastSkillName = String(name);
         var d = document.createElement('div');
         d.className = 'hy-fx-skill ' + (side === 'foe' ? 'foe' : 'ally');
         d.textContent = (isHeal ? '✚ ' : '《') + name + (isHeal ? '' : '》');
@@ -168875,6 +168912,10 @@ window.HY = window.HY || {};
         setTimeout(function () {
             if (self.state[k]) self._positionTabs();
         }, 260);
+        if (k === 'bottom' && window.HY && HY.ShanHaiJing &&
+            typeof HY.ShanHaiJing.injectEntry === 'function') {
+            try { HY.ShanHaiJing.injectEntry(); } catch (eShj2) { }
+        }
     };
 
     /* 建立底部佔位面板（僅一次）
@@ -168901,6 +168942,10 @@ window.HY = window.HY || {};
         this._placeholder = el;
         /* ⭐ v678：建立後立刻開始觀察尺寸，內容注入時標籤會自動跟上 */
         this._observeBottomPanel();
+        /* ⭐ v698：面板首次建立就立刻注入山海經入口（避免 30s 輪詢逾時後永遠缺按鈕） */
+        if (window.HY && HY.ShanHaiJing && typeof HY.ShanHaiJing.injectEntry === 'function') {
+            try { HY.ShanHaiJing.injectEntry(); } catch (eShj) { }
+        }
         return el;
     };
 

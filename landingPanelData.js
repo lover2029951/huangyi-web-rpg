@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v697 · 2026-11-11',
-        gameVer: 697,
+        newsVer: 'v699 · 2026-11-11',
+        gameVer: 699,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '招式飄字與山海經標籤',
+            date: '2026-11-11',
+            bullets: [
+                '舞台招式名改在<b>實際出招</b>時顯示，不再每 tick 閃預測技能',
+                '山海經入口持續注入；地圖異獸名牌獨立圖層，縮放／拖曳不失蹤'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '武魂與區域 BOSS 站位',
