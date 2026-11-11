@@ -117380,7 +117380,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v697';
+    var STYLE_ID = 'hy-battle-stage-css-v700';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117840,21 +117840,30 @@ window.HY = window.HY || {};
         'object-fit:contain;object-position:center bottom;',
         'filter:drop-shadow(0 10px 22px rgba(0,0,0,.9)) ' +
             'drop-shadow(0 0 10px rgba(239,68,68,.22));}',
-        /* ⭐ v697：區域 BOSS 占滿九宮格，立繪幾何置中、名牌貼底中線 */
+        /* ⭐ v700：區域 BOSS 占滿九宮格；flex 置中（避免 transform 與動畫衝突而跳位） */
         '.hy-stage-unit.rboss-mega-foe{grid-column:1 / -1 !important;grid-row:1 / -1 !important;',
         'z-index:5;align-self:stretch !important;justify-self:stretch !important;',
+        'display:flex !important;flex-direction:column !important;',
+        'justify-content:center !important;align-items:center !important;',
         'position:relative;overflow:visible;min-height:100%;',
-        'width:100%;max-width:100%;padding:0;box-sizing:border-box;}',
+        'width:100%;max-width:100%;padding:0 0 48px;box-sizing:border-box;}',
         '.hy-stage-unit.rboss-mega-foe::before{display:none;}',
         '.hy-stage-unit.rboss-mega-foe > .dyn-wrap,' +
             '.hy-stage-unit.rboss-mega-foe > .dyn-vid,' +
             '.hy-stage-unit.rboss-mega-foe > .hy-stage-img,' +
             '.hy-stage-unit.rboss-mega-foe > .hy-stage-fallback{' +
-            'position:absolute;left:50%;top:50%;margin:0 !important;' +
-            'transform:translate(-50%,-54%);}',
+            'position:relative !important;left:auto !important;top:auto !important;',
+            'transform:none !important;margin:0 !important;flex:0 0 auto;}',
         '.hy-stage-unit.rboss-mega-foe .hy-stage-tag{' +
             'position:absolute;left:50%;bottom:4px;transform:translateX(-50%);' +
             'width:100%;max-width:min(200px,88%);z-index:6;margin-top:0;}',
+        /* 集氣／受擊動畫只動立繪，不再帶走整格定位 */
+        '.hy-stage-unit.rboss-mega-foe.ready .hy-stage-img,' +
+            '.hy-stage-unit.rboss-mega-foe.ready .dyn-whole img{' +
+            'animation:hy-stage-bob 1.15s ease-in-out infinite;}',
+        '.hy-stage-unit.rboss-mega-foe.hit .hy-stage-img,' +
+            '.hy-stage-unit.rboss-mega-foe.hit .dyn-whole img{' +
+            'animation:hy-stage-shake .3s ease-out;}',
         '.hy-stage-unit.rboss-mega-foe .hy-stage-img,' +
             '.hy-stage-unit.rboss-mega-foe .dyn-wrap img,' +
             '.hy-stage-unit.rboss-mega-foe .dyn-whole img{',
@@ -119868,6 +119877,9 @@ window.HY = window.HY || {};
             node.style.gridColumn = '1 / -1';
             node.style.gridRow = '1 / -1';
             node.style.zIndex = '5';
+            node.setAttribute('data-grow', '2');
+            node.setAttribute('data-cell', String(cellIdx));
+            return;
         } else {
             node.style.gridColumn = String(slot[0]);
             node.style.gridRow = String(slot[1]);
