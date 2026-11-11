@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v696 · 2026-11-11',
-        gameVer: 696,
+        newsVer: 'v697 · 2026-11-11',
+        gameVer: 697,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '武魂與區域 BOSS 站位',
+            date: '2026-11-11',
+            bullets: [
+                '武魂改回隨<b>立繪層</b>定位，修正光圈偏移',
+                '區域 BOSS 佔滿九宮格且<b>立繪幾何置中</b>、名牌貼底中線'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '對齊',
             title: '九宮格底線對齊',

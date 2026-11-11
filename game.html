@@ -117313,7 +117313,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v696';
+    var STYLE_ID = 'hy-battle-stage-css-v697';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117730,9 +117730,7 @@ window.HY = window.HY || {};
             'flex:0 0 auto;margin-top:auto;}',
         '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) .hy-stage-tag{' +
             'flex:0 0 auto;margin-top:2px;margin-bottom:0;}',
-        /* v696：武魂改錨定單元底（隨血條下移），立繪層仍供粒子定位 */
-        '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-wrap{' +
-            'position:static;}',
+        /* v697：武魂留在 dyn-wrap 內錨定（水平隨立繪；血條仍靠 margin-top:auto 貼格底） */
         '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) .dyn-whole{' +
             'position:relative;height:var(--h,180px);}',
         /* ⭐ v628：進場動畫改用 --u-scale（單一縮放來源）
@@ -117775,13 +117773,21 @@ window.HY = window.HY || {};
         'object-fit:contain;object-position:center bottom;',
         'filter:drop-shadow(0 10px 22px rgba(0,0,0,.9)) ' +
             'drop-shadow(0 0 10px rgba(239,68,68,.22));}',
-        /* ⭐ 區域 BOSS：占滿敵方九宮格並置中（避免只佔中格 + align-self:end 偏右下） */
+        /* ⭐ v697：區域 BOSS 占滿九宮格，立繪幾何置中、名牌貼底中線 */
         '.hy-stage-unit.rboss-mega-foe{grid-column:1 / -1 !important;grid-row:1 / -1 !important;',
         'z-index:5;align-self:stretch !important;justify-self:stretch !important;',
-        'justify-content:center !important;align-items:center !important;min-height:100%;',
-        'width:100%;max-width:100%;padding:0 4%;box-sizing:border-box;}',
-        '.hy-stage-unit.rboss-mega-foe .dyn-wrap,' +
-            '.hy-stage-unit.rboss-mega-foe .hy-stage-img{margin-left:auto;margin-right:auto;}',
+        'position:relative;overflow:visible;min-height:100%;',
+        'width:100%;max-width:100%;padding:0;box-sizing:border-box;}',
+        '.hy-stage-unit.rboss-mega-foe::before{display:none;}',
+        '.hy-stage-unit.rboss-mega-foe > .dyn-wrap,' +
+            '.hy-stage-unit.rboss-mega-foe > .dyn-vid,' +
+            '.hy-stage-unit.rboss-mega-foe > .hy-stage-img,' +
+            '.hy-stage-unit.rboss-mega-foe > .hy-stage-fallback{' +
+            'position:absolute;left:50%;top:50%;margin:0 !important;' +
+            'transform:translate(-50%,-54%);}',
+        '.hy-stage-unit.rboss-mega-foe .hy-stage-tag{' +
+            'position:absolute;left:50%;bottom:4px;transform:translateX(-50%);' +
+            'width:100%;max-width:min(200px,88%);z-index:6;margin-top:0;}',
         '.hy-stage-unit.rboss-mega-foe .hy-stage-img,' +
             '.hy-stage-unit.rboss-mega-foe .dyn-wrap img,' +
             '.hy-stage-unit.rboss-mega-foe .dyn-whole img{',
@@ -118052,10 +118058,6 @@ window.HY = window.HY || {};
                武魂這裡也用相同週期與幅度，兩者一起上下呼吸，
                水平方向則永遠保持精準對齊（不影響 translateX(-50%)）。 */
             'animation:hy-soul-wrap-drift 3.2s ease-in-out infinite;}' +
-        /* v696：九宮格內改以單元＋名牌高度為基準（隨血條貼格底線） */
-        '.hy-stage-side .hy-stage-unit.has-soul:not(.shj-mega-foe):not(.rboss-mega-foe) .dyn-soul-wrap{' +
-            'bottom:calc(var(--tag-h,56px) + var(--h,180px) * 0.83 - ' +
-                'min(calc(var(--h,180px) * 1.20), calc(var(--h,180px) * 0.69 + 96px)) / 2);}' +
         '@keyframes hy-soul-wrap-drift{' +
             '0%{transform:translate(-50%,0);}' +
             '25%{transform:translate(-50%,-4px);}' +
