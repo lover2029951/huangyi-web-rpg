@@ -82545,6 +82545,10 @@ window.HY = window.HY || {};
                 if (isShj) {
                     rawEnemy.cell = 4;
                     rawEnemy.shjBeastMega = true;
+                } else if (isRBoss) {
+                    /* 區域 BOSS：舞台正中格（idx 4）+ 立繪放大 */
+                    rawEnemy.cell = 4;
+                    rawEnemy.regionBossMega = true;
                 } else if (!isTrib) {
                     var _cellIdx = _slotPool[i % _slotPool.length];
                     var _cb = {};
@@ -82592,6 +82596,12 @@ window.HY = window.HY || {};
                     self.log('👹 遭遇 [' + e.rarityName + '] 強敵【' + e.name + '】附帶 PoE 詞綴：' + afNames + '！', 'time');
                 }
             });
+            try {
+                var _uiAtb = window.HY && window.HY.uiDexAtb;
+                if (_uiAtb && typeof _uiAtb._ensureFormationBeforeStage === 'function') {
+                    _uiAtb._ensureFormationBeforeStage(partyMembers);
+                }
+            } catch (eForm0) { }
             this.runPluginHooks('onBattleStart', { enemies: this.enemies, partyMembers: partyMembers });
             if (this.isAutoBattle) {
                 this.autoTactics.startAutoLoop();
@@ -115430,10 +115440,12 @@ window.HY = window.HY || {};
                 var arenaEl = document.getElementById('battle-arena');
                 if (!arenaEl) return;
                 var p = this._stagePayload(BS, partyMembers, inMap, skipFoe);
+                var combat = this.app.combatSys || {};
                 BS.render(arenaEl, {
                     party: p.party, enemies: p.enemies,
                     id: 'hy-battle-stage',
                     scene: p.scene,
+                    battleSeq: Number(combat._battleSeq) || 0,
                     onTarget: function (side, idx, unit) {
                         if (!unit) return;
                         if (window.HY.game && window.HY.game.logger) {
@@ -115612,15 +115624,39 @@ window.HY = window.HY || {};
             try {
                 var fg = this.app.formationGrid || (window.HY.game && window.HY.game.formationGrid);
                 if (!fg || !partyMembers || !partyMembers.length) return;
-                var S = fg.state && fg.state();
-                if (!S || !S.autoFill) return;
-                var cells = fg.cells() || {};
-                var placed = Object.keys(cells).filter(function (k) { return cells[k]; }).length;
-                var cov = fg.coverage ? fg.coverage() : { complete: placed >= partyMembers.length };
-                if (placed === 0 || !cov.complete) {
-                    if (typeof fg.autoLayout === 'function') fg.autoLayout();
-                }
+                var missing = false;
+                partyMembers.forEach(function (m) {
+                    if (!m || !m.id) { missing = true; return; }
+                    if (typeof fg.cellOfChar === 'function' && fg.cellOfChar(m.id) < 0) missing = true;
+                });
+                if (!missing) return;
+                if (typeof fg.autoLayout === 'function') fg.autoLayout();
+                missing = false;
+                partyMembers.forEach(function (m) {
+                    if (!m || !m.id) { missing = true; return; }
+                    if (fg.cellOfChar(m.id) < 0) missing = true;
+                });
+                if (missing && typeof fg.autoLayout === 'function') fg.autoLayout();
             } catch (eFG0) { }
+        }
+
+        /** 陣盤格位 0~8；無法從陣盤讀取時用與 autoPlace 相同的推薦序 */
+        _partyCellOf(m, fg, slotOrder, usedCells) {
+            if (fg && m && m.id && typeof fg.cellOfChar === 'function') {
+                var ci = fg.cellOfChar(m.id);
+                if (ci >= 0 && ci <= 8) return ci;
+            }
+            var order = slotOrder || [1, 4, 7, 3, 5, 0, 2, 6, 8];
+            var used = usedCells || {};
+            var k, c;
+            for (k = 0; k < order.length; k++) {
+                c = order[k];
+                if (!used[c]) {
+                    used[c] = true;
+                    return c;
+                }
+            }
+            return 4;
         }
 
         _stagePayload(BS, partyMembers, inMap, skipFoe) {
@@ -115633,17 +115669,14 @@ window.HY = window.HY || {};
             if (!inMap) {
                 /* ⭐ v678：開戰前先補齊陣盤，避免舞台先用預設格、幾秒後才對齊 */
                 self._ensureFormationBeforeStage(partyMembers);
-                /* ⭐ v632：讀取陣盤格位，讓戰鬥舞台站位與陣盤一致 */
-                var _fgCells = {};
+                /* ⭐ v632 / v680：讀取陣盤格位，讓戰鬥舞台站位與陣盤一致 */
+                var _fg = null;
                 try {
-                    var _fg = app.formationGrid || (window.HY.game && window.HY.game.formationGrid);
-                    if (_fg && typeof _fg.cells === 'function') _fgCells = _fg.cells() || {};
+                    _fg = app.formationGrid || (window.HY.game && window.HY.game.formationGrid);
                 } catch (eFG) { }
-                var _cellOfChar = {};
-                Object.keys(_fgCells).forEach(function (k) {
-                    var cid = _fgCells[k];
-                    if (cid) _cellOfChar[String(cid)] = Number(k);
-                });
+                var _slotOrder = (window.HY.Data && window.HY.Data.FORMATION_GRID_CONFIG
+                    && window.HY.Data.FORMATION_GRID_CONFIG.AUTO_ORDER) || [1, 4, 7, 3, 5, 0, 2, 6, 8];
+                var _usedPartyCells = {};
 
                 (partyMembers || []).forEach(function (m) {
                     if (!m) return;
@@ -115669,8 +115702,8 @@ window.HY = window.HY || {};
                         title: String(m.title || '').slice(0, 16),
                         sprite: BS.charSprite(m),
                         color: BS.charColor(m),
-                        /* ⭐ v632：陣盤格位（0~8），undefined 表示未排陣 */
-                        cell: _cellOfChar[String(m.id)],
+                        /* ⭐ v680：開戰首幀就要有格位，避免先 GRID_SLOTS 後才對齊 */
+                        cell: self._partyCellOf(m, _fg, _slotOrder, _usedPartyCells),
                         /* ⭐ v570：附身武魂（戰鬥舞台顯示在角色背後） */
                         wuhun: self._wuhunSpriteOf(m),
                         /* ⭐ v612：分層繪圖（光圈自轉、主體固定） */
@@ -115701,9 +115734,11 @@ window.HY = window.HY || {};
                         : Math.floor(80 + (e.lv || 1) * 25 + (e.atk || 20) * 0.15);
                     var eMeta = self._stageSkillMeta(e, true);
 
+                    var isRbossMega = !!(e.regionBossMega || e.isRegionBoss);
                     var cellIdx = (typeof e.cell === 'number' && e.cell >= 0 && e.cell <= 8)
                         ? e.cell
                         : _fallbackPool[ei % _fallbackPool.length];
+                    if (isRbossMega) cellIdx = 4;
 
                     foes.push({
                         name: e.name || '敵人',
@@ -115723,6 +115758,7 @@ window.HY = window.HY || {};
                         cell: cellIdx,
                         cellBonus: e.cellBonus || null,
                         shjBeastMega: !!(e.shjBeastMega || e.isShjBeast),
+                        regionBossMega: isRbossMega,
                         buffs: BS.buffIconsOf ? BS.buffIconsOf(e) : []
                     });
                 });
@@ -116126,7 +116162,8 @@ window.HY = window.HY || {};
                     var pl = this._stagePayload(BS, partyMembers, _inMapNow, false);
                     BS.render(stageEl.parentNode, {
                         party: pl.party, enemies: pl.enemies,
-                        id: 'hy-battle-stage', scene: pl.scene
+                        id: 'hy-battle-stage', scene: pl.scene,
+                        battleSeq: Number(combat._battleSeq) || 0
                     });
                 }
             } catch (eStage) { }
@@ -116650,7 +116687,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v678';
+    var STYLE_ID = 'hy-battle-stage-css-v681';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117066,6 +117103,16 @@ window.HY = window.HY || {};
         'object-fit:contain;object-position:center bottom;',
         'filter:drop-shadow(0 10px 22px rgba(0,0,0,.9)) ' +
             'drop-shadow(0 0 10px rgba(239,68,68,.22));}',
+        /* ⭐ 區域 BOSS：固定九宮格正中央（格 4），立繪高度 ×2 */
+        '.hy-stage-unit.rboss-mega-foe{grid-column:2 !important;grid-row:2 !important;',
+        'z-index:5;align-self:end !important;justify-self:center !important;}',
+        '.hy-stage-unit.rboss-mega-foe .hy-stage-img,' +
+            '.hy-stage-unit.rboss-mega-foe .dyn-wrap img,' +
+            '.hy-stage-unit.rboss-mega-foe .dyn-whole img{',
+        'height:calc(var(--h,200px) * 2) !important;max-height:520px;width:auto;max-width:118%;',
+        'object-fit:contain;object-position:center bottom;',
+        'filter:drop-shadow(0 12px 24px rgba(0,0,0,.92)) ' +
+            'drop-shadow(0 0 16px rgba(251,191,36,.28));}',
 
         /* ── 集氣滿 → 金色光環 + 浮動 ── */
         '.hy-stage-unit.ready .hy-stage-img{animation:hy-stage-bob 1.15s ease-in-out infinite;' +
@@ -118339,10 +118386,14 @@ window.HY = window.HY || {};
 
         /* ⭐ v678：新開戰時強制整舞台重建，避免上一場殘留格位 + 只重建單側錯序 */
         var battleSeq = 0;
-        try {
-            var csB = window.HY.game && window.HY.game.combatSys;
-            battleSeq = (csB && csB._battleSeq) || 0;
-        } catch (eBSeq) { }
+        if (opts.battleSeq != null && isFinite(Number(opts.battleSeq))) {
+            battleSeq = Number(opts.battleSeq);
+        } else {
+            try {
+                var csB = window.HY.game && window.HY.game.combatSys;
+                battleSeq = (csB && csB._battleSeq) || 0;
+            } catch (eBSeq) { }
+        }
         var newBattle = battleSeq > 0 && el.__battleSeq !== battleSeq;
 
         var hadStage = !!el.querySelector('.hy-stage-side.ally');
@@ -118351,7 +118402,7 @@ window.HY = window.HY || {};
             el.innerHTML = buildHtml(party, enemies);
             el.setAttribute('data-ally-sig', allySig);
             el.setAttribute('data-foe-sig', foeSig);
-            if (newBattle) el.__battleSeq = battleSeq;
+            if (battleSeq > 0) el.__battleSeq = battleSeq;
         }
 
         var rebuiltAlly = needFull;
@@ -118481,6 +118532,18 @@ window.HY = window.HY || {};
 
         applySide(el, party, 'ally', id, rebuilt);
         applySide(el, enemies, 'foe', id, rebuilt);
+        /* v680：全量重建後再等版面穩定校正一次（避免開戰首幀錯格） */
+        if (needFull) {
+            var elRef = el;
+            var partyRef = party;
+            var foesRef = enemies;
+            var idRef = id;
+            requestAnimationFrame(function () {
+                if (!document.body.contains(elRef)) return;
+                applySide(elRef, partyRef, 'ally', idRef, false);
+                applySide(elRef, foesRef, 'foe', idRef, false);
+            });
+        }
         updateOrder(el, party, enemies);
         updateShare(el, id, party);
         scanMissLog(el, opts);
@@ -118983,15 +119046,27 @@ window.HY = window.HY || {};
     }
 
     /** 同步九宮格格位（半重建時也校正，避免開戰初幾秒錯位） */
+    function stageMegaKind(u, side) {
+        if (!u || side !== 'foe') return '';
+        if (u.shjBeastMega) return 'shj';
+        if (u.regionBossMega) return 'rboss';
+        return '';
+    }
+
     function applyUnitGrid(node, u, total, cellList) {
         if (!node || !u) return;
-        var isShjMega = !!(u.shjBeastMega);
-        var slot = isShjMega ? [2, 2, 1] : gridSlotOf(total || 1,
+        var side = node.getAttribute('data-side') || '';
+        var mega = stageMegaKind(u, side);
+        var slot = mega ? [2, 2, 1] : gridSlotOf(total || 1,
             Number(node.getAttribute('data-i') || 0), cellList, u.cell);
-        if (isShjMega) {
+        if (mega === 'shj') {
             node.style.gridColumn = '1 / -1';
             node.style.gridRow = '1 / -1';
             node.style.zIndex = '4';
+        } else if (mega === 'rboss') {
+            node.style.gridColumn = '2';
+            node.style.gridRow = '2';
+            node.style.zIndex = '5';
         } else {
             node.style.gridColumn = String(slot[0]);
             node.style.gridRow = String(slot[1]);
@@ -119003,10 +119078,11 @@ window.HY = window.HY || {};
     function unitHtml(u, side, i, total, cellList) {
         /* ⭐ v625：有附身武魂 → 加上 .has-soul，供技能名往上推到光圈之上 */
         var hasSoul = !!(u.wuhun && side !== 'foe');
-        var isShjMega = !!(u.shjBeastMega && side === 'foe');
+        var mega = stageMegaKind(u, side);
         var cls = 'hy-stage-unit ' + side +
             (hasSoul ? ' has-soul' : '') +
-            (isShjMega ? ' shj-mega-foe' : '') +
+            (mega === 'shj' ? ' shj-mega-foe' : '') +
+            (mega === 'rboss' ? ' rboss-mega-foe' : '') +
             (u.alive === false ? ' dead' : '') +
             (u.ready ? ' ready' : '') +
             (u.target ? ' is-target' : '');
@@ -119036,7 +119112,7 @@ window.HY = window.HY || {};
         var nmColor = u.color ? ' style="color:' + u.color + ';"' : '';
         /* ⭐ v628：把九宮格格位寫成 inline style（grid-column / grid-row / --u-scale）
            由 sideHtml 傳入 total，才知道要站哪一格。 */
-        var slot = isShjMega ? [2, 2, 1] : gridSlotOf(total || 1, i, cellList, u.cell);
+        var slot = mega ? [2, 2, 1] : gridSlotOf(total || 1, i, cellList, u.cell);
         /* ⭐ v633：使用者要求「角色不要有遠近縮放」
            ──────────────────────────────────────────────────────────
            原本依 depth 給 --u-scale .74 / .87 / 1，後排角色明顯變小，
@@ -119047,8 +119123,10 @@ window.HY = window.HY || {};
            同時移除 depth-N 的變暗與降透明度 —— 那是配合縮放的景深效果，
            拿掉縮放後再變暗只會讓後排角色顯得像壞掉。
            z-index 保留（後排仍應被前排遮擋，才有前後感）。 */
-        var slotCss = isShjMega
+        var slotCss = (mega === 'shj')
             ? 'grid-column:1 / -1;grid-row:1 / -1;z-index:4;'
+            : (mega === 'rboss')
+                ? 'grid-column:2;grid-row:2;z-index:5;'
             : ('grid-column:' + slot[0] + ';grid-row:' + slot[1] + ';' +
                 'z-index:' + (3 - slot[2]) + ';');
         /* ⭐ v647：用 data-grow 標記「在第幾列」，
