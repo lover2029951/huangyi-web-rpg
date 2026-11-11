@@ -117517,7 +117517,7 @@ window.HY = window.HY || {};
     var CSS = [
         /* ── 舞台外框 ── */
         '.hy-stage{position:relative;margin:0 0 10px;border-radius:10px;overflow:hidden;' +
-            'display:flex;align-items:flex-end;justify-content:space-between;' +
+            'display:flex;align-items:stretch;justify-content:space-between;' +
             /* ⭐ v574：頂部留白 76 → 104px，給武魂光圈上移的空間
                ⭐ v625：104 → 158px（招式名要浮在武魂之上）
                ⭐ v628：改成戰棋九宮格後，需要更大的縱深空間
@@ -117683,9 +117683,9 @@ window.HY = window.HY || {};
             'align-items:stretch;justify-items:center;' +
             'height:100%;' +
             'min-height:0;--h:270px;}',
-        /* v683：九宮格參考線（暖金雙向格線 + 外框，便於辨識站位） */
-        '.hy-stage-side::before{content:"";position:absolute;inset:6px 4px;' +
-            'pointer-events:none;z-index:0;opacity:.48;border-radius:6px;' +
+        /* v683：九宮格參考線（與 grid 內容區對齊；須含 ally/foe 不對稱 padding） */
+        '.hy-stage-side::before{content:"";position:absolute;pointer-events:none;z-index:0;' +
+            'opacity:.48;border-radius:6px;' +
             'background-color:rgba(8,6,4,.12);' +
             'background-image:' +
             'linear-gradient(to right,rgba(220,178,96,.55) 1px,transparent 1px),' +
@@ -117697,18 +117697,21 @@ window.HY = window.HY || {};
             'background-position:0 0,0 0,0.5px 0.5px,0.5px 0.5px;' +
             'box-shadow:inset 0 0 0 1px rgba(200,168,110,.38),' +
             'inset 0 0 28px rgba(0,0,0,.22);}',
-        '.hy-stage-side::after{content:"";position:absolute;inset:5px 3px;' +
-            'pointer-events:none;z-index:0;border-radius:7px;opacity:.62;' +
+        '.hy-stage-side::after{content:"";position:absolute;pointer-events:none;z-index:0;' +
+            'border-radius:7px;opacity:.62;' +
             'border:1px solid rgba(200,168,110,.32);' +
             'box-shadow:0 0 12px rgba(200,160,80,.08);}',
-        '.hy-stage-side.ally::before{background-color:rgba(6,14,18,.1);' +
+        /* ⭐ v689：inset 與 padding 一致，格線區域 = grid 內容區 */
+        '.hy-stage-side.ally::before{inset:0 10px 0 0;' +
+            'background-color:rgba(6,14,18,.1);' +
             'box-shadow:inset 0 0 0 1px rgba(125,211,252,.22),inset 0 0 28px rgba(0,0,0,.22);}',
-        '.hy-stage-side.ally::after{border-color:rgba(125,211,252,.26);}',
-        '.hy-stage-side.foe::before{background-color:rgba(18,6,6,.12);' +
+        '.hy-stage-side.ally::after{inset:0 10px 0 0;border-color:rgba(125,211,252,.26);}',
+        '.hy-stage-side.foe::before{inset:0 0 0 10px;' +
+            'background-color:rgba(18,6,6,.12);' +
             'box-shadow:inset 0 0 0 1px rgba(248,113,113,.22),inset 0 0 28px rgba(0,0,0,.22);}',
-        '.hy-stage-side.foe::after{border-color:rgba(248,113,113,.24);}',
-        '.hy-stage-side.ally{padding-right:10px;}',
-        '.hy-stage-side.foe{padding-left:10px;}',
+        '.hy-stage-side.foe::after{inset:0 0 0 10px;border-color:rgba(248,113,113,.24);}',
+        '.hy-stage-side.ally{padding-right:10px;box-sizing:border-box;}',
+        '.hy-stage-side.foe{padding-left:10px;box-sizing:border-box;}',
         /* ⭐ v647：以「列」決定垂直對齊 —— 這是撐滿上下邊緣的關鍵
            單元內部是 flex column（立繪 + 名牌），所以：
              align-self:start → 整塊貼齊該列頂端（招式名會靠近舞台頂）
