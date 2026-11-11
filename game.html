@@ -117313,7 +117313,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v685';
+    var STYLE_ID = 'hy-battle-stage-css-v690';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -117557,7 +117557,8 @@ window.HY = window.HY || {};
                  有武魂 820px、無武魂 760px（⭐ v671：各 +78px，舞台更高）
                  內容區 ≈ 730px ÷ 3 = 每列 243px（原 217px，角色間距更寬鬆）
             */
-            'padding:76px 16px 14px;height:820px;box-sizing:border-box;' +
+            /* ⭐ v690：九宮格縱向拉滿（取消傷害佔比後縮減上留白、提高舞台） */
+            'padding:52px 12px 8px;height:920px;box-sizing:border-box;' +
             /* ⭐ v677：輕量質感 —— 透明底 + 金框 + 外緣光 */
             'border:1px solid rgba(200,168,110,.38);' +
             'background:transparent;' +
@@ -117570,7 +117571,7 @@ window.HY = window.HY || {};
             'box-shadow:inset 0 0 70px rgba(0,0,0,.55),inset 0 0 120px rgba(0,0,0,.28);' +
             'background:radial-gradient(ellipse 88% 78% at 50% 48%,transparent 42%,rgba(0,0,0,.22) 100%);}',
         /* ⭐ v649：沒有武魂時上留白只需 16px（招式名已移到下方，不再佔上方） */
-        '.hy-stage:not([data-has-soul]){padding-top:16px;height:760px;}' +
+        '.hy-stage:not([data-has-soul]){padding-top:8px;height:880px;}' +
 
         /* ── 場景 class 保留（地圖仍會掛載），但不顯示底色 ── */
         '.hy-stage[class*="scene-"]{background:transparent !important;}',
@@ -117680,9 +117681,8 @@ window.HY = window.HY || {};
             'display:grid;' +
             'grid-template-columns:repeat(3,1fr);' +
             'grid-template-rows:repeat(3,minmax(0,1fr));' +
-            'align-items:stretch;justify-items:center;' +
-            'height:100%;' +
-            'min-height:0;--h:270px;}',
+            'align-items:stretch;justify-items:center;align-self:stretch;' +
+            'height:100%;min-height:100%;flex:1 1 auto;--h:270px;}',
         /* v683：九宮格參考線（與 grid 內容區對齊；須含 ally/foe 不對稱 padding） */
         '.hy-stage-side::before{content:"";position:absolute;pointer-events:none;z-index:0;' +
             'opacity:.48;border-radius:6px;' +
@@ -118564,7 +118564,8 @@ window.HY = window.HY || {};
                    並把下方立繪往下推，確保完全不遮擋角色。
            ⭐ v575：使用者要求「往右邊靠齊」→ 由置中改為右上角對齊
                    （出手順序在左上角，兩者分居兩側不會重疊） */
-        '.hy-stage-share{position:absolute;right:10px;top:8px;z-index:7;' +
+        '.hy-stage-share{display:none !important;}',
+        '.hy-stage-share.x-off{position:absolute;right:10px;top:8px;z-index:7;' +
             'width:min(520px,46%);' +
             'padding:6px 12px;border-radius:8px;pointer-events:none;' +
             'background:rgba(4,8,14,.92);border:1px solid rgba(51,65,85,.9);' +
@@ -120523,51 +120524,12 @@ window.HY = window.HY || {};
        保留空函式避免其他呼叫端報錯，但不再繪製任何東西。 */
     function updateDps(el, stageId) { void el; void stageId; }
 
-    /* ⭐ v513：傷害佔比條（v518 改為顯示在 VS 正上方）
-       ⭐ v594：輿圖打圖時切換為「傷害累計」模式 ——
-               標題與總傷害都改成整張地圖的累積值。 */
-    function updateShare(el, stageId, party) {
+    /* ⭐ v690：傷害佔比／累計面板已關閉（內部 dmgByAlly 統計仍保留） */
+    function updateShare(el) {
         try {
-            var st = statsOf(stageId);
-            var keys = Object.keys(st.dmgByAlly);
-            var total = 0;
-            keys.forEach(function (k) { total += st.dmgByAlly[k]; });
-            if (total <= 0) {
-                var old = el.querySelector('.hy-stage-share');
-                if (old && old.parentNode) old.parentNode.removeChild(old);
-                return;
-            }
-            var box = el.querySelector('.hy-stage-share');
-            if (!box) {
-                box = document.createElement('div');
-                box.className = 'hy-stage-share';
-                el.appendChild(box);
-            }
-            keys.sort(function (a, b) { return st.dmgByAlly[b] - st.dmgByAlly[a]; });
-            /* ⭐ v519：改為兩欄式，顯示全部隊員（最多 5 人）而不遮擋立繪
-               ⭐ v594：累計模式顯示「傷害累計 + 總量」，一般模式維持「傷害佔比」 */
-            var cumulative = !!el.__cumulative;
-            var title = cumulative
-                ? ('傷害累計　' + fmtDmg(total))
-                : '傷害佔比';
-            var h = '<span class="sh-t' + (cumulative ? ' cum' : '') + '">' +
-                esc(title) + '</span><div class="sh-grid">';
-            keys.slice(0, 5).forEach(function (k) {
-                var pct = Math.round((st.dmgByAlly[k] / total) * 100);
-                h += '<div class="sh-row">' +
-                    '<span class="sh-nm" title="' + esc(k) + '">' + esc(k) + '</span>' +
-                    '<span class="sh-bar"><i style="width:' + pct + '%"></i></span>' +
-                    '<span class="sh-pc">' + pct + '%</span>' +
-                    (cumulative
-                        ? '<span class="sh-amt">' + fmtDmg(st.dmgByAlly[k]) + '</span>'
-                        : '') +
-                    '</div>';
-            });
-            h += '</div>';
-            if (box.innerHTML !== h) box.innerHTML = h;
-
-            /* ⭐ v518：佔比條固定在頂部中央，不需動態定位；
-               但舞台上方要保留足夠留白（由 CSS 的 padding-top 處理） */
+            if (!el || !el.querySelector) return;
+            var old = el.querySelector('.hy-stage-share');
+            if (old && old.parentNode) old.parentNode.removeChild(old);
         } catch (e) { }
     }
 

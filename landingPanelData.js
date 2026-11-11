@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v689 · 2026-03-11',
-        gameVer: 689,
+        newsVer: 'v690 · 2026-03-11',
+        gameVer: 690,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'bal', tagLabel: '調整',
+            title: '戰鬥舞台 v690',
+            date: '2026-03-11',
+            bullets: [
+                '九宮格<b>縱向拉滿</b>（舞台加高、縮減上留白）',
+                '關閉右上角<b>傷害佔比／累計</b>面板'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '九宮格參考線對齊',
