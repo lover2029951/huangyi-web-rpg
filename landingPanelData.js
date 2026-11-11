@@ -5,13 +5,31 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v703 · 2026-11-11',
-        gameVer: 703,
+        newsVer: 'v704 · 2026-11-12',
+        gameVer: 704,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'add', tagLabel: '新增',
+            title: '離線金司馬刷圖',
+            date: '2026-11-12',
+            bullets: [
+                '關網頁離線時，<b>刷圖營地</b>依倉庫地圖繼續跑（與 24h 掛機同軸）',
+                '戰利品累積待領取；礦冶週期一併寫入離線報告'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '區域 BOSS 擊殺次數',
+            date: '2026-11-12',
+            bullets: [
+                '各地圖「已擊殺」改寫入 <b>regionBoss.bossKills</b>，不再被每秒刷成 0',
+                '舊檔自 <b>wuhun.bossKills</b> 合併還原進度'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '刷圖營地自動開跑',

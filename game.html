@@ -55730,9 +55730,7 @@ window.HY = window.HY || {};
             var inst = Data.makeWuhunInstance ? Data.makeWuhunInstance(boss) : null;
             if (!inst) return null;
             this.addWuhun(inst);
-
-            var S = this.ensureState();
-            S.bossKills[mapId] = num(S.bossKills[mapId], 0) + 1;
+            /* 擊殺次數由 regionBossSys._settle 統一累加（避免與 UI 不同步／重複 +1） */
 
             /* ⭐ v571：品級已移除，訊息不再顯示品質前綴 */
             this._log('🌌 擊敗【' + boss.name + '】，獲得武魂【' +
@@ -56386,15 +56384,38 @@ window.HY = window.HY || {};
             var root = g.charSys.rootState;
             if (!root) return null;
             if (!root.regionBoss || typeof root.regionBoss !== 'object') {
-                root.regionBoss = { lastKill: {}, totalKills: 0 };
+                root.regionBoss = { lastKill: {}, totalKills: 0, bossKills: {} };
             }
             var S = root.regionBoss;
             if (!S.lastKill || typeof S.lastKill !== 'object') S.lastKill = {};
+            if (!S.bossKills || typeof S.bossKills !== 'object') S.bossKills = {};
             if (typeof S.totalKills !== 'number') S.totalKills = 0;
+            /* 舊存檔：擊殺數只在 root.wuhun.bossKills → 合併一次 */
+            if (!S.__migBossKills) {
+                try {
+                    var g = this.app || window.HY.game;
+                    var wS = g && g.wuhunSys && typeof g.wuhunSys.ensureState === 'function'
+                        ? g.wuhunSys.ensureState() : null;
+                    if (wS && wS.bossKills) {
+                        Object.keys(wS.bossKills).forEach(function (mid) {
+                            var n = num(wS.bossKills[mid], 0);
+                            if (n > num(S.bossKills[mid], 0)) S.bossKills[mid] = n;
+                        });
+                    }
+                } catch (eMig) { }
+                S.__migBossKills = true;
+            }
             return S;
         }
 
         state() { return this.ensureState(); }
+
+        /** 該地圖區域 BOSS 累計擊殺（與 UI／summary 同一來源） */
+        killsOf(mapId) {
+            var S = this.ensureState();
+            if (!S || !mapId) return 0;
+            return num(S.bossKills && S.bossKills[mapId], 0);
+        }
 
         /* ══════════════════════════════════════════════════
            查詢
@@ -56719,6 +56740,16 @@ window.HY = window.HY || {};
 
             S.lastKill[mapId] = Date.now();
             S.totalKills = num(S.totalKills, 0) + 1;
+            if (!S.bossKills || typeof S.bossKills !== 'object') S.bossKills = {};
+            S.bossKills[mapId] = num(S.bossKills[mapId], 0) + 1;
+            try {
+                var wS0 = g.wuhunSys && typeof g.wuhunSys.ensureState === 'function'
+                    ? g.wuhunSys.ensureState() : null;
+                if (wS0) {
+                    if (!wS0.bossKills || typeof wS0.bossKills !== 'object') wS0.bossKills = {};
+                    wS0.bossKills[mapId] = S.bossKills[mapId];
+                }
+            } catch (eBK) { }
 
             /* ⭐ v652：全服廣播 —— 擊敗區域 BOSS 時發一條彈幕給所有在線玩家
                ──────────────────────────────────────────────────
@@ -56826,7 +56857,7 @@ window.HY = window.HY || {};
             return {
                 mapId: mapId,
                 boss: boss,
-                kills: num(S && S.bossKills ? S.bossKills[mapId] : 0, 0),
+                kills: this.killsOf(mapId),
                 cooldown: this.cooldownLeft(mapId),
                 canChallenge: this.canChallenge(mapId)
             };
@@ -85486,8 +85517,7 @@ window.HY = window.HY || {};
                     var cd = rb ? rb.cooldownLeft(map.id) : 0;
                     var kills = 0;
                     try {
-                        var rs0 = rb.ensureState();
-                        kills = (rs0 && rs0.totalKills) || 0;
+                        kills = rb.killsOf ? rb.killsOf(map.id) : 0;
                     } catch (eK) { }
                     var wuhunRange = '';
                     try {
@@ -85707,8 +85737,7 @@ window.HY = window.HY || {};
                 var killer = box.querySelector('.hy-med-boss-kills');
                 if (killer) {
                     try {
-                        var S = rb.ensureState();
-                        killer.textContent = (S && S.bossKills && S.bossKills[mapId]) || 0;
+                        killer.textContent = String(rb.killsOf ? rb.killsOf(mapId) : 0);
                     } catch (e) { }
                 }
             };
@@ -125071,17 +125100,27 @@ window.HY = window.HY || {};
                     try {
                         var n = Date.now();
                         writeTs(n);
-                        var t = window.HY.game && window.HY.game.townSys;
+                        var g0 = window.HY.game;
+                        var t = g0 && g0.townSys;
                         if (t && t.charSys && t.charSys.rootState) t.charSys.rootState.lastOnlineTimestamp = n;
+                        var km0 = g0 && g0.kmSys;
+                        if (km0 && typeof km0.onClose === 'function') km0.onClose();
+                        else if (km0 && typeof km0.ensureState === 'function') {
+                            var kst = km0.ensureState();
+                            if (kst && kst.founded) kst.lastTick = n;
+                        }
                     } catch (e) { /* 忽略 */ }
                 });
                 window.addEventListener('beforeunload', function () {
                     try {
                         var n = Date.now();
                         writeTs(n);
-                        if (window.HY.game && window.HY.game.charSys && window.HY.game.charSys.rootState) {
-                            window.HY.game.charSys.rootState.lastOnlineTimestamp = n;
+                        var g1 = window.HY.game;
+                        if (g1 && g1.charSys && g1.charSys.rootState) {
+                            g1.charSys.rootState.lastOnlineTimestamp = n;
                         }
+                        var km1 = g1 && g1.kmSys;
+                        if (km1 && typeof km1.onClose === 'function') km1.onClose();
                     } catch (e) { /* 忽略 */ }
                 });
             }
@@ -125224,6 +125263,31 @@ window.HY = window.HY || {};
             } else {
                 expCycles = 0;
             }
+            /* ── 金司馬區：礦冶離線週期 ＋ 刷圖營地推進 ── */
+            var kmTicks = 0;
+            var kmSummary = '';
+            var runnerMaps = 0;
+            var runnerPending = 0;
+            try {
+                var km = app.kmSys || (window.HY.game && window.HY.game.kmSys);
+                if (km && typeof km.settleOffline === 'function') {
+                    var kmR = km.settleOffline();
+                    if (kmR && kmR.ticks) {
+                        kmTicks = kmR.ticks;
+                        kmSummary = '礦冶 ' + kmTicks + ' 週期';
+                    }
+                }
+                var R = app.kmRunners || (window.HY.game && window.HY.game.kmRunners);
+                if (R && typeof R.settleOffline === 'function') {
+                    var rr = R.settleOffline(sec * 1000);
+                    if (rr && rr.maps > 0) {
+                        runnerMaps = rr.maps;
+                        runnerPending = num(rr.pending, 0);
+                    }
+                }
+            } catch (eKm) {
+                warn('金司馬離線結算失敗：', eKm);
+            }
             try { if (typeof app.renderAll === 'function') app.renderAll(); } catch (e) { /* 忽略 */ }
             var report = {
                 title: '🛸 馬博士時空艙・' + sourceTitle + '報告',
@@ -125239,7 +125303,11 @@ window.HY = window.HY || {};
                 equipCount: equipAddedCount,
                 orbs: droppedOrbs,
                 guildCycles: guildCycles,
-                expCycles: expCycles
+                expCycles: expCycles,
+                kmTicks: kmTicks,
+                kmSummary: kmSummary,
+                runnerMaps: runnerMaps,
+                runnerPending: runnerPending
             };
             this.showOfflineReportModal(report);
             log('結算完成', report);
@@ -125288,6 +125356,16 @@ window.HY = window.HY || {};
                     '<div>💎 離線通貨掉落：' + orbStr + '</div>' +
                     '<div>🏯 幫會建築自動徵收：已完成 <strong>' + report.guildCycles + '</strong> 輪生產結算</div>' +
                     '<div>🐉 靈獸時空探險隊：已完成 <strong>' + report.expCycles + '</strong> 次探險收集</div>' +
+                    (report.kmTicks > 0
+                        ? '<div>⛏️ 金司馬區礦冶：離線結算 <strong>' + report.kmTicks + '</strong> 個週期</div>'
+                        : '') +
+                    (report.runnerMaps > 0
+                        ? '<div>🏕️ 刷圖營地：離線完成 <strong>' + report.runnerMaps +
+                            '</strong> 張地圖（待領取約 <strong>' + (report.runnerPending || 0) +
+                            '</strong> 筆，請至金司馬區領取）</div>'
+                        : (report.runnerPending > 0
+                            ? '<div>🏕️ 刷圖營地：待領取戰利品 <strong>' + report.runnerPending + '</strong> 筆</div>'
+                            : '')) +
                 '</div>';
             modal.classList.remove('hidden');
         }
@@ -139079,15 +139157,21 @@ window.HY = window.HY || {};
 
         /** 讓所有閒置／等待中的工人立刻嘗試開跑 */
         _kickAll() {
+            return this._kickAllAt();
+        }
+
+        /** @param {number} [asOf] 虛擬時間（離線結算用） */
+        _kickAllAt(asOf) {
             var k = this.ensureState();
-            if (!k) return;
+            if (!k) return 0;
             var self = this;
             var started = 0;
             k.runners.forEach(function (r) {
                 if (r.mode === 'run') return;
-                if (self._startNext(r, k)) started++;
+                if (self._startNext(r, k, asOf)) started++;
             });
             if (started > 0) this.requestRender();
+            return started;
         }
 
         /** 工人效率 */
@@ -139119,7 +139203,7 @@ window.HY = window.HY || {};
             ⚠️ v4：只吃 runnerPool 裡的圖，不碰玩家的一般地圖倉庫。
                     這樣玩家完全掌控「餵哪些圖給工人」。
             @returns {boolean} 是否成功開始 */
-        _startNext(r, k) {
+        _startNext(r, k, asOf) {
             var atlas = this.atlas();
             if (!atlas) return false;
 
@@ -139171,7 +139255,7 @@ window.HY = window.HY || {};
 
             var eff = this._effOf(r.workerId, k);
             var sec = this.runSeconds(tier, eff);
-            var now = Date.now();
+            var now = (typeof asOf === 'number' && isFinite(asOf)) ? asOf : Date.now();
 
             r.mode = 'run';
             r.startedAt = now;
@@ -139222,7 +139306,7 @@ window.HY = window.HY || {};
 
                     /* 立刻開始下一張（連刷） */
                     r.mode = 'idle';
-                    var ok = self._startNext(r, k);
+                    var ok = self._startNext(r, k, t);
                     if (!ok) break;
 
                     /* 若下一張又瞬間完成（極短時間），continue 迴圈 */
@@ -139237,6 +139321,85 @@ window.HY = window.HY || {};
                 this.requestRender();
             }
             return done;
+        }
+
+        /**
+         * 離線期間推進刷圖（與離線掛機同一時間軸，上限 24h）
+         * 戰利品累積在 runner.pending，上線後手動領取。
+         * @returns {{maps:number,pending:number,elapsedMs:number}|null}
+         */
+        settleOffline(elapsedMs) {
+            var el = Math.min(86400000, Math.max(0, num(elapsedMs, 0)));
+            if (el < 60000) return null;
+
+            var k = this.ensureState();
+            if (!k || !k.runners.length) return null;
+            if (this.campLevel() <= 0) return null;
+
+            var end = Date.now();
+            var start = end - el;
+            var self = this;
+            var totalDone = 0;
+            var MAX_MAPS = 240;
+            var safety = 0;
+
+            this._kickAllAt(start);
+
+            while (safety++ < 12000 && totalDone < MAX_MAPS) {
+                var nextDue = null;
+                k.runners.forEach(function (r) {
+                    if (r.mode !== 'run') return;
+                    var fa = num(r.finishAt, 0);
+                    if (fa > end) return;
+                    if (nextDue === null || fa < nextDue) nextDue = fa;
+                });
+
+                if (nextDue === null) {
+                    if (!self._kickAllAt(start)) break;
+                    var canComplete = false;
+                    k.runners.forEach(function (r) {
+                        if (r.mode === 'run' && num(r.finishAt, 0) <= end) canComplete = true;
+                    });
+                    if (!canComplete) break;
+                    continue;
+                }
+
+                var at = nextDue;
+                var progressed = false;
+                k.runners.forEach(function (r) {
+                    if (r.mode !== 'run' || num(r.finishAt, 0) > at) return;
+                    if ((r.pending || []).length >= CFG.MAX_PENDING) {
+                        r.mode = 'reserve';
+                        r.reserveWhy = 'pending';
+                        return;
+                    }
+                    var eff = self._effOf(r.workerId, k);
+                    var runTier = num(r.currentTier, 1);
+                    r.pending = r.pending || [];
+                    r.pending.push({
+                        tier: runTier,
+                        name: r.currentMap,
+                        loot: self._rollLoot(runTier, eff)
+                    });
+                    r.totalRuns = num(r.totalRuns, 0) + 1;
+                    k.runnerStats.runs = num(k.runnerStats.runs, 0) + 1;
+                    totalDone++;
+                    progressed = true;
+                    r.mode = 'idle';
+                    self._startNext(r, k, at);
+                });
+                if (!progressed) break;
+            }
+
+            if (totalDone > 0) {
+                try {
+                    this.log('🌙 離線期間刷圖營地完成 <b>' + totalDone + '</b> 張（請至營地領取戰利品）', 'time');
+                } catch (eL) { }
+            }
+
+            var pending = 0;
+            k.runners.forEach(function (r) { pending += (r.pending || []).length; });
+            return { maps: totalDone, pending: pending, elapsedMs: el };
         }
 
         /** ⭐ 計算戰利品
