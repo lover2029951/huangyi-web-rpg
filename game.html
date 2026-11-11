@@ -156601,6 +156601,12 @@ window.HY = window.HY || {};
                 var left = Math.ceil((cd - (Date.now() - S.lastFail)) / 1000);
                 return { ok: false, why: '渡劫冷卻中（剩 ' + left + ' 秒）', cooldown: left };
             }
+            if (S.cleared[next.id]) {
+                return {
+                    ok: false,
+                    why: '已突破【' + next.name + '】（等級上限 Lv.' + next.lvEnd + '）'
+                };
+            }
 
             /* ⭐ v585：突破材料檢查（單一材料到齊即可） */
             var g0 = this.app || window.HY.game;
@@ -156838,6 +156844,8 @@ window.HY = window.HY || {};
                         cs0.lastEnemyTemplate = null;
                     }
                 } catch (eC) { }
+                /* ⭐ v620：突破後立刻消化已累積的滿經驗（上限剛解鎖） */
+                this._applyLevelUpsAfterBreak(c);
                 return { ok: true, success: true, realm: target, passive: target.passiveDesc, charName: c.name };
             }
 
@@ -156862,6 +156870,37 @@ window.HY = window.HY || {};
                 }
             } catch (eC1) { }
             return { ok: true, success: false, expLoss: loss, charName: c.name };
+        }
+
+        /** 突破成功後：用新上限連續升級（滿經驗時不必再打一場才升級） */
+        _applyLevelUpsAfterBreak(c) {
+            var g = this.app || window.HY.game;
+            var cs = g && g.charSys;
+            if (!cs || !c) return 0;
+            var cap = (typeof cs.levelCapOf === 'function') ? cs.levelCapOf(c) : cs.MAX_LEVEL;
+            var les = g.levelExpSys;
+            var calc = (les && typeof les.calculateRequiredExpForLevel === 'function')
+                ? function (lv) { return les.calculateRequiredExpForLevel(lv); }
+                : function (lv) {
+                    return Math.max(80, Math.floor(100 * Math.pow(lv, 1.85) + lv * 120));
+                };
+            var ups = 0;
+            while (num(c.lv, 1) < cap) {
+                var need = calc(c.lv);
+                if (num(c.exp, 0) < need) break;
+                c.exp -= need;
+                c.lv += 1;
+                c.freePoints = num(c.freePoints, 0) + 5;
+                c.maxExp = calc(c.lv);
+                var d = cs.getDerivedStatsForChar(c);
+                c.currentHp = d.maxHp;
+                c.currentMp = d.maxMp;
+                ups += 1;
+                this._log('🎉 【' + (c.name || '') + '】突破後升至 Lv.' + c.lv +
+                    '（上限 Lv.' + cap + '）！獲 5 點潛能！', 'system');
+            }
+            if (ups > 0) c.__capNotified = null;
+            return ups;
         }
 
         /** 依 id 找角色 */
@@ -157003,23 +157042,18 @@ window.HY = window.HY || {};
             g.combatSys.registerPlugin({
                 onVictory: function (core, payload) {
                     if (!self._inTribulation) return;
-                    /* 確認打死的是渡劫 BOSS */
-                    var dead = (payload && payload.defeatedEnemies) || [];
-                    var isTrib = dead.some(function (e) { return e && e.isTribulation; });
-                    if (!isTrib && self._pendingEnemy && self._pendingEnemy.currentHp > 0) return;
-                    setTimeout(function () {
-                        var r = self.finishTribulation(true);
-                        if (r.ok && window.HY.uiRealm) window.HY.uiRealm.refresh();
-                        if (g.renderAll) g.renderAll(true);
-                    }, 300);
+                    /* ⭐ v620：以 _inTribulation 為準立即結算（舊版用 _pendingEnemy.hp
+                       或 isTribulation 旗標，常誤判 → 戰鬥大捷卻不寫入 cleared）。 */
+                    var r = self.finishTribulation(true);
+                    if (!r.ok && r.why) self._log('⚠️ 渡劫結算：' + r.why, 'system');
+                    if (window.HY.uiRealm) window.HY.uiRealm.refresh();
+                    if (g.renderAll) g.renderAll(true);
                 },
                 onDefeat: function (core, payload) {
                     if (!self._inTribulation) return;
-                    setTimeout(function () {
-                        var r = self.finishTribulation(false);
-                        if (r.ok && window.HY.uiRealm) window.HY.uiRealm.refresh();
-                        if (g.renderAll) g.renderAll(true);
-                    }, 300);
+                    var r = self.finishTribulation(false);
+                    if (window.HY.uiRealm) window.HY.uiRealm.refresh();
+                    if (g.renderAll) g.renderAll(true);
                 }
             });
             this._combatHooked = true;
