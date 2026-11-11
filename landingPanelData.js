@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v701 · 2026-11-11',
-        gameVer: 701,
+        newsVer: 'v702 · 2026-11-11',
+        gameVer: 702,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '區域 BOSS 九宮格對齊',
+            date: '2026-11-11',
+            bullets: [
+                '全格 BOSS 改<b>置中排版</b>，集火準心與立繪不再上下分離',
+                '關閉全格高度下錯位的腳影／集氣底光（準心仍隨立繪）'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '區域 BOSS 圖示還原',
