@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>黃易群俠傳 Web：時空浪人</title>
-    <meta name="description" content="Path of Exile 風格的武俠網頁 RPG —— 異界輿圖、地心礦坑、十五大門派、PoE 裝備工藝。">
+    <meta name="description" content="Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂、山海套裝、九宮格陣盤、PoE 工藝。">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%23c89d54' stroke-width='1.5' opacity='.6'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
     <style>
@@ -155,7 +155,7 @@
             font-size: .72rem; font-weight: normal; color: #64748b;
         }
         .guide-bd {
-            max-height: 420px; overflow-y: auto;
+            max-height: 560px; overflow-y: auto;
             padding: 12px 16px 14px;
             display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
         }
@@ -450,257 +450,31 @@
 
     <div class="hero">
         <h1>🗡️ 黃易群俠傳 Web</h1>
-        <p class="sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
+        <p class="sub" id="hero-sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
     </div>
 
-    <a class="btn" href="game.html?v=686">▶ 進入遊戲</a>
+    <a class="btn" href="game.html" data-game-href>▶ 進入遊戲</a>
+
+    <script src="landingPanelData.js"></script>
 
     <!-- ══════════════ 更新公告 ══════════════ -->
     <div class="news">
         <div class="news-hd">
             <span>📢 更新公告</span>
-            <span class="ver" id="news-ver">v1.2 · 2026-11-05</span>
+            <span class="ver" id="news-ver">讀取中…</span>
         </div>
-        <div class="news-bd" id="news-body">
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag new">新增</span>
-                    <span class="entry-title">三套獨立戰鬥系統</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li><b>時空內掛</b>：一般戰鬥專用，每角色獨立戰術設定</li>
-                    <li><b>打圖戰術</b>：異界輿圖專用，41 項詳細設定</li>
-                    <li><b>礦坑戰術</b>：地心礦坑專用，43 項設定（含深度策略）</li>
-                    <li>三者完全互斥，同時只能進行一種戰鬥</li>
-                    <li>「直接衝霸主」為隊伍共識：任一人開啟即全隊生效</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag add">新增</span>
-                    <span class="entry-title">異界輿圖 T1~T16</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li><b>16 張專屬地圖石徽</b>：從 POE 樣板生成 I ~ XVI 羅馬數字</li>
-                    <li><b>地圖通貨改造</b>：蛻變／增幅／改造／點金／混沌／重鑄</li>
-                    <li><b>輿圖天賦樹</b>：33 節點、4 大精隨分支</li>
-                    <li><b>霸主系統</b>：25% 掉落高一階地圖，首殺永久 +1 天賦點</li>
-                    <li><b>精隨詞綴怪</b>：3% 機率出現，擊殺必定掉落對應精隨</li>
-                    <li>硫磺改為打圖掉落（不再由一般戰鬥產出）</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag add">新增</span>
-                    <span class="entry-title">地心礦坑獨立戰鬥</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li>礦坑戰鬥使用<b>獨立敵人容器</b>，與一般／輿圖完全隔離</li>
-                    <li>戰鬥面板比照打圖樣板：ATB 條、戰力、HP/MP、門派特色、下一招預告</li>
-                    <li>常駐工具列：不論是否戰鬥中都能開啟戰術設定</li>
-                    <li>深度策略：越深層自動提高血線與藥線</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag bal">平衡</span>
-                    <span class="entry-title">獎勵曲線重製（A+B 方案）</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li><b>方案 A</b>：怪物獎勵改用 <code>lv^0.8</code> 曲線，解決後期暴漲</li>
-                    <li><b>方案 B</b>：等級差衰減，打低等怪獎勵大幅打折（最低 2%）</li>
-                    <li>修正 <code>totalExp / 5</code> 與 <code>rewardRate 0.085</code> 的二次懲罰</li>
-                    <li>離線掛機同步套用新曲線</li>
-                    <li>實際效果：Lv1 約 7 場升級 → Lv300 約 1343 場（越後期越難練）</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag new">新增</span>
-                    <span class="entry-title">BUFF 丹藥自動服用</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li>6 種狀態丹藥：狂暴戰神、金剛不壞、天眼必中、太虛幻影、長生回春、五氣朝元</li>
-                    <li>自動續 BUFF：剩餘回合不足時自動補一顆</li>
-                    <li>可設定「只在霸主階段使用」節省丹藥</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag add">新增</span>
-                    <span class="entry-title">復活機制重製</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li>改為<b>每個角色獨立 3 次</b>復活（原本全隊共用 5 次）</li>
-                    <li><b>單一角色死亡即刻復活</b>，不需等全隊死亡</li>
-                    <li>復活技能：每張地圖每人只能被技能救起一次</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag fix">修正</span>
-                    <span class="entry-title">戰鬥面板預告顯示</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li>修正「怪物已死，預告仍指向死亡目標」</li>
-                    <li>已陣亡單位顯示 <b>💀 已陣亡</b>（刪除線）</li>
-                    <li>群攻技能目標顯示「<b>敵方群體</b>／<b>我方群體</b>」</li>
-                    <li>攻擊技能附帶回血會標註 💚</li>
-                    <li>敵方 5 隻分散攻擊不同角色，預告與實際 100% 一致</li>
-                    <li>敵方集氣條顏色與我方同步（金色漸層）</li>
-                </ul>
-            </div>
-
-            <div class="entry">
-                <div class="entry-hd">
-                    <span class="tag fix">修正</span>
-                    <span class="entry-title">其他系統修正</span>
-                    <span class="entry-date">2026-11-05</span>
-                </div>
-                <ul>
-                    <li>金司馬區倉庫容量 <b>×10</b>（200 → 2000）</li>
-                    <li>幫會祝福／後天改命貢獻消耗 <b>×10</b></li>
-                    <li>幫會建築每棟最多排班 <b>3 人</b></li>
-                    <li>地圖品質邊框加粗，珠寶／裝備同步</li>
-                    <li>修復 <code>num is not defined</code> 導致戰鬥卡死</li>
-                </ul>
-            </div>
-
-        </div>
+        <div class="news-bd" id="news-body"></div>
     </div>
     <!-- ══════════════ 更新公告結束 ══════════════ -->
-    <!-- ══════════════ 玩法公告 ══════════════ -->
+    <!-- ══════════════ 玩法指南 ══════════════ -->
     <div class="guide">
         <div class="guide-hd">
             <span>🎮 玩法指南</span>
-            <span class="cnt">新手必讀</span>
+            <span class="cnt" id="guide-cnt">載入中…</span>
         </div>
-        <div class="guide-bd">
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">⚔️</span>核心循環</div>
-                <div class="card-bd">
-                    打怪升等 → 累積裝備 → 挑戰高階地圖 → 取得更好的詞綴與精隨 → 再打更難的圖。
-                    <br><b>一般戰鬥</b>只給經驗／武點／銀兩；<b>裝備與通貨全部來自打圖</b>。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">🗺️</span>異界輿圖（打圖）</div>
-                <div class="card-bd">
-                    倉庫 → <b>地圖倉庫</b> → 選一張圖 → 用通貨改造詞綴 → 右欄點「開啟地圖戰鬥」。
-                    <br>地圖分 <code>T1~T16</code>，階級越高獎勵越好，怪物也越強。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">🛠️</span>地圖改造（重要）</div>
-                <div class="card-bd">
-                    地圖掉落時是<b>白圖</b>，沒有詞綴。用通貨洗詞綴：
-                    <br>蛻變（白→藍）→ 增幅（加詞綴）→ 點金（藍→黃）→ 混沌（重洗）
-                    <br>詞綴越好，<b>怪物數量／掉落／難度</b>同步提升。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">👑</span>霸主與地圖掉落</div>
-                <div class="card-bd">
-                    清完小怪後<b>霸主登場</b>。擊殺霸主有 <b>25%</b> 機率掉落高一階地圖。
-                    <br>首次擊敗每個階級的霸主 → 永久 <b>+1 輿圖天賦點</b>（每階只給一次）。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">🌳</span>輿圖天賦樹</div>
-                <div class="card-bd">
-                    頂部「🌳 天賦樹」或輿圖內「🌟 輿圖天賦」開啟。
-                    <br>33 個節點、4 大分支全為<b>精隨主題</b>：掉落率／階級／改造／詞綴。
-                    <br>天賦點只在地圖內生效。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">⛏️</span>地心礦坑</div>
-                <div class="card-bd">
-                    頂部「⛏️ 地心礦坑」進入。<b>無限深度</b>，越深怪物越強。
-                    <br>產出：<b>硫磺</b>（燃料）、<b>化石</b>（工藝）、<b>珠寶</b>。
-                    <br>硫磺主要由打圖取得。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">💊</span>三套自動戰鬥</div>
-                <div class="card-bd">
-                    分別對應三種戰鬥，設定完全獨立：
-                    <br>🎛️ <b>時空內掛</b>（一般戰鬥）｜🗺️ <b>打圖戰術</b>（輿圖）｜⛏️ <b>礦坑戰術</b>（礦坑）
-                    <br>每個角色各自獨立設定，切換操控角色會自動套用。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">💀</span>復活機制</div>
-                <div class="card-bd">
-                    每個角色<b>獨立 3 次</b>復活。角色死亡會<b>立刻消耗自己的次數</b>原地復活，不需等全隊死亡。
-                    <br>次數用完就真的倒下，需靠隊友或退出地圖。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">🔮</span>精隨系統</div>
-                <div class="card-bd">
-                    打圖時約 <b>3%</b> 的怪物會帶「精隨禁錮」詞綴（紫色光環）。
-                    <br>擊殺<b>必定掉落</b>對應家族的 1 顆精隨。精隨可直接鑲上裝備，取代一條詞綴。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">🏯</span>幫會系統</div>
-                <div class="card-bd">
-                    八大建築可排班幫眾生產資源，<b>每棟最多 3 人</b>。
-                    <br>幫貢可用於「幫會祝福」（單角限 1 個生效）與「後天改命」（每角獨立）。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">⚓</span>金司馬區</div>
-                <div class="card-bd">
-                    建築經營、雇傭工人、船運貿易、符文鑲嵌、金司馬重組。
-                    <br>倉庫容量 <b>2000</b>（基本 200 × 10），適合囤放大量素材。
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-hd"><span class="ico">📈</span>等級與獎勵曲線</div>
-                <div class="card-bd">
-                    上限 <b>Lv.300</b>。<b>越後期越難練</b>：
-                    <br>Lv1 約 7 場升一級 → Lv50 約 212 場 → Lv300 約 1343 場。
-                    <br>打比自己低 <b>5 級以上</b>的怪，獎勵會大幅衰減。
-                </div>
-            </div>
-
-            <div class="tip">
-                <b>💡 新手建議路線</b>：先在揚州城郊打到 Lv10 → 累積 3 張 T1 地圖合成 T2 →
-                進軍輿圖洗詞綴刷裝備 → 裝備成型後挑戰 T5+ 拿精隨 →
-                同時經營礦坑取得珠寶與化石 → 最後挑戰 T16 霸主。
-            </div>
-
-        </div>
+        <div class="guide-bd" id="guide-bd"></div>
     </div>
-    <!-- ══════════════ 玩法公告結束 ══════════════ -->
+    <!-- ══════════════ 玩法指南結束 ══════════════ -->
 
     <!-- ══════════════ 我的隊伍 ══════════════ -->
     <div class="team">
@@ -714,6 +488,10 @@
     </div>
     <!-- ══════════════ 我的隊伍結束 ══════════════ -->
     <script>
+    function hyGameLink() {
+        return (window.HY_LANDING && typeof HY_LANDING.gameHref === 'function')
+            ? HY_LANDING.gameHref() : 'game.html';
+    }
     /* ══════════════════════════════════════════════════════════════
        👥 我的隊伍 —— 從本機存檔讀取角色資料
        ══════════════════════════════════════════════════════════════ */
@@ -770,7 +548,7 @@
                 bd.innerHTML =
                     '<div class="team-empty">' +
                     '還沒有任何角色。<br>' +
-                    '<a href="game.html?v=686">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
+                    '<a href="' + hyGameLink() + '">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
                     '</div>';
                 return;
             }
@@ -780,7 +558,7 @@
             if (!save || !Array.isArray(save.roster) || !save.roster.length) {
                 if (cntEl) cntEl.textContent = '尚無角色';
                 bd.innerHTML = '<div class="team-empty">存檔中沒有角色資料。<br>' +
-                    '<a href="game.html?v=686">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
+                    '<a href="' + hyGameLink() + '">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
                 return;
             }
 
@@ -953,7 +731,7 @@
                 if (cntEl) cntEl.textContent = '0 位玩家';
                 bd.innerHTML = '<div class="rank-empty">' +
                     '目前還沒有人上傳隊伍。<br>' +
-                    '<a href="game.html?v=686" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
+                    '<a href="' + hyGameLink() + '" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
                     '，你的隊伍會自動出現在這裡。</div>';
                 return;
             }

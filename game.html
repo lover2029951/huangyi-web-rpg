@@ -83146,6 +83146,7 @@ window.HY = window.HY || {};
                 }
             });
             try {
+                if (window.HY && window.HY.FormationGridBoot) window.HY.FormationGridBoot();
                 var _uiAtb = window.HY && window.HY.uiDexAtb;
                 if (_uiAtb && typeof _uiAtb._ensureFormationBeforeStage === 'function') {
                     _uiAtb._ensureFormationBeforeStage(partyMembers);
@@ -113889,6 +113890,10 @@ window.HY = window.HY || {};
       const cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
       const hasSave = this.saveSys.load();
       this.ensureAllSharedState();
+      /* ⭐ v687：讀檔後立刻掛陣盤，避免戰鬥舞台先用預設九宮格 */
+      try {
+        if (window.HY.FormationGridBoot) window.HY.FormationGridBoot();
+      } catch (eFgBoot) { }
       if (!hasSave) {
         this.logger.add(cfgData.WELCOME_MSG || '⚡ 歡迎來到《黃易群俠傳 Web》！', 'time');
       }
@@ -116232,6 +116237,7 @@ window.HY = window.HY || {};
 
         _ensureFormationBeforeStage(partyMembers) {
             try {
+                if (window.HY.FormationGridBoot) window.HY.FormationGridBoot();
                 var fg = this.app.formationGrid || (window.HY.game && window.HY.game.formationGrid);
                 if (!fg || !partyMembers || !partyMembers.length) return;
                 var missing = false;
@@ -119707,10 +119713,7 @@ window.HY = window.HY || {};
     function resolveStageCell(u, side, i, total, cellList) {
         if (!u) return 4;
         var n;
-        if (u.cell != null && u.cell !== '' && isFinite(Number(u.cell))) {
-            n = Number(u.cell);
-            if (n >= 0 && n <= 8) return n;
-        }
+        /* ⭐ v687：我方優先讀陣盤（開頁時 payload.cell 可能是備用序，會蓋住陣盤） */
         if (side === 'ally') {
             var cid = u.charId != null ? u.charId : u.id;
             if (cid != null) {
@@ -119722,6 +119725,10 @@ window.HY = window.HY || {};
                     }
                 } catch (eCell) { }
             }
+        }
+        if (u.cell != null && u.cell !== '' && isFinite(Number(u.cell))) {
+            n = Number(u.cell);
+            if (n >= 0 && n <= 8) return n;
         }
         if (cellList && cellList.length && cellList[i] != null && isFinite(Number(cellList[i]))) {
             n = Number(cellList[i]);
@@ -159456,12 +159463,43 @@ window.HY = window.HY || {};
     }
     window.HY.FormationGridBoot = boot;
 
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(boot, 1100);
-    } else {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 1100); });
+    function nudgeBattleStageGrid() {
+        try {
+            var g = window.HY.game;
+            var cs = g && g.combatSys;
+            if (!cs || !cs.currentEnemy) return;
+            var ui = window.HY.uiDexAtb;
+            if (!ui || typeof ui.renderBattleStage !== 'function') return;
+            var pm = g.partySys ? g.partySys.getPartyMembers() : [];
+            ui.renderBattleStage(pm, false, false);
+        } catch (eNudge) { }
     }
-    window.addEventListener('load', function () { setTimeout(boot, 1400); });
+
+    function scheduleBoot() {
+        if (boot()) {
+            nudgeBattleStageGrid();
+            return;
+        }
+        var delays = [0, 16, 50, 120, 300];
+        var i = 0;
+        (function tick() {
+            if (boot()) {
+                nudgeBattleStageGrid();
+                return;
+            }
+            if (i < delays.length) {
+                setTimeout(tick, delays[i]);
+                i += 1;
+            }
+        })();
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        scheduleBoot();
+    } else {
+        window.addEventListener('DOMContentLoaded', scheduleBoot);
+    }
+    window.addEventListener('load', function () { scheduleBoot(); });
 })(window.HY);
 
 
