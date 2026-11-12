@@ -80864,7 +80864,9 @@ window.HY = window.HY || {};
             if (!enemy || extraActionAffix) return;
             if (enemy.currentHp <= 0) return;
             var core = this.core;
-            if (core && typeof core.isNaturalVitalRegenTurn === 'function' && !core.isNaturalVitalRegenTurn()) {
+            if (core && typeof core.tryClaimEnemyMpNaturalRegen === 'function') {
+                if (!core.tryClaimEnemyMpNaturalRegen(enemy)) return;
+            } else if (core && typeof core.isNaturalVitalRegenTurn === 'function' && !core.isNaturalVitalRegenTurn()) {
                 return;
             }
             if (typeof enemy.maxMp !== 'number' || enemy.maxMp <= 0) return;
@@ -83658,6 +83660,8 @@ window.HY = window.HY || {};
             this._vitalRegenBeat = 0;
             this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
+            this._partyNatRegenDonePhase = -1;
+            this._afterCombatHandledBeat = -1;
             this.autoTactics = new window.HY.CombatAutoTactics(this);
             this.playerTurn  = new window.HY.CombatPlayerTurn(this);
             this.enemyTurn   = new window.HY.CombatEnemyTurn(this);
@@ -83721,28 +83725,48 @@ window.HY = window.HY || {};
             this._turnCounter = num(this._turnCounter, 0) + 1;
             this._vitalRegenBeat = num(this._vitalRegenBeat, 0) + 1;
         }
-        /** 出手結束後結算自然回復（敵我皆可觸發 claim） */
+        /** 出手結束後結算自然回復（同一出手拍只進入一次） */
         afterCombatActionBeat() {
+            var beat = this.vitalRegenBeat();
+            if (this._afterCombatHandledBeat === beat) return;
+            this._afterCombatHandledBeat = beat;
             this.applyPartyNaturalVitalRegen();
+        }
+        naturalRegenPhase() {
+            var iv = this.naturalVitalRegenInterval();
+            return Math.floor(this.vitalRegenBeat() / iv);
         }
         /** 是否為自然回復結算拍（第 N、2N、3N… 拍；N = vitalNaturalRegenTurns） */
         isNaturalVitalRegenTurn() {
             var iv = this.naturalVitalRegenInterval();
             var beat = this.vitalRegenBeat();
-            if (beat < iv || beat % iv !== 0) return false;
-            return this._vitalRegenLastClaimBeat !== beat;
+            return beat >= iv && beat % iv === 0;
         }
-        /** 我方被動回復：同一拍只結算一次 */
-        claimNaturalVitalRegenTick() {
+        /** 我方全隊：每個回復週期只結算一次（不隨同一拍多次 afterCombat 重複） */
+        tryClaimPartyNaturalRegen() {
             if (!this.isNaturalVitalRegenTurn()) return false;
+            var ph = this.naturalRegenPhase();
+            if (ph <= 0) return false;
+            if (this._partyNatRegenDonePhase >= ph) return false;
+            this._partyNatRegenDonePhase = ph;
             var beat = this.vitalRegenBeat();
             this._vitalRegenLastClaimBeat = beat;
-            this._naturalVitalRegenPhase = Math.floor(beat / this.naturalVitalRegenInterval());
+            this._naturalVitalRegenPhase = ph;
+            return true;
+        }
+        /** 敵方內力自然回復：同一敵、同一週期只結算一次 */
+        tryClaimEnemyMpNaturalRegen(enemy) {
+            if (!enemy || !this.isNaturalVitalRegenTurn()) return false;
+            var ph = this.naturalRegenPhase();
+            if (ph <= 0) return false;
+            var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
+            if (last >= ph) return false;
+            enemy._natMpRegenPhase = ph;
             return true;
         }
         /** 氣血／內力自然回復（天賦 lifeRegen / manaRegen）；週期見 vitalNaturalRegenTurns */
         applyPartyNaturalVitalRegen() {
-            if (!this.claimNaturalVitalRegenTick()) return;
+            if (!this.tryClaimPartyNaturalRegen()) return;
             var g = window.HY.game;
             if (!g || !g.charSys) return;
             var iv = this.naturalVitalRegenInterval();
@@ -83750,14 +83774,17 @@ window.HY = window.HY || {};
             this.log('🌿 自然回復結算（第 ' + beat + ' 回合出手／每 ' + iv + ' 回合恢復一次氣血與內力）', 'combat');
             var _psR = g.partySys;
             var _memR = _psR && _psR.getPartyMembers ? _psR.getPartyMembers() : [];
-            _memR.push(g.charSys.state);
+            if (g.charSys.state) _memR.push(g.charSys.state);
             var _seen = {};
             var self = this;
+            var ph = this.naturalRegenPhase();
             _memR.forEach(function (mm) {
                 if (!mm || mm.currentHp <= 0) return;
                 var _mid = mm.id || mm.name;
                 if (_seen[_mid]) return;
                 _seen[_mid] = 1;
+                var _b = mm._battle || (mm._battle = {});
+                if (_b._natRegenPhase >= ph) return;
                 var _d = g.charSys.getDerivedStatsForChar(mm);
                 if (!_d) return;
                 var _mpGain = 0, _hpGain = 0;
@@ -83770,22 +83797,28 @@ window.HY = window.HY || {};
                 if (_hpRate > 0) {
                     _hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
                 }
-                if (_mpGain > 0 && mm.currentMp < num(_d.maxMp, 0)) {
-                    g.charSys.restoreVitals(0, _mpGain, mm);
-                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenMp', { label: '內力恢復' });
+                if (_mpGain > 0) {
+                    _mpGain = Math.min(_mpGain, Math.max(0, num(_d.maxMp, 0) - num(mm.currentMp, 0)));
                 }
-                if (_hpGain > 0 && mm.currentHp < num(_d.maxHp, 0)) {
-                    g.charSys.restoreVitals(_hpGain, 0, mm);
+                if (_hpGain > 0) {
+                    _hpGain = Math.min(_hpGain, Math.max(0, num(_d.maxHp, 0) - num(mm.currentHp, 0)));
+                }
+                if (_mpGain <= 0 && _hpGain <= 0) return;
+                _b._natRegenPhase = ph;
+                if (_hpGain > 0) {
                     self.markStageFx('ally', self.allyStageIndex(mm), 'regenHp', { label: '氣血恢復' });
                 }
-                if (_hpGain > 0 || _mpGain > 0) {
-                    var parts = [];
-                    if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
-                    if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
-                    self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
+                if (_mpGain > 0) {
+                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenMp', { label: '內力恢復' });
                 }
+                g.charSys.restoreVitals(_hpGain, _mpGain, mm);
+                var parts = [];
+                if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
+                if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
+                self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
             });
             this.onUpdateUI && this.onUpdateUI();
+            try { this.refreshBattleStageNow(); } catch (eRf) { }
         }
         /** 戰鬥舞台舞台飄字：預先標記來源（招式／偷取／自然回復等） */
         _ensureStageFxMarks() {
@@ -83906,6 +83939,8 @@ window.HY = window.HY || {};
             this._vitalRegenBeat = 0;
             this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
+            this._partyNatRegenDonePhase = -1;
+            this._afterCombatHandledBeat = -1;
         }
         startBattle(enemyTemplate) {
             if (!enemyTemplate) return;
@@ -83975,6 +84010,8 @@ window.HY = window.HY || {};
             this._vitalRegenBeat = 0;
             this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
+            this._partyNatRegenDonePhase = -1;
+            this._afterCombatHandledBeat = -1;
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
                比對敵人陣容更可靠（同種怪連刷時陣容簽章完全相同）。 */
@@ -84202,6 +84239,7 @@ window.HY = window.HY || {};
             this.playerTurn.petTurn(leaderStats, partyMembers);
             this.syncCurrentEnemyPointer();
             if (!this.currentEnemy) { this.handleVictory(); return; }
+            if (typeof this.afterCombatActionBeat === 'function') this.afterCombatActionBeat();
             this.enemyTurn.enemiesTurn(partyMembers);
             this.onUpdateUI();
         }

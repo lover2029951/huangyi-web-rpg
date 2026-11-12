@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v726 · 2026-11-12',
-        gameVer: 726,
+        newsVer: 'v727 · 2026-11-12',
+        gameVer: 727,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復：同一週期不重複結算',
+            date: '2026-11-12',
+            bullets: [
+                '每個回復個回復週期（預設每 3 出手拍）全隊只結算一次氣血／內力',
+                '同一出手拍不重複觸發 afterCombat 自然回復',
+                '敵方內力回復改為每敵每週期一次；合併 restore 減少飄字連刷'
+            ]
+        },
         {
             tag: 'new', tagLabel: '戰鬥',
             title: '戰鬥飄字：九宮格左上／右上',
