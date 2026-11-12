@@ -9564,10 +9564,10 @@ window.HY.Data = window.HY.Data || {};
 //
 // 【魂力（年）】
 //   魂力單位是「年」，決定武魂強度：
-//     1 年 = 全屬性 +0.01 點
-//   例：5000 年 = 全屬性 +50 點
+//     1 年 = 全屬性 +0.001 點
+//   例：5000 年 = 全屬性 +5 點
 //
-//   上限 100,000 年（= 全屬性 +1000 點）
+//   上限 1,000,000 年（百萬年；未計成長倍率）
 //
 // 【取得】
 //   打「區域 BOSS」100% 掉落對應等級的武魂，魂力隨機。
@@ -9600,10 +9600,10 @@ window.HY.Data = window.HY.Data || {};
        一、常數
        ══════════════════════════════════════════════════════ */
     Data.WUHUN_CONFIG = {
-        /* 魂力 → 屬性：1 年 = 0.01 點全屬性 */
-        POWER_PER_YEAR: 0.01,
-        /* 魂力上限（年） */
-        MAX_YEARS: 100000,
+        /* 魂力 → 屬性：1 年 = 0.001 點全屬性 */
+        POWER_PER_YEAR: 0.001,
+        /* 魂力上限（年）百萬年 */
+        MAX_YEARS: 1000000,
         /* ⭐ v588：武魂掉落時的魂力範圍（年）
            ──────────────────────────────────────────────────
            使用者要求「掉落隨機 魂力 1~100」。
@@ -9617,9 +9617,11 @@ window.HY.Data = window.HY.Data || {};
         GROWTH_MAX: 0.3,
         /* 成長值上限（融合累加，使用者指定上限 5） */
         GROWTH_CAP: 5,
-        /* 成長值對屬性的倍率：最終 = 魂力換算 × (1 + 成長值 × 係數)；滿成長 5、係數 0.2 → 最高 ×2 */
-        GROWTH_ATTR_RATE: 0.2,
+        /* 成長值對屬性的倍率：最終 = 魂力換算 × (1 + 成長值 × 係數)；滿成長 5 → 最高 ×1.5 */
+        GROWTH_ATTR_RATE: 0.1,
         GROWTH_MULTIPLIER: true,
+        /* 附身：武魂五圍（力敏體氣神）依比例疊到角色，再走角色五圍→戰鬥公式 */
+        EQUIP_ATTR_RATE: 0.5,
         /* 武魂附身後，每幾回合觸發一次增益/減益 */
         TRIGGER_EVERY_TURNS: 3
     };
@@ -10106,7 +10108,7 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
              Lv.10  BOSS → 約 40 年   （五屬性各 +0.4，前期無感）
              Lv.100 BOSS → 約 2000 年（各 +20，明顯）
              Lv.300 BOSS → 約 18000 年（各 +180，接近一倍戰力）
-           魂力上限仍為 10 萬年（需靠餵食堆疊才能達到）。 */
+           魂力上限為百萬年（需靠餵食堆疊才能達到）。 */
         YEARS_SCALE: 0.2
     };
 
@@ -10146,11 +10148,16 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
     };
 
     /** 成長值 → 屬性倍率（1 + growth × GROWTH_ATTR_RATE） */
+    Data.wuhunEquipAttrRate = function () {
+        var r = num(Data.WUHUN_CONFIG && Data.WUHUN_CONFIG.EQUIP_ATTR_RATE, 0.5);
+        return Math.max(0, Math.min(1, r));
+    };
+
     Data.wuhunGrowthMult = function (growth) {
         var cfg = Data.WUHUN_CONFIG || {};
         if (!cfg.GROWTH_MULTIPLIER) return 1;
         var g = Math.max(0, num(growth, 0));
-        var rate = Math.max(0, num(cfg.GROWTH_ATTR_RATE, 0.2));
+        var rate = Math.max(0, num(cfg.GROWTH_ATTR_RATE, 0.1));
         var cap = Data.wuhunGrowthCap();
         if (cap > 0) g = Math.min(g, cap);
         return 1 + g * rate;
@@ -10282,6 +10289,7 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
     /** 格式化魂力（年）→ 顯示字串 */
     Data.fmtYears = function (y) {
         var n = Math.max(0, Math.round(num(y, 0)));
+        if (n >= 1000000) return (n / 1000000).toFixed(2) + ' 百萬年';
         if (n >= 10000) return (n / 10000).toFixed(2) + ' 萬年';
         return n.toLocaleString() + ' 年';
     };
@@ -55781,7 +55789,7 @@ window.HY = window.HY || {};
 //   ③ 武魂可餵食（吞噬）：副武魂消失，主武魂魂力疊加
 //   ④ 相同武魂可融合：主武魂成長值隨機 +0.1~0.3
 //   ⑤ 附身：每個角色獨立，只能附身 1 隻
-//   ⑥ 附身後角色獲得全屬性加成（魂力 × 0.01 × wuhunGrowthMult(成長值)）
+//   ⑥ 附身：武魂五圍 × EQUIP_ATTR_RATE → 角色五圍換算（與 characterSystem 同公式）
 //   ⑦ 戰鬥中每 3 回合觸發武魂技能（增益自身 / 減益敵方）
 // ══════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
@@ -56020,7 +56028,7 @@ window.HY = window.HY || {};
             if (mainUid === foodUid) return { ok: false, why: '不能吞噬自己' };
 
             var cfg = D().WUHUN_CONFIG || {};
-            var cap = num(cfg.MAX_YEARS, 100000);
+            var cap = num(cfg.MAX_YEARS, 1000000);
 
             var before = num(a.years, 0);
             var add = num(b.years, 0);
@@ -56057,7 +56065,7 @@ window.HY = window.HY || {};
             }
 
             var cfg = Data.WUHUN_CONFIG || {};
-            var cap = num(cfg.MAX_YEARS, 100000);
+            var cap = num(cfg.MAX_YEARS, 1000000);
             var before = num(a.years, 0);
             var cur = before;
             var skipped = [];
@@ -56299,36 +56307,35 @@ window.HY = window.HY || {};
             var a = Data.wuhunAttrs ? Data.wuhunAttrs(w) : null;
             if (!a) return;
 
-            /* 五屬性 → 各項戰鬥數值
-               ⭐ v557：係數刻意壓低。武魂的定位是「有感但不主宰」，
-               若 1 點屬性直接 +8 氣血，10 萬年武魂會給 80 萬氣血（荒唐）。
-               改為對照角色本身的成長曲線：
-                 力 → 外功傷害 ×1.2、氣血 ×1.2
-                 敏 → 出手速度 ×0.25、閃避 ×0.12
-                 體 → 氣血 ×3.0、護體 ×0.8
-                 氣 → 內力 ×2.5、內功傷害 ×0.8
-                 神 → 會心 ×0.04、暴抗 ×0.03、命中 ×0.08 */
-            var str = a.str, agi = a.agi, con = a.con, qi = a.qi, spi = a.spi;
-            var flatAtk = str * 1.2 + qi * 0.8;
-            var flatHp = con * 3.0 + str * 1.2;
-            var flatMp = qi * 2.5;
-            var flatDef = con * 0.8;
-            var flatSpd = agi * 0.25;
-            var flatEva = agi * 0.12;
-            var flatCrit = spi * 0.04;
-            var flatCritRes = spi * 0.03;
-            var flatHit = spi * 0.08;
+            /* 附身：武魂五圍 × EQUIP_ATTR_RATE → 對應角色五圍，再依 characterSystem 換算戰鬥值
+               武魂「氣」對應角色「智」。 */
+            var rate = (Data.wuhunEquipAttrRate) ? Data.wuhunEquipAttrRate() :
+                num((D().WUHUN_CONFIG || {}).EQUIP_ATTR_RATE, 0.5);
+            var wStr = a.str * rate;
+            var wAgi = a.agi * rate;
+            var wCon = a.con * rate;
+            var wInt = a.qi * rate;
+            var wSpi = a.spi * rate;
 
-            d.atk = num(d.atk, 10) + flatAtk;
-            d.maxHp = num(d.maxHp, 100) + flatHp;
-            d.maxMp = num(d.maxMp, 50) + flatMp;
-            d.def = num(d.def, 5) + flatDef;
-            d.atkSpd = num(d.atkSpd, 100) + flatSpd;
-            d.eva = Math.min(85, num(d.eva, 5) + flatEva);
-            d.crit = Math.min(90, num(d.crit, 5) + flatCrit);
-            d.critRes = num(d.critRes, 0) + flatCritRes;
-            d.hit = num(d.hit, 90) + flatHit;
+            d.maxHp = num(d.maxHp, 100) + Math.floor(wCon * 15);
+            d.maxMp = num(d.maxMp, 50) + Math.floor(wInt * 7 + wSpi * 3);
+            d.atk = num(d.atk, 10) + Math.floor(wStr * 2.6 + wInt * 0.6);
+            d.def = num(d.def, 5) + Math.floor(wCon * 1.5 + wAgi * 0.5 + wSpi * 0.4);
+            d.hit = num(d.hit, 90) + Math.floor(wAgi * 0.30 + wInt * 0.15 + wSpi * 0.08);
+            d.eva = Math.min(85, num(d.eva, 5) + Math.floor(wAgi * 0.28 + wSpi * 0.06));
+            d.crit = Math.min(90, num(d.crit, 5) + Math.floor(wAgi * 0.30 + wStr * 0.10));
+            d.critRes = num(d.critRes, 0) + Math.floor(wCon * 0.20 + wSpi * 0.30);
+            d.critDmg = num(d.critDmg, 165) + Math.floor(wStr * 0.85);
+            d.atkSpd = num(d.atkSpd, 100) + Math.floor(wAgi * 0.25);
 
+            d.__wuhunAttrBonus = {
+                str: Math.round(wStr * 100) / 100,
+                agi: Math.round(wAgi * 100) / 100,
+                con: Math.round(wCon * 100) / 100,
+                int: Math.round(wInt * 100) / 100,
+                spi: Math.round(wSpi * 100) / 100,
+                rate: rate
+            };
             d.__wuhunId = w.uid;
             d.__wuhunName = w.name;
             d.__wuhunYears = w.years;
@@ -56477,7 +56484,7 @@ window.HY = window.HY || {};
                 equipped: Object.keys(S ? S.equip : {}).length,
                 materials: S ? S.materials : {},
                 bossKills: S ? S.bossKills : {},
-                maxYears: num((Data.WUHUN_CONFIG || {}).MAX_YEARS, 100000)
+                maxYears: num((Data.WUHUN_CONFIG || {}).MAX_YEARS, 1000000)
             };
         }
 
@@ -123120,6 +123127,7 @@ window.HY = window.HY || {};
         render() {
             if (!this.el.grid) return;
             var sys = this.sys();
+            var Data = D();
             var list = sys.all();
             var s = sys.summary();
 
@@ -123127,7 +123135,7 @@ window.HY = window.HY || {};
             if (this.el.sub) {
                 this.el.sub.textContent = '武魂 ' + list.length + ' 隻　·　附身 ' +
                     s.equipped + ' 位角色　·　魂力上限 ' +
-                    (num(s.maxYears, 100000) / 10000).toFixed(0) + ' 萬年';
+                    (Data.fmtYears ? Data.fmtYears(s.maxYears) : (num(s.maxYears, 1000000) + ' 年'));
             }
 
             this.renderFilters(list);
@@ -123640,7 +123648,7 @@ window.HY = window.HY || {};
 
             var a = sys.attrsOf(w.uid);            var total = a.str + a.agi + a.con + a.qi + a.spi;
             var cfg = Data.WUHUN_CONFIG || {};
-            var maxY = num(cfg.MAX_YEARS, 100000);
+            var maxY = num(cfg.MAX_YEARS, 1000000);
 
             var ownerChar = null;
             var S = sys.state();
@@ -123685,7 +123693,7 @@ window.HY = window.HY || {};
             var gCap = (Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5);
             var gNow = num(w.growth, 0);
             var gMult = (Data.wuhunGrowthMult) ? Data.wuhunGrowthMult(gNow) : (1 + gNow);
-            var gRate = num(cfg.GROWTH_ATTR_RATE, 0.2);
+            var gRate = num(cfg.GROWTH_ATTR_RATE, 0.1);
             h += kv('成長值', gNow.toFixed(2) + ' / ' + gCap.toFixed(0) +
                 '（屬性 ×' + gMult.toFixed(2) + '，每點 +' + (gRate * 100).toFixed(0) + '%）');
             h += kv('五屬性總和', '<span class="hl">+' + total.toFixed(1) + '</span>');
@@ -123733,12 +123741,15 @@ window.HY = window.HY || {};
 
             /* 說明 */
             h += '<div class="wh-sec"><h5>使用說明</h5><div class="wh-note">' +
-                '· 魂力 1 年 = 全屬性 +' + num(cfg.POWER_PER_YEAR, 0.01) + '（數值由魂力決定）<br>' +
+                '· 魂力 1 年 = 全屬性 +' + num(cfg.POWER_PER_YEAR, 0.001) + '（數值由魂力決定）<br>' +
                 '· <b>餵食</b>：魂力疊加，副武魂消失；可複選，並用批量鍵（未附身／同名／≤100年…）快速勾選<br>' +
                 '· <b>融合</b>：只限同名武魂，可複選批量融合，成長值 +' +
                 num(cfg.GROWTH_MIN, 0.1) + ' ~ +' + num(cfg.GROWTH_MAX, 0.3) +
                 '，<b>成長上限 ' + ((Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5)) + '</b>' +
-                '（每點成長 +' + (num(cfg.GROWTH_ATTR_RATE, 0.2) * 100).toFixed(0) + '% 魂力屬性）<br>' +
+                '（每點成長 +' + (num(cfg.GROWTH_ATTR_RATE, 0.1) * 100).toFixed(0) + '% 魂力屬性，滿 5 → ×1.5）<br>' +
+                '· 附身後武魂五圍（力敏體氣神）以 <b>' +
+                Math.round(((Data.wuhunEquipAttrRate) ? Data.wuhunEquipAttrRate() :
+                    num(cfg.EQUIP_ATTR_RATE, 0.5)) * 100) + '%</b> 疊加角色五圍換算（氣→智）<br>' +
                 '· 每個角色獨立附身，只能同時附身 1 隻武魂' +
                 '</div></div>';
 
