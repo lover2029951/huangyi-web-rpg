@@ -5,8 +5,8 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v714 · 2026-11-12',
-        gameVer: 714,
+        newsVer: 'v715 · 2026-11-12',
+        gameVer: 715,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
@@ -14,11 +14,28 @@
     var NEWS = [
         {
             tag: 'fix', tagLabel: '修正',
+            title: '自然恢復週期（vitalNaturalRegenTurns）',
+            date: '2026-11-12',
+            bullets: [
+                '改為出手第 N、2N、3N… 拍結算，調 2／3／4 拍週期會明顯不同',
+                '統一 afterCombatActionBeat 結算，戰報顯示週期與設定值'
+            ]
+        },
+        {
+            tag: 'new', tagLabel: '文件',
+            title: '瀏覽器擴充（載入加速）',
+            date: '2026-11-12',
+            bullets: [
+                '專案 docs/browser-extension 可載入 Chrome／Edge 快取 GitHub Pages 靜態資源'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '修正',
             title: '氣血／內力自然恢復（每 3 拍）',
             date: '2026-11-12',
             bullets: [
                 '修正第 3 拍落在敵方出手時週期被跳過的問題',
-                '改以週期段結算，敵我出手後皆可觸發；戰報可見 🌿／💧 提示'
+                '敵我出手後皆可觸發；戰報可見 🌿／💧 提示'
             ]
         },
         {

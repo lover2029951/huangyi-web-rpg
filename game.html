@@ -80704,7 +80704,8 @@ window.HY = window.HY || {};
             var core = this.core;
             var affixSys = window.HY.game && window.HY.game.affixSys;
             var aliveEnemies = core.enemies.filter(function (e) { return e.currentHp > 0; });
-            core._turnCounter = (core._turnCounter || 0) + 1;
+            if (typeof core.bumpCombatActionBeat === 'function') core.bumpCombatActionBeat();
+            else core._turnCounter = (core._turnCounter || 0) + 1;
             /* ⭐⭐ POE 持續傷害結算（1:1）：中毒／點燃／流血 在敵方回合開始時扣血
                這些狀態由 combatPlayerTurn._applyPoeProcs 施加，
                沒有這段的話「10% chance to Poison on Hit」只是純文字。 */
@@ -80754,9 +80755,7 @@ window.HY = window.HY || {};
                     affixSys.onEnemyTurnEnd(enemy);
                 }
             });
-            try {
-                if (typeof core.applyPartyNaturalVitalRegen === 'function') core.applyPartyNaturalVitalRegen();
-            } catch (eVital) { }
+            if (typeof core.afterCombatActionBeat === 'function') core.afterCombatActionBeat();
             /* ⭐ 聖火（明教點燃）等「回合結束傷害」可能在這裡才把最後一名敵人打死。
                舊版結算完只檢查「我方是否全滅」，沒有回頭檢查敵方是否已全滅，
                於是 enemies 陣列裡留下一具 0 血的屍體 ——
@@ -83470,6 +83469,8 @@ window.HY = window.HY || {};
             this.lastEnemyTemplate = null;
             this._enemySeq = 0;
             this._turnCounter = 0;
+            this._vitalRegenBeat = 0;
+            this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
             this.autoTactics = new window.HY.CombatAutoTactics(this);
             this.playerTurn  = new window.HY.CombatPlayerTurn(this);
@@ -83519,21 +83520,32 @@ window.HY = window.HY || {};
             if (!isFinite(n) || n < 1) n = 3;
             return Math.floor(n);
         }
-        /** 目前戰鬥拍數對應的自然回復「週期段」（每 N 拍一段） */
-        naturalVitalRegenPhase() {
-            var iv = this.naturalVitalRegenInterval();
-            var t = num(this._turnCounter, 0);
-            return Math.floor(t / iv);
+        /** 出手拍（僅在 bumpCombatActionBeat 時 +1，與 _turnCounter 同步） */
+        vitalRegenBeat() {
+            return num(this._vitalRegenBeat, 0);
         }
-        /** 是否有尚未結算的自然回復週期（敵我任一方出手後皆可結算） */
+        /** 每次單位完成一次出手時呼叫（ATB／舊路徑與 _turnCounter 同步遞增） */
+        bumpCombatActionBeat() {
+            this._turnCounter = num(this._turnCounter, 0) + 1;
+            this._vitalRegenBeat = num(this._vitalRegenBeat, 0) + 1;
+        }
+        /** 出手結束後結算自然回復（敵我皆可觸發 claim） */
+        afterCombatActionBeat() {
+            this.applyPartyNaturalVitalRegen();
+        }
+        /** 是否為自然回復結算拍（第 N、2N、3N… 拍；N = vitalNaturalRegenTurns） */
         isNaturalVitalRegenTurn() {
-            return this.naturalVitalRegenPhase() > num(this._naturalVitalRegenPhase, 0);
+            var iv = this.naturalVitalRegenInterval();
+            var beat = this.vitalRegenBeat();
+            if (beat < iv || beat % iv !== 0) return false;
+            return this._vitalRegenLastClaimBeat !== beat;
         }
-        /** 我方被動回復：每週期只結算一次（多隊友連續出手不重複） */
+        /** 我方被動回復：同一拍只結算一次 */
         claimNaturalVitalRegenTick() {
-            var phase = this.naturalVitalRegenPhase();
-            if (phase <= 0 || phase <= num(this._naturalVitalRegenPhase, 0)) return false;
-            this._naturalVitalRegenPhase = phase;
+            if (!this.isNaturalVitalRegenTurn()) return false;
+            var beat = this.vitalRegenBeat();
+            this._vitalRegenLastClaimBeat = beat;
+            this._naturalVitalRegenPhase = Math.floor(beat / this.naturalVitalRegenInterval());
             return true;
         }
         /** 氣血／內力自然回復（天賦 lifeRegen / manaRegen）；週期見 vitalNaturalRegenTurns */
@@ -83542,8 +83554,8 @@ window.HY = window.HY || {};
             var g = window.HY.game;
             if (!g || !g.charSys) return;
             var iv = this.naturalVitalRegenInterval();
-            var t = num(this._turnCounter, 0);
-            this.log('🌿 戰鬥第 ' + t + ' 拍（每 ' + iv + ' 拍）氣血／內力自然回復', 'combat');
+            var beat = this.vitalRegenBeat();
+            this.log('🌿 自然回復結算（出手第 ' + beat + ' 拍／週期 ' + iv + ' 拍；設定 combat.vitalNaturalRegenTurns=' + iv + '）', 'combat');
             var _psR = g.partySys;
             var _memR = _psR && _psR.getPartyMembers ? _psR.getPartyMembers() : [];
             _memR.push(g.charSys.state);
@@ -83650,6 +83662,8 @@ window.HY = window.HY || {};
             this.currentEnemy = null;
             this.lastEnemyTemplate = null;
             this._turnCounter = 0;
+            this._vitalRegenBeat = 0;
+            this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
         }
         startBattle(enemyTemplate) {
@@ -83717,6 +83731,8 @@ window.HY = window.HY || {};
             this.clearRepeatTimeout();
             this.lastEnemyTemplate = enemyTemplate;
             this._turnCounter = 0;
+            this._vitalRegenBeat = 0;
+            this._vitalRegenLastClaimBeat = -1;
             this._naturalVitalRegenPhase = 0;
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
@@ -83923,7 +83939,7 @@ window.HY = window.HY || {};
             var partyMembers = partySys ? partySys.getPartyMembers() : [this.charSys.state];
             var activeChar = this.charSys.state;
             var self = this;
-            this._turnCounter += 1;
+            this.bumpCombatActionBeat();
             /* ⚠ 陰陽推進統一由 combatAtbSystem 負責（含時間戳去重）。
                這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
@@ -115936,7 +115952,8 @@ window.HY = window.HY || {};
                 }
             } catch (eHold) { }
 
-            combat._turnCounter = (combat._turnCounter || 0) + 1;
+            if (typeof combat.bumpCombatActionBeat === 'function') combat.bumpCombatActionBeat();
+            else combat._turnCounter = (combat._turnCounter || 0) + 1;
             /* ⭐ 陰陽/陣門推進：放在「真正出手」的這一刻。
                這是唯一能保證「出手一次 = 次數 +1」的位置，
                因為不管是手動點技能、ATB 自動、打圖戰術、支援模式，
@@ -115981,6 +115998,7 @@ window.HY = window.HY || {};
                 combat.syncCurrentEnemyPointer();
                 if (!combat.currentEnemy) { combat.handleVictory(); return; }
             }
+            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat();
             if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
@@ -116033,7 +116051,8 @@ window.HY = window.HY || {};
                 }
             } catch (eCtl) { }
 
-            combat._turnCounter = (combat._turnCounter || 0) + 1;
+            if (typeof combat.bumpCombatActionBeat === 'function') combat.bumpCombatActionBeat();
+            else combat._turnCounter = (combat._turnCounter || 0) + 1;
             combat.enemyTurn.executeSingleEnemyAction(enemy, partyMembers, null);
             combat.syncCurrentEnemyPointer();
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
@@ -116046,9 +116065,7 @@ window.HY = window.HY || {};
                 }
             }
             if (affixSys && enemy.currentHp > 0) affixSys.onEnemyTurnEnd(enemy);
-            try {
-                if (typeof combat.applyPartyNaturalVitalRegen === 'function') combat.applyPartyNaturalVitalRegen();
-            } catch (eVital) { }
+            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat();
             /* ⭐ 聖火等「回合結束傷害」可能在上一行才打死最後一名敵人。
                舊版這裡只檢查我方是否全滅，於是敵人 0 血卻仍留在陣列裡，
                currentEnemy 為 null 但 handleVictory() 從未被呼叫 ——
