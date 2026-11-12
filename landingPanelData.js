@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v727 · 2026-11-12',
-        gameVer: 727,
+        newsVer: 'v728 · 2026-11-12',
+        gameVer: 728,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復：敵方回合結算',
+            date: '2026-11-12',
+            bullets: [
+                '氣血／內力自然恢復改在<b>敵方出手結束後</b>結算，避免與佇列回復同拍疊兩次',
+                'phase 制補結算（第 3 拍被敵方佔走時下拍仍可補）',
+                '手動出招不再重複觸發；同格自然回復飄字 1.2 秒防連刷'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復：同一週期不重複結算',

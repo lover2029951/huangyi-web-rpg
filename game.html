@@ -80943,7 +80943,7 @@ window.HY = window.HY || {};
                     affixSys.onEnemyTurnEnd(enemy);
                 }
             });
-            if (typeof core.afterCombatActionBeat === 'function') core.afterCombatActionBeat();
+            if (typeof core.afterCombatActionBeat === 'function') core.afterCombatActionBeat('foe');
             /* ⭐ 聖火（明教點燃）等「回合結束傷害」可能在這裡才把最後一名敵人打死。
                舊版結算完只檢查「我方是否全滅」，沒有回頭檢查敵方是否已全滅，
                於是 enemies 陣列裡留下一具 0 血的屍體 ——
@@ -83725,22 +83725,32 @@ window.HY = window.HY || {};
             this._turnCounter = num(this._turnCounter, 0) + 1;
             this._vitalRegenBeat = num(this._vitalRegenBeat, 0) + 1;
         }
-        /** 出手結束後結算自然回復（同一出手拍只進入一次） */
-        afterCombatActionBeat() {
+        /** 出手結束後結算自然回復（同一出手拍只進入一次）
+           @param {string} [side] 'foe'＝僅敵方出手後結算我方自然回復（避免與 flushDeferred 同拍疊加） */
+        afterCombatActionBeat(side) {
             var beat = this.vitalRegenBeat();
             if (this._afterCombatHandledBeat === beat) return;
             this._afterCombatHandledBeat = beat;
-            this.applyPartyNaturalVitalRegen();
+            if (side === 'foe') this.applyPartyNaturalVitalRegen();
         }
         naturalRegenPhase() {
             var iv = this.naturalVitalRegenInterval();
             return Math.floor(this.vitalRegenBeat() / iv);
         }
-        /** 是否為自然回復結算拍（第 N、2N、3N… 拍；N = vitalNaturalRegenTurns） */
+        /** 是否尚有未結算的自然回復週期（phase 制，第 3 拍若被敵方佔走可在第 4 拍補結算） */
         isNaturalVitalRegenTurn() {
+            var ph = this.naturalRegenPhase();
+            return ph > 0 && ph > num(this._partyNatRegenDonePhase, -1);
+        }
+        /** 敵方內力自然回復：是否落在本週期內（不依我方是否已 claim） */
+        isEnemyNaturalMpRegenTurn(enemy) {
+            var ph = this.naturalRegenPhase();
+            if (ph <= 0) return false;
             var iv = this.naturalVitalRegenInterval();
-            var beat = this.vitalRegenBeat();
-            return beat >= iv && beat % iv === 0;
+            if (this.vitalRegenBeat() < ph * iv) return false;
+            if (!enemy) return true;
+            var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
+            return last < ph;
         }
         /** 我方全隊：每個回復週期只結算一次（不隨同一拍多次 afterCombat 重複） */
         tryClaimPartyNaturalRegen() {
@@ -83756,11 +83766,8 @@ window.HY = window.HY || {};
         }
         /** 敵方內力自然回復：同一敵、同一週期只結算一次 */
         tryClaimEnemyMpNaturalRegen(enemy) {
-            if (!enemy || !this.isNaturalVitalRegenTurn()) return false;
+            if (!enemy || !this.isEnemyNaturalMpRegenTurn(enemy)) return false;
             var ph = this.naturalRegenPhase();
-            if (ph <= 0) return false;
-            var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
-            if (last >= ph) return false;
             enemy._natMpRegenPhase = ph;
             return true;
         }
@@ -84239,7 +84246,6 @@ window.HY = window.HY || {};
             this.playerTurn.petTurn(leaderStats, partyMembers);
             this.syncCurrentEnemyPointer();
             if (!this.currentEnemy) { this.handleVictory(); return; }
-            if (typeof this.afterCombatActionBeat === 'function') this.afterCombatActionBeat();
             this.enemyTurn.enemiesTurn(partyMembers);
             this.onUpdateUI();
         }
@@ -116291,7 +116297,7 @@ window.HY = window.HY || {};
                 combat.syncCurrentEnemyPointer();
                 if (!combat.currentEnemy) { combat.handleVictory(); return; }
             }
-            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat();
+            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat('ally');
             if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
@@ -116358,7 +116364,7 @@ window.HY = window.HY || {};
                 }
             }
             if (affixSys && enemy.currentHp > 0) affixSys.onEnemyTurnEnd(enemy);
-            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat();
+            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat('foe');
             /* ⭐ 聖火等「回合結束傷害」可能在上一行才打死最後一名敵人。
                舊版這裡只檢查我方是否全滅，於是敵人 0 血卻仍留在陣列裡，
                currentEnemy 為 null 但 handleVictory() 從未被呼叫 ——
@@ -121717,6 +121723,14 @@ window.HY = window.HY || {};
         var host = (cornerPre === 'fx-tl' || cornerPre === 'fx-tr')
             ? (fxGridHost(node) || node)
             : node;
+
+        /* 自然回復：同格 1.2s 內不重播同類飄字（佇列結算與即時回復曾疊加） */
+        if (kind === 'regenHp' || kind === 'regenMp') {
+            var rgNow = Date.now();
+            var rgPrev = host.__lastNatRegenFx;
+            if (rgPrev && rgPrev.kind === kind && (rgNow - rgPrev.ts) < 1200) return;
+            host.__lastNatRegenFx = { kind: kind, ts: rgNow };
+        }
 
         /* 同目標 500ms 內的同類傷害 → 合併累加（避免數字糊成一團） */
         if (kind && kind.indexOf('dmg') === 0) {
