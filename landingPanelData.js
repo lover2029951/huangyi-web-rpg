@@ -5,13 +5,32 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v732 · 2026-11-12',
-        gameVer: 732,
+        newsVer: 'v733 · 2026-11-12',
+        gameVer: 733,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復 v733：飄字＋第 3 次出手',
+            date: '2026-11-12',
+            bullets: [
+                '出手計數改在<b>整輪攻擊結束</b>才 +1（含疾風雙動），避免 2 次集氣滿就恢復',
+                '九宮格用 <b>charId</b> 定位；舞台同步後再播「內力／氣血恢復」飄字',
+                '週期改為距上次自然恢復須再滿 3 次出手'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '武魂',
+            title: '武魂融合：Data 未定義',
+            date: '2026-11-12',
+            bullets: [
+                '修正批量融合時 <b>ReferenceError: Data is not defined</b>',
+                '融合日誌可正常顯示成長倍率'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復：出手 token 防雙計',

@@ -56389,10 +56389,11 @@ window.HY = window.HY || {};
         fuse(mainUid, subUid) {
             var chk = this.canFuse(mainUid, subUid);
             if (!chk.ok) return chk;
+            var Data = D();
             var S = this.ensureState();
             var a = S.owned[mainUid];
             var b = S.owned[subUid];
-            var cfg = D().WUHUN_CONFIG || {};
+            var cfg = Data.WUHUN_CONFIG || {};
 
             var gMin = num(cfg.GROWTH_MIN, 0.1);
             var gMax = num(cfg.GROWTH_MAX, 0.3);
@@ -79253,14 +79254,15 @@ window.HY = window.HY || {};
                 hp = featSys.notifyHeal(charObj, hp);
             }
             var aIdx = core.allyStageIndex(charObj);
+            var _cid = charObj.id;
             if (hp > 0) {
                 core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxHp, 'hp'), {
-                    skill: fxHp && fxHp.skill, label: fxHp && fxHp.label
+                    skill: fxHp && fxHp.skill, label: fxHp && fxHp.label, charId: _cid
                 });
             }
             if (mp > 0) {
                 core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxMp, 'mp'), {
-                    skill: fxMp && fxMp.skill, label: (fxMp && fxMp.label) || '內力恢復'
+                    skill: fxMp && fxMp.skill, label: (fxMp && fxMp.label) || '內力恢復', charId: _cid
                 });
             }
             core.charSys.restoreVitals(hp, mp, charObj);
@@ -79282,14 +79284,15 @@ window.HY = window.HY || {};
             }
             var aIdx = core.allyStageIndex(charObj);
             var fx = fxMeta || {};
+            var _cid2 = charObj.id;
             if (h > 0) {
                 core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'hp'), {
-                    skill: fx.skill || '', label: fx.label || ''
+                    skill: fx.skill || '', label: fx.label || '', charId: _cid2
                 });
             }
             if (m > 0) {
                 core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'mp'), {
-                    skill: fx.skill || '', label: fx.label || ''
+                    skill: fx.skill || '', label: fx.label || '', charId: _cid2
                 });
             }
             core.charSys.restoreVitals(h, m, charObj);
@@ -83718,6 +83721,46 @@ window.HY = window.HY || {};
             if (window.HY && window.HY.uiDexAtb) {
                 try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
             }
+            try { this._flushPendingAllyVitalFloats(); } catch (ePf) { }
+        }
+        _battleStageId() {
+            var el = document.getElementById('hy-battle-stage')
+                || document.getElementById('hy-atlas-stage');
+            return (el && el.id) ? el.id : 'hy-battle-stage';
+        }
+        _enqueueAllyVitalFloat(charObj, amount, kind, label) {
+            if (!charObj || amount <= 0) return;
+            if (!this._pendingAllyVitalFloats) this._pendingAllyVitalFloats = [];
+            this._pendingAllyVitalFloats.push({
+                charId: charObj.id != null ? String(charObj.id) : '',
+                index: this.allyStageIndex(charObj),
+                amount: amount,
+                kind: kind || 'heal',
+                label: label || '',
+                at: Date.now()
+            });
+        }
+        _flushPendingAllyVitalFloats() {
+            var q = this._pendingAllyVitalFloats;
+            if (!q || !q.length) return;
+            var BS = window.HY && window.HY.BattleStage;
+            if (!BS || !BS.fx || typeof BS.fx.vital !== 'function') {
+                this._pendingAllyVitalFloats = [];
+                return;
+            }
+            var stageId = this._battleStageId();
+            var batch = q.slice();
+            this._pendingAllyVitalFloats = [];
+            var now = Date.now();
+            batch.forEach(function (item) {
+                if (!item || item.amount <= 0 || (now - item.at) > 8000) return;
+                try {
+                    BS.fx.vital(stageId, 'ally', item.index, item.amount, item.kind, {
+                        label: item.label || '',
+                        charId: item.charId
+                    });
+                } catch (eFx) { }
+            });
         }
         /** 氣血／內力自然回復週期（回合數，預設 3） */
         naturalVitalRegenInterval() {
@@ -83797,25 +83840,21 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 我方：本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍） */
+        /** 我方：距上次自然恢復須再滿 N 次完整出手（預設 N=3） */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
             var hits = this.charNatRegenHits(char);
-            if (hits < iv || (hits % iv) !== 0) return false;
+            if (hits < iv) return false;
             var b = char._battle || {};
-            return num(b._natRegenAtHit, 0) !== hits;
+            var last = num(b._natRegenAtHit, 0);
+            return (hits - last) >= iv;
         }
-        /** 立刻在九宮格播恢復飄字（避免 UI 連刷時 mark 被吃掉） */
+        /** 立刻在九宮格播恢復飄字（舞台 render 後再由佇列刷新，避免被 DOM 重建吃掉） */
         playAllyVitalStageFx(charObj, amount, kind, label) {
             if (!charObj || amount <= 0) return;
-            try {
-                var idx = this.allyStageIndex(charObj);
-                var st = document.getElementById('hy-battle-stage');
-                var BS = window.HY && window.HY.BattleStage;
-                if (!st || !BS || !BS.fx || typeof BS.fx.vital !== 'function') return;
-                BS.fx.vital(st.id || 'hy-battle-stage', 'ally', idx, amount, kind, { label: label || '' });
-            } catch (eFx) { }
+            this._enqueueAllyVitalFloat(charObj, amount, kind, label);
+            try { this._flushPendingAllyVitalFloats(); } catch (eFx) { }
         }
         tryClaimEnemyMpNaturalRegen(enemy) {
             if (!enemy || !this.isEnemyNaturalMpRegenTurn(enemy)) return false;
@@ -83853,13 +83892,17 @@ window.HY = window.HY || {};
             _b._natRegenAtHit = hits;
             _b._natRegenOwnPhase = this.charNaturalRegenPhase(mm);
             self.log('🌿 【' + mm.name + '】本場第 ' + hits + ' 次出手（每 ' + iv + ' 次集氣滿）自然回復', 'combat');
-            g.charSys.restoreVitals(_hpGain, _mpGain, mm);
             if (_mpGain > 0) {
-                self.playAllyVitalStageFx(mm, _mpGain, 'regenMp', '內力恢復');
+                var _mpIdx = self.allyStageIndex(mm);
+                self.markStageFx('ally', _mpIdx, 'regenMp', { label: '內力恢復', charId: mm.id });
+                self._enqueueAllyVitalFloat(mm, _mpGain, 'regenMp', '內力恢復');
             }
             if (_hpGain > 0) {
-                self.playAllyVitalStageFx(mm, _hpGain, 'regenHp', '氣血恢復');
+                var _hpIdx = self.allyStageIndex(mm);
+                self.markStageFx('ally', _hpIdx, 'regenHp', { label: '氣血恢復', charId: mm.id });
+                self._enqueueAllyVitalFloat(mm, _hpGain, 'regenHp', '氣血恢復');
             }
+            g.charSys.restoreVitals(_hpGain, _mpGain, mm);
             var parts = [];
             if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
             if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
@@ -83879,25 +83922,43 @@ window.HY = window.HY || {};
             opts = opts || {};
             this._ensureStageFxMarks();
             var bucket = this._stageFxMarks[side] || (this._stageFxMarks[side] = {});
-            bucket[index] = bucket[index] || {};
-            bucket[index][kind] = {
+            var mark = {
                 skill: String(opts.skill || '').slice(0, 16),
                 label: String(opts.label || '').slice(0, 14),
                 at: Date.now()
             };
+            bucket[index] = bucket[index] || {};
+            bucket[index][kind] = mark;
+            if (opts.charId != null && opts.charId !== '') {
+                var idKey = '@' + String(opts.charId);
+                bucket[idKey] = bucket[idKey] || {};
+                bucket[idKey][kind] = mark;
+            }
         }
-        consumeStageFx(side, index, kind) {
+        consumeStageFx(side, index, kind, charId) {
             if (!this._stageFxMarks || !kind) return null;
             var bucket = this._stageFxMarks[side];
-            if (!bucket || !bucket[index]) return null;
+            if (!bucket) return null;
             var slot = bucket[index];
-            var m = slot[kind];
+            var m = slot && slot[kind];
+            if (!m && charId != null && charId !== '') {
+                var idSlot = bucket['@' + String(charId)];
+                m = idSlot && idSlot[kind];
+            }
             if (!m) return null;
             if (Date.now() - m.at > 5000) {
-                delete slot[kind];
+                if (slot && slot[kind]) delete slot[kind];
+                if (charId != null && charId !== '') {
+                    var idSlot2 = bucket['@' + String(charId)];
+                    if (idSlot2 && idSlot2[kind]) delete idSlot2[kind];
+                }
                 return null;
             }
-            delete slot[kind];
+            if (slot && slot[kind]) delete slot[kind];
+            if (charId != null && charId !== '') {
+                var idSlot3 = bucket['@' + String(charId)];
+                if (idSlot3 && idSlot3[kind]) delete idSlot3[kind];
+            }
             return m;
         }
         allyStageIndex(charObj) {
@@ -83908,10 +83969,18 @@ window.HY = window.HY || {};
             if (!mem.length && this.charSys && this.charSys.state) {
                 mem = [this.charSys.state];
             }
+            var cid = charObj.id != null ? String(charObj.id) : '';
             var i;
             for (i = 0; i < mem.length; i++) {
                 if (mem[i] === charObj) return i;
-                if (mem[i] && charObj.id != null && mem[i].id === charObj.id) return i;
+                if (cid && mem[i] && mem[i].id != null && String(mem[i].id) === cid) return i;
+            }
+            if (cid && this.charSys && this.charSys.state &&
+                String(this.charSys.state.id) === cid) {
+                for (i = 0; i < mem.length; i++) {
+                    if (mem[i] === this.charSys.state) return i;
+                }
+                return 0;
             }
             return 0;
         }
@@ -83992,6 +84061,7 @@ window.HY = window.HY || {};
             this._partyNatRegenDonePhase = -1;
             this._afterCombatHandledBeat = -1;
             this._allyActionToken = 0;
+            this._pendingAllyVitalFloats = [];
         }
         startBattle(enemyTemplate) {
             if (!enemyTemplate) return;
@@ -84064,6 +84134,7 @@ window.HY = window.HY || {};
             this._partyNatRegenDonePhase = -1;
             this._afterCombatHandledBeat = -1;
             this._allyActionToken = 0;
+            this._pendingAllyVitalFloats = [];
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
                比對敵人陣容更可靠（同種怪連刷時陣容簽章完全相同）。 */
@@ -84273,17 +84344,17 @@ window.HY = window.HY || {};
             /* ⚠ 陰陽推進統一由 combatAtbSystem 負責（含時間戳去重）。
                這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
-                self.recordAllyCombatAction(activeChar);
                 this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
+                self.recordAllyCombatAction(activeChar);
                 self.afterCombatActionBeat('ally', activeChar);
                 self.refreshBattleStageNow();
             }
             partyMembers.forEach(function (member) {
                 if (member.id === activeChar.id) return;
                 if (member.currentHp <= 0 || !self.currentEnemy) return;
-                self.recordAllyCombatAction(member);
                 var allySkill = self.autoTactics.pickTacticalSkillForChar(member, false);
                 self.playerTurn.performCharAttack(member, allySkill, false, partyMembers, false);
+                self.recordAllyCombatAction(member);
                 self.afterCombatActionBeat('ally', member);
                 self.refreshBattleStageNow();
             });
@@ -116304,12 +116375,14 @@ window.HY = window.HY || {};
                 ? combat._nextAllyActionToken() : null;
             if (typeof combat.bumpCombatActionBeat === 'function') combat.bumpCombatActionBeat();
             else combat._turnCounter = (combat._turnCounter || 0) + 1;
-            /* ⭐ 陰陽/陣門推進：放在「真正出手」的這一刻。
-               這是唯一能保證「出手一次 = 次數 +1」的位置，
-               因為不管是手動點技能、ATB 自動、打圖戰術、支援模式，
-               全部都會經過 executeUnitFullAtbTurn()。 */
-            if (typeof combat.recordAllyCombatAction === 'function') {
-                combat.recordAllyCombatAction(member, _actionTok);
+            function _finishAllyAtbAction() {
+                /* 計數改在「整輪出手結束」才 +1（含疾風雙動），避免同拍重複或集氣未滿就結算自然恢復 */
+                if (typeof combat.recordAllyCombatAction === 'function') {
+                    combat.recordAllyCombatAction(member, _actionTok);
+                }
+                if (typeof combat.afterCombatActionBeat === 'function') {
+                    combat.afterCombatActionBeat('ally', member);
+                }
             }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
 
@@ -116336,18 +116409,35 @@ window.HY = window.HY || {};
                 try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI) { }
             }
             combat.syncCurrentEnemyPointer();
-            if (!combat.currentEnemy) { combat.handleVictory(); return; }
+            if (!combat.currentEnemy) {
+                _finishAllyAtbAction();
+                combat.handleVictory();
+                return;
+            }
             if (isLeader) {
                 var leaderStats = this.app.charSys.getDerivedStatsForChar(member);
                 combat.playerTurn.companionTurn(leaderStats, partyMembers);
                 combat.syncCurrentEnemyPointer();
-                if (!combat.currentEnemy) { combat.handleVictory(); return; }
+                if (!combat.currentEnemy) {
+                    _finishAllyAtbAction();
+                    combat.handleVictory();
+                    return;
+                }
                 combat.playerTurn.petTurn(leaderStats, partyMembers);
                 combat.syncCurrentEnemyPointer();
-                if (!combat.currentEnemy) { combat.handleVictory(); return; }
+                if (!combat.currentEnemy) {
+                    _finishAllyAtbAction();
+                    combat.handleVictory();
+                    return;
+                }
             }
-            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat('ally', member);
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            _finishAllyAtbAction();
+            if (window.HY.uiDexAtb) {
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI2) { }
+            }
+            if (typeof combat._flushPendingAllyVitalFloats === 'function') {
+                try { combat._flushPendingAllyVitalFloats(); } catch (ePf2) { }
+            }
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;
@@ -121265,6 +121355,9 @@ window.HY = window.HY || {};
         }
         node.setAttribute('data-grow', String(slot[1]));
         node.setAttribute('data-cell', String(cellIdx));
+        if (side === 'ally' && (u.charId != null || u.id != null)) {
+            node.setAttribute('data-char-id', String(u.charId != null ? u.charId : u.id));
+        }
     }
 
     function unitHtml(u, side, i, total, cellList) {
@@ -121327,7 +121420,11 @@ window.HY = window.HY || {};
            CSS 據此決定垂直對齊（1=貼頂、2=置中、3=貼底）。
            ⚠️ 不用 [style*=...] 選擇器 —— 屬性字串比對容易被瀏覽器
               重新序列化（加空格、改順序）而失效，屬性選擇器才可靠。 */
+        var charIdAttr = (side === 'ally' && (u.charId != null || u.id != null))
+            ? (' data-char-id="' + esc(String(u.charId != null ? u.charId : u.id)) + '"')
+            : '';
         return '<div class="' + cls + '" data-i="' + i + '" data-side="' + side + '"' +
+            charIdAttr +
             ' data-cell="' + cellIdx + '" data-grow="' + slot[1] + '"' +
             ' style="' + slotCss + '">' +
             '<div class="hy-stage-fx-layer" aria-hidden="true"></div>' +
@@ -121423,14 +121520,16 @@ window.HY = window.HY || {};
                     /* ⭐ v513：我方打敵方 → 累積連擊 */
                     if (side === 'foe') bumpCombo(el, stageId);
                 } else if (d > 0.5) {
-                    var fxHpUp = consumeStageFxMarked(side, di, ['stealHp', 'onHitHp', 'regenHp', 'heal']);
+                    var uCid = u && (u.charId != null ? u.charId : u.id);
+                    var fxHpUp = consumeStageFxMarked(side, di, ['stealHp', 'onHitHp', 'regenHp', 'heal'], uCid);
                     playVitalFloat(node, d, (fxHpUp && fxHpUp.kind) || 'heal', fxHpUp && fxHpUp.meta);
                     /* ⭐ v513：補血統計 */
                     try { statsOf(stageId).healTotal += d; } catch (e0) { }
                 }
                 var dMp = (Number(u.mp) || 0) - (Number(p.mp) || 0);
                 if (dMp > 0.5) {
-                    var fxMpUp = consumeStageFxMarked(side, di, ['stealMp', 'onHitMp', 'regenMp', 'healMp']);
+                    var uCidMp = u && (u.charId != null ? u.charId : u.id);
+                    var fxMpUp = consumeStageFxMarked(side, di, ['stealMp', 'onHitMp', 'regenMp', 'healMp'], uCidMp);
                     playVitalFloat(node, dMp, (fxMpUp && fxMpUp.kind) || 'healMp', fxMpUp && fxMpUp.meta);
                 }
                 /* 存活 → 倒地 */
@@ -121692,13 +121791,23 @@ window.HY = window.HY || {};
        特效
        ══════════════════════════════════════════════════════ */
 
-    function consumeStageFxMarked(side, index, kinds) {
+    function stageUnitNode(el, side, index, charId) {
+        if (!el) return null;
+        var cid = charId != null && charId !== '' ? String(charId) : '';
+        if (cid) {
+            var byId = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-char-id="' + cid + '"]');
+            if (byId) return byId;
+        }
+        return el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
+    }
+
+    function consumeStageFxMarked(side, index, kinds, charId) {
         var k, cs, m;
         for (k = 0; k < kinds.length; k++) {
             try {
                 cs = window.HY.game && window.HY.game.combatSys;
                 if (cs && typeof cs.consumeStageFx === 'function') {
-                    m = cs.consumeStageFx(side, index, kinds[k]);
+                    m = cs.consumeStageFx(side, index, kinds[k], charId);
                     if (m) return { kind: kinds[k], meta: m };
                 }
             } catch (eFx) { }
@@ -121782,9 +121891,11 @@ window.HY = window.HY || {};
         /* 自然回復：同格 1.2s 內不重播同類飄字（佇列結算與即時回復曾疊加） */
         if (kind === 'regenHp' || kind === 'regenMp') {
             var rgNow = Date.now();
+            var rgLabel = (meta && meta.label) ? String(meta.label) : '';
             var rgPrev = host.__lastNatRegenFx;
-            if (rgPrev && rgPrev.kind === kind && (rgNow - rgPrev.ts) < 1200) return;
-            host.__lastNatRegenFx = { kind: kind, ts: rgNow };
+            if (rgPrev && rgPrev.kind === kind && rgPrev.label === rgLabel
+                && (rgNow - rgPrev.ts) < 1200) return;
+            host.__lastNatRegenFx = { kind: kind, label: rgLabel, ts: rgNow };
         }
 
         /* 同目標 500ms 內的同類傷害 → 合併累加（避免數字糊成一團） */
@@ -122458,8 +122569,9 @@ window.HY = window.HY || {};
             vital: function (id, side, index, amount, kind, meta) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
-                var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
-                if (n) playVitalFloat(n, amount || 0, kind || 'heal', meta || null);
+                meta = meta || {};
+                var n = stageUnitNode(el, side, index, meta.charId);
+                if (n) playVitalFloat(n, amount || 0, kind || 'heal', meta);
             },
             text: function (id, side, index, text, kind) {
                 var el = document.getElementById(id || 'hy-battle-stage');
