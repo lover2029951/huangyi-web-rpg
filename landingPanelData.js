@@ -5,13 +5,40 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v718 · 2026-11-12',
-        gameVer: 718,
+        newsVer: 'v721 · 2026-11-12',
+        gameVer: 721,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '效能',
+            title: '戰鬥舞台移除攻擊軌跡線',
+            date: '2026-11-12',
+            bullets: [
+                '停用 SVG 弧線與治療連線，減少掛機時 DOM／layout 負擔',
+                '飄字、爆閃、技能名、暴擊環等仍保留'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '介面',
+            title: '戰鬥舞台移除震動與衝刺',
+            date: '2026-11-12',
+            bullets: [
+                '命中不再播放出手衝刺、受擊左右晃與全屏震動',
+                '爆閃、飄字、暴擊環等保留'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '介面',
+            title: '戰鬥舞台移除範圍特效',
+            date: '2026-11-12',
+            bullets: [
+                '停用 AOE 中央衝擊波、全場閃光與多目標掃線',
+                '單體傷害飄字、軌跡線與技能名稱特效保留'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然恢復：每 3 回合氣血／內力',

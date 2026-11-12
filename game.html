@@ -119389,43 +119389,6 @@ window.HY = window.HY || {};
         '.hy-stage-unit.is-target .hy-stage-nm{color:#fbbf24 !important;}',
         '.hy-stage-unit.is-target .hy-stage-nm::after{content:" 🎯";}',
 
-        /* ⭐ v511：攻擊軌跡線（SVG，橫跨整個舞台） */
-        '.hy-stage-fxline{position:absolute;inset:0;z-index:5;pointer-events:none;' +
-            'overflow:visible;width:100%;height:100%;}',
-        '.hy-stage-fxline path.trail{fill:none;stroke-linecap:round;' +
-            'stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);' +
-            'animation:hy-trail .46s ease-out forwards;}',
-        '@keyframes hy-trail{0%{stroke-dashoffset:var(--len,600);opacity:.2;}' +
-            '26%{opacity:1;}' +
-            '58%{stroke-dashoffset:0;opacity:1;}' +
-            '100%{stroke-dashoffset:0;opacity:0;}}',
-        /* 軌跡尖端爆點 */
-        '.hy-stage-fxline circle.trail-head{animation:hy-head .46s ease-out forwards;}',
-        '@keyframes hy-head{0%{opacity:0;r:2;}28%{opacity:1;r:9;}70%{opacity:.9;r:7;}' +
-            '100%{opacity:0;r:16;}}',
-
-        /* ⭐ v512：AOE 全體特效 —— 中央爆散衝擊波 */
-        '.hy-fx-aoe{position:absolute;left:50%;top:46%;z-index:6;pointer-events:none;' +
-            'width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;' +
-            'border:3px solid var(--aoe-col,#38bdf8);' +
-            'box-shadow:0 0 26px var(--aoe-col,#38bdf8),inset 0 0 22px var(--aoe-col,#38bdf8);' +
-            'animation:hy-aoe-ring .62s ease-out forwards;}',
-        '@keyframes hy-aoe-ring{0%{opacity:.95;transform:scale(.25);}' +
-            '60%{opacity:.75;}' +
-            '100%{opacity:0;transform:scale(26);}}',
-        /* AOE 二次擴散環 */
-        '.hy-fx-aoe2{position:absolute;left:50%;top:46%;z-index:6;pointer-events:none;' +
-            'width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;' +
-            'border:2px solid var(--aoe-col,#38bdf8);opacity:.6;' +
-            'animation:hy-aoe-ring2 .8s ease-out .09s forwards;}',
-        '@keyframes hy-aoe-ring2{0%{opacity:.6;transform:scale(.2);}' +
-            '100%{opacity:0;transform:scale(34);}}',
-        /* AOE 全場閃光 */
-        '.hy-fx-aoe-flash{position:absolute;inset:0;z-index:5;pointer-events:none;' +
-            'background:radial-gradient(ellipse at 50% 46%,var(--aoe-glow,rgba(56,189,248,.34)),transparent 66%);' +
-            'animation:hy-aoe-flash .58s ease-out forwards;}',
-        '@keyframes hy-aoe-flash{0%{opacity:.1;}22%{opacity:1;}100%{opacity:0;}}',
-
         /* ⭐ v511：技能名稱浮現（立繪上方）
            ⭐ v623：字級 .78rem → 1.15rem，加深描邊，遠看也讀得到
            ⭐ v625：移到「武魂光圈之上」
@@ -120504,9 +120467,6 @@ window.HY = window.HY || {};
     function buildHtml(party, enemies) {
         var h = '';
         /* ⭐ v678：不再輸出地光／地平線／中軸裝飾層 */
-        /* ⭐ v511：攻擊軌跡線圖層（SVG，覆蓋全舞台） */
-        h += '<svg class="hy-stage-fxline" xmlns="http://www.w3.org/2000/svg" ' +
-            'preserveAspectRatio="none"></svg>';
         /* ⭐ v631：出手順序已移除（使用者要求不顯示）
            原本：h += '<div class="hy-stage-order"></div>';
            VS 標記的插入位置原本依賴這個節點，改為直接接在地面層之後。 */
@@ -121143,35 +121103,7 @@ window.HY = window.HY || {};
             };
         });
 
-        /* ⭐ v512：AOE 判斷 —— 同一輪有 2 個以上同陣營單位掉血 → 播放全體特效
-           （放在迴圈外，一次只播一組，避免重複疊加） */
-        if (!rebuilt && prev.length) {
-            var hitNodes = [];
-            var hitElement = null;
-            for (var q = 0; q < list.length; q++) {
-                var pd = prev[q];
-                if (!pd) continue;
-                if ((Number(list[q].cur) || 0) - (Number(pd.cur) || 0) < -0.5) {
-                    var hq = el.querySelector('.hy-stage-unit[data-side="' +
-                        side + '"][data-i="' + q + '"]');
-                    if (hq) hitNodes.push(hq);
-                    if (!hitElement && list[q].element) hitElement = list[q].element;
-                }
-            }
-            /* 2 個以上同時掉血 → 視為群體攻擊 */
-            if (hitNodes.length >= 2) {
-                if (stageId) SNAPSHOT[stageId].__aoeCd = SNAPSHOT[stageId].__aoeCd || 0;
-                var nowTs = Date.now();
-                if (!SNAPSHOT[stageId].__aoeCd || nowTs - SNAPSHOT[stageId].__aoeCd > 380) {
-                    SNAPSHOT[stageId].__aoeCd = nowTs;
-                    var foeS = (side === 'foe') ? 'ally' : 'foe';
-                    var atkList = el.querySelectorAll('.hy-stage-side.' + foeS +
-                        ' .hy-stage-unit:not(.dead)');
-                    var atkNode = atkList.length ? atkList[0] : null;
-                    playAoe(el, atkNode, foeS, hitNodes, hitElement);
-                }
-            }
-        }
+        /* v512 AOE 範圍特效（多目標掉血觸發）已移除 —— 保留單體飄字／軌跡即可 */
     }
 
     /* ══════════════════════════════════════════════════════
@@ -121493,18 +121425,12 @@ window.HY = window.HY || {};
     function playHit(el, node, side, i, dmg, crit, actorNode, element) {
         if (!node) return;
 
-        /* ⭐ v511：先畫攻擊軌跡線（從出手者 → 被打者）
-           ⭐ v512：依屬性變色 */
         var atkEl = el.querySelector('.hy-stage-side.' + ((side === 'foe') ? 'ally' : 'foe'));
         var attacker = actorNode;
         if (!attacker && atkEl) {
             var cands = atkEl.querySelectorAll('.hy-stage-unit:not(.dead):not(.dying)');
             if (cands.length) attacker = cands[Math.floor(Math.random() * cands.length)];
         }
-        if (attacker && attacker !== node) {
-            drawTrail(el, attacker, node, side === 'foe' ? 'ally' : 'foe', crit, element);
-        }
-        if (attacker) replayClass(null, 'lunge', 440, attacker);
 
         /* ⭐ v513：受擊部位局部爆閃（比整體紅閃更精準） */
         playHitSpot(node, element);
@@ -121517,12 +121443,6 @@ window.HY = window.HY || {};
         fl.style.top = 'calc(50% - 35px)';
         node.appendChild(fl);
         setTimeout(function () { giveNode(fl); }, 320);
-
-        /* 震動（v549：改用 replayClass，不再強制重排） */
-        replayClass(null, 'hit', 330, node);
-
-        /* ⭐ v517：全舞台震動（暴擊大震、一般小震） */
-        shakeStage(el, crit);
 
         /* 傷害飄字 */
         var n = Math.round(dmg);
@@ -121611,111 +121531,8 @@ window.HY = window.HY || {};
         return String(Math.round(n));
     }
 
-    /* ⭐ v511：攻擊軌跡線
-       ──────────────────────────────────────────────────────────
-       用 SVG 畫一條從出手者胸口到被打者胸口的弧形能量線。
-       ⭐ v512：依技能屬性變色（element 傳入 'fire' / 'ice' … 等）。
-       暴擊加粗並加尖端爆點。 */
-    /* ⭐ v549：軌跡線的座標快取
-       ──────────────────────────────────────────────────────────
-       drawTrail 每回合要讀 3 次 getBoundingClientRect（舞台 + 雙方立繪），
-       實測單次 1.5~8.4ms。三個讀取雖然是連續的（只算一次重排），
-       但「舞台」這塊 rect 在整場戰鬥中幾乎不變 —— 每次重算都是浪費。
-
-       策略：舞台 rect 快取 500ms（戰鬥中版面不會頻繁變動；
-       視窗 resize 或換地圖時由 invalidateTrailCache() 清掉）。
-       立繪 rect 不快取（會因為動畫位移而改變），但改成
-       「先一次讀完、再開始寫 DOM」，維持單次重排。 */
-    var _trailBoxCache = null;
-    var _trailBoxTs = 0;
-
-    function trailBox(el) {
-        var now = Date.now();
-        if (_trailBoxCache && (now - _trailBoxTs) < 500) return _trailBoxCache;
-        _trailBoxCache = el.getBoundingClientRect();
-        _trailBoxTs = now;
-        return _trailBoxCache;
-    }
-
-    function invalidateTrailCache() {
-        _trailBoxCache = null;
-        _trailBoxTs = 0;
-    }
-    if (typeof window !== 'undefined') {
-        window.addEventListener('resize', invalidateTrailCache);
-    }
-
-    function drawTrail(el, fromNode, toNode, fromSide, crit, element, kind) {
-        try {
-            var svg = el.querySelector('.hy-stage-fxline');
-            if (!svg) return;
-            /* ① 先讀完所有幾何（單次重排），再開始寫 DOM */
-            var box = trailBox(el);
-            /* SVG 沒有 viewBox，用像素座標直接畫（preserveAspectRatio:none 不影響絕對座標） */
-            var fr = fromNode.getBoundingClientRect();
-            var tr = toNode.getBoundingClientRect();
-
-            var x1 = fr.left - box.left + fr.width / 2;
-            var y1 = fr.top - box.top + fr.height * 0.42;
-            var x2 = tr.left - box.left + tr.width / 2;
-            var y2 = tr.top - box.top + tr.height * 0.42;
-
-            /* 中點往上拱，形成拋物弧線 */
-            var mx = (x1 + x2) / 2;
-            var my = Math.min(y1, y2) - Math.abs(x2 - x1) * 0.10 - 12;
-
-            /* ⭐ 屬性配色優先，沒有屬性才用陣營色 */
-            var es = elemStyle(element);
-            var isAlly = (fromSide === 'ally');
-            /* ⭐ v517：治療連線用綠色系 */
-            if (kind === 'heal') {
-                es = { core: '#34d399', glow: '#6ee7b7', rgb: '52,211,153' };
-            }
-            var col = es ? es.core : (isAlly ? '#22d3ee' : '#f87171');
-            var col2 = es ? es.glow : (isAlly ? '#a5f3fc' : '#fecdd3');
-            var w = crit ? 4.2 : 2.6;
-
-            var d = 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2;
-
-            /* 量長度給 dash 動畫用 */
-            var len = Math.round(Math.hypot(x2 - x1, y2 - y1) * 1.5 + 80);
-
-            var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            g.setAttribute('opacity', '0.95');
-
-            /* 外光暈 */
-            var glow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            glow.setAttribute('d', d);
-            glow.setAttribute('class', 'trail');
-            glow.setAttribute('stroke', col);
-            glow.setAttribute('stroke-width', (w + 6).toFixed(1));
-            glow.setAttribute('opacity', '0.28');
-            glow.style.setProperty('--len', len);
-            g.appendChild(glow);
-
-            /* 主線 */
-            var line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            line.setAttribute('d', d);
-            line.setAttribute('class', 'trail');
-            line.setAttribute('stroke', col2);
-            line.setAttribute('stroke-width', w.toFixed(1));
-            line.style.setProperty('--len', len);
-            g.appendChild(line);
-
-            /* 尖端爆點 */
-            var head = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            head.setAttribute('class', 'trail-head');
-            head.setAttribute('cx', x2);
-            head.setAttribute('cy', y2);
-            head.setAttribute('r', '2');
-            head.setAttribute('fill', col2);
-            head.setAttribute('opacity', '0');
-            g.appendChild(head);
-
-            svg.appendChild(g);
-            setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 520);
-        } catch (e) { }
-    }
+    /* v511 攻擊／治療軌跡線已移除 */
+    function drawTrail() { /* removed */ }
 
     /** ⭐ v518：統一解析「元素或 id 字串」 */
     function resolveEl(x) {
@@ -121838,43 +121655,8 @@ window.HY = window.HY || {};
         setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1010);
     }
 
-    /* ⭐ v512：AOE 全體特效（中央衝擊波 + 全場閃光 + 對每個目標拉線） */
-    function playAoe(el, fromNode, fromSide, targets, element) {
-        if (!el) return;
-        var es = elemStyle(element);
-        var col = es ? es.core : (fromSide === 'ally' ? '#22d3ee' : '#f87171');
-        var glowRgb = es ? es.rgb : (fromSide === 'ally' ? '56,189,248' : '248,113,113');
-
-        /* 全場閃光 */
-        var fl = document.createElement('div');
-        fl.className = 'hy-fx-aoe-flash';
-        fl.style.setProperty('--aoe-glow', 'rgba(' + glowRgb + ',.36)');
-        el.appendChild(fl);
-        setTimeout(function () { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 620);
-
-        /* 主衝擊環 */
-        var r1 = document.createElement('div');
-        r1.className = 'hy-fx-aoe';
-        r1.style.setProperty('--aoe-col', col);
-        el.appendChild(r1);
-        setTimeout(function () { if (r1.parentNode) r1.parentNode.removeChild(r1); }, 660);
-
-        /* 二次擴散環 */
-        var r2 = document.createElement('div');
-        r2.className = 'hy-fx-aoe2';
-        r2.style.setProperty('--aoe-col', col);
-        el.appendChild(r2);
-        setTimeout(function () { if (r2.parentNode) r2.parentNode.removeChild(r2); }, 960);
-
-        /* 對每個目標拉線（間隔 60ms，形成掃射感） */
-        (targets || []).forEach(function (t, i) {
-            setTimeout(function () {
-                if (fromNode && t && t !== fromNode) {
-                    drawTrail(el, fromNode, t, fromSide, false, element);
-                }
-            }, i * 60);
-        });
-    }
+    /* ⭐ v512 AOE 範圍特效 —— 已停用（中央衝擊波／全場閃光／多目標掃線） */
+    function playAoe() { /* removed */ }
 
     /* ⭐ v511：出手順序軸
        ⭐ v631：使用者要求「不要顯示了」→ 整個功能停用。
@@ -121888,16 +121670,6 @@ window.HY = window.HY || {};
     function playHeal(node, amount, fromNode, element) {
         if (!node) return;
         floatText(node, '＋' + Math.round(amount).toLocaleString(), 'heal');
-        /* ⭐ v517：治療連線（從施術者拉一條綠線到被治療者）
-           治療一律用品質綠色系，不使用屬性色以免被誤認為攻擊 */
-        if (fromNode && fromNode !== node) {
-            drawTrail(el__of(node), fromNode, node, 'ally', false, null, 'heal');
-        }
-    }
-
-    /** 由節點反查所屬舞台 */
-    function el__of(node) {
-        try { return node.closest ? node.closest('.hy-stage') : null; } catch (e) { return null; }
     }
 
     function playDeath(node) {
@@ -122190,23 +121962,9 @@ window.HY = window.HY || {};
                     playRune(n, element);
                 }
             },
-            /* ⭐ v511：手動畫軌跡線（from → to，兩邊都是 index） */
-            trail: function (id, fromSide, fromIndex, toSide, toIndex, crit, element) {
-                var el = document.getElementById(id || 'hy-battle-stage');
-                if (!el) return;
-                var a = el.querySelector('.hy-stage-unit[data-side="' + fromSide + '"][data-i="' + fromIndex + '"]');
-                var b = el.querySelector('.hy-stage-unit[data-side="' + toSide + '"][data-i="' + toIndex + '"]');
-                if (a && b) drawTrail(el, a, b, fromSide, !!crit, element);
-            },
-            /* ⭐ v512：AOE 全體特效 */
-            aoe: function (id, fromSide, targetSide, element) {
-                var el = document.getElementById(id || 'hy-battle-stage');
-                if (!el) return;
-                var atkList = el.querySelectorAll('.hy-stage-side.' + fromSide + ' .hy-stage-unit:not(.dead)');
-                var atk = atkList.length ? atkList[0] : null;
-                var tgts = el.querySelectorAll('.hy-stage-unit.' + targetSide + ':not(.dead)');
-                if (tgts.length) playAoe(el, atk, fromSide, [].slice.call(tgts), element);
-            },
+            trail: function () { /* 軌跡線已移除 */ },
+            /* v512 AOE 範圍特效已移除；呼叫端保留不報錯 */
+            aoe: function () { },
             /* ⭐ v513：閃避演出 */
             miss: function (id, side, index) {
                 var el = document.getElementById(id || 'hy-battle-stage');
