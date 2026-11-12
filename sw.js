@@ -2,12 +2,14 @@
 /* global self, caches, fetch */
 'use strict';
 
-var CACHE = 'huangyi-game-v746';
+var CACHE = 'huangyi-game-v747';
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
-      return cache.addAll(['./game.html', './landingPanelData.js']).catch(function () {});
+      return cache.addAll([
+        './game.html', './landingPanelData.js', './index.html', './style.css'
+      ]).catch(function () {});
     }).then(function () { return self.skipWaiting(); })
   );
 });

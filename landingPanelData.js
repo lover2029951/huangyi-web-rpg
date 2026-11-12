@@ -5,13 +5,24 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v746 · 2026-11-13',
-        gameVer: 746,
+        newsVer: 'v747 · 2026-11-13',
+        gameVer: 747,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '效能',
+            title: '架構級效能包 v747',
+            date: '2026-11-13',
+            bullets: [
+                '多檔版：<b>uiDexAtb</b> 後即可進遊戲，擴充模組背景載入（右下角提示）',
+                '自動存檔改 <b>requestIdleCallback</b>，合併連續靜默存檔，手動存檔仍立即寫入',
+                '<b>renderAll</b> 依可見分頁跳過 ensureState；定時器合併為單一心跳',
+                'SW 預熱首頁／樣式；延續 v746 UI 簽章與掛機輕量路徑'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '效能',
             title: '全系統 UI 簽章優化 v746',

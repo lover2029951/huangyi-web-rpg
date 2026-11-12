@@ -34303,8 +34303,32 @@ window.HY = window.HY || {};
         constructor(charSys, logger) {
             this.charSys = charSys;
             this.logger = logger;
+            this._saveCoalesce = null;
+            this._savePendingSilent = true;
         }
         save(silent) {
+            var self = this;
+            silent = !!silent;
+            if (!silent) {
+                return this._saveSync(false);
+            }
+            this._savePendingSilent = true;
+            if (this._saveCoalesce) {
+                return true;
+            }
+            var run = function () {
+                self._saveCoalesce = null;
+                self._saveSync(true);
+            };
+            this._saveCoalesce = 1;
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(run, { timeout: 4000 });
+            } else {
+                setTimeout(run, 120);
+            }
+            return true;
+        }
+        _saveSync(silent) {
             try {
                 /* ⭐ v499：存檔前先「精瘦化」
                    ──────────────────────────────────────────────────────────
@@ -116167,9 +116191,15 @@ window.HY = window.HY || {};
       this.saveSys = new window.HY.SaveSystem(this.charSys, this.logger);
       // ⭐ v31：計時器把手
       this._timers = {
+        master: null,
         guild: null, save: null, km: null, kmShip: null,
         disciples: null, meridian: null, escort: null, codex: null
       };
+      this._clockAcc = null;
+    }
+    /** 晚載入模組全部就緒後（分階段 boot 第二段） */
+    onLateModulesLoaded() {
+      try { this.renderAll(true); } catch (e2) { }
     }
     // ⭐ GameConfig 重套後由 gameConfig 呼叫
     onConfigReapplied() {
@@ -116212,6 +116242,7 @@ window.HY = window.HY || {};
     }
     // ⭐ v31：可重複呼叫的計時器啟動
     startTimers() {
+      var self = this;
       var G = window.HY && window.HY.GameConfig;
       var cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
       var harvestMs = (G && G.ui && typeof G.ui.guildHarvestIntervalMs === 'number')
@@ -116219,92 +116250,95 @@ window.HY = window.HY || {};
       var autoSaveMs = (G && G.ui && typeof G.ui.autoSaveIntervalMs === 'number')
         ? G.ui.autoSaveIntervalMs
         : (cfgData.AUTO_SAVE_INTERVAL || 30000);
-      if (this._timers.guild) clearInterval(this._timers.guild);
-      this._timers.guild = setInterval(() => {
-        if (this.guildBuilding.harvestAllBuildings(false)) {
-          var chance = (G && G.guild && typeof G.guild.autoEventChance === 'number')
-            ? G.guild.autoEventChance : 0.25;
-          if (Math.random() < chance) {
-            // ⭐ 依設定決定是否給資源
-            var giveRewards = !!(G && G.guild && G.guild.autoEventGivesRewards);
-            if (giveRewards) {
-              this.guildRealmEvent.triggerRandomGuildEvent();      // 全額獎勵
-            } else {
-              this.guildRealmEvent.triggerRandomGuildEvent(true);  // 純氛圍
+      var TICK = 1000;
+      ['guild', 'save', 'km', 'kmShip', 'disciples', 'meridian', 'escort', 'codex', 'master'].forEach(function (k) {
+        if (self._timers[k]) clearInterval(self._timers[k]);
+        self._timers[k] = null;
+      });
+      this._clockAcc = {
+        guild: 0, save: 0, km: 0, kmShip: 0,
+        disciples: 0, meridian: 0, escort: 0, codex: 0
+      };
+      var acc = this._clockAcc;
+      this._timers.master = setInterval(function () {
+        var dt = TICK;
+        acc.guild += dt;
+        acc.save += dt;
+        acc.km += dt;
+        acc.kmShip += dt;
+        acc.disciples += dt;
+        acc.meridian += dt;
+        acc.escort += dt;
+        acc.codex += dt;
+
+        if (acc.guild >= harvestMs) {
+          acc.guild = 0;
+          if (self.guildBuilding.harvestAllBuildings(false)) {
+            var chance = (G && G.guild && typeof G.guild.autoEventChance === 'number')
+              ? G.guild.autoEventChance : 0.25;
+            if (Math.random() < chance) {
+              var giveRewards = !!(G && G.guild && G.guild.autoEventGivesRewards);
+              if (giveRewards) self.guildRealmEvent.triggerRandomGuildEvent();
+              else self.guildRealmEvent.triggerRandomGuildEvent(true);
+            }
+            if (!document.hidden && self._visibleTabs()['tab-guild']) {
+              self.renderAllThrottled();
             }
           }
-          /* ⭐ v545：收成後只在「幫會分頁可見」時才重繪。
-             原本無條件 renderAll()（實測 5~8ms），加上收成本身約 8ms
-             → 這一個 handler 就吃掉 15~21ms，單獨就超過 16ms 預算，
-             在 console 裡就是 'setInterval' handler took 5x ms 的來源之一。
-             其他分頁看不到幫會數字，等下次自然重繪即可。 */
-          if (this._visibleTabs()['tab-guild']) this.renderAllThrottled();
         }
-      }, harvestMs);
-      if (this._timers.save) clearInterval(this._timers.save);
-      this._timers.save = setInterval(() => this.saveSys.save(true), autoSaveMs);
-      /* ⭐ 金司馬區：每 60 秒結算一次生產；船隻結算獨立輪詢（10 秒） */
-      if (this._timers.km) clearInterval(this._timers.km);
-      this._timers.km = setInterval(() => {
-        try {
-          if (this.kmSys) this.kmSys.tick();
-        } catch (e) { }
-      }, 60000);
-      if (this._timers.kmShip) clearInterval(this._timers.kmShip);
-      this._timers.kmShip = setInterval(() => {
-        try {
-          if (this.kmShip) this.kmShip.settle();
-        } catch (e) { }
-      }, 10000);
-      /* ⭐ 掌門之路：弟子歷練結算（每 30 秒檢查，內部按整分鐘累計） */
-      if (this._timers.disciples) clearInterval(this._timers.disciples);
-      this._timers.disciples = setInterval(() => {
-        try {
-          if (this.disciplesSys && this.disciplesSys.isFounded()) {
-            var r = this.disciplesSys.tick();
-            if (r && (r.ticks > 0)) {
-              var ui = this.uiDisciples || window.HY.uiDisciples;
-              if (ui && ui.isOpen) ui.renderAll();
+        if (acc.save >= autoSaveMs) {
+          acc.save = 0;
+          self.saveSys.save(true);
+        }
+        if (acc.km >= 60000) {
+          acc.km = 0;
+          try { if (self.kmSys) self.kmSys.tick(); } catch (e) { }
+        }
+        if (acc.kmShip >= 10000) {
+          acc.kmShip = 0;
+          try { if (self.kmShip) self.kmShip.settle(); } catch (e) { }
+        }
+        if (acc.disciples >= 30000) {
+          acc.disciples = 0;
+          try {
+            if (self.disciplesSys && self.disciplesSys.isFounded()) {
+              var r = self.disciplesSys.tick();
+              if (r && r.ticks > 0 && !document.hidden) {
+                var ui = self.uiDisciples || window.HY.uiDisciples;
+                if (ui && ui.isOpen) ui.renderAll();
+              }
             }
-          }
-        } catch (e) { }
-      }, 30000);
-      /* ⭐ 經脈真氣自然回復（每 20 秒檢查） */
-      if (this._timers.meridian) clearInterval(this._timers.meridian);
-      this._timers.meridian = setInterval(() => {
-        try {
-          if (this.meridianMap) this.meridianMap.tickQi();
-        } catch (e) { }
-      }, 20000);
-      /* ⭐ 鏢局結算（每 10 秒檢查到期的鏢） */
-      if (this._timers.escort) clearInterval(this._timers.escort);
-      this._timers.escort = setInterval(() => {
-        try {
-          if (this.escortSys) {
-            var r = this.escortSys.tick();
-            if (r && (r.settled.length || r.ambushed.length)) {
-              var ui = this.uiEscort || window.HY.uiEscort;
-              if (ui && ui.isOpen) ui.renderAll();
+          } catch (e) { }
+        }
+        if (acc.meridian >= 20000) {
+          acc.meridian = 0;
+          try { if (self.meridianMap) self.meridianMap.tickQi(); } catch (e) { }
+        }
+        if (acc.escort >= 10000) {
+          acc.escort = 0;
+          try {
+            if (self.escortSys) {
+              var er = self.escortSys.tick();
+              if (er && (er.settled.length || er.ambushed.length) && !document.hidden) {
+                var uiE = self.uiEscort || window.HY.uiEscort;
+                if (uiE && uiE.isOpen) uiE.renderAll();
+              }
             }
-          }
-        } catch (e) { }
-      }, 10000);
-      /* ⭐ 圖鑑成就檢查（每 60 秒）
-         ⭐ v2：每角色獨立 → 逐一檢查全隊角色 */
-      if (this._timers.codex) clearInterval(this._timers.codex);
-      this._timers.codex = setInterval(() => {
-        try {
-          var cx = this.codexSys;
-          if (!cx) return;
-          if (window.HY.PerChar) {
-            window.HY.PerChar.eachChar(function (c) {
-              try { cx.checkAchievements(c); } catch (e) { }
-            });
-          } else {
-            cx.checkAchievements();
-          }
-        } catch (e) { }
-      }, 60000);
+          } catch (e) { }
+        }
+        if (acc.codex >= 60000) {
+          acc.codex = 0;
+          try {
+            var cx = self.codexSys;
+            if (!cx) return;
+            if (window.HY.PerChar) {
+              window.HY.PerChar.eachChar(function (c) {
+                try { cx.checkAchievements(c); } catch (e1) { }
+              });
+            } else cx.checkAchievements();
+          } catch (e) { }
+        }
+      }, TICK);
     }
     init() {
       const cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
@@ -116410,14 +116444,25 @@ window.HY = window.HY || {};
       };
       try {
       run('sync.activePointer', () => { this.charSys.syncActivePointer(); });
-      run('ensure.equip', () => { this.equipSys.ensureState(); });
-      run('ensure.poe', () => { this.poeSys.ensureState(); });
-      run('ensure.essence', () => { this.essenceSys.ensureState(); });
-      run('ensure.fossil', () => { this.fossilSys.ensureState(); });
-      run('ensure.talent', () => { this.talentSys.ensureState(); });
-      run('ensure.jewel', () => { this.jewelSys.ensureState(); });
-      run('ensure.martial', () => { this.martialSys.ensureState(); });
-      run('ensure.guild', () => { this.guildCore.ensureState(); });
+      var forceAll = (arguments.length > 0 && arguments[0] === true);
+      var visible = this._visibleTabs();
+      var need = function (tabId) { return forceAll || visible[tabId]; };
+      var needInv = need('tab-inventory') || need('tab-blackmarket');
+      var needMartial = need('tab-martial') || need('tab-sect');
+      if (forceAll || needInv) {
+        run('ensure.equip', () => { this.equipSys.ensureState(); });
+        run('ensure.poe', () => { this.poeSys.ensureState(); });
+        run('ensure.essence', () => { this.essenceSys.ensureState(); });
+        run('ensure.fossil', () => { this.fossilSys.ensureState(); });
+        run('ensure.jewel', () => { this.jewelSys.ensureState(); });
+      }
+      if (forceAll || needMartial) {
+        run('ensure.talent', () => { this.talentSys.ensureState(); });
+        run('ensure.martial', () => { this.martialSys.ensureState(); });
+      }
+      if (forceAll || need('tab-guild')) {
+        run('ensure.guild', () => { this.guildCore.ensureState(); });
+      }
 
       /* ⭐⭐ 效能：只重繪「目前可見」的分頁
          ──────────────────────────────────────────────────────
@@ -116428,9 +116473,6 @@ window.HY = window.HY || {};
          分頁是 <button data-tab> + <div id="tab-xxx" class="active"> 結構，
          只有帶 .active 的那個才看得到，其餘重建純屬浪費。
          （保留「強制全繪」開關：renderAll(true)，供存讀檔等必要時機使用） */
-      var forceAll = (arguments.length > 0 && arguments[0] === true);
-      var visible = this._visibleTabs();
-      var need = function (tabId) { return forceAll || visible[tabId]; };
 
       /* ⭐⭐ v49 修正：左側角色面板是「常駐側邊欄」，不在分頁系統內
          ──────────────────────────────────────────────────────
@@ -172063,6 +172105,11 @@ window.HY = window.HY || {};
                 this.record('boot.loaderTotal', loaderMs, { loaded: loaded, total: total });
             }
             this.record('boot.wallToReady', wallMs, { loaded: loaded, total: total });
+            if (boot && boot.earlyPlayable && typeof boot.playableWallMs === 'number') {
+                this.record('boot.playableWall', boot.playableWallMs, {
+                    at: boot.playableLoaded, total: total
+                });
+            }
             /* 探針在最末支腳本才載入；此值僅表示「最後幾支腳本＋DOM 就緒」尾段 */
             this.record('boot.tailAfterProbe', this.now() - _bootT0, { loaded: loaded, total: total });
             if (this.enabled) {
@@ -172258,7 +172305,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=746').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=747').catch(function () {});
     } catch (eSw) {}
   });
 }
