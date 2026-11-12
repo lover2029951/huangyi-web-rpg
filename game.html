@@ -87697,6 +87697,12 @@ window.HY = window.HY || {};
     }
     return (it && it.shjSetId) ? it.shjSetId : '';
   }
+  /** 選單／toast 用純文字前綴（避免把套裝 HTML 塞進 textContent） */
+  function itemIconPlain(it) {
+    if (!it) return '◻';
+    if (shjIsSetItem(it)) return '🌌';
+    return itemIcon(it);
+  }
   function itemIcon(it) {
     if (shjIsSetItem(it)) {
       var Data = window.HY.Data;
@@ -89064,7 +89070,7 @@ window.HY = window.HY || {};
       items.push({ t: '💍 穿右戒', dis: !!eqMap[uidOf(it)], fn: function () { doEquip(it, 'ring_right'); } });
     } else if (st) {
       items.push({
-        t: eqMap[uidOf(it)] ? '✅ 已裝備' : (enough ? itemIcon(it) + ' 穿戴' : '🔒 需 Lv.' + num(it.reqLv, 1)),
+        t: eqMap[uidOf(it)] ? '✅ 已裝備' : (enough ? itemIconPlain(it) + ' 穿戴' : '🔒 需 Lv.' + num(it.reqLv, 1)),
         dis: !enough || !!eqMap[uidOf(it)],
         fn: function () { doEquip(it, null); }
       });
