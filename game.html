@@ -37821,15 +37821,17 @@ window.HY = window.HY || {};
         respawnMs: 6 * 60 * 60 * 1000,
         padX: 0.20,
         padY: 0.22,
-        /* ⭐ 遭遇戰強度（對齊同 Lv 時空探索頭目；單體應付 5 人隊） */
+        /* ⭐ 遭遇戰強度：公式基底 + 插值同 Lv 探索頭目下限 + 隊伍人數加成 */
         combat: {
-            hpFlat: 280,
-            hpPerLv: 125,
-            atkFlat: 32,
-            atkPerLv: 6.2,
-            defFlat: 18,
-            defPerLv: 4.5,
-            rewardMul: 1.15
+            hpFlat: 320,
+            hpPerLv: 148,
+            atkFlat: 38,
+            atkPerLv: 7.4,
+            defFlat: 22,
+            defPerLv: 5.2,
+            rewardMul: 1.15,
+            partyMulBase: 0.52,
+            partyMulPerMember: 0.19
         }
     };
 
@@ -37956,9 +37958,92 @@ window.HY = window.HY || {};
     };
 
     var SHJ_RARITY_LV = { common: 0, rare: 10, epic: 22, legend: 38 };
+    var SHJ_RARITY_BOSS_MUL = { common: 0.84, rare: 0.98, epic: 1.1, legend: 1.28 };
+    var SHJ_BOSS_NAME = /【頭目】|頭目|首領|霸主|宗師|統帥|黑榜|劍神|魔師|女帝|邪帝|武神|神遊|仙祖|終極/;
     var SHJ_ELEMENT_ZH = {
         wood: '木', fire: '火', water: '水', earth: '土', metal: '金',
         ice: '冰', thunder: '雷', poison: '毒', dark: '暗', light: '光'
+    };
+
+    var _shjBossPool = null;
+    function shjBossSamplePool() {
+        if (_shjBossPool) return _shjBossPool;
+        var list = [];
+        var maps = Data.MAPS || {};
+        Object.keys(maps).forEach(function (mid) {
+            var m = maps[mid];
+            if (!m || !Array.isArray(m.enemies)) return;
+            m.enemies.forEach(function (e) {
+                if (!e || !(e.hp > 0) || !SHJ_BOSS_NAME.test(String(e.name || ''))) return;
+                list.push({
+                    lv: Number(e.lv) || 1,
+                    hp: Number(e.hp) || 1,
+                    atk: Number(e.atk) || 1,
+                    def: Number(e.def) || 0,
+                    hit: Number(e.hit) || 90,
+                    eva: Number(e.eva) || 0,
+                    crit: Number(e.crit) || 0,
+                    critRes: Number(e.critRes) || 0
+                });
+            });
+        });
+        list.sort(function (a, b) { return a.lv - b.lv; });
+        _shjBossPool = list;
+        return list;
+    }
+
+    function shjLerpLog(a, b, t) {
+        var va = a > 0 ? Math.log(a) : 0;
+        var vb = b > 0 ? Math.log(b) : 0;
+        return Math.round(Math.exp(va + (vb - va) * t));
+    }
+
+    /** 依等級插值時空探索「頭目級」怪物，作為異獸強度下限 */
+    Data.shjExploreBossBenchmark = function (lv) {
+        var pool = shjBossSamplePool();
+        if (!pool.length) return null;
+        var target = Math.max(1, Number(lv) || 1);
+        if (target <= pool[0].lv) {
+            var s0 = target / Math.max(1, pool[0].lv);
+            return {
+                hp: Math.max(1, Math.round(pool[0].hp * s0)),
+                atk: Math.max(1, Math.round(pool[0].atk * s0)),
+                def: Math.round(pool[0].def * s0),
+                hit: pool[0].hit, eva: Math.round(pool[0].eva * s0),
+                crit: pool[0].crit, critRes: pool[0].critRes
+            };
+        }
+        var last = pool[pool.length - 1];
+        if (target >= last.lv) {
+            var prev = pool[pool.length - 2] || last;
+            var span = Math.max(1, last.lv - prev.lv);
+            var rateHp = Math.pow(last.hp / Math.max(1, prev.hp), 1 / span);
+            var rateAtk = Math.pow(last.atk / Math.max(1, prev.atk), 1 / span);
+            var rateDef = Math.pow(Math.max(1, last.def) / Math.max(1, prev.def), 1 / span);
+            var extra = target - last.lv;
+            return {
+                hp: Math.round(last.hp * Math.pow(rateHp, extra * 0.92)),
+                atk: Math.round(last.atk * Math.pow(rateAtk, extra * 0.92)),
+                def: Math.round(last.def * Math.pow(rateDef, extra * 0.92)),
+                hit: last.hit, eva: last.eva, crit: last.crit, critRes: last.critRes
+            };
+        }
+        var i;
+        for (i = 1; i < pool.length; i++) {
+            if (pool[i].lv >= target) break;
+        }
+        var hi = pool[i];
+        var lo = pool[i - 1];
+        var t = (target - lo.lv) / Math.max(1, hi.lv - lo.lv);
+        return {
+            hp: shjLerpLog(lo.hp, hi.hp, t),
+            atk: shjLerpLog(lo.atk, hi.atk, t),
+            def: shjLerpLog(lo.def, hi.def, t),
+            hit: Math.round(lo.hit + (hi.hit - lo.hit) * t),
+            eva: Math.round(lo.eva + (hi.eva - lo.eva) * t),
+            crit: Math.round(lo.crit + (hi.crit - lo.crit) * t),
+            critRes: Math.round(lo.critRes + (hi.critRes - lo.critRes) * t)
+        };
     };
 
     /** 山海經遭遇戰：依異獸與武魂定義組出敵人模板 */
@@ -37978,17 +38063,48 @@ window.HY = window.HY || {};
             }
         }
         var elv = Math.max(def.minLv || 1, lv + (SHJ_RARITY_LV[beast.rarity] || 0));
-        var rMul = beast.rarity === 'legend' ? 2.4 : (beast.rarity === 'epic' ? 1.75 : (beast.rarity === 'rare' ? 1.35 : 1));
+        var rMul = beast.rarity === 'legend' ? 2.55 : (beast.rarity === 'epic' ? 1.88 : (beast.rarity === 'rare' ? 1.42 : 1));
         var cCfg = (Data.SHJ_CONFIG && Data.SHJ_CONFIG.combat) || {};
-        var hpCore = (Number(cCfg.hpFlat) || 280) + elv * (Number(cCfg.hpPerLv) || 125);
-        var hp = Math.floor(hpCore * Math.pow(rMul, 1.28));
-        var atkCore = (Number(cCfg.atkFlat) || 32) + elv * (Number(cCfg.atkPerLv) || 6.2);
-        var atk = Math.floor(atkCore * Math.pow(rMul, 0.72));
-        var defStat = Math.floor(((Number(cCfg.defFlat) || 18) + elv * (Number(cCfg.defPerLv) || 4.5)) *
-            Math.pow(rMul, 0.9));
+        var hpCore = (Number(cCfg.hpFlat) || 320) + elv * (Number(cCfg.hpPerLv) || 148);
+        var hp = Math.floor(hpCore * Math.pow(rMul, 1.32));
+        var atkCore = (Number(cCfg.atkFlat) || 38) + elv * (Number(cCfg.atkPerLv) || 7.4);
+        var atk = Math.floor(atkCore * Math.pow(rMul, 0.78));
+        var defStat = Math.floor(((Number(cCfg.defFlat) || 22) + elv * (Number(cCfg.defPerLv) || 5.2)) *
+            Math.pow(rMul, 0.92));
+        var partySize = 1;
+        try {
+            if (game && game.partySys && typeof game.partySys.getPartySize === 'function') {
+                partySize = Math.max(1, Number(game.partySys.getPartySize()) || 1);
+            }
+        } catch (ePs) { partySize = 1; }
+        var partyMul = (Number(cCfg.partyMulBase) || 0.52) +
+            partySize * (Number(cCfg.partyMulPerMember) || 0.19);
+        hp = Math.max(1, Math.round(hp * partyMul));
+        atk = Math.max(1, Math.round(atk * partyMul));
+        defStat = Math.max(0, Math.round(defStat * partyMul));
+
+        var bench = Data.shjExploreBossBenchmark(elv);
+        var bossFac = SHJ_RARITY_BOSS_MUL[beast.rarity] || 0.9;
+        if (bench) {
+            hp = Math.max(hp, Math.round(bench.hp * bossFac));
+            atk = Math.max(atk, Math.round(bench.atk * bossFac));
+            defStat = Math.max(defStat, Math.round(bench.def * bossFac));
+        }
+
+        var hitVal = Math.min(128, 92 + Math.floor(elv * 0.42) + (beast.rarity === 'legend' ? 4 : 0));
+        var evaVal = Math.min(34, 8 + Math.floor(elv * 0.26) + Math.floor(rMul * 2));
+        var critVal = Math.min(42, 10 + Math.floor(elv * 0.32) + (beast.rarity === 'legend' ? 6 : 0));
+        var critResVal = Math.min(38, 6 + Math.floor(elv * 0.24) + Math.floor(rMul * 3));
+        if (bench) {
+            hitVal = Math.max(hitVal, Math.round(bench.hit * bossFac));
+            evaVal = Math.max(evaVal, Math.round(bench.eva * bossFac));
+            critVal = Math.max(critVal, Math.round(bench.crit * bossFac));
+            critResVal = Math.max(critResVal, Math.round(bench.critRes * bossFac));
+        }
+
         var rewMul = Number(cCfg.rewardMul) || 1.15;
         var skillName = def.skill || '異獸撲擊';
-        var skillMult = beast.rarity === 'legend' ? 1.62 : (beast.rarity === 'epic' ? 1.48 : (beast.rarity === 'rare' ? 1.38 : 1.28));
+        var skillMult = beast.rarity === 'legend' ? 1.68 : (beast.rarity === 'epic' ? 1.52 : (beast.rarity === 'rare' ? 1.42 : 1.32));
 
         var enemy = {
             id: 'shj_' + beast.id,
@@ -37996,10 +38112,10 @@ window.HY = window.HY || {};
             name: '【山海】' + beast.name,
             lv: elv,
             hp: hp, maxHp: hp, atk: atk, def: defStat,
-            hit: Math.min(128, 92 + Math.floor(elv * 0.42) + (beast.rarity === 'legend' ? 4 : 0)),
-            eva: Math.min(34, 8 + Math.floor(elv * 0.26) + Math.floor(rMul * 2)),
-            crit: Math.min(42, 10 + Math.floor(elv * 0.32) + (beast.rarity === 'legend' ? 6 : 0)),
-            critRes: Math.min(38, 6 + Math.floor(elv * 0.24) + Math.floor(rMul * 3)),
+            hit: Math.min(135, hitVal),
+            eva: Math.min(42, evaVal),
+            crit: Math.min(48, critVal),
+            critRes: Math.min(45, critResVal),
             atkSpd: Math.min(145, 100 + Math.floor(elv * 0.35) + (beast.rarity === 'epic' || beast.rarity === 'legend' ? 8 : 0)),
             exp: Math.floor(hp * 0.42 * rewMul),
             sp: Math.floor(hp * 0.28 * rewMul),
