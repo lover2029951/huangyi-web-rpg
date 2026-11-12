@@ -5,13 +5,31 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v713 · 2026-11-12',
-        gameVer: 713,
+        newsVer: 'v714 · 2026-11-12',
+        gameVer: 714,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '氣血／內力自然恢復（每 3 拍）',
+            date: '2026-11-12',
+            bullets: [
+                '修正第 3 拍落在敵方出手時週期被跳過的問題',
+                '改以週期段結算，敵我出手後皆可觸發；戰報可見 🌿／💧 提示'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '效能',
+            title: '掛機與首屏流暢度',
+            date: '2026-11-12',
+            bullets: [
+                '自動戰鬥時戰鬥舞台／門派表降頻重繪，集氣條仍即時更新',
+                '可調 gameConfig.combat.atbUiThrottleMs；啟動並行載入與資源 preload'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '調整',
             title: '山海異獸遭遇強度',

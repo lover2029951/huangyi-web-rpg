@@ -871,6 +871,8 @@ details > summary::marker {
   .tcc-posts { grid-template-columns: 1fr 1fr; }
 }
 </style>
+    <link rel="preload" href="style.css?v=301" as="style">
+    <link rel="preload" href="./js/loadOrder.js?v=584" as="script">
 </head>
 <body>
     <!-- ⭐ 開機遮罩（半透明）
@@ -1534,6 +1536,7 @@ window.HY = window.HY || {};
             pillCooldownMs: 2000,            // ⚡ 自動服藥冷卻（ms）
             pillMinEffectPct: 2,             // ✖ 藥效提示門檻 %
             atbTickMs: 100,                  // ⚡ ATB 檢查頻率（ms）
+            atbUiThrottleMs: 200,            // ⚡ 掛機時戰鬥舞台／預告／門派表重繪間隔（ms）；出手仍即時刷新
             atbPlayerGainCoef: 0.055,        // ⚡ 玩家集氣係數
             atbEnemyGainCoef: 0.052,         // ⚡ 敵人集氣係數
             atbPlayerInitMax: 35,            // ⚡ 玩家開場集氣上限
@@ -79172,7 +79175,7 @@ window.HY = window.HY || {};
             core.charSys.restoreVitals(hp, mp, charObj);
             core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
             if (window.HY && window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUi) { }
             }
         }
         applyHeal(charObj, hp, mp) {
@@ -80751,6 +80754,9 @@ window.HY = window.HY || {};
                     affixSys.onEnemyTurnEnd(enemy);
                 }
             });
+            try {
+                if (typeof core.applyPartyNaturalVitalRegen === 'function') core.applyPartyNaturalVitalRegen();
+            } catch (eVital) { }
             /* ⭐ 聖火（明教點燃）等「回合結束傷害」可能在這裡才把最後一名敵人打死。
                舊版結算完只檢查「我方是否全滅」，沒有回頭檢查敵方是否已全滅，
                於是 enemies 陣列裡留下一具 0 血的屍體 ——
@@ -83464,7 +83470,7 @@ window.HY = window.HY || {};
             this.lastEnemyTemplate = null;
             this._enemySeq = 0;
             this._turnCounter = 0;
-            this._naturalVitalRegenAtTurn = -1;
+            this._naturalVitalRegenPhase = 0;
             this.autoTactics = new window.HY.CombatAutoTactics(this);
             this.playerTurn  = new window.HY.CombatPlayerTurn(this);
             this.enemyTurn   = new window.HY.CombatEnemyTurn(this);
@@ -83513,19 +83519,69 @@ window.HY = window.HY || {};
             if (!isFinite(n) || n < 1) n = 3;
             return Math.floor(n);
         }
-        /** 本戰鬥回合是否為自然回復結算點 */
-        isNaturalVitalRegenTurn() {
+        /** 目前戰鬥拍數對應的自然回復「週期段」（每 N 拍一段） */
+        naturalVitalRegenPhase() {
             var iv = this.naturalVitalRegenInterval();
             var t = num(this._turnCounter, 0);
-            return t > 0 && (t % iv === 0);
+            return Math.floor(t / iv);
         }
-        /** 我方被動回復：同一回合只結算一次（多隊友連續出手不重複） */
+        /** 是否有尚未結算的自然回復週期（敵我任一方出手後皆可結算） */
+        isNaturalVitalRegenTurn() {
+            return this.naturalVitalRegenPhase() > num(this._naturalVitalRegenPhase, 0);
+        }
+        /** 我方被動回復：每週期只結算一次（多隊友連續出手不重複） */
         claimNaturalVitalRegenTick() {
-            if (!this.isNaturalVitalRegenTurn()) return false;
-            var t = num(this._turnCounter, 0);
-            if (this._naturalVitalRegenAtTurn === t) return false;
-            this._naturalVitalRegenAtTurn = t;
+            var phase = this.naturalVitalRegenPhase();
+            if (phase <= 0 || phase <= num(this._naturalVitalRegenPhase, 0)) return false;
+            this._naturalVitalRegenPhase = phase;
             return true;
+        }
+        /** 氣血／內力自然回復（天賦 lifeRegen / manaRegen）；週期見 vitalNaturalRegenTurns */
+        applyPartyNaturalVitalRegen() {
+            if (!this.claimNaturalVitalRegenTick()) return;
+            var g = window.HY.game;
+            if (!g || !g.charSys) return;
+            var iv = this.naturalVitalRegenInterval();
+            var t = num(this._turnCounter, 0);
+            this.log('🌿 戰鬥第 ' + t + ' 拍（每 ' + iv + ' 拍）氣血／內力自然回復', 'combat');
+            var _psR = g.partySys;
+            var _memR = _psR && _psR.getPartyMembers ? _psR.getPartyMembers() : [];
+            _memR.push(g.charSys.state);
+            var _seen = {};
+            var self = this;
+            _memR.forEach(function (mm) {
+                if (!mm || mm.currentHp <= 0) return;
+                var _mid = mm.id || mm.name;
+                if (_seen[_mid]) return;
+                _seen[_mid] = 1;
+                var _d = g.charSys.getDerivedStatsForChar(mm);
+                if (!_d) return;
+                var _mpGain = 0, _hpGain = 0;
+                var _mpRate = num(_d.manaRegen, 0);
+                var _mpFlat = num(_d.manaRegenFlat, 0);
+                if (_mpRate > 0 || _mpFlat > 0) {
+                    _mpGain = Math.floor(num(_d.maxMp, 0) * (_mpRate / 100) * 0.15 + _mpFlat * 0.3);
+                }
+                var _hpRate = num(_d.lifeRegen, 0);
+                if (_hpRate > 0) {
+                    _hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
+                }
+                var _ptR = self.playerTurn;
+                if (_mpGain > 0 && mm.currentMp < num(_d.maxMp, 0)) {
+                    if (_ptR && _ptR.queueVitalRestore) _ptR.queueVitalRestore(mm, 0, _mpGain);
+                    else mm.currentMp = Math.min(num(_d.maxMp, 0), mm.currentMp + _mpGain);
+                }
+                if (_hpGain > 0 && mm.currentHp < num(_d.maxHp, 0)) {
+                    if (_ptR && _ptR.queueVitalRestore) _ptR.queueVitalRestore(mm, _hpGain, 0);
+                    else mm.currentHp = Math.min(num(_d.maxHp, 0), mm.currentHp + _hpGain);
+                }
+                if (_hpGain > 0 || _mpGain > 0) {
+                    var parts = [];
+                    if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
+                    if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
+                    self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
+                }
+            });
         }
         getCharBlessingLv(charObj, blessingId) {
             var gSB = window.HY.game && window.HY.game.guildSkillBeast;
@@ -83594,7 +83650,7 @@ window.HY = window.HY || {};
             this.currentEnemy = null;
             this.lastEnemyTemplate = null;
             this._turnCounter = 0;
-            this._naturalVitalRegenAtTurn = -1;
+            this._naturalVitalRegenPhase = 0;
         }
         startBattle(enemyTemplate) {
             if (!enemyTemplate) return;
@@ -83661,7 +83717,7 @@ window.HY = window.HY || {};
             this.clearRepeatTimeout();
             this.lastEnemyTemplate = enemyTemplate;
             this._turnCounter = 0;
-            this._naturalVitalRegenAtTurn = -1;
+            this._naturalVitalRegenPhase = 0;
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
                比對敵人陣容更可靠（同種怪連刷時陣容簽章完全相同）。 */
@@ -115628,7 +115684,7 @@ window.HY = window.HY || {};
                 self.pillState = {};
                 if (combat.autoTactics) combat.autoTactics._pillCooldown = {};
                 self.initBattleAtbBars();
-                if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+                if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
             };
             // useSkill 支援第二參數 healTarget（手動點招時可略）
             combat.useSkill = function (leaderSkillId, healTarget) {
@@ -115873,7 +115929,7 @@ window.HY = window.HY || {};
                         } catch (eAdv) { }
                         member.atb = 0;
                         if (window.HY.uiDexAtb) {
-                            try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI0) { }
+                            try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUI0) { }
                         }
                         return;
                     }
@@ -115912,7 +115968,7 @@ window.HY = window.HY || {};
                原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
                會直接跳過 → 打死怪物的那一招，畫面還停在舊次數。 */
             if (window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI) { }
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUI) { }
             }
             combat.syncCurrentEnemyPointer();
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
@@ -115925,7 +115981,7 @@ window.HY = window.HY || {};
                 combat.syncCurrentEnemyPointer();
                 if (!combat.currentEnemy) { combat.handleVictory(); return; }
             }
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;
@@ -115971,7 +116027,7 @@ window.HY = window.HY || {};
                         if (!combat.currentEnemy) { combat.handleVictory(); return; }
                         var _alive2 = partyMembers.filter(function (m) { return m.currentHp > 0; });
                         if (_alive2.length === 0) { combat.handleDefeat(); return; }
-                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
                         return;
                     }
                 }
@@ -115990,6 +116046,9 @@ window.HY = window.HY || {};
                 }
             }
             if (affixSys && enemy.currentHp > 0) affixSys.onEnemyTurnEnd(enemy);
+            try {
+                if (typeof combat.applyPartyNaturalVitalRegen === 'function') combat.applyPartyNaturalVitalRegen();
+            } catch (eVital) { }
             /* ⭐ 聖火等「回合結束傷害」可能在上一行才打死最後一名敵人。
                舊版這裡只檢查我方是否全滅，於是敵人 0 血卻仍留在陣列裡，
                currentEnemy 為 null 但 handleVictory() 從未被呼叫 ——
@@ -115998,7 +116057,7 @@ window.HY = window.HY || {};
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
             var stillAlive = partyMembers.filter(function (m) { return m.currentHp > 0; });
             if (stillAlive.length === 0) { combat.handleDefeat(); return; }
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
         }
         checkAutoPills(partyMembers) {
             this.combat.autoTactics.processAutoPills(partyMembers);
@@ -117682,9 +117741,16 @@ window.HY = window.HY || {};
             if (!slot) return;
             slot.style.opacity = isDead ? '0.45' : '1';
         }
-        updateArenaBarsDOM() {
+        /** @param {boolean} [force] 出手／開戰後傳 true，略過 UI 節流 */
+        updateArenaBarsDOM(force) {
             var app = this.app;
             var combat = app.combatSys;
+            var G = window.HY && window.HY.GameConfig;
+            var throttle = (G && G.combat && typeof G.combat.atbUiThrottleMs === 'number')
+                ? Math.max(80, G.combat.atbUiThrottleMs) : 200;
+            var now = Date.now();
+            var heavy = !!force || (now - (this._arenaHeavyTs || 0) >= throttle);
+            if (heavy) this._arenaHeavyTs = now;
             /* ⭐ 一般戰鬥面板與輿圖戰鬥面板分離：
                地圖進行中時，主面板的數字條一律不更新（維持待命狀態）。 */
             var _atlasS = window.HY.game && window.HY.game.atlasSys;
@@ -117762,16 +117828,12 @@ window.HY = window.HY || {};
                     var _rowEl0 = document.getElementById('es-bar-row');
                     if (_rowEl0) _rowEl0.style.display = 'none';
                 } catch (eSyncEs) { }
-                // ⭐ v56：戰力每 tick 更新
-                var pwEl = document.getElementById('ally-pw-' + idx);
-                if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
-                /* ⭐ 招式預告每 tick 一起更新（原本只在整格重繪時更新，
-                   導致怪物死光後預告仍指著已死亡的目標） */
-                this.refreshNextAction(m, 'ally-next-' + idx, false);
-                /* ⭐ 門派特色面板也要每 tick 更新！
-                   原本這塊只在「整格重繪」時才重建，
-                   所以陰陽的出手次數與模式要等到下次重建才變 → 看起來「沒有立刻 +1」。 */
-                this.refreshFeatTable(m, 'ally-feat-' + idx);
+                if (heavy) {
+                    var pwEl = document.getElementById('ally-pw-' + idx);
+                    if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
+                    this.refreshNextAction(m, 'ally-next-' + idx, false);
+                    this.refreshFeatTable(m, 'ally-feat-' + idx);
+                }
                 this.updateSlotDeadState('ally-head-' + idx, isDead);
             }, this);
             // 敵方
@@ -117791,17 +117853,19 @@ window.HY = window.HY || {};
                         : (typeof e.esCurrent === 'number') ? e.esCurrent
                             : num(e.energyShield, 0),
                     num(e.energyShield, 0) || num(e.maxEs, 0));
-                // ⭐ v56：敵方戰力每 tick 更新
-                var ePwEl = document.getElementById('enemy-pw-' + eIdx);
-                if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
-                /* ⭐ 敵方招式預告也即時更新 */
-                this.refreshNextAction(e, 'enemy-next-' + eIdx, true);
+                if (heavy) {
+                    var ePwEl = document.getElementById('enemy-pw-' + eIdx);
+                    if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
+                    this.refreshNextAction(e, 'enemy-next-' + eIdx, true);
+                }
                 this.updateSlotDeadState('enemy-head-' + eIdx, isDead);
             }, this);
-            // 存活徽章
+
+            if (!heavy) return;
+
             var inBattle = !!combat.currentEnemy && !_inMapNow;
 
-            /* ⭐ v509/v510：戰鬥畫面每 tick 同步（只更新血條／集氣／狀態圖示，不重建 DOM） */
+            /* ⭐ v509/v510：戰鬥畫面同步（掛機時節流，避免每 100ms 掃整個舞台） */
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 var stageEl = document.getElementById('hy-battle-stage');
@@ -117810,7 +117874,8 @@ window.HY = window.HY || {};
                     BS.render(stageEl.parentNode, {
                         party: pl.party, enemies: pl.enemies,
                         id: 'hy-battle-stage', scene: pl.scene,
-                        battleSeq: Number(combat._battleSeq) || 0
+                        battleSeq: Number(combat._battleSeq) || 0,
+                        skipPreload: true
                     });
                 }
             } catch (eStage) { }
@@ -120050,8 +120115,8 @@ window.HY = window.HY || {};
         var enemies = opts.enemies || [];
         var id = opts.id || 'hy-battle-stage';
 
-        /* ⭐ v513：先預載立繪，避免首次出現時空白 */
-        preloadUnits(party, enemies);
+        /* ⭐ v513：先預載立繪，避免首次出現時空白（ATB 高頻同步時略過） */
+        if (!opts.skipPreload) preloadUnits(party, enemies);
 
         var el = document.getElementById(id);
         if (!el) {
