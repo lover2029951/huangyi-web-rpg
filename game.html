@@ -38251,10 +38251,50 @@ window.HY = window.HY || {};
 
     var _setByRegion = {};
     var _setById = {};
+    var _pieceNameToSet = {};
+  var _SLOT_TO_PIECE = { mainhand: 'weapon', offhand: 'weapon', body: 'body', helmet: 'helmet', gloves: 'gloves', boots: 'boots' };
+
     Data.SHJ_EQUIP_SETS.forEach(function (s) {
         _setById[s.id] = s;
         _setByRegion[s.region] = s;
+        if (s.pieces) {
+            Object.keys(s.pieces).forEach(function (pk) {
+                var tpl = s.pieces[pk];
+                if (tpl && tpl.name) _pieceNameToSet[tpl.name] = { setId: s.id, piece: pk, setName: s.name };
+            });
+        }
     });
+
+    Data.shjSetIdOfItem = function (item) {
+        if (!item) return null;
+        if (item.shjSetId) {
+            return {
+                setId: item.shjSetId,
+                piece: item.shjSetPiece || _SLOT_TO_PIECE[item.slotType] || 'body',
+                setName: item.setName
+            };
+        }
+        if (item.name && _pieceNameToSet[item.name]) return _pieceNameToSet[item.name];
+        if (item.setName) {
+            for (var i = 0; i < Data.SHJ_EQUIP_SETS.length; i++) {
+                var s = Data.SHJ_EQUIP_SETS[i];
+                if (s.name === item.setName) {
+                    return {
+                        setId: s.id,
+                        piece: _SLOT_TO_PIECE[item.slotType] || 'body',
+                        setName: s.name
+                    };
+                }
+            }
+        }
+        return null;
+    };
+
+    Data.shjIsSetItem = function (item) {
+        if (!item) return false;
+        if (String(item.rarity) === 'set') return true;
+        return !!Data.shjSetIdOfItem(item);
+    };
 
     Data.shjSetIconVisual = function (setId, pieceKey) {
         var vis = (Data.SHJ_SET_ICON && Data.SHJ_SET_ICON[setId]) || {
@@ -38272,9 +38312,11 @@ window.HY = window.HY || {};
     };
 
     Data.shjSetIconElement = function (item, px) {
-        if (!item || item.rarity !== 'set') return null;
-        var setId = item.shjSetId;
-        var pieceKey = item.shjSetPiece || 'body';
+        if (!item) return null;
+        var meta = Data.shjSetIdOfItem(item);
+        if (!meta && item.rarity !== 'set') return null;
+        var setId = meta ? meta.setId : item.shjSetId;
+        var pieceKey = (meta && meta.piece) || item.shjSetPiece || _SLOT_TO_PIECE[item.slotType] || 'body';
         var vis = Data.shjSetIconVisual(setId, pieceKey);
         var size = Math.max(22, Math.min(56, Number(px) || 30));
         var box = document.createElement('div');
@@ -38292,24 +38334,53 @@ window.HY = window.HY || {};
         return box;
     };
 
+    Data.shjSetPieceImage = function (setId, pieceKey) {
+        if (!setId || !pieceKey) return '';
+        return 'assets/sprites/shj_sets/' + setId + '_' + pieceKey + '.jpg';
+    };
+
     Data.shjSetIconHtml = function (item, px) {
-        var el = Data.shjSetIconElement(item, px);
-        if (!el) return '';
-        return el.outerHTML;
+        var meta = Data.shjSetIdOfItem(item);
+        if (!meta && String(item.rarity) !== 'set') return '';
+        var setId = meta ? meta.setId : item.shjSetId;
+        var pieceKey = (meta && meta.piece) || item.shjSetPiece || _SLOT_TO_PIECE[item.slotType] || 'body';
+        if (!setId) return '';
+        var set = Data.shjSetById(setId);
+        var vis = Data.shjSetIconVisual(setId, pieceKey);
+        var size = Math.max(22, Math.min(56, Number(px) || 34));
+        var src = Data.shjSetPieceImage(setId, pieceKey);
+        var region = set ? Number(set.region) : 0;
+        var setName = item.setName || (set && set.name) || '';
+        var title = setName + (item.name ? ' · ' + item.name : '');
+        var escT = String(title).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        return '<span class="shj-set-img-wrap" style="--shj-a:' + vis.accent + ';--shj-b:' + vis.accent2 +
+            ';width:' + size + 'px;height:' + size + 'px;" title="' + escT + '">' +
+            '<img class="shj-set-piece-img" src="' + src + '" width="' + size + '" height="' + size +
+            '" alt="" draggable="false" loading="lazy" ' +
+            'onerror="var w=this.parentNode;if(w){w.classList.add(\'shj-img-miss\');var f=w.querySelector(\'.shj-set-icon-fallback\');if(f)f.style.display=\'flex\';this.remove();}">' +
+            '<span class="shj-set-region-badge">域' + region + '</span>' +
+            '<span class="shj-set-icon shj-set-icon-fallback" style="display:none;' +
+            '--shj-a:' + vis.accent + ';--shj-b:' + vis.accent2 + ';width:100%;height:100%;">' +
+            '<span class="shj-set-icon__wm" aria-hidden="true">' + vis.motif + '</span>' +
+            '<span class="shj-set-icon__ring" aria-hidden="true"></span>' +
+            '<span class="shj-set-icon__main">' + vis.glyph + '</span>' +
+            '<span class="shj-set-icon__piece">' + vis.piece + '</span>' +
+            '<span class="shj-set-icon__seal">' + vis.seal + '</span></span></span>';
     };
 
     Data.shjSetIconInject = function (host, item, px) {
         if (!host || !item) return false;
-        if (host.querySelector('.shj-set-icon')) return true;
-        var el = Data.shjSetIconElement(item, px);
-        if (!el) return false;
+        if (host.querySelector('.shj-set-img-wrap') || host.querySelector('.shj-set-icon')) return true;
+        var html = Data.shjSetIconHtml(item, px);
+        if (!html) return false;
         try {
             if (!host.getAttribute('data-poe-orig')) {
                 host.setAttribute('data-poe-orig', host.textContent || '');
             }
         } catch (e0) { }
         host.textContent = '';
-        host.appendChild(el);
+        host.innerHTML = html;
+        try { host.classList.add('poe-keep-emoji'); } catch (eK) { }
         return true;
     };
 
@@ -87609,11 +87680,24 @@ window.HY = window.HY || {};
     defs.forEach(function (s) { if (s.id === st) n = s.name; });
     return n || '未知';
   }
+  function shjIsSetItem(it) {
+    var Data = window.HY.Data;
+    if (Data && typeof Data.shjIsSetItem === 'function') return Data.shjIsSetItem(it);
+    return !!(it && it.rarity === 'set');
+  }
+  function shjSetIdOf(it) {
+    var Data = window.HY.Data;
+    if (Data && typeof Data.shjSetIdOfItem === 'function') {
+      var m = Data.shjSetIdOfItem(it);
+      return m ? m.setId : '';
+    }
+    return (it && it.shjSetId) ? it.shjSetId : '';
+  }
   function itemIcon(it) {
-    if (it && it.rarity === 'set') {
+    if (shjIsSetItem(it)) {
       var Data = window.HY.Data;
       if (Data && typeof Data.shjSetIconHtml === 'function') {
-        return Data.shjSetIconHtml(it, 28);
+        return Data.shjSetIconHtml(it, 34);
       }
     }
     var st = String((it && it.slotType) || '');
@@ -87833,7 +87917,7 @@ window.HY = window.HY || {};
   function isLocked(it) { return !!_locked[lkey(it)]; }
   function setLocked(it, v) { var k = lkey(it); if (v) _locked[k] = 1; else delete _locked[k]; saveLocked(); }
   var _pref = {
-    cat: 'all', q: '', rarity: '', slot: '', lvMin: '', lvMax: '',
+    cat: 'all', q: '', rarity: '', slot: '', shjSetId: '', lvMin: '', lvMax: '',
     sort: 'power', asc: false, onlyUsable: false, hideEquipped: false,
     essenceOnlyOwned: true,      /* 精隨倉庫：預設只顯示持有（105 種全列會太長） */
     fossilOnlyOwned: true,       /* 化石倉庫：同樣預設只顯示持有 */
@@ -88042,6 +88126,29 @@ window.HY = window.HY || {};
  box-shadow:0 0 4px rgba(248,113,113,.45);}
 .bagov-cell .ci,.bagov-slot .ic,.bagov-pickcard .pk-img{display:flex;align-items:center;justify-content:center;}
 .bagov-cell .ci .shj-set-icon,.bagov-slot .ic .shj-set-icon{max-width:100%;max-height:100%;}
+.shj-set-img-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;border-radius:6px;overflow:hidden;
+ box-shadow:inset 0 0 0 1px var(--shj-a,#a78bfa),0 0 8px -2px var(--shj-a);}
+.shj-set-piece-img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;
+ filter:contrast(1.05) saturate(1.08);}
+.shj-set-region-badge{position:absolute;left:1px;bottom:0;z-index:3;padding:0 3px;border-radius:2px;
+ font-size:.42em;line-height:1.35;font-weight:bold;color:#fff9f0;
+ background:linear-gradient(90deg,var(--shj-a,#a78bfa),var(--shj-b,#1e1b4b));
+ text-shadow:0 1px 1px rgba(0,0,0,.85);pointer-events:none;}
+.shj-set-img-wrap .shj-set-icon-fallback{position:absolute;inset:0;}
+.bagov-cell .ci .shj-set-img-wrap,.bagov-slot .ic .shj-set-img-wrap{max-width:100%;max-height:100%;}
+.bagov-cell .ci.poe-keep-emoji,.bagov-cell .ci:has(.shj-set-icon),.bagov-cell .ci:has(.shj-set-img-wrap){font-size:initial;line-height:normal;}
+.bagov-cell .ci .shj-set-icon{width:36px!important;height:36px!important;}
+.bagov-shjset-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 2px;padding:6px 8px;
+ background:rgba(30,27,75,.35);border:1px dashed #4c1d95;border-radius:8px;}
+.bagov-shj-mini{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:14px;
+ border:1px solid #4c1d95;background:#12141f;color:#c4b5fd;font-size:.72rem;cursor:pointer;}
+.bagov-shj-mini:hover{border-color:#a78bfa;color:#e9d5ff;}
+.bagov-shj-mini.on{border-color:#a78bfa;background:rgba(167,139,250,.18);font-weight:bold;color:#f5f3ff;}
+.shj-mini-glyph{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+ border-radius:4px;font-family:"KaiTi","STKaiti",serif;font-weight:900;font-size:.82rem;color:#fff;
+ background:radial-gradient(100% 100% at 30% 20%,var(--shj-a,#a78bfa),#1e1b4b);
+ box-shadow:0 0 6px -1px var(--shj-a);}
 /* 目前選中的改造目標：邊框再 +1px，並加白色虛線內圈 */
 .bagov-pickcard.is-target{border-width:4px;}
 .bagov-pickcard.is-target::after{
@@ -88647,6 +88754,7 @@ window.HY = window.HY || {};
     { id: 'weapon',  name: '武器',   f: function (it) { var s = String(it.slotType || ''); return s === 'mainhand' || s === 'offhand'; } },
     { id: 'armor',   name: '防具',   f: function (it) { var s = String(it.slotType || ''); return ['helmet','body','gloves','boots','belt'].indexOf(s) !== -1; } },
     { id: 'jewel',   name: '飾品',   f: function (it) { var s = String(it.slotType || ''); return s === 'amulet' || s === 'ring'; } },
+    { id: 'set',     name: '套裝',   f: function (it) { return shjIsSetItem(it); } },
     { id: 'unique',  name: '傳奇',   f: function (it) { return rarityOf(it).key === 'unique'; } },
     { id: 'corrupt', name: '已汙染', f: function (it) { return !!it.corrupted; } }
   ];
@@ -88700,6 +88808,7 @@ window.HY = window.HY || {};
     if (_pref.lvMax !== '' && lv > num(_pref.lvMax, 9999)) return false;
     if (_pref.onlyUsable && lv > ACC.myLevel()) return false;
     if (_pref.hideEquipped && equippedUidMap()[uidOf(it)]) return false;
+    if (_pref.shjSetId && shjSetIdOf(it) !== _pref.shjSetId) return false;
     if (_pref.q) {
       var q = String(_pref.q).trim().toLowerCase();
       var hay = [it.name, it.rareTitle, it.implicit && it.implicit.text]
@@ -88758,7 +88867,7 @@ window.HY = window.HY || {};
       h += '<div class="tline"><span class="k">固有基底</span><span class="v">' + esc(formatBonus(it.baseStats)) + '</span></div>';
     }
     if (it.implicit && it.implicit.text) h += '<div class="imp">✨ ' + esc(it.implicit.text) + '</div>';
-    if (it.rarity === 'set' && it.setName) {
+    if (shjIsSetItem(it) && (it.setName || it.shjSetId)) {
         var zhen = (window.HY.Data && window.HY.Data.SHJ_ZHEN_PROC) ? window.HY.Data.SHJ_ZHEN_PROC.desc : '';
         var Data0 = window.HY.Data;
         var iconHtml = (Data0 && typeof Data0.shjSetIconHtml === 'function')
@@ -90325,7 +90434,7 @@ window.HY = window.HY || {};
     return { file: t.icon, path: t.iconPath || ('Art/2DItems/' + t.icon) };
   }
   function poeIconHtml(it, cls, px) {
-    if (it && it.rarity === 'set') {
+    if (shjIsSetItem(it)) {
       var Data = window.HY.Data;
       if (Data && typeof Data.shjSetIconHtml === 'function') {
         return Data.shjSetIconHtml(it, px || 22);
@@ -90564,7 +90673,7 @@ window.HY = window.HY || {};
     return '<div class="bagov-slot' + (it ? '' : ' empty') + (isTarget ? ' target' : '') + '" data-slot="' + esc(s.id) + '"' +
       ' style="' + style + '">' +
       (isTarget ? '<span class="tgt-badge">✔ 目標</span>' : '') +
-      '<span class="ic">' + (it ? itemIcon(it) : s.icon) + '</span>' +
+      '<span class="ic' + (it && shjIsSetItem(it) ? ' poe-keep-emoji' : '') + '">' + (it ? itemIcon(it) : s.icon) + '</span>' +
       '<span class="tx">' +
         '<span class="sn">' + esc(s.name) + '</span>' +
         '<span class="si" style="color:' + (it ? r.color : '#475569') + '">' +
@@ -90645,6 +90754,29 @@ window.HY = window.HY || {};
         c.name + '（' + n + '）</button>';
     });
     h += '</div>';
+    h += shjSetBarHtml();
+    return h;
+  }
+  function shjSetBarHtml() {
+    var Data = window.HY.Data;
+    if (!Data || !Data.SHJ_EQUIP_SETS || !Data.shjSetIconVisual) return '';
+    var sets = Data.SHJ_EQUIP_SETS, any = 0, i;
+    for (i = 0; i < sets.length; i++) {
+      any += bagAll().filter(function (it) { return shjSetIdOf(it) === sets[i].id; }).length;
+    }
+    if (!any && _pref.cat !== 'set' && !_pref.shjSetId) return '';
+    var h = '<div class="bagov-shjset-bar"><span style="color:#a78bfa;font-size:.72rem;font-weight:bold;">🌌 套裝</span>';
+    h += '<button type="button" class="bagov-shj-mini' + (!_pref.shjSetId ? ' on' : '') + '" data-bagov-shjset="">全部</button>';
+    sets.forEach(function (s) {
+      var n = bagAll().filter(function (it) { return shjSetIdOf(it) === s.id; }).length;
+      if (!n && _pref.shjSetId !== s.id) return;
+      var vis = Data.shjSetIconVisual(s.id, 'body');
+      h += '<button type="button" class="bagov-shj-mini' + (_pref.shjSetId === s.id ? ' on' : '') +
+        '" data-bagov-shjset="' + esc(s.id) + '" title="' + esc(s.name) + '">' +
+        '<span class="shj-mini-glyph" style="--shj-a:' + vis.accent + '">' + vis.glyph + '</span>' +
+        esc(s.name) + '（' + n + '）</button>';
+    });
+    h += '</div>';
     return h;
   }
   function renderBag() {
@@ -90672,7 +90804,7 @@ window.HY = window.HY || {};
       kv('防禦', fmt(num(st.def, 0))) +
       kv('氣血', fmt(num(st.maxHp, 0))) +
       '</div>';
-    var byR = { normal: 0, magic: 0, rare: 0, unique: 0 };
+    var byR = { normal: 0, magic: 0, rare: 0, unique: 0, set: 0 };
     all.forEach(function (it) { byR[rarityOf(it).key] += 1; });
     left += '<div class="bagov-sum"><h4>🎒 品質統計</h4>';
     RARITY_ORDER.forEach(function (k) {
@@ -90708,7 +90840,7 @@ window.HY = window.HY || {};
           (isEq ? '<div class="ce">E</div>' : (isLocked(it) ? '<div class="ck">🔒</div>' : '')) +
           (isCt ? '<div class="cg">🎯</div>' : '') +
           (fl > 0 ? '<div class="cf">+' + fl + '</div>' : '') +
-          '<div class="ci">' + itemIcon(it) + '</div>' +
+          '<div class="ci' + (shjIsSetItem(it) ? ' poe-keep-emoji' : '') + '">' + itemIcon(it) + '</div>' +
           '<div class="cn" style="color:' + r.color + '">' + esc(String(it.name || '?').slice(0, 6)) + '</div>' +
           '<div class="cl">Lv' + num(it.reqLv, 1) + '</div>' +
           (it.corrupted ? '<div class="cx">C</div>' : '') +
@@ -92191,7 +92323,18 @@ window.HY = window.HY || {};
       el.__bagovBound = true;
       el.addEventListener('click', function () {
         _pref.cat = el.getAttribute('data-bagov-cat');
+        if (_pref.cat === 'set') { /* 保留套裝子篩選 */ } else if (_pref.cat !== 'all') { _pref.shjSetId = ''; }
         savePref(); renderModal();
+      });
+    });
+    _els.body.querySelectorAll('[data-bagov-shjset]').forEach(function (el) {
+      if (el.__bagovBound) return;
+      el.__bagovBound = true;
+      el.addEventListener('click', function () {
+        _pref.shjSetId = el.getAttribute('data-bagov-shjset') || '';
+        if (_pref.shjSetId) _pref.cat = 'set';
+        savePref();
+        renderModal();
       });
     });
     on('bagov-char-refresh', 'click', function () { renderModal(); toast('已更新'); });
@@ -110343,12 +110486,18 @@ window.HY.PoeItemIcons = {
     return nearestPoe(slot, lv);
   }
   function isShjSetItem(it) {
+    var Data = D();
+    if (Data && typeof Data.shjIsSetItem === 'function') return Data.shjIsSetItem(it);
     return !!(it && String(it.rarity) === 'set' && (it.shjSetId || it.setName));
   }
   function putShj(host, it, px) {
     var Data = D();
     if (!Data.shjSetIconInject) return false;
-    return Data.shjSetIconInject(host, it, px);
+    var ok = Data.shjSetIconInject(host, it, px);
+    if (ok) {
+      try { host.classList.add(KEEP); } catch (e) {}
+    }
+    return ok;
   }
   /* --------------------------------------------------- live item index */
   function bagItems() {
@@ -110470,16 +110619,20 @@ window.HY.PoeItemIcons = {
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('cell', nm ? nm.textContent : el.textContent); return false; }
     if (isShjSetItem(hit.it)) {
-      if (host.querySelector('.shj-set-icon')) return false;
+      if (host.querySelector('.shj-set-img-wrap') || host.querySelector('.shj-set-icon')) {
+        try { host.classList.add(KEEP); } catch (eK) {}
+        return false;
+      }
       if (!putShj(host, hit.it, PX_CELL)) { note('cell', hit.it.name); return false; }
+      if (samples.length < 8) samples.push((hit.it.name || '?') + ' -> shj-set [' + hit.via + ']');
     } else {
       var tpl = tplFor(hit.it);
       if (!tpl) { note('cell', hit.it.name); return false; }
       if (!put(host, tpl, PX_CELL)) return false;
+      if (samples.length < 8) samples.push((hit.it.name || '?') + ' -> ' + tpl.name + ' [' + hit.via + ']');
     }
     st.art++;
     if (hit.via === 'uid') st.byUid++; else st.byName++;
-    if (samples.length < 8) samples.push((hit.it.name || '?') + ' -> ' + tpl.name + ' [' + hit.via + ']');
     return true;
   }
   function decorateSlot(el) {
@@ -110491,7 +110644,7 @@ window.HY.PoeItemIcons = {
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('slot', nm ? nm.textContent : el.textContent); return false; }
     if (isShjSetItem(hit.it)) {
-      if (host.querySelector('.shj-set-icon')) return false;
+      if (host.querySelector('.shj-set-img-wrap') || host.querySelector('.shj-set-icon')) return false;
       if (!putShj(host, hit.it, PX_SLOT)) { note('slot', hit.it.name); return false; }
     } else {
       var tpl = tplFor(hit.it);
@@ -110513,7 +110666,7 @@ window.HY.PoeItemIcons = {
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('pick', nm ? nm.textContent : el.textContent); return false; }
     if (isShjSetItem(hit.it)) {
-      if (host.querySelector('.shj-set-icon')) return false;
+      if (host.querySelector('.shj-set-img-wrap') || host.querySelector('.shj-set-icon')) return false;
       if (!putShj(host, hit.it, 46)) { note('pick', hit.it.name); return false; }
     } else {
       var tpl = tplFor(hit.it);
@@ -110531,7 +110684,7 @@ window.HY.PoeItemIcons = {
     if (!hit) { note('card', card.textContent); return false; }
     if (isShjSetItem(hit.it)) {
       var host = card.querySelector('h4') || card.querySelector('strong') || card;
-      if (host.querySelector('.shj-set-icon')) return false;
+      if (host.querySelector('.shj-set-img-wrap') || host.querySelector('.shj-set-icon')) return false;
       if (!putShj(host, hit.it, PX_CARD)) { note('card', hit.it.name); return false; }
     } else {
       var tpl = tplFor(hit.it);
@@ -110709,8 +110862,11 @@ window.HY.PoeItemIcons = {
       var s = document.createElement('style');
       s.id = 'poe-icon-css';
       s.textContent =
-        'html.' + CLS + ' .bagov-cell .ci:not(.' + KEEP + '),' +
-        'html.' + CLS + ' .bagov-slot .ic:not(.' + KEEP + '){font-size:0;line-height:0;}' +
+        'html.' + CLS + ' .bagov-cell .ci:not(.' + KEEP + '):not(:has(.shj-set-icon)):not(:has(.shj-set-img-wrap)),' +
+        'html.' + CLS + ' .bagov-slot .ic:not(.' + KEEP + '):not(:has(.shj-set-icon)):not(:has(.shj-set-img-wrap)){font-size:0;line-height:0;}' +
+        '.bagov-cell .ci .shj-set-icon,.bagov-slot .ic .shj-set-icon,.bagov-pickcard .pk-img .shj-set-icon,' +
+        '.bagov-cell .ci .shj-set-img-wrap,.bagov-slot .ic .shj-set-img-wrap{' +
+          'font-size:initial;line-height:normal;}' +
         '.bagov-cell .ci img.poe-item-icon{width:' + PX_CELL + 'px;height:' + PX_CELL + 'px;' +
           'object-fit:contain;display:block;pointer-events:none;' +
           'filter:drop-shadow(0 1px 2px rgba(0,0,0,.9));}' +
@@ -115774,6 +115930,7 @@ window.HY = window.HY || {};
             this.app = app;
             this.injectDexStatAndCollapsiblePanelsDOM();
             this.lockBattleArenaMaxFixedLayout();
+            this.ensureBattleFactionCollapsible();
             this.hookUIRenders();
         }
         // ══════════════════════════════════════════
@@ -115930,6 +116087,50 @@ window.HY = window.HY || {};
                 '<div class="details-body" style="margin-top:8px;"></div>';
             return details;
         }
+        /** 戰鬥區「我方／敵方陣營」列表：點標題展開／收合（狀態記憶） */
+        ensureBattleFactionCollapsible() {
+            this._wrapBattleFactionCollapse('ally', 'battle-party-collapse', 'battle-party-group-title');
+            this._wrapBattleFactionCollapse('foe', 'battle-enemy-collapse', 'battle-enemy-group-title');
+        }
+        _wrapBattleFactionCollapse(sideKey, collapseId, titleId) {
+            if (document.getElementById(collapseId)) return;
+            var titleEl = document.getElementById(titleId);
+            if (!titleEl || (titleEl.closest && titleEl.closest('details.bf-faction-collapse'))) return;
+            var card = titleEl.closest ? titleEl.closest('.fighter-card') : null;
+            if (!card) return;
+
+            var details = document.createElement('details');
+            details.id = collapseId;
+            details.className = 'bf-faction-collapse';
+            details.open = true;
+            try {
+                var k = 'hy.bf.' + sideKey + '.open';
+                var sv = localStorage.getItem(k);
+                if (sv === '0') details.open = false;
+            } catch (eLs) { }
+
+            var summary = document.createElement('summary');
+            summary.className = 'bf-faction-summary';
+            titleEl.parentNode.insertBefore(details, titleEl);
+            summary.appendChild(titleEl);
+            details.appendChild(summary);
+
+            var body = document.createElement('div');
+            body.className = 'bf-faction-body';
+            var node = details.nextSibling;
+            while (node) {
+                var next = node.nextSibling;
+                body.appendChild(node);
+                node = next;
+            }
+            details.appendChild(body);
+
+            details.addEventListener('toggle', function () {
+                try {
+                    localStorage.setItem('hy.bf.' + sideKey + '.open', details.open ? '1' : '0');
+                } catch (eT) { }
+            });
+        }
         // ══════════════════════════════════════════
         // 戰鬥面板樣式
         // ══════════════════════════════════════════
@@ -115943,6 +116144,14 @@ window.HY = window.HY || {};
                 '#battle-arena { margin-bottom: 14px; border: 1px solid #00e5ff; background: #111722; padding: 12px; border-radius: 8px; }' +
                 '#battle-arena .fighter-cards { display: grid !important; grid-template-columns: 1fr 44px 1fr; align-items: start; gap: 10px; margin-bottom: 10px; }' +
                 '#battle-arena .fighter-card { width: 100% !important; padding: 10px !important; display: flex; flex-direction: column; }' +
+                '.bf-faction-collapse { width: 100%; }' +
+                '.bf-faction-summary { cursor: pointer; list-style: none; user-select: none; margin-bottom: 4px; }' +
+                '.bf-faction-summary::-webkit-details-marker { display: none; }' +
+                '.bf-faction-summary::before { content: "▸ "; color: #64748b; font-size: 0.82rem; }' +
+                'details.bf-faction-collapse[open] > .bf-faction-summary::before { content: "▾ "; }' +
+                '.bf-faction-summary::after { content: "（點擊展開／收合）"; font-size: 0.68rem; color: #64748b; font-weight: normal; margin-left: 4px; }' +
+                '#battle-party-group-title, #battle-enemy-group-title { display: inline; margin: 0 0 0 2px; font-size: inherit; }' +
+                '.bf-faction-body { margin-top: 2px; }' +
                 '#battle-party-list, #battle-enemy-list-ui { display: flex; flex-direction: column; gap: ' + LIST_GAP + 'px; }' +
                 '.group-alive { font-weight: normal; font-size: 0.86em; opacity: 0.92; white-space: nowrap; }' +
                 '.fixed-unit-slot {' +
