@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v731 · 2026-11-12',
-        gameVer: 731,
+        newsVer: 'v732 · 2026-11-12',
+        gameVer: 732,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復：出手 token 防雙計',
+            date: '2026-11-12',
+            bullets: [
+                '每招使用唯一 <b>actionToken</b>，同一集氣滿只計一次 natRegenHits',
+                '觸發改為本場第 3、6、9… 次（整數倍），避免誤計在 2 次就恢復',
+                '新戰重置出手 token'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復：集氣滿 3 次才結算',

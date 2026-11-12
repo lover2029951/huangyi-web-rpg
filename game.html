@@ -83740,13 +83740,9 @@ window.HY = window.HY || {};
             if (!char) return 0;
             return num(char._battle && char._battle.natRegenHits, 0);
         }
-        bumpCharNatRegenHits(char) {
-            if (!char) return;
-            var b = char._battle || (char._battle = {});
-            var beat = this.vitalRegenBeat();
-            if (b._natRegenActionBeat === beat) return;
-            b._natRegenActionBeat = beat;
-            b.natRegenHits = num(b.natRegenHits, 0) + 1;
+        _nextAllyActionToken() {
+            this._allyActionToken = num(this._allyActionToken, 0) + 1;
+            return this._allyActionToken;
         }
         /** 跨戰鬥累計出手（門派陰陽／陣門／五行）；自然恢復計數請用 recordAllyCombatAction */
         bumpCharYyHits(char) {
@@ -83754,11 +83750,15 @@ window.HY = window.HY || {};
             var b = char._battle || (char._battle = {});
             b.yyHits = num(b.yyHits, 0) + 1;
         }
-        /** 一次完整出手：門派 yyHits + 本場 natRegenHits（各 +1，同拍去重） */
-        recordAllyCombatAction(char) {
+        /** 一次完整出手：門派 yyHits + 本場 natRegenHits（各 +1；同 token 不重複） */
+        recordAllyCombatAction(char, actionToken) {
             if (!char) return;
+            var token = (actionToken != null) ? actionToken : this._nextAllyActionToken();
+            var b = char._battle || (char._battle = {});
+            if (b._natRegenLastToken === token) return;
+            b._natRegenLastToken = token;
             this.bumpCharYyHits(char);
-            this.bumpCharNatRegenHits(char);
+            b.natRegenHits = num(b.natRegenHits, 0) + 1;
         }
         /** 出手結束後處理（自然回復僅跟隨該角色自身出手，不依全場拍鎖） */
         afterCombatActionBeat(side, actor) {
@@ -83797,15 +83797,14 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 我方：本場集氣滿並出手滿 N 次（預設 3）且距上次自然恢復已隔 N 次 */
+        /** 我方：本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍） */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
             var hits = this.charNatRegenHits(char);
-            if (hits < iv) return false;
+            if (hits < iv || (hits % iv) !== 0) return false;
             var b = char._battle || {};
-            var lastAt = num(b._natRegenAtHit, 0);
-            return (hits - lastAt) >= iv;
+            return num(b._natRegenAtHit, 0) !== hits;
         }
         /** 立刻在九宮格播恢復飄字（避免 UI 連刷時 mark 被吃掉） */
         playAllyVitalStageFx(charObj, amount, kind, label) {
@@ -83992,6 +83991,7 @@ window.HY = window.HY || {};
             this._naturalVitalRegenPhase = 0;
             this._partyNatRegenDonePhase = -1;
             this._afterCombatHandledBeat = -1;
+            this._allyActionToken = 0;
         }
         startBattle(enemyTemplate) {
             if (!enemyTemplate) return;
@@ -84063,6 +84063,7 @@ window.HY = window.HY || {};
             this._naturalVitalRegenPhase = 0;
             this._partyNatRegenDonePhase = -1;
             this._afterCombatHandledBeat = -1;
+            this._allyActionToken = 0;
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
                比對敵人陣容更可靠（同種怪連刷時陣容簽章完全相同）。 */
@@ -116299,6 +116300,8 @@ window.HY = window.HY || {};
                 }
             } catch (eHold) { }
 
+            var _actionTok = (typeof combat._nextAllyActionToken === 'function')
+                ? combat._nextAllyActionToken() : null;
             if (typeof combat.bumpCombatActionBeat === 'function') combat.bumpCombatActionBeat();
             else combat._turnCounter = (combat._turnCounter || 0) + 1;
             /* ⭐ 陰陽/陣門推進：放在「真正出手」的這一刻。
@@ -116306,7 +116309,7 @@ window.HY = window.HY || {};
                因為不管是手動點技能、ATB 自動、打圖戰術、支援模式，
                全部都會經過 executeUnitFullAtbTurn()。 */
             if (typeof combat.recordAllyCombatAction === 'function') {
-                combat.recordAllyCombatAction(member);
+                combat.recordAllyCombatAction(member, _actionTok);
             }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
 
