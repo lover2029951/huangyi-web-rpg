@@ -80312,6 +80312,7 @@ window.HY = window.HY || {};
                 });
             }
             core.syncCurrentEnemyPointer();
+            try { core.refreshBattleStageNow(); } catch (eRf) { }
             if (!isTwinEcho && !isSupportMode && quadSpiritLv > 0 && core.currentEnemy && Math.random() * 100 < (12.5 + quadSpiritLv * 2.5) * GG_HALF) {
                 this.performCharAttack(charObj, skillId, isLeader, partyMembers, true, null);
             }
@@ -80609,11 +80610,11 @@ window.HY = window.HY || {};
                             (chosenSkill && chosenSkill.name ? chosenSkill.name : '普通攻擊') +
                             '》擊中【' + tm.name + '】，造成 ' + dmg + ' 點傷害' +
                             (isCrit ? '（暴擊！）' : ''), 'combat');
-                        try {
-                            var _i3 = (partyMembers || []).indexOf(tm);
-                            var _sk3 = chosenSkill && chosenSkill.name ? chosenSkill.name : '普攻';
-                            core.markStageFx('ally', _i3 >= 0 ? _i3 : 0, 'dmg', { skill: _sk3 });
-                        } catch (eF3) { }
+                            try {
+                                var _i3 = (partyMembers || []).indexOf(tm);
+                                var _sk3 = chosenSkill && chosenSkill.name ? chosenSkill.name : '普攻';
+                                if (_i3 >= 0) core.markStageFx('ally', _i3, 'dmg', { skill: _sk3 });
+                            } catch (eF3) { }
                     });
 
                     enemy._aoeCd = Math.max(1, Number(chosenSkill.cooldownTurns || 3) - 1);
@@ -80771,7 +80772,7 @@ window.HY = window.HY || {};
             try {
                 var _aHit = (partyMembers || []).indexOf(targetMember);
                 var _skHit = chosenSkill ? chosenSkill.name : '普攻';
-                core.markStageFx('ally', _aHit >= 0 ? _aHit : 0, 'dmg', { skill: _skHit });
+                if (_aHit >= 0) core.markStageFx('ally', _aHit, 'dmg', { skill: _skHit });
             } catch (eMkE) { }
             var elemTag = '';
             if (elemSys && targetMember.currentHp > 0) {
@@ -80843,7 +80844,7 @@ window.HY = window.HY || {};
                             try {
                                 var _si = (partyMembers || []).indexOf(other);
                                 var _sn = chosenSkill ? chosenSkill.name : '普攻';
-                                core.markStageFx('ally', _si >= 0 ? _si : 0, 'dmg', { skill: _sn });
+                                if (_si >= 0) core.markStageFx('ally', _si, 'dmg', { skill: _sn });
                             } catch (eSp) { }
                         }
                     });
@@ -80857,6 +80858,7 @@ window.HY = window.HY || {};
             /* ⭐ 出手後清除目標鎖定，下次預告會重新挑選並鎖定 */
             if (typeof core.clearEnemyTarget === 'function') core.clearEnemyTarget(enemy);
             this.regenMp(enemy, extraActionAffix);
+            try { core.refreshBattleStageNow(); } catch (eRfE) { }
         }
         regenMp(enemy, extraActionAffix) {
             if (!enemy || extraActionAffix) return;
@@ -80879,7 +80881,7 @@ window.HY = window.HY || {};
             enemy.currentMp = Math.min(enemy.maxMp, cur + regen);
             try {
                 if (regen > 0) {
-                    core.markStageFx('foe', core.foeStageIndex(enemy), 'regenMp', { label: '自然回復' });
+                    core.markStageFx('foe', core.foeStageIndex(enemy), 'regenMp', { label: '內力恢復' });
                 }
             } catch (eRg) { }
         }
@@ -83697,6 +83699,12 @@ window.HY = window.HY || {};
                 this.logger.add(msg, type || 'combat');
             }
         }
+        /** 立刻同步戰鬥舞台（飄字依賴血量差 + markStageFx，需及時刷新） */
+        refreshBattleStageNow() {
+            if (window.HY && window.HY.uiDexAtb) {
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
+            }
+        }
         /** 氣血／內力自然回復週期（回合數，預設 3） */
         naturalVitalRegenInterval() {
             var G = window.HY && window.HY.GameConfig;
@@ -83764,11 +83772,11 @@ window.HY = window.HY || {};
                 }
                 if (_mpGain > 0 && mm.currentMp < num(_d.maxMp, 0)) {
                     g.charSys.restoreVitals(0, _mpGain, mm);
-                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenMp', { label: '自然回復' });
+                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenMp', { label: '內力恢復' });
                 }
                 if (_hpGain > 0 && mm.currentHp < num(_d.maxHp, 0)) {
                     g.charSys.restoreVitals(_hpGain, 0, mm);
-                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenHp', { label: '自然回復' });
+                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenHp', { label: '氣血恢復' });
                 }
                 if (_hpGain > 0 || _mpGain > 0) {
                     var parts = [];
@@ -84177,12 +84185,14 @@ window.HY = window.HY || {};
                這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
                 this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
+                self.refreshBattleStageNow();
             }
             partyMembers.forEach(function (member) {
                 if (member.id === activeChar.id) return;
                 if (member.currentHp <= 0 || !self.currentEnemy) return;
                 var allySkill = self.autoTactics.pickTacticalSkillForChar(member, false);
                 self.playerTurn.performCharAttack(member, allySkill, false, partyMembers, false);
+                self.refreshBattleStageNow();
             });
             if (!this.currentEnemy) { this.handleVictory(); return; }
             var leaderStats = this.charSys.getDerivedStatsForChar(activeChar);
@@ -118647,7 +118657,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v702';
+    var STYLE_ID = 'hy-battle-stage-css-v727';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -119050,10 +119060,13 @@ window.HY = window.HY || {};
         '.hy-stage-side.ally{padding-right:10px;box-sizing:border-box;}',
         '.hy-stage-side.foe{padding-left:10px;box-sizing:border-box;}',
         /* ⭐ v695/v696：單元撐滿格高，立繪＋武魂＋血條底緣對齊該格底線 */
+        /* v727：單元撐滿九宮格格線範圍（飄字錨在宮格四角，不靠窄版立繪寬） */
         '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe){' +
-            'align-self:stretch;justify-self:center;width:100%;max-width:132px;' +
+            'align-self:stretch;justify-self:stretch;width:100%;max-width:none;' +
             'height:100%;min-height:0;box-sizing:border-box;' +
             '--tag-h:56px;}',
+        /* 覆蓋整格：恢復／偷取飄字貼齊宮格左上／右上 */
+        '.hy-stage-fx-layer{position:absolute;inset:0;z-index:18;pointer-events:none;overflow:visible;}',
 
         /* ── 單一單位 ── */
         '.hy-stage-unit{position:relative;flex:0 0 auto;display:flex;flex-direction:column;' +
@@ -119226,15 +119239,20 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.regenHp .fx-src,.hy-fx-dmg.regenMp .fx-src{color:#bef264;}',
         '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
             'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
-        /* ⭐ v724：恢復→方格左上角；偷取→方格右上角（仍保留上飄動畫） */
-        '.hy-fx-dmg.fx-tl{left:2px;top:2px;right:auto;transform:translate(var(--dx,0),var(--dy,0));' +
+        /* ⭐ v727：恢復→九宮格宮格左上；偷取→宮格右上（相對 .hy-stage-fx-layer） */
+        '.hy-stage-fx-layer .hy-fx-dmg.fx-tl{left:0;top:0;right:auto;margin:0;padding:0;' +
+            'transform:translate(var(--dx,0),var(--dy,0));transform-origin:left top;' +
             'align-items:flex-start;text-align:left;' +
             'animation:hy-fx-rise-tl 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
-        '.hy-fx-dmg.fx-tr{left:auto;right:2px;top:2px;transform:translate(var(--dx,0),var(--dy,0));' +
+        '.hy-stage-fx-layer .hy-fx-dmg.fx-tr{left:auto;right:0;top:0;margin:0;padding:0;' +
+            'transform:translate(var(--dx,0),var(--dy,0));transform-origin:right top;' +
             'align-items:flex-end;text-align:right;' +
             'animation:hy-fx-rise-tr 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.fx-tl.has-src{align-items:flex-start;}',
+        '.hy-fx-dmg.fx-tr.has-src{align-items:flex-end;}',
         '.hy-fx-dmg.fx-tl,.hy-fx-dmg.fx-tr{font-size:1.12rem;}',
-        '.hy-fx-dmg.fx-tl .fx-src,.hy-fx-dmg.fx-tr .fx-src{max-width:5.5em;font-size:.62rem;}',
+        '.hy-fx-dmg.fx-tl .fx-src,.hy-fx-dmg.fx-tr .fx-src{max-width:5.5em;font-size:.62rem;' +
+            'align-self:stretch;text-align:inherit;}',
         '@keyframes hy-fx-rise-tl{0%{opacity:0;transform:translate(var(--dx,0),calc(6px + var(--dy,0))) scale(.65);}' +
             '14%{opacity:1;transform:translate(var(--dx,0),calc(-2px + var(--dy,0))) scale(1.12);}' +
             '72%{opacity:1;transform:translate(var(--dx,0),calc(-18px + var(--dy,0))) scale(1);}' +
@@ -121215,6 +121233,7 @@ window.HY = window.HY || {};
         return '<div class="' + cls + '" data-i="' + i + '" data-side="' + side + '"' +
             ' data-cell="' + cellIdx + '" data-grow="' + slot[1] + '"' +
             ' style="' + slotCss + '">' +
+            '<div class="hy-stage-fx-layer" aria-hidden="true"></div>' +
             img +
             '<div class="hy-stage-buffs"></div>' +
             '<div class="hy-stage-tag">' +
@@ -121591,12 +121610,17 @@ window.HY = window.HY || {};
     }
 
     function floatSrcLine(meta, floatKind) {
-        if (!meta) return '';
+        meta = meta || {};
         var k = floatKind || '';
-        if (k.indexOf('steal') === 0 || k.indexOf('regen') === 0) {
+        if (k.indexOf('steal') === 0) {
             if (meta.label) return meta.label;
+            return k === 'stealMp' ? '內力偷取' : '氣血偷取';
         }
+        if (k === 'regenHp') return meta.label || '氣血恢復';
+        if (k === 'regenMp') return meta.label || '內力恢復';
         if (meta.skill) return '《' + meta.skill + '》';
+        if (k === 'heal') return meta.label || '氣血恢復';
+        if (k === 'healMp') return meta.label || '內力恢復';
         if (meta.label) return meta.label;
         return '';
     }
@@ -121633,16 +121657,33 @@ window.HY = window.HY || {};
         return '';
     }
 
+    /** 九宮格宮格全幅錨點（舊 DOM 若無則補建） */
+    function fxGridHost(unitNode) {
+        if (!unitNode) return null;
+        var layer = unitNode.querySelector(':scope > .hy-stage-fx-layer');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.className = 'hy-stage-fx-layer';
+            layer.setAttribute('aria-hidden', 'true');
+            unitNode.insertBefore(layer, unitNode.firstChild);
+        }
+        return layer;
+    }
+
   /** ⭐ v513：飄字（改用物件池）
         ⭐ v517：加入水平抖動、垂直錯開與「同目標短時間累積」 */
     function floatText(node, text, kind, meta) {
         if (!node) return;
         meta = meta || null;
+        var cornerPre = floatCornerForKind(kind);
+        var host = (cornerPre === 'fx-tl' || cornerPre === 'fx-tr')
+            ? (fxGridHost(node) || node)
+            : node;
 
         /* 同目標 500ms 內的同類傷害 → 合併累加（避免數字糊成一團） */
         if (kind && kind.indexOf('dmg') === 0) {
             var now = Date.now();
-            var last = node.__lastDmg;
+            var last = host.__lastDmg;
             var num2 = Number(String(text).replace(/[^\d.-]/g, ''));
             if (last && (now - last.ts) < 520 && last.el && last.el.parentNode) {
                 last.sum += (isFinite(num2) ? num2 : 0);
@@ -121667,15 +121708,15 @@ window.HY = window.HY || {};
         setFloatMain(d, text);
         if (meta) applyFloatSrc(d, meta, kind);
         var stackKey = corner || 'mid';
-        var stackMap = node.__fxStack = node.__fxStack || {};
+        var stackMap = host.__fxStack = host.__fxStack || {};
         var stack = (stackMap[stackKey] = ((stackMap[stackKey] || 0) + 1) % 4);
         var dx;
         var dy;
         if (corner === 'fx-tl') {
-            dx = (Math.random() * 10).toFixed(1);
+            dx = '0';
             dy = String(stack * 14);
         } else if (corner === 'fx-tr') {
-            dx = (-Math.random() * 10).toFixed(1);
+            dx = '0';
             dy = String(stack * 14);
         } else {
             dx = (Math.random() * 36 - 18).toFixed(1);
@@ -121689,11 +121730,11 @@ window.HY = window.HY || {};
 
         d.style.setProperty('--dx', dx + 'px');
         d.style.setProperty('--dy', dy + 'px');
-        node.appendChild(d);
+        host.appendChild(d);
 
         if (kind && kind.indexOf('dmg') === 0) {
             var n2 = Number(String(text).replace(/[^\d.-]/g, ''));
-            node.__lastDmg = {
+            host.__lastDmg = {
                 el: d, sum: isFinite(n2) ? n2 : 0, ts: Date.now(),
                 crit: kind.indexOf('crit') >= 0,
                 skill: meta && meta.skill ? meta.skill : ''
