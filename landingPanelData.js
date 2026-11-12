@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v743 · 2026-11-13',
-        gameVer: 743,
+        newsVer: 'v744 · 2026-11-13',
+        gameVer: 744,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '單檔版天賦腳本載入 v744',
+            date: '2026-11-13',
+            bullets: [
+                '修正 <code>talentWuhunRemap</code>／<code>talentRangeRemap</code> 未傳入 <code>window</code> 導致 <code>game.html</code> 白屏',
+                'Console「Cannot read properties of undefined (reading HY)」'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '效能',
             title: '戰鬥掛機輕量重繪 v743',
