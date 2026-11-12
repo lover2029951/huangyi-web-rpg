@@ -5043,13 +5043,79 @@ window.HY = window.HY || {};
        工具函式
        ══════════════════════════════════════════ */
     function statInfo(key) { return STATS[key] || null; }
-    function statName(key) {
-        var s = STATS[key];
-        return s ? s.name : String(key || '');
+
+    /** 屬性圖鑑 key → 中文名（延遲建立） */
+    var _codexNameIdx = null;
+    function codexNameIndex() {
+        if (_codexNameIdx) return _codexNameIdx;
+        _codexNameIdx = {};
+        var C = window.HY && window.HY.Data && window.HY.Data.STAT_CODEX;
+        if (C && C.groups) {
+            C.groups.forEach(function (g) {
+                (g.stats || []).forEach(function (s) {
+                    if (s && s.key) _codexNameIdx[s.key] = s.name || s.abbr || s.key;
+                });
+            });
+        }
+        var alias = {
+            hpRegen: 'lifeRegen', mpRegen: 'manaRegen', thorns: 'thornsDmg',
+            penetration: 'armorPen'
+        };
+        Object.keys(alias).forEach(function (from) {
+            if (_codexNameIdx[from] && !_codexNameIdx[alias[from]]) {
+                _codexNameIdx[alias[from]] = _codexNameIdx[from];
+            }
+            if (_codexNameIdx[alias[from]] && !_codexNameIdx[from]) {
+                _codexNameIdx[from] = _codexNameIdx[alias[from]];
+            }
+        });
+        return _codexNameIdx;
     }
+
+    function statName(key) {
+        if (!key) return '';
+        var s = STATS[key];
+        if (s) return s.name;
+        var idx = codexNameIndex();
+        if (idx[key]) return idx[key];
+        var mDef = /^elDef_(.+)$/.exec(key);
+        if (mDef) {
+            if (mDef[1] === 'all') return '九元素抗性';
+            var D = window.HY && window.HY.Data;
+            var em = D && D.ELEMENTS && D.ELEMENTS[mDef[1]];
+            if (em && em.name) return em.name + '元素抗性';
+            return (idx[key] || '元素抗性');
+        }
+        var mAtk = /^elAtk_(.+)$/.exec(key);
+        if (mAtk) {
+            if (mAtk[1] === 'all') return '全元素攻擊';
+            var D2 = window.HY && window.HY.Data;
+            var em2 = D2 && D2.ELEMENTS && D2.ELEMENTS[mAtk[1]];
+            if (em2 && em2.name) return em2.name + '元素攻擊';
+            return (idx[key] || '元素攻擊');
+        }
+        if (key === 'elDefAll') return '九元素抗性';
+        if (key === 'elAtkAll') return '全元素攻擊';
+        return String(key);
+    }
+
     function isPct(key) {
         var s = STATS[key];
-        return !!(s && s.pct);
+        if (s) return !!s.pct;
+        if (/^elDef_/.test(key) || /^elAtk_/.test(key)) return true;
+        if (key === 'elDefAll' || key === 'elAtkAll') return true;
+        if (/Pct$/.test(key) || /Rate$/.test(key) || /Chance$/.test(key)) return true;
+        var idx = codexNameIndex();
+        var C = window.HY && window.HY.Data && window.HY.Data.STAT_CODEX;
+        if (C && C.groups && idx[key]) {
+            for (var gi = 0; gi < C.groups.length; gi++) {
+                var stats = C.groups[gi].stats || [];
+                for (var si = 0; si < stats.length; si++) {
+                    if (stats[si].key === key && stats[si].unit === '%') return true;
+                }
+            }
+        }
+        return false;
     }
     function capOf(key) {
         var s = STATS[key];
@@ -43707,14 +43773,19 @@ window.HY = window.HY || {};
             Object.keys(bonus || {}).forEach(function (k) {
                 if (CORE8[k]) return;
                 if (seenKey[k]) return;
+                /* 九元素平鋪鍵由 elementSystem 彙總為「🌪️風元素抗性」等，避免 elDef_wind 英文重複 */
+                if (/^elDef_/.test(k) || /^elAtk_/.test(k)) return;
+                if (k === 'elDefAll' || k === 'elAtkAll') return;
                 var v = bonus[k];
                 /* 只顯示純量；物件型（elAtk / elDef 等舊結構）跳過 */
                 if (typeof v !== 'number' || !isFinite(v) || !v) return;
                 seenKey[k] = 1;
-                var label = k, unit = '';
-                if (R && typeof R.statInfo === 'function') {
+                var label = (R && typeof R.statName === 'function') ? R.statName(k) : k;
+                var unit = '';
+                if (R && typeof R.isPct === 'function' && R.isPct(k)) unit = '%';
+                else if (R && typeof R.statInfo === 'function') {
                     var info = R.statInfo(k);
-                    if (info) { label = info.name; unit = info.pct ? '%' : ''; }
+                    if (info && info.pct) unit = '%';
                 }
                 var shown = (Math.abs(v) >= 10) ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100;
                 extra.push(label + (v > 0 ? '+' : '') + shown + unit);
@@ -87991,6 +88062,18 @@ window.HY = window.HY || {};
     if (b.eva) arr.push('閃避+' + b.eva + '%');
     if (b.crit) arr.push('爆擊+' + b.crit + '%');
     if (b.critRes) arr.push('暴抗+' + b.critRes + '%');
+    var R = window.HY && window.HY.StatRegistry;
+    var CORE8 = { atk: 1, def: 1, maxHp: 1, maxMp: 1, hit: 1, eva: 1, crit: 1, critRes: 1 };
+    Object.keys(b || {}).forEach(function (k) {
+      if (CORE8[k]) return;
+      if (/^elDef_/.test(k) || /^elAtk_/.test(k)) return;
+      var v = b[k];
+      if (typeof v !== 'number' || !isFinite(v) || !v) return;
+      var label = (R && R.statName) ? R.statName(k) : k;
+      var unit = (R && R.isPct && R.isPct(k)) ? '%' : '';
+      var shown = (Math.abs(v) >= 10) ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100;
+      arr.push(label + (v > 0 ? '+' : '') + shown + unit);
+    });
     return arr.join('、') || '基礎白板';
   }
   function sellPrice(it) {

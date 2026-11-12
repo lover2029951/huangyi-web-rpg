@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v721 · 2026-11-12',
-        gameVer: 721,
+        newsVer: 'v722 · 2026-11-12',
+        gameVer: 722,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '介面',
+            title: '裝備說明繁體化',
+            date: '2026-11-12',
+            bullets: [
+                '裝備總效不再出現 elDef_wind 等英文鍵',
+                '擴充屬性名稱走屬性圖鑑／StatRegistry 中文'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '效能',
             title: '戰鬥舞台移除攻擊軌跡線',
