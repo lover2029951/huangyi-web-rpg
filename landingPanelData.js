@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v730 · 2026-11-12',
-        gameVer: 730,
+        newsVer: 'v731 · 2026-11-12',
+        gameVer: 731,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復：集氣滿 3 次才結算',
+            date: '2026-11-12',
+            bullets: [
+                '修正 <b>natRegenHits</b> 同拍被加兩次 → 集氣條滿 2 次就恢復的問題',
+                '統一 <b>recordAllyCombatAction</b> 計數；週期改距上次恢復須再滿 3 次出手',
+                '戰報改為「本場第 N 次出手（每 3 次集氣滿）」'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復：每場從 0 計、飄字補強',

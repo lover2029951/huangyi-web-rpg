@@ -83743,13 +83743,21 @@ window.HY = window.HY || {};
         bumpCharNatRegenHits(char) {
             if (!char) return;
             var b = char._battle || (char._battle = {});
+            var beat = this.vitalRegenBeat();
+            if (b._natRegenActionBeat === beat) return;
+            b._natRegenActionBeat = beat;
             b.natRegenHits = num(b.natRegenHits, 0) + 1;
         }
-        /** 跨戰鬥累計出手（門派陰陽／陣門／五行） */
+        /** 跨戰鬥累計出手（門派陰陽／陣門／五行）；自然恢復計數請用 recordAllyCombatAction */
         bumpCharYyHits(char) {
             if (!char) return;
             var b = char._battle || (char._battle = {});
             b.yyHits = num(b.yyHits, 0) + 1;
+        }
+        /** 一次完整出手：門派 yyHits + 本場 natRegenHits（各 +1，同拍去重） */
+        recordAllyCombatAction(char) {
+            if (!char) return;
+            this.bumpCharYyHits(char);
             this.bumpCharNatRegenHits(char);
         }
         /** 出手結束後處理（自然回復僅跟隨該角色自身出手，不依全場拍鎖） */
@@ -83789,17 +83797,15 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 我方：該角色自身第 N、2N… 次出手且尚未結算本週期 */
+        /** 我方：本場集氣滿並出手滿 N 次（預設 3）且距上次自然恢復已隔 N 次 */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
             var hits = this.charNatRegenHits(char);
-            if (hits < iv || hits % iv !== 0) return false;
-            var ph = this.charNaturalRegenPhase(char);
-            if (ph <= 0) return false;
+            if (hits < iv) return false;
             var b = char._battle || {};
-            var last = typeof b._natRegenOwnPhase === 'number' ? b._natRegenOwnPhase : 0;
-            return last < ph;
+            var lastAt = num(b._natRegenAtHit, 0);
+            return (hits - lastAt) >= iv;
         }
         /** 立刻在九宮格播恢復飄字（避免 UI 連刷時 mark 被吃掉） */
         playAllyVitalStageFx(charObj, amount, kind, label) {
@@ -83845,8 +83851,9 @@ window.HY = window.HY || {};
             }
             if (_mpGain <= 0 && _hpGain <= 0) return;
             var _b = mm._battle || (mm._battle = {});
+            _b._natRegenAtHit = hits;
             _b._natRegenOwnPhase = this.charNaturalRegenPhase(mm);
-            self.log('🌿 【' + mm.name + '】第 ' + hits + ' 次出手（每 ' + iv + ' 次）自然回復', 'combat');
+            self.log('🌿 【' + mm.name + '】本場第 ' + hits + ' 次出手（每 ' + iv + ' 次集氣滿）自然回復', 'combat');
             g.charSys.restoreVitals(_hpGain, _mpGain, mm);
             if (_mpGain > 0) {
                 self.playAllyVitalStageFx(mm, _mpGain, 'regenMp', '內力恢復');
@@ -84265,18 +84272,18 @@ window.HY = window.HY || {};
             /* ⚠ 陰陽推進統一由 combatAtbSystem 負責（含時間戳去重）。
                這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
-                self.bumpCharYyHits(activeChar);
+                self.recordAllyCombatAction(activeChar);
                 this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
-                self.applyNaturalVitalRegenForChar(activeChar);
+                self.afterCombatActionBeat('ally', activeChar);
                 self.refreshBattleStageNow();
             }
             partyMembers.forEach(function (member) {
                 if (member.id === activeChar.id) return;
                 if (member.currentHp <= 0 || !self.currentEnemy) return;
-                self.bumpCharYyHits(member);
+                self.recordAllyCombatAction(member);
                 var allySkill = self.autoTactics.pickTacticalSkillForChar(member, false);
                 self.playerTurn.performCharAttack(member, allySkill, false, partyMembers, false);
-                self.applyNaturalVitalRegenForChar(member);
+                self.afterCombatActionBeat('ally', member);
                 self.refreshBattleStageNow();
             });
             if (!this.currentEnemy) { this.handleVictory(); return; }
@@ -116298,11 +116305,8 @@ window.HY = window.HY || {};
                這是唯一能保證「出手一次 = 次數 +1」的位置，
                因為不管是手動點技能、ATB 自動、打圖戰術、支援模式，
                全部都會經過 executeUnitFullAtbTurn()。 */
-            if (member && member._battle) {
-                member._battle.yyHits = (member._battle.yyHits || 0) + 1;
-                member._battle.natRegenHits = (member._battle.natRegenHits || 0) + 1;
-            } else if (member) {
-                member._battle = { yyHits: 1, natRegenHits: 1 };
+            if (typeof combat.recordAllyCombatAction === 'function') {
+                combat.recordAllyCombatAction(member);
             }
             combat.playerTurn.performCharAttack(member, skillId, isLeader, partyMembers, false, healTarget || null);
 
