@@ -5,13 +5,21 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v716 · 2026-11-12',
-        gameVer: 716,
+        newsVer: 'v717 · 2026-11-12',
+        gameVer: 717,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '還原',
+            title: '戰鬥 UI 更新策略',
+            date: '2026-11-12',
+            bullets: [
+                '還原 v714 掛機節流（atbUiThrottleMs）與 boot 並行 10 → 戰鬥舞台恢復每 tick 完整同步'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: 'game.html 移除無效 preload',

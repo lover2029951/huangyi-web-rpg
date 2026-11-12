@@ -1534,7 +1534,6 @@ window.HY = window.HY || {};
             pillCooldownMs: 2000,            // ⚡ 自動服藥冷卻（ms）
             pillMinEffectPct: 2,             // ✖ 藥效提示門檻 %
             atbTickMs: 100,                  // ⚡ ATB 檢查頻率（ms）
-            atbUiThrottleMs: 200,            // ⚡ 掛機時戰鬥舞台／預告／門派表重繪間隔（ms）；出手仍即時刷新
             atbPlayerGainCoef: 0.055,        // ⚡ 玩家集氣係數
             atbEnemyGainCoef: 0.052,         // ⚡ 敵人集氣係數
             atbPlayerInitMax: 35,            // ⚡ 玩家開場集氣上限
@@ -79173,7 +79172,7 @@ window.HY = window.HY || {};
             core.charSys.restoreVitals(hp, mp, charObj);
             core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
             if (window.HY && window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUi) { }
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
             }
         }
         applyHeal(charObj, hp, mp) {
@@ -115698,7 +115697,7 @@ window.HY = window.HY || {};
                 self.pillState = {};
                 if (combat.autoTactics) combat.autoTactics._pillCooldown = {};
                 self.initBattleAtbBars();
-                if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
+                if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
             };
             // useSkill 支援第二參數 healTarget（手動點招時可略）
             combat.useSkill = function (leaderSkillId, healTarget) {
@@ -115943,7 +115942,7 @@ window.HY = window.HY || {};
                         } catch (eAdv) { }
                         member.atb = 0;
                         if (window.HY.uiDexAtb) {
-                            try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUI0) { }
+                            try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI0) { }
                         }
                         return;
                     }
@@ -115983,7 +115982,7 @@ window.HY = window.HY || {};
                原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
                會直接跳過 → 打死怪物的那一招，畫面還停在舊次數。 */
             if (window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(true); } catch (eUI) { }
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI) { }
             }
             combat.syncCurrentEnemyPointer();
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
@@ -115997,7 +115996,7 @@ window.HY = window.HY || {};
                 if (!combat.currentEnemy) { combat.handleVictory(); return; }
             }
             if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat();
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
+            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;
@@ -116043,7 +116042,7 @@ window.HY = window.HY || {};
                         if (!combat.currentEnemy) { combat.handleVictory(); return; }
                         var _alive2 = partyMembers.filter(function (m) { return m.currentHp > 0; });
                         if (_alive2.length === 0) { combat.handleDefeat(); return; }
-                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
+                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
                         return;
                     }
                 }
@@ -116072,7 +116071,7 @@ window.HY = window.HY || {};
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
             var stillAlive = partyMembers.filter(function (m) { return m.currentHp > 0; });
             if (stillAlive.length === 0) { combat.handleDefeat(); return; }
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM(true);
+            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
         }
         checkAutoPills(partyMembers) {
             this.combat.autoTactics.processAutoPills(partyMembers);
@@ -117756,16 +117755,9 @@ window.HY = window.HY || {};
             if (!slot) return;
             slot.style.opacity = isDead ? '0.45' : '1';
         }
-        /** @param {boolean} [force] 出手／開戰後傳 true，略過 UI 節流 */
-        updateArenaBarsDOM(force) {
+        updateArenaBarsDOM() {
             var app = this.app;
             var combat = app.combatSys;
-            var G = window.HY && window.HY.GameConfig;
-            var throttle = (G && G.combat && typeof G.combat.atbUiThrottleMs === 'number')
-                ? Math.max(80, G.combat.atbUiThrottleMs) : 200;
-            var now = Date.now();
-            var heavy = !!force || (now - (this._arenaHeavyTs || 0) >= throttle);
-            if (heavy) this._arenaHeavyTs = now;
             /* ⭐ 一般戰鬥面板與輿圖戰鬥面板分離：
                地圖進行中時，主面板的數字條一律不更新（維持待命狀態）。 */
             var _atlasS = window.HY.game && window.HY.game.atlasSys;
@@ -117843,12 +117835,10 @@ window.HY = window.HY || {};
                     var _rowEl0 = document.getElementById('es-bar-row');
                     if (_rowEl0) _rowEl0.style.display = 'none';
                 } catch (eSyncEs) { }
-                if (heavy) {
-                    var pwEl = document.getElementById('ally-pw-' + idx);
-                    if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
-                    this.refreshNextAction(m, 'ally-next-' + idx, false);
-                    this.refreshFeatTable(m, 'ally-feat-' + idx);
-                }
+                var pwEl = document.getElementById('ally-pw-' + idx);
+                if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
+                this.refreshNextAction(m, 'ally-next-' + idx, false);
+                this.refreshFeatTable(m, 'ally-feat-' + idx);
                 this.updateSlotDeadState('ally-head-' + idx, isDead);
             }, this);
             // 敵方
@@ -117868,19 +117858,15 @@ window.HY = window.HY || {};
                         : (typeof e.esCurrent === 'number') ? e.esCurrent
                             : num(e.energyShield, 0),
                     num(e.energyShield, 0) || num(e.maxEs, 0));
-                if (heavy) {
-                    var ePwEl = document.getElementById('enemy-pw-' + eIdx);
-                    if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
-                    this.refreshNextAction(e, 'enemy-next-' + eIdx, true);
-                }
+                var ePwEl = document.getElementById('enemy-pw-' + eIdx);
+                if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
+                this.refreshNextAction(e, 'enemy-next-' + eIdx, true);
                 this.updateSlotDeadState('enemy-head-' + eIdx, isDead);
             }, this);
-
-            if (!heavy) return;
-
+            // 存活徽章
             var inBattle = !!combat.currentEnemy && !_inMapNow;
 
-            /* ⭐ v509/v510：戰鬥畫面同步（掛機時節流，避免每 100ms 掃整個舞台） */
+            /* ⭐ v509/v510：戰鬥畫面每 tick 同步（只更新血條／集氣／狀態圖示，不重建 DOM） */
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 var stageEl = document.getElementById('hy-battle-stage');
@@ -117889,8 +117875,7 @@ window.HY = window.HY || {};
                     BS.render(stageEl.parentNode, {
                         party: pl.party, enemies: pl.enemies,
                         id: 'hy-battle-stage', scene: pl.scene,
-                        battleSeq: Number(combat._battleSeq) || 0,
-                        skipPreload: true
+                        battleSeq: Number(combat._battleSeq) || 0
                     });
                 }
             } catch (eStage) { }
@@ -120130,8 +120115,8 @@ window.HY = window.HY || {};
         var enemies = opts.enemies || [];
         var id = opts.id || 'hy-battle-stage';
 
-        /* ⭐ v513：先預載立繪，避免首次出現時空白（ATB 高頻同步時略過） */
-        if (!opts.skipPreload) preloadUnits(party, enemies);
+        /* ⭐ v513：先預載立繪，避免首次出現時空白 */
+        preloadUnits(party, enemies);
 
         var el = document.getElementById(id);
         if (!el) {
