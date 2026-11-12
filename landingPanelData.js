@@ -5,13 +5,33 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v736 · 2026-11-12',
-        gameVer: 736,
+        newsVer: 'v738 · 2026-11-12',
+        gameVer: 738,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '武功',
+            title: '群攻隨機 3 敵 v738',
+            date: '2026-11-12',
+            bullets: [
+                '群體攻擊不再打全場，改為<b>不重複隨機至多 3 名</b>敵人',
+                '敵人 ≤3 時仍全中；群體治療仍為我方全隊',
+                '武功閣／自動戰術標示「隨機3敵」'
+            ]
+        },
+        {
+            tag: 'tune', tagLabel: '武功',
+            title: '外功耗內調整 v737',
+            date: '2026-11-12',
+            bullets: [
+                '第 <b>N</b> 式基礎耗內 = <b>N×25</b>（十式單體 250）',
+                '群體招式（aoe）耗內為同式單體的 <b>2 倍</b>',
+                '全門派外功表同步（含新四派）'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '氣血內力恢復統一 v736',

@@ -6974,7 +6974,9 @@ window.HY.Data = window.HY.Data || {};
     const Data = window.HY.Data;
     const TIER_LV   = [10, 40, 70, 100, 130, 160, 190, 220, 250, 280];
     const TIER_MULT = [1.85, 2.15, 2.45, 2.75, 3.05, 3.35, 3.65, 3.95, 4.25, 4.55];
-    const TIER_MP   = [25, 37, 49, 61, 73, 85, 97, 109, 121, 133];
+    /* 耗內：第 N 式 = N × 25；群體（aoe）為單體 2 倍 */
+    const TIER_MP   = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
+    const AOE_MP_MULT = 2;
     const TIER_SP   = [300, 900, 1800, 3200, 5000, 7500, 10500, 14500, 19500, 26000];
     const TIER_HIT  = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
     const TIER_PEN  = [0.18, 0.21, 0.24, 0.27, 0.30, 0.33, 0.36, 0.39, 0.42, 0.45];
@@ -7208,7 +7210,7 @@ window.HY.Data = window.HY.Data || {};
                 category: sectName + (isUltimate ? '鎮派絕學' : '專屬'),
                 reqLv: TIER_LV[i],
                 desc: '【' + sectName + '第 ' + (i + 1) + '式】' + desc,
-                mpCost: TIER_MP[i],
+                mpCost: Math.round(TIER_MP[i] * (m.aoe ? AOE_MP_MULT : 1)),
                 baseMult: TIER_MULT[i],
                 hitBonus: (m.hit !== undefined) ? m.hit : TIER_HIT[i],
                 armorPen: (m.pen !== undefined) ? m.pen : (m.aoe ? +(TIER_PEN[i] * 0.72).toFixed(2) : TIER_PEN[i]),
@@ -7243,7 +7245,8 @@ window.HY.Data = window.HY.Data || {};
     /* 與 externalArtsData.js 完全一致的成長曲線，確保平衡不偏離 */
     var TIER_LV   = [10, 40, 70, 100, 130, 160, 190, 220, 250, 280];
     var TIER_MULT = [1.85, 2.15, 2.45, 2.75, 3.05, 3.35, 3.65, 3.95, 4.25, 4.55];
-    var TIER_MP   = [25, 37, 49, 61, 73, 85, 97, 109, 121, 133];
+    var TIER_MP   = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
+    var AOE_MP_MULT = 2;
     var TIER_SP   = [300, 900, 1800, 3200, 5000, 7500, 10500, 14500, 19500, 26000];
     var TIER_HIT  = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
     var TIER_PEN  = [0.18, 0.21, 0.24, 0.27, 0.30, 0.33, 0.36, 0.39, 0.42, 0.45];
@@ -7554,7 +7557,7 @@ window.HY.Data = window.HY.Data || {};
                 category: sectName + (isUltimate ? '鎮派絕學' : '專屬'),
                 reqLv: TIER_LV[i],
                 desc: '【' + sectName + '第 ' + (i + 1) + '式】' + desc,
-                mpCost: TIER_MP[i],
+                mpCost: Math.round(TIER_MP[i] * (m.aoe ? AOE_MP_MULT : 1)),
                 baseMult: TIER_MULT[i],
                 hitBonus: (m.hit !== undefined) ? m.hit : TIER_HIT[i],
                 armorPen: (m.pen !== undefined) ? m.pen : (m.aoe ? +(TIER_PEN[i] * 0.72).toFixed(2) : TIER_PEN[i]),
@@ -7586,7 +7589,8 @@ window.HY.Data = window.HY.Data || {};
 
     var TIER_LV   = [10, 40, 70, 100, 130, 160, 190, 220, 250, 280];
     var TIER_MULT = [1.85, 2.15, 2.45, 2.75, 3.05, 3.35, 3.65, 3.95, 4.25, 4.55];
-    var TIER_MP   = [25, 37, 49, 61, 73, 85, 97, 109, 121, 133];
+    var TIER_MP   = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
+    var AOE_MP_MULT = 2;
     var TIER_SP   = [300, 900, 1800, 3200, 5000, 7500, 10500, 14500, 19500, 26000];
     var TIER_HIT  = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
     var TIER_PEN  = [0.18, 0.21, 0.24, 0.27, 0.30, 0.33, 0.36, 0.39, 0.42, 0.45];
@@ -7746,7 +7750,7 @@ window.HY.Data = window.HY.Data || {};
                 category: sectName + (isUltimate ? '鎮派絕學' : '專屬'),
                 reqLv: TIER_LV[i],
                 desc: '【' + sectName + '第 ' + (i + 1) + '式】' + desc,
-                mpCost: TIER_MP[i],
+                mpCost: Math.round(TIER_MP[i] * (m.aoe ? AOE_MP_MULT : 1)),
                 baseMult: TIER_MULT[i],
                 hitBonus: (m.hit !== undefined) ? m.hit : TIER_HIT[i],
                 armorPen: (m.pen !== undefined) ? m.pen : (m.aoe ? +(TIER_PEN[i] * 0.72).toFixed(2) : TIER_PEN[i]),
@@ -79566,9 +79570,24 @@ window.HY = window.HY || {};
                 (rtLv > 0 ? 0.025 + rtLv * 0.0075 : 0) +
                 ((beyondHeavLv > 0 && (art.isAoe || art.sectReq)) ? (0.06 + beyondHeavLv * 0.01) * GG_HALF : 0)
             );
-            var targetList = art.isAoe
-                ? core.enemies.filter(function (e) { return e.currentHp > 0; })
-                : [core.currentEnemy];
+            var targetList;
+            if (art.isAoe) {
+                var _aliveFoes = (core.enemies || []).filter(function (e) { return e && e.currentHp > 0; });
+                var _aoeCap = 3;
+                if (_aliveFoes.length <= _aoeCap) {
+                    targetList = _aliveFoes;
+                } else {
+                    targetList = [];
+                    var _aoePool = _aliveFoes.slice();
+                    for (var _ai = 0; _ai < _aoeCap; _ai++) {
+                        var _aj = Math.floor(Math.random() * _aoePool.length);
+                        targetList.push(_aoePool[_aj]);
+                        _aoePool.splice(_aj, 1);
+                    }
+                }
+            } else {
+                targetList = [core.currentEnemy];
+            }
             var artHitBonus = (art.hitBonus || 0) / MARTIAL_DIV;
 
             /* ⭐ v45：劍意推進（用不同招式才累積，重複同招斷鏈） */
@@ -80342,8 +80361,10 @@ window.HY = window.HY || {};
                 }
             }
             var targetDesc = (art.isAoe && targetList.length > 1)
-                ? '敵方全體 (' + targetList.length + '人) 共造成 ' + totalDealt
-                : '【' + targetList[0].name + '】造成 ' + totalDealt;
+                ? '敵方隨機 ' + targetList.length + ' 人共造成 ' + totalDealt
+                : (targetList[0]
+                    ? ('【' + targetList[0].name + '】造成 ' + totalDealt)
+                    : ('共造成 ' + totalDealt));
             var elemTag = (elemDmgTotal > 0) ? ' [' + elemLogTotal + ']' : '';
             var mpAfter = num(charObj.currentMp, 0);
             var netMp = mpAfter - mpBefore;
@@ -86489,7 +86510,7 @@ window.HY = window.HY || {};
                     const art = Data.MARTIAL_ARTS[sId];
                     const opt = document.createElement('option');
                     opt.value = sId;
-                    opt.textContent = '指定：《' + art.name + '》' + (art.isAoe ? ' [群攻]' : '');
+                    opt.textContent = '指定：《' + art.name + '》' + (art.isAoe ? ' [隨機3敵]' : '');
                     aoeEl.appendChild(opt);
                 });
                 aoeEl.value = cfg.aoeSkillId;
@@ -87448,7 +87469,7 @@ window.HY = window.HY || {};
                     tagBits.push('Lv.' + (art.reqLv || 1) + '+');
                     tagBits.push(reqSectLabel);
                     const extraBits = [];
-                    if (art.isAoe) extraBits.push('🌪️ 群攻');
+                    if (art.isAoe) extraBits.push('🌪️ 隨機3敵');
                     if (art.armorPen) extraBits.push('破甲 ' + (art.armorPen / MARTIAL_DIV * 100).toFixed(1) + '%');
                     if (art.critBonus) extraBits.push('會心 +' + (art.critBonus / MARTIAL_DIV).toFixed(1) + '%');
                     if (art.healRatio) extraBits.push('回血 ' + (art.healRatio / MARTIAL_DIV * 100).toFixed(1) + '%');
