@@ -1512,7 +1512,7 @@ window.HY = window.HY || {};
             enemyMpLvCoef: 25,               // ✖ 敵人內力等級係數
             enemyMpAtkCoef: 0.15,            // ✖ 敵人內力攻擊係數
             enemyMpRegenRatio: 0.04,         // ✖ 敵人內力回復比例
-            vitalNaturalRegenTurns: 3,       // ⚡ 氣血＋內力自然恢復：本場每 N 次出手結算（natRegenHits，每場歸零）
+            vitalNaturalRegenTurns: 2,       // ⚡ 氣血＋內力自然恢復：本場每 N 次出手結算（natRegenHits，每場歸零）
             playerHitCap: 95,                // ✖ 玩家命中上限 %
             playerHitFloorBase: 25,          // ✖ 玩家命中保底 %
             playerHitFloorWithRT: 35,        // ✖ 玩家命中保底（必中祝福）%
@@ -83813,11 +83813,11 @@ window.HY = window.HY || {};
                 } catch (eFx) { }
             });
         }
-        /** 氣血／內力自然回復週期（回合數，預設 3） */
+        /** 氣血／內力自然回復週期（回合數，預設 2） */
         naturalVitalRegenInterval() {
             var G = window.HY && window.HY.GameConfig;
-            var n = G && G.combat ? Number(G.combat.vitalNaturalRegenTurns) : 3;
-            if (!isFinite(n) || n < 1) n = 3;
+            var n = G && G.combat ? Number(G.combat.vitalNaturalRegenTurns) : 2;
+            if (!isFinite(n) || n < 1) n = 2;
             return Math.floor(n);
         }
         /** 出手拍（僅在 bumpCombatActionBeat 時 +1，與 _turnCounter 同步） */
@@ -83895,7 +83895,7 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍）；氣血／內力共用同一計次 */
+        /** 本場第 2、4、6… 次出手（natRegenHits 為 iv 整數倍）；氣血／內力共用同一計次 */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
@@ -84804,7 +84804,7 @@ window.HY = window.HY || {};
         var iv = 3;
         try {
             var G = window.HY && window.HY.GameConfig;
-            if (G && G.combat) iv = num(G.combat.vitalNaturalRegenTurns, 3);
+            if (G && G.combat) iv = num(G.combat.vitalNaturalRegenTurns, 2);
         } catch (eIv) { }
         (lines || []).forEach(function (l) {
             if (/🌿.*次出手.*自然恢復/.test(l) || /💧.*自然恢復\s*＋/.test(l)) {
@@ -84937,7 +84937,7 @@ window.HY = window.HY || {};
             battlesOut.push(row);
             if (!won) fails.push({ battle: b + 1, why: '逾時或未擊敗敵人（ticks=' + ticks + '）' });
             if (scan.badTiming.length > 0) {
-                fails.push({ battle: b + 1, why: '非第3倍數出手卻自然恢復', samples: scan.badTiming.slice(0, 2) });
+                fails.push({ battle: b + 1, why: '非週期整數倍出手卻自然恢復', samples: scan.badTiming.slice(0, 2) });
             }
             if (won && ticks >= minTicksForNat && anyRegenStat && scan.nat.length === 0) {
                 fails.push({ battle: b + 1, why: '有回復詞綴但戰報無自然恢復飄字/日誌' });
@@ -84995,7 +84995,7 @@ window.HY = window.HY || {};
             };
         };
 
-        scenario('我方：第3/6/9次出手各觸發1次', function () {
+        scenario('我方：第2/4/6次出手各觸發1次', function () {
             var u = g.charSys.state;
             if (!u) return { fail: '無主角' };
             u._battle = {};
@@ -85004,7 +85004,7 @@ window.HY = window.HY || {};
             u.maxHp = num(u.maxHp, 500);
             u.maxMp = num(u.maxMp, 300);
             var fired = 0;
-            for (var h = 1; h <= 9; h++) {
+            for (var h = 1; h <= 6; h++) {
                 core.recordAllyCombatAction(u, core._nextAllyActionToken());
                 var due = core.charNaturalRegenDue(u);
                 var hpB = u.currentHp;
@@ -85015,7 +85015,7 @@ window.HY = window.HY || {};
                 }
             }
             if (fired !== 3) return { fail: '觸發' + fired + '次，預期3次' };
-            if (num(u._battle._natRegenAtHit, 0) !== 9) {
+            if (num(u._battle._natRegenAtHit, 0) !== 6) {
                 return { fail: '_natRegenAtHit=' + u._battle._natRegenAtHit };
             }
             return null;
@@ -85033,29 +85033,29 @@ window.HY = window.HY || {};
         scenario('無實際回復量仍consume週期（內力已滿）', function () {
             var e = { id: 'e_full', name: '滿內', currentHp: 100, currentMp: 200,
                 maxHp: 100, maxMp: 200, _battle: {} };
-            for (var i = 0; i < 3; i++) {
+            for (var i = 0; i < 2; i++) {
                 core.recordCombatNatRegenAction(e, core._nextAllyActionToken(), false);
             }
             core.applyNaturalVitalRegenForUnit(e, 'foe');
-            if (num(e._battle._natRegenAtHit, 0) !== 3) {
+            if (num(e._battle._natRegenAtHit, 0) !== 2) {
                 return { fail: '_natRegenAtHit=' + e._battle._natRegenAtHit };
             }
-            if (core.charNaturalRegenDue(e)) return { fail: '第3次仍顯示due' };
+            if (core.charNaturalRegenDue(e)) return { fail: '第2次仍顯示due' };
             return null;
         });
 
-        scenario('敵方：第3次出手回內', function () {
+        scenario('敵方：第2次出手回內', function () {
             g.charSys.getDerivedStatsForChar = origDer;
             var e = { id: 'foe1', name: '敵', currentHp: 100, currentMp: 10,
                 maxHp: 100, maxMp: 200, _battle: {} };
             var regen = false;
-            for (var j = 1; j <= 3; j++) {
+            for (var j = 1; j <= 2; j++) {
                 core.recordCombatNatRegenAction(e, core._nextAllyActionToken(), false);
                 var mpB = e.currentMp;
                 core.applyNaturalVitalRegenForUnit(e, 'foe');
                 if (e.currentMp > mpB) regen = true;
             }
-            if (!regen) return { fail: '第3拍未回內' };
+            if (!regen) return { fail: '第2拍未回內' };
             return null;
         });
 
@@ -165360,14 +165360,14 @@ HY.Data.STAT_CODEX = {
                 {
                     key: 'lifeRegen', name: '氣血回復', abbr: 'HP Regen', unit: '%',
                     desc: '每回合自動回復的氣血百分比。',
-                    formula: '本場每 3 次出手回復 = 最大氣血 × 氣血回復%（vitalNaturalRegenTurns，每場歸零）',
+                    formula: '本場每 2 次出手回復 = 最大氣血 × 氣血回復%（vitalNaturalRegenTurns，每場歸零）',
                     note: '與「元炁回復」（道途屬性）相加計算。',
                     tags: ['續戰', '回復']
                 },
                 {
                     key: 'manaRegen', name: '內力回復', abbr: 'MP Regen', unit: '%',
                     desc: '每回合自動回復的內力百分比。',
-                    formula: '本場每 3 次出手回復 = 最大內力 × 內力回復%（vitalNaturalRegenTurns，每場歸零）',
+                    formula: '本場每 2 次出手回復 = 最大內力 × 內力回復%（vitalNaturalRegenTurns，每場歸零）',
                     note: '高耗內流派必備。',
                     tags: ['續戰', '回復']
                 },

@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v739 · 2026-11-12',
-        gameVer: 739,
+        newsVer: 'v740 · 2026-11-12',
+        gameVer: 740,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '戰鬥',
+            title: '自然恢復改回 2 拍 v740',
+            date: '2026-11-12',
+            bullets: [
+                '<b>vitalNaturalRegenTurns</b> 預設改回 <b>2</b>（每 2 次出手結算氣血／內力）',
+                '戰報仍顯示「每 N 次集氣滿」；屬性圖鑑公式同步',
+                '自測 <b>HY.benchNatRegen</b> 情境已對齊 2 拍週期'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然恢復實測 v739',
