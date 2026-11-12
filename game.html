@@ -118890,8 +118890,9 @@ window.HY = window.HY || {};
 
         /* ── 單一單位 ── */
         '.hy-stage-unit{position:relative;flex:0 0 auto;display:flex;flex-direction:column;' +
-            'align-items:center;justify-content:flex-end;transition:opacity .2s,filter .2s;' +
-            'animation:hy-stage-in .34s ease-out both;}',
+            'align-items:center;justify-content:flex-end;transition:opacity .2s,filter .2s;}',
+        /* 僅手動加 .enter-fx 時淡入；預設不播，避免每場開戰立繪上跳 */
+        '.hy-stage-unit.enter-fx{animation:hy-stage-in .34s ease-out both;}',
         '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-wrap,' +
             '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .dyn-vid,' +
             '.hy-stage-side .hy-stage-unit:not(.shj-mega-foe):not(.rboss-mega-foe) > .hy-stage-img,' +
@@ -120226,16 +120227,28 @@ window.HY = window.HY || {};
         var newBattle = battleSeq > 0 && el.__battleSeq !== battleSeq;
 
         var hadStage = !!el.querySelector('.hy-stage-side.ally');
-        var needFull = !hadStage || newBattle;
+        /* ⭐ v723：新開戰不要整桌 innerHTML —— 否則我方立繪/影片重建會「跳一下」
+           （v533 分側更新本意就是換怪不動我方） */
+        var needFull = !hadStage;
+        var forcedFoeRebuild = false;
         if (needFull) {
             el.innerHTML = buildHtml(party, enemies);
             el.setAttribute('data-ally-sig', allySig);
             el.setAttribute('data-foe-sig', foeSig);
             if (battleSeq > 0) el.__battleSeq = battleSeq;
+        } else if (newBattle && battleSeq > 0) {
+            el.__battleSeq = battleSeq;
+            /* 新場次必刷新敵方（sig 相同也要換新怪），我方 DOM 保留 */
+            var foeBoxNew = el.querySelector('.hy-stage-side.foe');
+            if (foeBoxNew) {
+                foeBoxNew.innerHTML = sideHtml(enemies, 'foe');
+                el.setAttribute('data-foe-sig', foeSig);
+                forcedFoeRebuild = true;
+            }
         }
 
         var rebuiltAlly = needFull;
-        var rebuiltFoe = needFull;
+        var rebuiltFoe = needFull || forcedFoeRebuild;
 
         if (!needFull && el.getAttribute('data-ally-sig') !== allySig) {
             var allyBox = el.querySelector('.hy-stage-side.ally');
@@ -120326,16 +120339,15 @@ window.HY = window.HY || {};
 
         if (rebuilt) {
             SNAPSHOT[id] = null;   /* 重建後不做血量差異比對 */
-
-            /* ⭐ v513：新陣容 → 進場動畫（該側從畫面外滑入）
-               ⚠️ v533：只讓【重建的那一側】滑入，避免我方也跟著重播 */
-            var su = el.querySelectorAll('.hy-stage-side.' +
-                (rebuiltAlly ? 'ally' : 'foe') + ' .hy-stage-unit');
-            for (var si = 0; si < su.length; si++) {
-                su[si].classList.add('slide-in');
+        }
+        /* 新場敵方滑入（我方不自動 slide-in，避免掛機連刷立繪跳動） */
+        if (rebuiltFoe && !rebuiltAlly) {
+            var suF = el.querySelectorAll('.hy-stage-side.foe .hy-stage-unit');
+            for (var sfi = 0; sfi < suF.length; sfi++) {
+                suF[sfi].classList.add('slide-in');
                 (function (nd) {
                     setTimeout(function () { nd.classList.remove('slide-in'); }, 560);
-                })(su[si]);
+                })(suF[sfi]);
             }
         }
 
