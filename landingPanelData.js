@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v729 · 2026-11-12',
-        gameVer: 729,
+        newsVer: 'v730 · 2026-11-12',
+        gameVer: 730,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '自然回復：每場從 0 計、飄字補強',
+            date: '2026-11-12',
+            bullets: [
+                '自然恢復改讀 <b>natRegenHits</b>（本場第 3、6、9… 次出手），<b>每場新戰歸零</b>；門派 yyHits 仍跨場累積',
+                '內力自然恢復改直接播九宮格飄字，不再被 UI 連刷吃掉',
+                '擊中回血／擊中回內飄字改<b>右上角</b>；補上擊中回內結算'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復：自身每 3 次出手',
