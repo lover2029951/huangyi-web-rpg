@@ -1512,7 +1512,7 @@ window.HY = window.HY || {};
             enemyMpLvCoef: 25,               // ✖ 敵人內力等級係數
             enemyMpAtkCoef: 0.15,            // ✖ 敵人內力攻擊係數
             enemyMpRegenRatio: 0.04,         // ✖ 敵人內力回復比例
-            vitalNaturalRegenTurns: 3,       // ⚡ 氣血／內力「自然回復」週期（每 N 回合結算一次）
+            vitalNaturalRegenTurns: 3,       // ⚡ 氣血＋內力自然恢復：每 N 次出手（回合）結算一次（預設 3）
             playerHitCap: 95,                // ✖ 玩家命中上限 %
             playerHitFloorBase: 25,          // ✖ 玩家命中保底 %
             playerHitFloorWithRT: 35,        // ✖ 玩家命中保底（必中祝福）%
@@ -83552,7 +83552,7 @@ window.HY = window.HY || {};
             if (!g || !g.charSys) return;
             var iv = this.naturalVitalRegenInterval();
             var beat = this.vitalRegenBeat();
-            this.log('🌿 自然回復結算（出手第 ' + beat + ' 拍／週期 ' + iv + ' 拍；設定 combat.vitalNaturalRegenTurns=' + iv + '）', 'combat');
+            this.log('🌿 自然回復結算（第 ' + beat + ' 回合出手／每 ' + iv + ' 回合恢復一次氣血與內力）', 'combat');
             var _psR = g.partySys;
             var _memR = _psR && _psR.getPartyMembers ? _psR.getPartyMembers() : [];
             _memR.push(g.charSys.state);
