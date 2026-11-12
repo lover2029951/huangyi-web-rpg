@@ -118840,7 +118840,7 @@ window.HY = window.HY || {};
 (function (HY) {
     'use strict';
 
-    var STYLE_ID = 'hy-battle-stage-css-v727';
+    var STYLE_ID = 'hy-battle-stage-css-v734';
     var SPRITE_DIR = 'assets/sprites/';
 
     /* 各舞台的上一輪快照（用於偵測血量變化 → 觸發打擊特效） */
@@ -119864,13 +119864,8 @@ window.HY = window.HY || {};
            ⭐ v521：已移除（使用者要求），CSS 一併清除 */
 
 
-        /* ⭐ v510：鎖定準心（點擊集火的目標） */
-        '.hy-stage-unit.is-target::before{content:"";position:absolute;left:50%;top:50%;' +
-            'width:calc(var(--h,180px) * .78);height:calc(var(--h,180px) * .78);' +
-            'transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:1;' +
-            'border:2px dashed rgba(251,191,36,.85);' +
-            'box-shadow:0 0 18px rgba(251,191,36,.55),inset 0 0 18px rgba(251,191,36,.28);' +
-            'animation:hy-target-spin 5.5s linear infinite;}',
+        /* ⭐ v734：集火準心圈已關閉（保留名稱旁 🎯） */
+        '.hy-stage-unit.is-target::before{display:none !important;content:none !important;}',
         '@keyframes hy-target-spin{to{transform:translate(-50%,-50%) rotate(360deg);}}',
         '.hy-stage-unit.is-target .hy-stage-nm{color:#fbbf24 !important;}',
         '.hy-stage-unit.is-target .hy-stage-nm::after{content:" 🎯";}',
@@ -120048,21 +120043,8 @@ window.HY = window.HY || {};
         '@keyframes hy-slide-l{from{opacity:0;transform:translateX(64px);}' +
             '60%{opacity:1;}to{opacity:1;transform:translateX(0);}}',
 
-        /* ⭐ v513：技能圖示光效（旋轉符文環） */
-        '.hy-stage-rune{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none;' +
-            'width:calc(var(--h,270px) * .95);height:calc(var(--h,270px) * .95);' +
-            'margin:calc(var(--h,270px) * -.475) 0 0 calc(var(--h,270px) * -.475);' +
-            'border-radius:50%;' +
-            'border:2px dashed var(--rune-col,#a78bfa);' +
-            'box-shadow:0 0 20px var(--rune-col,#a78bfa),inset 0 0 26px var(--rune-col,#a78bfa);' +
-            'animation:hy-rune-spin 1.05s linear;opacity:0;}',
-        '.hy-stage-rune::before{content:"";position:absolute;inset:12%;border-radius:50%;' +
-            'border:1px solid var(--rune-col,#a78bfa);opacity:.55;' +
-            'animation:hy-rune-spin 1.6s linear reverse;}',
-        '@keyframes hy-rune-spin{0%{opacity:0;transform:rotate(0deg) scale(.72);}' +
-            '16%{opacity:1;}' +
-            '74%{opacity:.85;}' +
-            '100%{opacity:0;transform:rotate(300deg) scale(1.12);}}',
+        /* ⭐ v734：技能旋轉符文環已關閉（使用者要求取消角色戰鬥圈圈） */
+        '.hy-stage-rune{display:none !important;}',
 
         /* ⭐ v513：受擊部位局部爆閃（比整體紅閃更精準） */
         '.hy-fx-hitspot{position:absolute;z-index:6;pointer-events:none;' +
@@ -122024,15 +122006,9 @@ window.HY = window.HY || {};
         setTimeout(function () { giveNode(star); }, 340);
     }
 
-    /** ⭐ v513：技能符文光效（施放大招時立繪周圍旋轉光環） */
+    /** ⭐ v734：技能符文環已停用（保留空函式避免呼叫端報錯） */
     function playRune(node, element) {
-        if (!node) return;
-        var es = elemStyle(element);
-        var col = es ? es.core : '#a78bfa';
-        var r = takeNode('hy-stage-rune');
-        r.style.setProperty('--rune-col', col);
-        node.appendChild(r);
-        setTimeout(function () { giveNode(r); }, 1100);
+        void node; void element;
     }
 
     function playHit(el, node, side, i, dmg, crit, actorNode, element, skillName) {

@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v733 · 2026-11-12',
-        gameVer: 733,
+        newsVer: 'v734 · 2026-11-12',
+        gameVer: 734,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'ui', tagLabel: '戰鬥',
+            title: '取消角色戰鬥圈圈',
+            date: '2026-11-12',
+            bullets: [
+                '關閉出招時立繪外圈的<b>旋轉符文環</b>（技能名稱仍顯示）',
+                '關閉集火目標的<b>虛線準心圈</b>（名稱旁 🎯 保留）'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '戰鬥',
             title: '自然回復 v733：飄字＋第 3 次出手',
