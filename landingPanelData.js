@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v740 · 2026-11-12',
-        gameVer: 740,
+        newsVer: 'v741 · 2026-11-13',
+        gameVer: 741,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'ui', tagLabel: '戰鬥',
+            title: '治療飄字對齊名字 v741',
+            date: '2026-11-13',
+            bullets: [
+                '補血／自然恢復／回內等<b>治療數字</b>改顯示在<b>角色名稱</b>位置',
+                '偷取、擊中恢復仍顯示在格子右上角',
+                '多段治療會自名字處略往上錯開'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '戰鬥',
             title: '自然恢復改回 2 拍 v740',

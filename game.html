@@ -119873,19 +119873,32 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.onHitVital .fx-src{color:#bbf7d0;}',
         '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
             'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
-        /* ⭐ v727：自然恢復→左上；偷取／擊中恢復→右上（相對 .hy-stage-fx-layer） */
-        '.hy-stage-fx-layer .hy-fx-dmg.fx-tl{left:0;top:0;right:auto;margin:0;padding:0;' +
-            'transform:translate(var(--dx,0),var(--dy,0));transform-origin:left top;' +
-            'align-items:flex-start;text-align:left;' +
-            'animation:hy-fx-rise-tl 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        /* ⭐ v741：治療／自然恢復→名字牌；偷取／擊中恢復→右上（相對 .hy-stage-fx-layer） */
+        '.hy-stage-tag{overflow:visible;}',
+        '.hy-stage-tag-fx{position:absolute;left:0;right:0;z-index:8;pointer-events:none;' +
+            'overflow:visible;height:0;}',
+        '.hy-stage-tag-fx .hy-fx-dmg.fx-nm{left:50%;top:0;right:auto;margin:0;padding:0;' +
+            'transform:translate(calc(-50% + var(--dx,0)),calc(-50% + var(--dy,0)));' +
+            'transform-origin:center center;align-items:center;text-align:center;' +
+            'animation:hy-fx-rise-nm 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.fx-nm.has-src{align-items:center;}',
+        '.hy-fx-dmg.fx-nm{font-size:1.12rem;}',
+        '.hy-fx-dmg.fx-nm .fx-src{max-width:6.5em;font-size:.62rem;}',
+        '@keyframes hy-fx-rise-nm{0%{opacity:0;transform:translate(calc(-50% + var(--dx,0)),' +
+            'calc(-42% + var(--dy,0))) scale(.65);}' +
+            '14%{opacity:1;transform:translate(calc(-50% + var(--dx,0)),' +
+            'calc(-58% + var(--dy,0))) scale(1.12);}' +
+            '72%{opacity:1;transform:translate(calc(-50% + var(--dx,0)),' +
+            'calc(-72% + var(--dy,0))) scale(1);}' +
+            '100%{opacity:0;transform:translate(calc(-50% + var(--dx,0)),' +
+            'calc(-88% + var(--dy,0))) scale(.92);}}',
         '.hy-stage-fx-layer .hy-fx-dmg.fx-tr{left:auto;right:0;top:0;margin:0;padding:0;' +
             'transform:translate(var(--dx,0),var(--dy,0));transform-origin:right top;' +
             'align-items:flex-end;text-align:right;' +
             'animation:hy-fx-rise-tr 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
-        '.hy-fx-dmg.fx-tl.has-src{align-items:flex-start;}',
         '.hy-fx-dmg.fx-tr.has-src{align-items:flex-end;}',
-        '.hy-fx-dmg.fx-tl,.hy-fx-dmg.fx-tr{font-size:1.12rem;}',
-        '.hy-fx-dmg.fx-tl .fx-src,.hy-fx-dmg.fx-tr .fx-src{max-width:5.5em;font-size:.62rem;' +
+        '.hy-fx-dmg.fx-tr{font-size:1.12rem;}',
+        '.hy-fx-dmg.fx-tr .fx-src{max-width:5.5em;font-size:.62rem;' +
             'align-self:stretch;text-align:inherit;}',
         '@keyframes hy-fx-rise-tl{0%{opacity:0;transform:translate(var(--dx,0),calc(6px + var(--dy,0))) scale(.65);}' +
             '14%{opacity:1;transform:translate(var(--dx,0),calc(-2px + var(--dy,0))) scale(1.12);}' +
@@ -122300,12 +122313,14 @@ window.HY = window.HY || {};
         numEl.textContent = text;
     }
 
-    /** 恢復類→左上；偷取類→右上；其餘維持頭頂中央 */
+    /** 治療／自然恢復→名字牌；偷取／擊中恢復→右上；其餘維持頭頂中央 */
     function floatCornerForKind(kind) {
         if (!kind) return '';
         if (kind === 'stealVital' || kind === 'onHitVital') return 'fx-tr';
         if (kind.indexOf('steal') === 0 || kind.indexOf('onHit') === 0) return 'fx-tr';
-        if (kind === 'regenVital' || kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') return 'fx-tl';
+        if (kind === 'regenVital' || kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') {
+            return 'fx-nm';
+        }
         return '';
     }
 
@@ -122322,15 +122337,37 @@ window.HY = window.HY || {};
         return layer;
     }
 
+    /** 治療飄字錨在 .hy-stage-nm 垂直中心 */
+    function fxNameHost(unitNode) {
+        if (!unitNode) return null;
+        var tag = unitNode.querySelector(':scope > .hy-stage-tag');
+        var nm = tag && tag.querySelector('.hy-stage-nm');
+        if (!tag || !nm) return fxGridHost(unitNode);
+        var layer = tag.querySelector(':scope > .hy-stage-tag-fx');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.className = 'hy-stage-tag-fx';
+            layer.setAttribute('aria-hidden', 'true');
+            tag.appendChild(layer);
+        }
+        try {
+            var tagRect = tag.getBoundingClientRect();
+            var nmRect = nm.getBoundingClientRect();
+            var cy = (nmRect.top - tagRect.top) + (nmRect.height * 0.5);
+            layer.style.top = Math.round(cy) + 'px';
+        } catch (ePos) { }
+        return layer;
+    }
+
   /** ⭐ v513：飄字（改用物件池）
         ⭐ v517：加入水平抖動、垂直錯開與「同目標短時間累積」 */
     function floatText(node, text, kind, meta) {
         if (!node) return;
         meta = meta || null;
         var cornerPre = floatCornerForKind(kind);
-        var host = (cornerPre === 'fx-tl' || cornerPre === 'fx-tr')
-            ? (fxGridHost(node) || node)
-            : node;
+        var host = node;
+        if (cornerPre === 'fx-nm') host = fxNameHost(node) || node;
+        else if (cornerPre === 'fx-tr') host = fxGridHost(node) || node;
 
         /* 自然／偷取／擊中：同格 1.2s 內不重播同類飄字 */
         if (kind === 'regenHp' || kind === 'regenMp' || kind === 'regenVital'
@@ -122375,9 +122412,9 @@ window.HY = window.HY || {};
         var stack = (stackMap[stackKey] = ((stackMap[stackKey] || 0) + 1) % 4);
         var dx;
         var dy;
-        if (corner === 'fx-tl') {
+        if (corner === 'fx-nm') {
             dx = '0';
-            dy = String(stack * 14);
+            dy = String(-stack * 15);
         } else if (corner === 'fx-tr') {
             dx = '0';
             dy = String(stack * 14);
