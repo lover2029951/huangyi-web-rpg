@@ -79255,15 +79255,26 @@ window.HY = window.HY || {};
             }
             var aIdx = core.allyStageIndex(charObj);
             var _cid = charObj.id;
-            if (hp > 0) {
-                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxHp, 'hp'), {
-                    skill: fxHp && fxHp.skill, label: fxHp && fxHp.label, charId: _cid
+            var bundle = CombatPlayerTurn._vitalBundleKind(
+                (fxHp && fxHp.vitalKind) || (fxMp && fxMp.vitalKind));
+            if (bundle) {
+                var fxSrc = fxHp || fxMp || {};
+                CombatPlayerTurn._markVitalBundle(core, 'ally', aIdx, bundle, hp, mp, {
+                    skill: fxSrc.skill || '',
+                    label: fxSrc.label || CombatPlayerTurn._vitalBundleLabel(bundle),
+                    charId: _cid
                 });
-            }
-            if (mp > 0) {
-                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxMp, 'mp'), {
-                    skill: fxMp && fxMp.skill, label: (fxMp && fxMp.label) || '內力恢復', charId: _cid
-                });
+            } else {
+                if (hp > 0) {
+                    core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxHp, 'hp'), {
+                        skill: fxHp && fxHp.skill, label: fxHp && fxHp.label, charId: _cid
+                    });
+                }
+                if (mp > 0) {
+                    core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxMp, 'mp'), {
+                        skill: fxMp && fxMp.skill, label: (fxMp && fxMp.label) || '內力恢復', charId: _cid
+                    });
+                }
             }
             core.charSys.restoreVitals(hp, mp, charObj);
             core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
@@ -79271,7 +79282,7 @@ window.HY = window.HY || {};
                 try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
             }
         }
-        /** 偷取類：當回合立即加氣血／內力並標記舞台飄字（不進下回合佇列） */
+        /** 偷取／擊中：當回合立即加氣血＋內力（同一標記、一次 restore） */
         applyVitalNow(charObj, hp, mp, fxMeta) {
             if (!charObj) return;
             var h = Math.max(0, Math.floor(num(hp, 0)));
@@ -79285,33 +79296,66 @@ window.HY = window.HY || {};
             var aIdx = core.allyStageIndex(charObj);
             var fx = fxMeta || {};
             var _cid2 = charObj.id;
-            if (h > 0) {
-                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'hp'), {
-                    skill: fx.skill || '', label: fx.label || '', charId: _cid2
+            var bundle = CombatPlayerTurn._vitalBundleKind(fx.vitalKind);
+            if (bundle) {
+                CombatPlayerTurn._markVitalBundle(core, 'ally', aIdx, bundle, h, m, {
+                    skill: fx.skill || '',
+                    label: fx.label || CombatPlayerTurn._vitalBundleLabel(bundle),
+                    charId: _cid2
                 });
-            }
-            if (m > 0) {
-                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'mp'), {
-                    skill: fx.skill || '', label: fx.label || '', charId: _cid2
-                });
+            } else {
+                if (h > 0) {
+                    core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'hp'), {
+                        skill: fx.skill || '', label: fx.label || '', charId: _cid2
+                    });
+                }
+                if (m > 0) {
+                    core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'mp'), {
+                        skill: fx.skill || '', label: fx.label || '', charId: _cid2
+                    });
+                }
             }
             core.charSys.restoreVitals(h, m, charObj);
         }
         applyHeal(charObj, hp, mp, fxMeta) {
-            var vk = fxMeta && fxMeta.vitalKind;
-            if (vk === 'stealHp' || vk === 'stealMp') {
-                this.applyVitalNow(charObj, hp, mp, fxMeta);
+            var bundle = CombatPlayerTurn._vitalBundleKind(fxMeta && fxMeta.vitalKind);
+            if (bundle === 'stealVital' || bundle === 'onHitVital') {
+                var fx2 = Object.assign({}, fxMeta || {}, { vitalKind: bundle });
+                this.applyVitalNow(charObj, hp, mp, fx2);
                 return;
             }
             this.queueVitalRestore(charObj, hp, mp, fxMeta);
         }
+        /** 自然／偷取／擊中：氣血＋內力共用標記種類 */
+        static _vitalBundleKind(vitalKind) {
+            if (!vitalKind) return null;
+            if (vitalKind === 'stealHp' || vitalKind === 'stealMp' || vitalKind === 'stealVital') return 'stealVital';
+            if (vitalKind === 'onHitHp' || vitalKind === 'onHitMp' || vitalKind === 'onHitVital') return 'onHitVital';
+            if (vitalKind === 'regenHp' || vitalKind === 'regenMp' || vitalKind === 'regenVital') return 'regenVital';
+            return null;
+        }
+        static _vitalBundleLabel(bundle) {
+            if (bundle === 'stealVital') return '偷取';
+            if (bundle === 'onHitVital') return '擊中恢復';
+            if (bundle === 'regenVital') return '自然恢復';
+            return '';
+        }
+        static _markVitalBundle(core, side, index, bundle, hp, mp, opts) {
+            opts = opts || {};
+            core.markStageFx(side, index, bundle, {
+                skill: opts.skill || '',
+                label: opts.label || CombatPlayerTurn._vitalBundleLabel(bundle),
+                charId: opts.charId,
+                hp: Math.max(0, Math.floor(num(hp, 0))),
+                mp: Math.max(0, Math.floor(num(mp, 0)))
+            });
+        }
         static _vitalFxKind(fx, channel) {
             var k = (fx && fx.vitalKind) || 'heal';
+            var bundle = CombatPlayerTurn._vitalBundleKind(k);
+            if (bundle) return bundle;
             if (k === 'heal') return channel === 'mp' ? 'healMp' : 'heal';
-            if (k === 'healMp' || k === 'stealHp' || k === 'stealMp' || k === 'regenHp' || k === 'regenMp'
-                || k === 'onHitHp' || k === 'onHitMp') {
-                return k;
-            }
+            if (k === 'healMp') return 'healMp';
             return channel === 'mp' ? 'healMp' : 'heal';
         }
         /* ══════════════════════════════════════════════════════════════
@@ -80045,12 +80089,9 @@ window.HY = window.HY || {};
                         if (_dr && _dr.drained) {
                             var _heal = Math.floor(stats.maxHp * ((_dp && _dp.healPerAbsorb) || 0.04));
                             if (_heal > 0) {
-                                charObj.currentHp = Math.min(stats.maxHp, charObj.currentHp + _heal);
-                                try {
-                                    core.markStageFx('ally', core.allyStageIndex(charObj), 'stealHp', {
-                                        label: '奪元吸取', skill: art.name
-                                    });
-                                } catch (eMk2) { }
+                                this.applyVitalNow(charObj, _heal, 0, {
+                                    vitalKind: 'stealVital', label: '奪元吸取', skill: art.name
+                                });
                             }
                             elemLogTotal += ' [🌀奪元吸取【' + _dr.name + '】+' + _heal + '血（' + _dr.stacks + '/5）]';
                         }
@@ -80161,37 +80202,37 @@ window.HY = window.HY || {};
             var poeLeechPct = num(stats.lifeLeech, 0) / 100;
             totalLeechRatio += poeLeechPct;
             var leechText = '';
+            var leechHp = 0;
+            var leechMp = 0;
             if (totalLeechRatio > 0 && totalDealt > 0) {
-                var leechHp = Math.max(2, Math.floor(totalDealt * totalLeechRatio));
-                this.applyHeal(charObj, leechHp, 0, {
-                    vitalKind: 'stealHp', label: '氣血偷取', skill: art.name
-                });
-                leechText = ' [🩸吸血+' + leechHp + ']';
+                leechHp = Math.max(2, Math.floor(totalDealt * totalLeechRatio));
             }
             var poeManaLeechPct = num(stats.manaLeech, 0) / 100;
             if (poeManaLeechPct > 0 && totalDealt > 0) {
-                var leechMp = Math.max(1, Math.floor(totalDealt * poeManaLeechPct));
-                this.applyVitalNow(charObj, 0, leechMp, {
-                    vitalKind: 'stealMp', label: '內力偷取', skill: art.name
+                leechMp = Math.max(1, Math.floor(totalDealt * poeManaLeechPct));
+            }
+            if (leechHp > 0 || leechMp > 0) {
+                this.applyVitalNow(charObj, leechHp, leechMp, {
+                    vitalKind: 'stealVital', label: '偷取', skill: art.name
                 });
-                leechText += ' [💧內力偷取+' + leechMp + ']';
+                if (leechHp > 0) leechText += ' [🩸吸血+' + leechHp + ']';
+                if (leechMp > 0) leechText += ' [💧內力偷取+' + leechMp + ']';
             }
             /* ⭐ 擊中回血（固定值，每命中一次回一次，上限 totalDealt 的 25% 避免過強） */
             var onHitHp = Math.floor(num(stats.lifeOnHit, 0)) * Math.max(1, targetList.length - missCount);
             if (onHitHp > 0) {
                 onHitHp = Math.min(onHitHp, Math.max(1, Math.floor(totalDealt * 0.25)));
-                this.applyVitalNow(charObj, onHitHp, 0, {
-                    vitalKind: 'onHitHp', label: '擊中回血', skill: art.name
-                });
-                leechText += ' [💚擊中+' + onHitHp + ']';
             }
             var onHitMp = Math.floor(num(stats.manaOnHit, 0)) * Math.max(1, targetList.length - missCount);
             if (onHitMp > 0) {
                 onHitMp = Math.min(onHitMp, Math.max(1, Math.floor(totalDealt * 0.25)));
-                this.applyVitalNow(charObj, 0, onHitMp, {
-                    vitalKind: 'onHitMp', label: '擊中回內', skill: art.name
+            }
+            if (onHitHp > 0 || onHitMp > 0) {
+                this.applyVitalNow(charObj, onHitHp, onHitMp, {
+                    vitalKind: 'onHitVital', label: '擊中恢復', skill: art.name
                 });
-                leechText += ' [💧擊中回內+' + onHitMp + ']';
+                if (onHitHp > 0) leechText += ' [💚擊中+' + onHitHp + ']';
+                if (onHitMp > 0) leechText += ' [💧擊中回內+' + onHitMp + ']';
             }
             /* 擊殺回血（本次攻擊有敵人死亡才觸發） */
             var killedNow = 0;
@@ -80841,8 +80882,9 @@ window.HY = window.HY || {};
                     } else {
                         enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + _revDr.healed);
                         try {
-                            core.markStageFx('foe', core.foeStageIndex(enemy), 'stealHp', {
-                                label: '吸元', skill: chosenSkill ? chosenSkill.name : ''
+                            core.markStageFx('foe', core.foeStageIndex(enemy), 'stealVital', {
+                                label: '吸元', skill: chosenSkill ? chosenSkill.name : '',
+                                hp: _revDr.healed, mp: 0
                             });
                         } catch (eDrFx) { }
                         extraMsg += ' [吸元 +' + _revDr.healed + 'HP]';
@@ -83793,20 +83835,24 @@ window.HY = window.HY || {};
             var b = char._battle || (char._battle = {});
             b.yyHits = num(b.yyHits, 0) + 1;
         }
-        /** 一次完整出手：門派 yyHits + 本場 natRegenHits（各 +1；同 token 不重複） */
-        recordAllyCombatAction(char, actionToken) {
-            if (!char) return;
+        /** 本場出手 +1（自然恢復計次）；我方另計 yyHits（同 token 不重複） */
+        recordCombatNatRegenAction(unit, actionToken, asAlly) {
+            if (!unit) return;
             var token = (actionToken != null) ? actionToken : this._nextAllyActionToken();
-            var b = char._battle || (char._battle = {});
+            var b = unit._battle || (unit._battle = {});
             if (b._natRegenLastToken === token) return;
             b._natRegenLastToken = token;
-            this.bumpCharYyHits(char);
+            if (asAlly) this.bumpCharYyHits(unit);
             b.natRegenHits = num(b.natRegenHits, 0) + 1;
         }
-        /** 出手結束後處理（自然回復僅跟隨該角色自身出手，不依全場拍鎖） */
+        /** 一次完整出手：門派 yyHits + 本場 natRegenHits（各 +1；同 token 不重複） */
+        recordAllyCombatAction(char, actionToken) {
+            this.recordCombatNatRegenAction(char, actionToken, true);
+        }
+        /** 出手結束後：氣血＋內力自然恢復同一拍、同一次結算 */
         afterCombatActionBeat(side, actor) {
-            if (side === 'ally' && actor) {
-                this.applyNaturalVitalRegenForChar(actor);
+            if (actor) {
+                this.applyNaturalVitalRegenForUnit(actor, side === 'foe' ? 'foe' : 'ally');
                 return;
             }
             var beat = this.vitalRegenBeat();
@@ -83840,7 +83886,7 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 我方：本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍） */
+        /** 本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍）；氣血／內力共用同一計次 */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
@@ -83848,6 +83894,61 @@ window.HY = window.HY || {};
             if (hits < iv || (hits % iv) !== 0) return false;
             var b = char._battle || {};
             return num(b._natRegenAtHit, 0) !== hits;
+        }
+        _unitIsAllyChar(unit) {
+            if (!unit) return false;
+            var g = window.HY.game;
+            if (!g || !g.charSys) return false;
+            if (g.charSys.state && (g.charSys.state === unit || g.charSys.state.id === unit.id)) return true;
+            var ps = g.partySys;
+            if (!ps || typeof ps.getPartyMembers !== 'function') return false;
+            var mem = ps.getPartyMembers();
+            for (var i = 0; i < mem.length; i++) {
+                if (mem[i] && mem[i].id === unit.id) return true;
+            }
+            return false;
+        }
+        /** 氣血／內力自然恢復量（同一函式一次算完） */
+        computeNaturalVitalRegenGains(unit) {
+            var hpGain = 0;
+            var mpGain = 0;
+            if (!unit || unit.currentHp <= 0) return { hp: 0, mp: 0 };
+            var g = window.HY.game;
+            var isAlly = this._unitIsAllyChar(unit);
+            if (isAlly && g && g.charSys) {
+                var _d = g.charSys.getDerivedStatsForChar(unit);
+                if (!_d) return { hp: 0, mp: 0 };
+                var _mpRate = num(_d.manaRegen, 0);
+                var _mpFlat = num(_d.manaRegenFlat, 0);
+                if (_mpRate > 0 || _mpFlat > 0) {
+                    mpGain = Math.floor(num(_d.maxMp, 0) * (_mpRate / 100) * 0.15 + _mpFlat * 0.3);
+                }
+                var _hpRate = num(_d.lifeRegen, 0);
+                if (_hpRate > 0) {
+                    hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
+                }
+                if (mpGain > 0) {
+                    mpGain = Math.min(mpGain, Math.max(0, num(_d.maxMp, 0) - num(unit.currentMp, 0)));
+                }
+                if (hpGain > 0) {
+                    hpGain = Math.min(hpGain, Math.max(0, num(_d.maxHp, 0) - num(unit.currentHp, 0)));
+                }
+                return { hp: hpGain, mp: mpGain };
+            }
+            /* 敵方：沿用舊版內力自然恢復比例（無天賦條時僅回內力） */
+            var maxMp = num(unit.maxMp, 0);
+            var curMp = num(unit.currentMp, 0);
+            if (maxMp <= 0 || curMp >= maxMp) return { hp: 0, mp: 0 };
+            var ratio = 0.04;
+            try {
+                var G = window.HY && window.HY.GameConfig;
+                if (G && G.combat && typeof G.combat.enemyMpRegenRatio === 'number') {
+                    ratio = G.combat.enemyMpRegenRatio;
+                }
+            } catch (eCfg) { }
+            mpGain = Math.max(1, Math.floor(maxMp * ratio));
+            mpGain = Math.min(mpGain, Math.max(0, maxMp - curMp));
+            return { hp: 0, mp: mpGain };
         }
         /** 立刻在九宮格播恢復飄字（優先 charId 對位；佇列在舞台同步後補播） */
         playAllyVitalStageFx(charObj, amount, kind, label) {
@@ -83870,62 +83971,68 @@ window.HY = window.HY || {};
             }
         }
         tryClaimEnemyMpNaturalRegen(enemy) {
-            if (!enemy || !this.isEnemyNaturalMpRegenTurn(enemy)) return false;
-            enemy._natMpRegenPhase = this.naturalRegenPhase();
-            return true;
+            return !!(enemy && this.charNaturalRegenDue(enemy));
         }
-        /** 單角色氣血／內力自然回復（天賦 lifeRegen / manaRegen）；週期＝自身每 N 次出手 */
-        applyNaturalVitalRegenForChar(mm) {
-            if (!this.charNaturalRegenDue(mm)) return;
-            var g = window.HY.game;
-            if (!g || !g.charSys || !mm || mm.currentHp <= 0) return;
-            var iv = this.naturalVitalRegenInterval();
-            var hits = this.charNatRegenHits(mm);
+        playNaturalVitalStageFx(unit, side, hpGain, mpGain) {
+            if (!unit || (hpGain <= 0 && mpGain <= 0)) return;
             var self = this;
-            var _d = g.charSys.getDerivedStatsForChar(mm);
-            if (!_d) return;
-            var _mpGain = 0, _hpGain = 0;
-            var _mpRate = num(_d.manaRegen, 0);
-            var _mpFlat = num(_d.manaRegenFlat, 0);
-            if (_mpRate > 0 || _mpFlat > 0) {
-                _mpGain = Math.floor(num(_d.maxMp, 0) * (_mpRate / 100) * 0.15 + _mpFlat * 0.3);
+            var idx = side === 'foe' ? self.foeStageIndex(unit) : self.allyStageIndex(unit);
+            var meta = { label: '自然恢復', charId: unit.id, hp: hpGain, mp: mpGain };
+            self.markStageFx(side, idx, 'regenVital', meta);
+            var showAmt = hpGain + mpGain;
+            if (side === 'ally') {
+                self.playAllyVitalStageFx(unit, showAmt, 'regenVital', '自然恢復');
+                return;
             }
-            var _hpRate = num(_d.lifeRegen, 0);
-            if (_hpRate > 0) {
-                _hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
-            }
-            if (_mpGain > 0) {
-                _mpGain = Math.min(_mpGain, Math.max(0, num(_d.maxMp, 0) - num(mm.currentMp, 0)));
-            }
-            if (_hpGain > 0) {
-                _hpGain = Math.min(_hpGain, Math.max(0, num(_d.maxHp, 0) - num(mm.currentHp, 0)));
-            }
+            try {
+                var st = document.getElementById('hy-battle-stage')
+                    || document.getElementById('hy-atlas-stage');
+                var BS = window.HY && window.HY.BattleStage;
+                if (st && BS && BS.fx && typeof BS.fx.vital === 'function') {
+                    BS.fx.vital(st.id || 'hy-battle-stage', 'foe', idx, showAmt, 'regenVital', meta);
+                }
+            } catch (eFoe) { }
+        }
+        /** 氣血＋內力自然恢復：共用計次、一次 restore、一次飄字 */
+        applyNaturalVitalRegenForUnit(unit, side) {
+            if (!this.charNaturalRegenDue(unit)) return;
+            var gains = this.computeNaturalVitalRegenGains(unit);
+            var _hpGain = gains.hp;
+            var _mpGain = gains.mp;
             if (_mpGain <= 0 && _hpGain <= 0) return;
-            var _b = mm._battle || (mm._battle = {});
+            var g = window.HY.game;
+            if (!unit || unit.currentHp <= 0) return;
+            var iv = this.naturalVitalRegenInterval();
+            var hits = this.charNatRegenHits(unit);
+            var self = this;
+            var _b = unit._battle || (unit._battle = {});
             _b._natRegenAtHit = hits;
-            _b._natRegenOwnPhase = this.charNaturalRegenPhase(mm);
-            self.log('🌿 【' + mm.name + '】本場第 ' + hits + ' 次出手（每 ' + iv + ' 次集氣滿）自然回復', 'combat');
-            g.charSys.restoreVitals(_hpGain, _mpGain, mm);
-            if (_mpGain > 0) {
-                var _mpIdx = self.allyStageIndex(mm);
-                self.markStageFx('ally', _mpIdx, 'regenMp', { label: '內力恢復', charId: mm.id });
-                self.playAllyVitalStageFx(mm, _mpGain, 'regenMp', '內力恢復');
+            _b._natRegenOwnPhase = this.charNaturalRegenPhase(unit);
+            side = side === 'foe' ? 'foe' : 'ally';
+            self.log('🌿 【' + unit.name + '】本場第 ' + hits + ' 次出手（每 ' + iv + ' 次集氣滿）自然恢復', 'combat');
+            if (side === 'ally' && g && g.charSys) {
+                g.charSys.restoreVitals(_hpGain, _mpGain, unit);
+            } else {
+                if (_hpGain > 0) {
+                    unit.currentHp = Math.min(num(unit.maxHp, 0), num(unit.currentHp, 0) + _hpGain);
+                }
+                if (_mpGain > 0) {
+                    unit.currentMp = Math.min(num(unit.maxMp, 0), num(unit.currentMp, 0) + _mpGain);
+                }
             }
-            if (_hpGain > 0) {
-                var _hpIdx = self.allyStageIndex(mm);
-                self.markStageFx('ally', _hpIdx, 'regenHp', { label: '氣血恢復', charId: mm.id });
-                self.playAllyVitalStageFx(mm, _hpGain, 'regenHp', '氣血恢復');
-            }
+            self.playNaturalVitalStageFx(unit, side, _hpGain, _mpGain);
             var parts = [];
             if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
             if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
-            self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
+            self.log('💧 【' + unit.name + '】自然恢復 ' + parts.join(' / '), 'combat');
             this.onUpdateUI && this.onUpdateUI();
-            /* 延後刷新舞台，避免在 ATB 出手流程中同步 render 卡住集氣條 */
             var selfRef = this;
             setTimeout(function () {
                 try { selfRef.refreshBattleStageNow(); } catch (eRf) { }
             }, 0);
+        }
+        applyNaturalVitalRegenForChar(mm) {
+            this.applyNaturalVitalRegenForUnit(mm, 'ally');
         }
         applyPartyNaturalVitalRegen() {
             /* 舊呼叫點相容：不再全隊同拍結算 */
@@ -119436,6 +119543,12 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.regenHp{color:#86efac;}',
         '.hy-fx-dmg.regenMp{color:#67e8f9;font-size:1.3rem;}',
         '.hy-fx-dmg.regenHp .fx-src,.hy-fx-dmg.regenMp .fx-src{color:#bef264;}',
+        '.hy-fx-dmg.regenVital{color:#86efac;font-size:1.28rem;}',
+        '.hy-fx-dmg.regenVital .fx-src{color:#bef264;}',
+        '.hy-fx-dmg.stealVital{color:#fda4af;font-size:1.28rem;}',
+        '.hy-fx-dmg.stealVital .fx-src{color:#f9a8d4;}',
+        '.hy-fx-dmg.onHitVital{color:#86efac;font-size:1.28rem;}',
+        '.hy-fx-dmg.onHitVital .fx-src{color:#bbf7d0;}',
         '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
             'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
         /* ⭐ v727：自然恢復→左上；偷取／擊中恢復→右上（相對 .hy-stage-fx-layer） */
@@ -121513,18 +121626,29 @@ window.HY = window.HY || {};
                     playHit(el, node, side, di, dmg, crit, null, u.element, skD);
                     /* ⭐ v513：我方打敵方 → 累積連擊 */
                     if (side === 'foe') bumpCombo(el, stageId);
-                } else if (d > 0.5) {
-                    var uCid = u && (u.charId != null ? u.charId : u.id);
-                    var fxHpUp = consumeStageFxMarked(side, di, ['stealHp', 'onHitHp', 'regenHp', 'heal'], uCid);
-                    playVitalFloat(node, d, (fxHpUp && fxHpUp.kind) || 'heal', fxHpUp && fxHpUp.meta);
-                    /* ⭐ v513：補血統計 */
-                    try { statsOf(stageId).healTotal += d; } catch (e0) { }
                 }
                 var dMp = (Number(u.mp) || 0) - (Number(p.mp) || 0);
-                if (dMp > 0.5) {
-                    var uCidMp = u && (u.charId != null ? u.charId : u.id);
-                    var fxMpUp = consumeStageFxMarked(side, di, ['stealMp', 'onHitMp', 'regenMp', 'healMp'], uCidMp);
-                    playVitalFloat(node, dMp, (fxMpUp && fxMpUp.kind) || 'healMp', fxMpUp && fxMpUp.meta);
+                var uCid = u && (u.charId != null ? u.charId : u.id);
+                var fxBundle = consumeStageFxMarked(side, di,
+                    ['regenVital', 'stealVital', 'onHitVital'], uCid);
+                if (fxBundle && (d > 0.5 || dMp > 0.5)) {
+                    var totUp = (d > 0.5 ? d : 0) + (dMp > 0.5 ? dMp : 0);
+                    playVitalFloat(node, totUp, fxBundle.kind, fxBundle.meta);
+                    if (d > 0.5) {
+                        try { statsOf(stageId).healTotal += d; } catch (e0) { }
+                    }
+                } else {
+                    if (d > 0.5) {
+                        var fxHpUp = consumeStageFxMarked(side, di,
+                            ['stealHp', 'onHitHp', 'regenHp', 'heal'], uCid);
+                        playVitalFloat(node, d, (fxHpUp && fxHpUp.kind) || 'heal', fxHpUp && fxHpUp.meta);
+                        try { statsOf(stageId).healTotal += d; } catch (e1) { }
+                    }
+                    if (dMp > 0.5) {
+                        var fxMpUp = consumeStageFxMarked(side, di,
+                            ['stealMp', 'onHitMp', 'regenMp', 'healMp'], uCid);
+                        playVitalFloat(node, dMp, (fxMpUp && fxMpUp.kind) || 'healMp', fxMpUp && fxMpUp.meta);
+                    }
                 }
                 /* 存活 → 倒地 */
                 if (p.alive !== false && u.alive === false) playDeath(node);
@@ -121818,6 +121942,9 @@ window.HY = window.HY || {};
         }
         if (k === 'regenHp') return meta.label || '氣血恢復';
         if (k === 'regenMp') return meta.label || '內力恢復';
+        if (k === 'regenVital') return meta.label || '自然恢復';
+        if (k === 'stealVital') return meta.label || '偷取';
+        if (k === 'onHitVital') return meta.label || '擊中恢復';
         if (k === 'onHitHp') return meta.label || '擊中回血';
         if (k === 'onHitMp') return meta.label || '擊中回內';
         if (meta.skill) return '《' + meta.skill + '》';
@@ -121854,8 +121981,9 @@ window.HY = window.HY || {};
     /** 恢復類→左上；偷取類→右上；其餘維持頭頂中央 */
     function floatCornerForKind(kind) {
         if (!kind) return '';
+        if (kind === 'stealVital' || kind === 'onHitVital') return 'fx-tr';
         if (kind.indexOf('steal') === 0 || kind.indexOf('onHit') === 0) return 'fx-tr';
-        if (kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') return 'fx-tl';
+        if (kind === 'regenVital' || kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') return 'fx-tl';
         return '';
     }
 
@@ -121882,8 +122010,9 @@ window.HY = window.HY || {};
             ? (fxGridHost(node) || node)
             : node;
 
-        /* 自然回復：同格 1.2s 內不重播同類飄字（佇列結算與即時回復曾疊加） */
-        if (kind === 'regenHp' || kind === 'regenMp') {
+        /* 自然／偷取／擊中：同格 1.2s 內不重播同類飄字 */
+        if (kind === 'regenHp' || kind === 'regenMp' || kind === 'regenVital'
+            || kind === 'stealVital' || kind === 'onHitVital') {
             var rgNow = Date.now();
             var rgLabel = (meta && meta.label) ? String(meta.label) : '';
             var rgPrev = host.__lastNatRegenFx;
