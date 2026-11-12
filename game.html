@@ -1512,6 +1512,7 @@ window.HY = window.HY || {};
             enemyMpLvCoef: 25,               // ✖ 敵人內力等級係數
             enemyMpAtkCoef: 0.15,            // ✖ 敵人內力攻擊係數
             enemyMpRegenRatio: 0.04,         // ✖ 敵人內力回復比例
+            vitalNaturalRegenTurns: 2,       // ⚡ 氣血／內力「自然回復」週期（每 N 回合結算一次）
             playerHitCap: 95,                // ✖ 玩家命中上限 %
             playerHitFloorBase: 25,          // ✖ 玩家命中保底 %
             playerHitFloorWithRT: 35,        // ✖ 玩家命中保底（必中祝福）%
@@ -1930,6 +1931,16 @@ window.HY = window.HY || {};
         N.setTimeout(pump, 0);
     }
 
+    /** 是否有任務已累積到期（含本輪剛灌入的 acc） */
+    function hasDueTasks() {
+        var ids = Object.keys(S.tasks);
+        for (var i = 0; i < ids.length; i++) {
+            var t = S.tasks[ids[i]];
+            if (t && t.acc >= t.baseMs) return true;
+        }
+        return false;
+    }
+
     function tick() {
         var t = now();
         var dt = t - S.LAST;
@@ -1944,115 +1955,98 @@ window.HY = window.HY || {};
         S._pumpQueued = false;
         var dt = S._pendingDt || 0;
         S._pendingDt = 0;
-        if (dt <= 0) return;
-
         var mul = intervalMult();
         var ids = Object.keys(S.tasks);
         var n = ids.length;
-        var roundStart = now();
-        var ranAny = false;
-        /* 追蹤預設關閉。開著時只用註冊當下記下的短標籤，不再每輪把函式轉成字串。 */
-        var trace = S.__traceOn ? [] : null;
 
-        /* 先把這一段時間記到每個任務，再執行。
-           否則預算用完提前 return 時，排在後面的任務會漏掉這一段 dt。 */
-        var step = dt * mul;
-        for (var ai = 0; ai < n; ai++) {
-            var at = S.tasks[ids[ai]];
-            if (at) at.acc += step;
+        if (dt > 0 && n > 0) {
+            var step = dt * mul;
+            for (var ai = 0; ai < n; ai++) {
+                var at = S.tasks[ids[ai]];
+                if (at) at.acc += step;
+            }
         }
 
-        /* ⭐ v545：輪替起點 —— 避免慢任務永遠排第一棒 */
+        if (!hasDueTasks()) return;
+
+        /* ⭐ v708：每次 setTimeout(pump) 只跑「一個」interval 回呼，再鏈式 kick
+           → 避免一輪疊 8~29 個任務讓 Chrome 記 50~170ms Violation */
+        var roundStart = now();
+        var trace = S.__traceOn ? [] : null;
         var start = (S.__rr || 0) % (n || 1);
         S.__rr = start + 1;
+        var ran = false;
 
         for (var k = 0; k < n; k++) {
             var id = ids[(start + k) % n];
             var task = S.tasks[id];
-            if (!task) continue;
+            if (!task || task.acc < task.baseMs) continue;
 
-            var guard = 0;
-            var taskStart = now();
-
-            while (task.acc >= task.baseMs && guard < MAX_GUARD) {
-                /* ⭐ 執行前先估成本：本輪剩餘預算 < 估計成本 → 整批留到下一輪。
-                   例外只有一個：本輪還一個任務都沒跑過（防餓死）。
-                   ⚠️ 不再有 `est > 0` 這種旁路 —— 那正是 v545 失效的原因。 */
-                if (ranAny) {
-                    var roundLeft = TICK_BUDGET_MS - (now() - roundStart);
-                    var est = task.ema || DEFAULT_TASK_COST_MS;
-                    if (roundLeft <= 0 || est > roundLeft) break;
-                    /* 同一任務的第二次以後：連自己的剩餘預算也要看 */
-                    if (guard > 0 && (now() - taskStart) > TASK_BUDGET_MS) break;
-                } else {
-                    /* ⭐ v554：本輪第一個任務雖然放行，但要是它「估過」就很貴
-                       （例如開機時的 12 個初始化任務），先讓它只跑一趟就好，
-                       避免第一個任務就吃掉 60ms 把整輪撐爆。
-                       判斷依據：ema 明顯超過單任務預算 → 一次就收。 */
-                    var est0 = task.ema || 0;
-                    if (est0 > TASK_BUDGET_MS * 2 && guard > 0) break;
-                }
-
-                task.acc -= task.baseMs;
-                guard++;
-                ranAny = true;
-
-                var cbStart = now();
-                try {
-                    task.cb.apply(null, task.args);
-                } catch (e) {
-                    console.error('[GameConfig interval error]', e);
-                }
-                var cbCost = now() - cbStart;
-                emaCost(task, cbCost);
-                if (trace && cbCost >= 1) {
-                    trace.push(Math.round(cbCost) + 'ms:' + (task.label || 'fn'));
-                }
-
-                /* ⭐ 記錄慢任務（超過 50ms）供除錯，並強制停手避免連鎖 */
-                if (cbCost > 50) {
-                    S.__slowTasks = S.__slowTasks || {};
-                    var key = task.label || 'fn';
-                    S.__slowTasks[key] = {
-                        count: (S.__slowTasks[key] ? S.__slowTasks[key].count : 0) + 1,
-                        lastMs: Math.round(cbCost),
-                        baseMs: task.baseMs
-                    };
-                    /* 慢任務不再補跑第二次（它已經吃掉太多預算） */
-                    task.acc = Math.min(task.acc, task.baseMs - 1);
-                    break;
-                }
-
-                if (!S.tasks[id]) break;      /* 任務被 clearInterval 了 */
-
-                /* ① 單一任務預算用完 → 換下一個任務（不影響其他任務） */
-                if (now() - taskStart > TASK_BUDGET_MS) break;
+            var est = task.ema || DEFAULT_TASK_COST_MS;
+            if (est > TICK_BUDGET_MS && task.ema) {
+                /* 已知超重任務：本輪先試下一個到期任務（輪替仍可前進） */
+                continue;
             }
 
-            /* ② 整輪預算用完 → 立刻結束，剩下的留給下一輪 */
-            if (now() - roundStart > TICK_BUDGET_MS) {
-                var _cutMs = now() - roundStart;
-                S.__lastRoundMs = Math.round(_cutMs);
-                S.__lastRoundCut = true;
-                if (_cutMs > (S.__maxRoundMs || 0)) {
-                    S.__maxRoundMs = Math.round(_cutMs);
-                    /* ⭐ v548：early return 這條路徑也要記組成，否則 trace 永遠是空的 */
-                    if (trace) S.__maxRoundTrace = trace.slice();
+            task.acc -= task.baseMs;
+            var cbStart = now();
+            try {
+                task.cb.apply(null, task.args);
+            } catch (e) {
+                console.error('[GameConfig interval error]', e);
+            }
+            var cbCost = now() - cbStart;
+            emaCost(task, cbCost);
+            ran = true;
+            if (trace && cbCost >= 1) {
+                trace.push(Math.round(cbCost) + 'ms:' + (task.label || 'fn'));
+            }
+
+            if (cbCost > 50) {
+                S.__slowTasks = S.__slowTasks || {};
+                var key = task.label || 'fn';
+                S.__slowTasks[key] = {
+                    count: (S.__slowTasks[key] ? S.__slowTasks[key].count : 0) + 1,
+                    lastMs: Math.round(cbCost),
+                    baseMs: task.baseMs
+                };
+                task.acc = Math.min(task.acc, task.baseMs - 1);
+            }
+            break;
+        }
+
+        /* 若到期任務全是「估計超預算」而本輪沒跑任何一個 → 仍執行一個，避免餓死 */
+        if (!ran && hasDueTasks()) {
+            for (var k2 = 0; k2 < n; k2++) {
+                var id2 = ids[(start + k2) % n];
+                var task2 = S.tasks[id2];
+                if (!task2 || task2.acc < task2.baseMs) continue;
+                task2.acc -= task2.baseMs;
+                var cbStart2 = now();
+                try {
+                    task2.cb.apply(null, task2.args);
+                } catch (e2) {
+                    console.error('[GameConfig interval error]', e2);
                 }
-                return;
+                var cbCost2 = now() - cbStart2;
+                emaCost(task2, cbCost2);
+                ran = true;
+                if (trace && cbCost2 >= 1) {
+                    trace.push(Math.round(cbCost2) + 'ms:' + (task2.label || 'fn'));
+                }
+                break;
             }
         }
-        S.__lastRoundMs = Math.round(now() - roundStart);
-        S.__lastRoundCut = false;
-        /* ⭐ v546：記錄歷史最大值（供診斷 console 的 Violation 用）
-           __lastRoundMs 只反映「剛剛那一輪」，而大多數輪次是 0ms（沒有任務到期），
-           抽樣幾乎都會抽到 0。要看「有沒有超標」必須看最大值。 */
+
         var _ms = now() - roundStart;
+        S.__lastRoundMs = Math.round(_ms);
+        S.__lastRoundCut = false;
         if (_ms > (S.__maxRoundMs || 0)) {
             S.__maxRoundMs = Math.round(_ms);
-            /* ⭐ v548：保留這一輪的任務組成，找出「累加超標」的真兇 */
             if (trace) S.__maxRoundTrace = trace.slice();
         }
+
+        if (hasDueTasks()) kick();
     }
     S.LAST = now();
     S.timer = N.setInterval(tick, S.BASE_MS);
@@ -57470,6 +57464,11 @@ window.HY = window.HY || {};
         }
         onEnemyTurnEnd(enemy) {
             if (!enemy || enemy.currentHp <= 0 || !enemy.affixes) return;
+            var combat = window.HY.game && window.HY.game.combatSys;
+            if (combat && typeof combat.isNaturalVitalRegenTurn === 'function'
+                && !combat.isNaturalVitalRegenTurn()) {
+                return;
+            }
             var self = this;
             enemy.affixes.forEach(function (af) {
                 if (af.turnEndRegen && enemy.currentHp < enemy.maxHp) {
@@ -80489,10 +80488,21 @@ window.HY = window.HY || {};
         regenMp(enemy, extraActionAffix) {
             if (!enemy || extraActionAffix) return;
             if (enemy.currentHp <= 0) return;
+            var core = this.core;
+            if (core && typeof core.isNaturalVitalRegenTurn === 'function' && !core.isNaturalVitalRegenTurn()) {
+                return;
+            }
             if (typeof enemy.maxMp !== 'number' || enemy.maxMp <= 0) return;
             var cur = enemy.currentMp || 0;
             if (cur >= enemy.maxMp) return;
-            var regen = Math.max(1, Math.floor(enemy.maxMp * ENEMY_MP_REGEN));
+            var ratio = ENEMY_MP_REGEN;
+            try {
+                var G = window.HY && window.HY.GameConfig;
+                if (G && G.combat && typeof G.combat.enemyMpRegenRatio === 'number') {
+                    ratio = G.combat.enemyMpRegenRatio;
+                }
+            } catch (eCfg) { }
+            var regen = Math.max(1, Math.floor(enemy.maxMp * ratio));
             enemy.currentMp = Math.min(enemy.maxMp, cur + regen);
         }
         enemiesTurn(partyMembers) {
@@ -83263,6 +83273,7 @@ window.HY = window.HY || {};
             this.lastEnemyTemplate = null;
             this._enemySeq = 0;
             this._turnCounter = 0;
+            this._naturalVitalRegenAtTurn = -1;
             this.autoTactics = new window.HY.CombatAutoTactics(this);
             this.playerTurn  = new window.HY.CombatPlayerTurn(this);
             this.enemyTurn   = new window.HY.CombatEnemyTurn(this);
@@ -83303,6 +83314,27 @@ window.HY = window.HY || {};
             if (this.logger && typeof this.logger.add === 'function') {
                 this.logger.add(msg, type || 'combat');
             }
+        }
+        /** 氣血／內力自然回復週期（回合數，預設 2） */
+        naturalVitalRegenInterval() {
+            var G = window.HY && window.HY.GameConfig;
+            var n = G && G.combat ? Number(G.combat.vitalNaturalRegenTurns) : 2;
+            if (!isFinite(n) || n < 1) n = 2;
+            return Math.floor(n);
+        }
+        /** 本戰鬥回合是否為自然回復結算點 */
+        isNaturalVitalRegenTurn() {
+            var iv = this.naturalVitalRegenInterval();
+            var t = num(this._turnCounter, 0);
+            return t > 0 && (t % iv === 0);
+        }
+        /** 我方被動回復：同一回合只結算一次（多隊友連續出手不重複） */
+        claimNaturalVitalRegenTick() {
+            if (!this.isNaturalVitalRegenTurn()) return false;
+            var t = num(this._turnCounter, 0);
+            if (this._naturalVitalRegenAtTurn === t) return false;
+            this._naturalVitalRegenAtTurn = t;
+            return true;
         }
         getCharBlessingLv(charObj, blessingId) {
             var gSB = window.HY.game && window.HY.game.guildSkillBeast;
@@ -83371,6 +83403,7 @@ window.HY = window.HY || {};
             this.currentEnemy = null;
             this.lastEnemyTemplate = null;
             this._turnCounter = 0;
+            this._naturalVitalRegenAtTurn = -1;
         }
         startBattle(enemyTemplate) {
             if (!enemyTemplate) return;
@@ -83437,6 +83470,7 @@ window.HY = window.HY || {};
             this.clearRepeatTimeout();
             this.lastEnemyTemplate = enemyTemplate;
             this._turnCounter = 0;
+            this._naturalVitalRegenAtTurn = -1;
             /* ⭐ v536：戰鬥序號（每場遞增）
                給 BattleStage 用來判斷「這是新的一場」，
                比對敵人陣容更可靠（同種怪連刷時陣容簽章完全相同）。 */
@@ -84040,6 +84074,32 @@ window.HY = window.HY || {};
             var Data = window.HY.Data || {};
             return (Data.SECTS && Data.SECTS[sectId]) ? Data.SECTS[sectId].feature : null;
         }
+        /** 五維顯示：根骨數值 + 武魂附身加成（d.__wuhunAttrBonus） */
+        _formatRootStatHtml(base, wuhunAdd) {
+            var b = Math.floor(Number(base) || 0);
+            var add = Number(wuhunAdd);
+            if (!isFinite(add) || add < 0.0005) {
+                return String(b);
+            }
+            var addTxt = add < 0.01 ? add.toFixed(3) : add.toFixed(2);
+            var eff = Math.round((b + add) * 1000) / 1000;
+            var effTxt = (eff % 1 === 0) ? String(eff) : eff.toFixed(2);
+            return '<span title="根骨 ' + b + ' ＋ 武魂 ' + addTxt + '">' + b +
+                '<span style="color:#6ee7b7;font-weight:600"> +' + addTxt + '</span>' +
+                '<span style="color:#475569;font-weight:normal"> = </span>' +
+                '<span style="color:#7dd3fc">' + effTxt + '</span></span>';
+        }
+        _ensureWuhunFiveBonusRow() {
+            if (document.getElementById('wuhun-five-bonus')) return;
+            var anchor = document.getElementById('stat-str');
+            var grid = anchor && anchor.closest ? anchor.closest('.stat-grid') : null;
+            if (!grid || !grid.parentNode) return;
+            var row = document.createElement('div');
+            row.id = 'wuhun-five-bonus';
+            row.style.cssText = 'font-size:.78rem;line-height:1.55;margin:2px 0 8px;padding:6px 8px;' +
+                'border:1px dashed #334155;border-radius:4px;background:rgba(15,23,42,.35)';
+            grid.parentNode.insertBefore(row, grid.nextSibling);
+        }
         buildRootBadge(rootId, rootLv, compact) {
             var Data = window.HY.Data;
             if (!rootId || !Data || !Data.SPIRIT_ROOTS || !Data.SPIRIT_ROOTS[rootId]) {
@@ -84281,10 +84341,11 @@ window.HY = window.HY || {};
                ⭐ v490：移除 'utility'（💰 實用）——
                     物品稀有度／物品數量／銀兩獲取／經驗獲取／地圖掉落率／精隨掉落率
                     這六項在面板上幾乎永遠是「—」，佔版面又讓玩家誤以為可加點。 */
-            var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed', 'minion'];
+            /* minion（武魂傷害／氣血／速度）不再顯示：武魂改為附身疊加角色五圍，見先天五屬根骨。 */
+            var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed'];
             var GROUP_ICON = {
                 core: '⚔️', offense: '🔥', defense: '🛡️', resist: '🌡️',
-                resource: '💚', speed: '⚡', minion: '🌌'
+                resource: '💚', speed: '⚡'
             };
             /* 顯示名稱覆寫（用本作武俠用語，而非 Registry 的通用名） */
             var NAME = {
@@ -84647,6 +84708,7 @@ window.HY = window.HY || {};
                 });
             }
             const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+            const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
             const nameEl = document.getElementById('char-name');
             if (nameEl) {
                 if (window.HY.uiSpiritRoot && app.spiritRootSys) {
@@ -84711,12 +84773,32 @@ window.HY = window.HY || {};
             if (esRow) esRow.style.display = 'none';
             if (esText) esText.textContent = '';
             if (esBar) esBar.style.width = '0%';
-            /* ⭐ v523：五屬顯示（力 / 敏 / 智 / 精 / 體） */
-            setText('stat-con', st.stats.con);
-            setText('stat-str', st.stats.str);
-            setText('stat-agi', st.stats.agi);
-            setText('stat-int', st.stats.int);
-            setText('stat-spi', (typeof st.stats.spi === 'number' ? st.stats.spi : 8));
+            /* ⭐ v523：五屬顯示（力 / 敏 / 智 / 精 / 體）＋武魂附身加成 */
+            function esc(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            var wB = (d && d.__wuhunAttrBonus) ? d.__wuhunAttrBonus : null;
+            var wRate = wB && wB.rate != null ? Number(wB.rate) : 0;
+            if (!isFinite(wRate)) wRate = 0;
+            setHtml('stat-str', this._formatRootStatHtml(st.stats.str, wB && wB.str));
+            setHtml('stat-agi', this._formatRootStatHtml(st.stats.agi, wB && wB.agi));
+            setHtml('stat-int', this._formatRootStatHtml(st.stats.int, wB && wB.int));
+            setHtml('stat-spi', this._formatRootStatHtml(
+                typeof st.stats.spi === 'number' ? st.stats.spi : 8, wB && wB.spi));
+            setHtml('stat-con', this._formatRootStatHtml(st.stats.con, wB && wB.con));
+            this._ensureWuhunFiveBonusRow();
+            var wuhunRow = document.getElementById('wuhun-five-bonus');
+            if (wuhunRow) {
+                if (d && d.__wuhunName && wB) {
+                    var pct = wRate > 0 ? Math.round(wRate * 100) : 50;
+                    wuhunRow.innerHTML = '🌌 武魂【' + esc(String(d.__wuhunName)) + '】附身（五圍 ' + pct + '%）' +
+                        '<br><span style="color:#64748b">綠色為武魂加成；合計為附身後可用於換算戰鬥的數值（氣→智）。</span>';
+                    wuhunRow.style.display = '';
+                } else {
+                    wuhunRow.textContent = '🌌 未附身武魂（五圍無額外加成）';
+                    wuhunRow.style.display = '';
+                }
+            }
             setText('char-points', st.freePoints);
             setText('char-sp', app.charSys.rootState.sp);
             setText('char-gold', app.charSys.rootState.gold);
@@ -164030,14 +164112,14 @@ HY.Data.STAT_CODEX = {
                 {
                     key: 'lifeRegen', name: '氣血回復', abbr: 'HP Regen', unit: '%',
                     desc: '每回合自動回復的氣血百分比。',
-                    formula: '每回合回復 = 最大氣血 × 氣血回復%',
+                    formula: '每 2 回合回復 = 最大氣血 × 氣血回復%（gameConfig.combat.vitalNaturalRegenTurns）',
                     note: '與「元炁回復」（道途屬性）相加計算。',
                     tags: ['續戰', '回復']
                 },
                 {
                     key: 'manaRegen', name: '內力回復', abbr: 'MP Regen', unit: '%',
                     desc: '每回合自動回復的內力百分比。',
-                    formula: '每回合回復 = 最大內力 × 內力回復%',
+                    formula: '每 2 回合回復 = 最大內力 × 內力回復%（gameConfig.combat.vitalNaturalRegenTurns）',
                     note: '高耗內流派必備。',
                     tags: ['續戰', '回復']
                 },
