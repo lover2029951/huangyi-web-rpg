@@ -4995,10 +4995,10 @@ window.HY = window.HY || {};
         atbGain:      { name: '集氣速度',   group: 'speed', pct: true },
         cooldownRec:  { name: '冷卻回復',   group: 'speed', pct: true },
 
-        /* ── 靈獸（實際生效：petSystem.combatProfile 會讀） ── */
-        minionDmg:    { name: '靈獸傷害',   group: 'minion', pct: true },
-        minionHp:     { name: '靈獸氣血',   group: 'minion', pct: true },
-        minionSpd:    { name: '靈獸速度',   group: 'minion', pct: true },
+        /* ── 武魂／召喚物（舊 POE Minion 詞詞條，靈寵系統已改武魂） ── */
+        minionDmg:    { name: '武魂傷害',   group: 'minion', pct: true },
+        minionHp:     { name: '武魂氣血',   group: 'minion', pct: true },
+        minionSpd:    { name: '武魂速度',   group: 'minion', pct: true },
 
         /* ⚠️ aoeRadius（招式範圍）已移除：
               derived stats 中永遠是 undefined —— 沒有任何詞條會寫入它。
@@ -5041,7 +5041,7 @@ window.HY = window.HY || {};
         /* ⚠️ resist 分組不顯示（抗性統一由「🌀 九元素」區呈現） */
         resource: '💚 續航',
         speed:    '⚡ 速度',
-        minion:   '🐉 靈獸',
+        minion:   '🌌 武魂',
         utility:  '💰 實用'
     };
 
@@ -9304,6 +9304,12 @@ window.HY.Data = window.HY.Data || {};
             id: 'pill_sp', name: '和氏璧異能碎片', type: 'consumable', reqLv: 5,
             desc: '蘊含奇異時空能量，直接獲得 500 點武學點數 (武點)。', price: 300,
             effect: { sp: 500 }
+        },
+        pill_xisui: {
+            id: 'pill_xisui', name: '洗隨丹', type: 'consumable', reqLv: 1,
+            desc: '金司馬遠洋商船偶爾帶回的天材。服用後重置當前角色已分配的五維潛能，全數退回剩餘潛能點（基礎五維各 8 不變；不影響天賦樹屬性）。',
+            price: 3500,
+            effect: { respecStats: true }
         }
     };
     // 2. 🗡️ PoE 十大部位裝備基底庫
@@ -9609,9 +9615,10 @@ window.HY.Data = window.HY.Data || {};
         /* 融合：成長值隨機增量 */
         GROWTH_MIN: 0.1,
         GROWTH_MAX: 0.3,
-        /* 成長值上限（避免無限膨脹） */
-        GROWTH_CAP: 5.0,
-        /* 成長值對屬性的額外加成：最終屬性 × (1 + 成長值) */
+        /* 成長值上限（融合累加，使用者指定上限 5） */
+        GROWTH_CAP: 5,
+        /* 成長值對屬性的倍率：最終 = 魂力換算 × (1 + 成長值 × 係數)；滿成長 5、係數 0.2 → 最高 ×2 */
+        GROWTH_ATTR_RATE: 0.2,
         GROWTH_MULTIPLIER: true,
         /* 武魂附身後，每幾回合觸發一次增益/減益 */
         TRIGGER_EVERY_TURNS: 3
@@ -10133,6 +10140,22 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
         return isFinite(n) ? n : (typeof d === 'number' ? d : 0);
     }
 
+    /** 武魂成長值上限（融合） */
+    Data.wuhunGrowthCap = function () {
+        return Math.max(0, num(Data.WUHUN_CONFIG && Data.WUHUN_CONFIG.GROWTH_CAP, 5));
+    };
+
+    /** 成長值 → 屬性倍率（1 + growth × GROWTH_ATTR_RATE） */
+    Data.wuhunGrowthMult = function (growth) {
+        var cfg = Data.WUHUN_CONFIG || {};
+        if (!cfg.GROWTH_MULTIPLIER) return 1;
+        var g = Math.max(0, num(growth, 0));
+        var rate = Math.max(0, num(cfg.GROWTH_ATTR_RATE, 0.2));
+        var cap = Data.wuhunGrowthCap();
+        if (cap > 0) g = Math.min(g, cap);
+        return 1 + g * rate;
+    };
+
     /** 魂力（年）→ 五屬性數值（每項） */
     Data.wuhunAttrOf = function (years) {
         var y = Math.max(0, Math.min(Data.WUHUN_CONFIG.MAX_YEARS, num(years, 0)));
@@ -10143,8 +10166,7 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
     Data.wuhunAttrs = function (w) {
         if (!w) return { str: 0, agi: 0, con: 0, qi: 0, spi: 0 };
         var base = Data.wuhunAttrOf(w.years);
-        var growth = num(w.growth, 0);
-        var mult = Data.WUHUN_CONFIG.GROWTH_MULTIPLIER ? (1 + growth) : 1;
+        var mult = Data.wuhunGrowthMult(w.growth);
         var v = Math.round(base * mult * 100) / 100;
         return { str: v, agi: v, con: v, qi: v, spi: v };
     };
@@ -10153,7 +10175,7 @@ hp: 4300000, atk: 230000, def: 90000, hit: 230, eva: 72, crit: 74, critRes: 69,
         ⭐ v571：已移除品級，純以魂力與成長值評估強弱 */
     Data.wuhunScore = function (w) {
         if (!w) return 0;
-        return num(w.years, 0) * (1 + num(w.growth, 0));
+        return num(w.years, 0) * Data.wuhunGrowthMult(w.growth);
     };
 
     /** 依等級挑選合適的武魂（未取得前不顯示，這只用在掉落判定）
@@ -38209,12 +38231,85 @@ window.HY = window.HY || {};
         }
     ];
 
+    /** 九域套裝圖示：主篆字、印章字、配色、底紋抽象字 */
+    Data.SHJ_SET_ICON = {
+        set_r0: { glyph: '冰', seal: '寒', motif: '氷', accent: '#7dd3fc', accent2: '#0e3d5c' },
+        set_r1: { glyph: '岳', seal: '鎮', motif: '崑', accent: '#d6b26a', accent2: '#3d2f14' },
+        set_r2: { glyph: '澤', seal: '靈', motif: '白', accent: '#c4b5fd', accent2: '#312e81' },
+        set_r3: { glyph: '漠', seal: '赤', motif: '砂', accent: '#fb923c', accent2: '#431407' },
+        set_r4: { glyph: '丘', seal: '魅', motif: '狐', accent: '#f472b6', accent2: '#500724' },
+        set_r5: { glyph: '溟', seal: '潮', motif: '海', accent: '#38bdf8', accent2: '#0c4a6e' },
+        set_r6: { glyph: '蝮', seal: '蠱', motif: '沼', accent: '#a3e635', accent2: '#1a2e05' },
+        set_r7: { glyph: '野', seal: '雲', motif: '野', accent: '#e2e8f0', accent2: '#1e293b' },
+        set_r8: { glyph: '淵', seal: '濤', motif: '蛟', accent: '#818cf8', accent2: '#1e1b4b' }
+    };
+    var SHJ_PIECE_GLYPH = {
+        weapon: '刃', body: '甲', helmet: '冠', gloves: '手', boots: '履'
+    };
+
     var _setByRegion = {};
     var _setById = {};
     Data.SHJ_EQUIP_SETS.forEach(function (s) {
         _setById[s.id] = s;
         _setByRegion[s.region] = s;
     });
+
+    Data.shjSetIconVisual = function (setId, pieceKey) {
+        var vis = (Data.SHJ_SET_ICON && Data.SHJ_SET_ICON[setId]) || {
+            glyph: '獸', seal: '鎮', motif: '山', accent: '#a78bfa', accent2: '#1e1b4b'
+        };
+        var pk = pieceKey || 'body';
+        return {
+            glyph: vis.glyph,
+            seal: vis.seal,
+            motif: vis.motif,
+            piece: SHJ_PIECE_GLYPH[pk] || '器',
+            accent: vis.accent,
+            accent2: vis.accent2
+        };
+    };
+
+    Data.shjSetIconElement = function (item, px) {
+        if (!item || item.rarity !== 'set') return null;
+        var setId = item.shjSetId;
+        var pieceKey = item.shjSetPiece || 'body';
+        var vis = Data.shjSetIconVisual(setId, pieceKey);
+        var size = Math.max(22, Math.min(56, Number(px) || 30));
+        var box = document.createElement('div');
+        box.className = 'shj-set-icon';
+        box.setAttribute('title', String(item.setName || '') + ' · ' + String(item.name || ''));
+        box.style.cssText =
+            '--shj-a:' + vis.accent + ';--shj-b:' + vis.accent2 + ';' +
+            'width:' + size + 'px;height:' + size + 'px;';
+        box.innerHTML =
+            '<span class="shj-set-icon__wm" aria-hidden="true">' + vis.motif + '</span>' +
+            '<span class="shj-set-icon__ring" aria-hidden="true"></span>' +
+            '<span class="shj-set-icon__main">' + vis.glyph + '</span>' +
+            '<span class="shj-set-icon__piece">' + vis.piece + '</span>' +
+            '<span class="shj-set-icon__seal">' + vis.seal + '</span>';
+        return box;
+    };
+
+    Data.shjSetIconHtml = function (item, px) {
+        var el = Data.shjSetIconElement(item, px);
+        if (!el) return '';
+        return el.outerHTML;
+    };
+
+    Data.shjSetIconInject = function (host, item, px) {
+        if (!host || !item) return false;
+        if (host.querySelector('.shj-set-icon')) return true;
+        var el = Data.shjSetIconElement(item, px);
+        if (!el) return false;
+        try {
+            if (!host.getAttribute('data-poe-orig')) {
+                host.setAttribute('data-poe-orig', host.textContent || '');
+            }
+        } catch (e0) { }
+        host.textContent = '';
+        host.appendChild(el);
+        return true;
+    };
 
     Data.shjSetByRegion = function (region) {
         var r = Number(region);
@@ -38287,7 +38382,11 @@ window.HY = window.HY || {};
             prefixes: (o.extraMagic || o.extraRare) ? [] : [],
             suffixes: [],
             uniqueMods: [],
-            corrupted: false
+            corrupted: false,
+            shjIconGlyph: (function () {
+                var v = Data.shjSetIconVisual(set.id, pieceKey);
+                return v.glyph + '·' + v.piece;
+            })()
         };
         var poe = window.HY.game && window.HY.game.poeSys;
         if (poe && o.extraMagic) {
@@ -41550,16 +41649,13 @@ window.HY = window.HY || {};
                    有些 UI / 戰鬥層讀 out.maxEs，有些讀 out.energyShield，
                    兩個都指向同一個數字，避免其中一邊永遠是 undefined。
                    ⚠ 必須放在乘法加成「之後」，否則 maxEs 會是未放大的舊值。 */
-                /* ⭐⭐ v424：靈獸（minion）屬性通道
+                /* ⭐⭐ v424：武魂／召喚物（minion*）屬性通道
                    ──────────────────────────────────────────────────────────
-                   天賦樹有 10 種靈獸詞條、89 條效果（靈獸傷害／氣血／攻速／
-                   身法／全能／吸血／九元素抗性…），但 characterSystem 從來
-                   沒有把它們寫進 derived stats → 天賦點了完全無效。
+                   天賦樹 POE「Minion」詞條已統一翻成武魂，數值由 wuxiaStatParser
+                   寫入 ext；舊靈寵系統已移除。
 
-                   這裡把 ext 裡的 minion* 值換算成百分比並輸出：
-                     · minionDmg  → 靈獸傷害 %（petSystem 會乘在攻擊上）
-                     · minionHp   → 靈獸氣血 %
-                     · minionSpd  → 靈獸速度 %
+                   這裡把 ext 裡的 minion* 值換算成百分比並輸出（供面板與機制讀取）：
+                     · minionDmg / minionHp / minionSpd
                    值本身已由 wuxiaStatParser 累積（kind: 'more' → 小數），
                    這裡轉成百分比數字供 UI 與戰鬥層直接讀。 */
                 ['minionDmg', 'minionHp', 'minionSpd'].forEach(function (mk) {
@@ -41884,6 +41980,36 @@ window.HY = window.HY || {};
                     window.HY.game.elementSys._cache = {};
                 }
                 return true;
+            }
+            /** 已分配的五維潛能點（超出基礎 8 的部分） */
+            allocatedStatPoints(charObj) {
+                var c = charObj || this.state;
+                if (!c || !c.stats) return 0;
+                var base = 8;
+                var sum = 0;
+                STAT_KEYS.forEach(function (k) {
+                    var v = num2(c.stats[k], base);
+                    if (v > base) sum += (v - base);
+                });
+                return sum;
+            }
+            /** 重置五維養成點數（天賦樹屬性不受影響） */
+            respecFiveStats(charObj) {
+                var c = charObj || this.state;
+                if (!c) return { ok: false, why: '無角色' };
+                if (!c.stats || typeof c.stats !== 'object') c.stats = this.createStatsTemplate();
+                var refund = this.allocatedStatPoints(c);
+                if (refund <= 0) return { ok: false, why: '沒有已分配的潛能點' };
+                var base = 8;
+                STAT_KEYS.forEach(function (k) { c.stats[k] = base; });
+                c.freePoints = num2(c.freePoints, 0) + refund;
+                var d = this.getDerivedStatsForChar(c);
+                c.currentHp = d.maxHp;
+                c.currentMp = d.maxMp;
+                if (c === this.state && typeof this.clampVitals === 'function') this.clampVitals(d);
+                if (window.HY.game && window.HY.game.elementSys) window.HY.game.elementSys._cache = {};
+                this.logger.add('♻️ 【' + (c.name || '角色') + '】五維潛能已重置，退回 ' + refund + ' 點（可重新分配）。', 'wealth');
+                return { ok: true, refund: refund };
             }
             joinSect(sectId) {
                 var Data = window.HY.Data || {};
@@ -43153,6 +43279,27 @@ window.HY = window.HY || {};
             if (item.type === 'consumable') {
                 // ⭐ effect 空值防護
                 var eff = item.effect || {};
+                if (eff.respecStats) {
+                    var pre = this.charSys.allocatedStatPoints(this.charSys.state);
+                    if (pre <= 0) {
+                        this.logger.add('⚠️ 【' + item.name + '】：當前角色沒有已分配的潛能點，無需使用。', 'system');
+                        return false;
+                    }
+                    var msg = '服用【' + item.name + '】將重置「' + (this.charSys.state.name || '當前角色') +
+                        '」已分配的五維潛能（' + pre + ' 點全數退回）。\n天賦樹屬性不受影響。確定？';
+                    if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(msg)) {
+                        return false;
+                    }
+                    inv[itemId] -= 1;
+                    if (inv[itemId] <= 0) delete inv[itemId];
+                    var r = this.charSys.respecFiveStats(this.charSys.state);
+                    if (!r.ok) {
+                        inv[itemId] = (inv[itemId] || 0) + 1;
+                        this.logger.add('⚠️ 【' + item.name + '】使用失敗：' + (r.why || '未知原因'), 'system');
+                        return false;
+                    }
+                    return true;
+                }
                 inv[itemId] -= 1;
                 if (inv[itemId] <= 0) delete inv[itemId];
                 if (eff.hp || eff.mp) {
@@ -55634,7 +55781,7 @@ window.HY = window.HY || {};
 //   ③ 武魂可餵食（吞噬）：副武魂消失，主武魂魂力疊加
 //   ④ 相同武魂可融合：主武魂成長值隨機 +0.1~0.3
 //   ⑤ 附身：每個角色獨立，只能附身 1 隻
-//   ⑥ 附身後角色獲得全屬性加成（魂力 × 0.01 × (1+成長值)）
+//   ⑥ 附身後角色獲得全屬性加成（魂力 × 0.01 × wuhunGrowthMult(成長值)）
 //   ⑦ 戰鬥中每 3 回合觸發武魂技能（增益自身 / 減益敵方）
 // ══════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
@@ -55721,6 +55868,19 @@ window.HY = window.HY || {};
                 }
                 S.__mig610 = true;
             }
+            /* 成長值上限：依 WUHUN_CONFIG.GROWTH_CAP 鉗制舊存檔 */
+            var gCap = (window.HY.Data && typeof window.HY.Data.wuhunGrowthCap === 'function')
+                ? window.HY.Data.wuhunGrowthCap()
+                : num((window.HY.Data && window.HY.Data.WUHUN_CONFIG) ?
+                    window.HY.Data.WUHUN_CONFIG.GROWTH_CAP : 0, 5);
+            if (gCap > 0) {
+                Object.keys(S.owned).forEach(function (k) {
+                    var w = S.owned[k];
+                    if (!w) return;
+                    var g0 = num(w.growth, 0);
+                    if (g0 > gCap) w.growth = gCap;
+                });
+            }
             return S;
         }
 
@@ -55750,7 +55910,8 @@ window.HY = window.HY || {};
             /* ⭐ v571：品級已移除，訊息不再顯示品質前綴 */
             this._log('🌌 擊敗【' + boss.name + '】，獲得武魂【' +
                 inst.name + '】！魂力 ' + Data.fmtYears(inst.years) +
-                '（全屬性 +' + (Data.wuhunAttrOf(inst.years) * (1 + inst.growth)).toFixed(1) + '）', 'gain');
+                '（全屬性 +' + (Data.wuhunAttrOf(inst.years) *
+                    (Data.wuhunGrowthMult ? Data.wuhunGrowthMult(inst.growth) : 1)).toFixed(1) + '）', 'gain');
 
             /* ⭐ v654：魂力 90 年以上 → 全服廣播 */
             try {
@@ -55826,7 +55987,8 @@ window.HY = window.HY || {};
 
             S.equip[cid] = uid;
             var Data = D();
-            var attr = Data.wuhunAttrOf(w.years) * (1 + num(w.growth, 0));
+            var attr = Data.wuhunAttrOf(w.years) *
+                (Data.wuhunGrowthMult ? Data.wuhunGrowthMult(w.growth) : 1);
             /* ⭐ v571：品級已移除 */
             this._log('🌌 【' + (c.name || '') + '】武魂附身：【' + w.name +
                 '】魂力 ' + Data.fmtYears(w.years) + '（五屬性各 +' + attr.toFixed(1) + '）', 'gain');
@@ -55953,8 +56115,9 @@ window.HY = window.HY || {};
                 return { ok: false, why: '只能融合相同武魂' };
             }
             var cfg = D().WUHUN_CONFIG || {};
-            if (num(a.growth, 0) >= num(cfg.GROWTH_CAP, 5)) {
-                return { ok: false, why: '成長值已達上限' };
+            var cap = (D().wuhunGrowthCap) ? D().wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5);
+            if (num(a.growth, 0) >= cap - 0.0001) {
+                return { ok: false, why: '成長值已達上限（' + cap + '）' };
             }
             return { ok: true };
         }
@@ -55969,7 +56132,7 @@ window.HY = window.HY || {};
 
             var gMin = num(cfg.GROWTH_MIN, 0.1);
             var gMax = num(cfg.GROWTH_MAX, 0.3);
-            var cap = num(cfg.GROWTH_CAP, 5);
+            var cap = (D().wuhunGrowthCap) ? D().wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5);
             var inc = Math.round((gMin + Math.random() * (gMax - gMin)) * 100) / 100;
 
             var before = num(a.growth, 0);
@@ -55984,7 +56147,7 @@ window.HY = window.HY || {};
 
             this._log('🌌 【' + a.name + '】與同名武魂融合成功！成長值 +' +
                 inc.toFixed(2) + ' → ' + after.toFixed(2) +
-                '（屬性加成 ×' + (1 + after).toFixed(2) + '）', 'gain');
+                '（屬性加成 ×' + (Data.wuhunGrowthMult ? Data.wuhunGrowthMult(after) : 1).toFixed(2) + '）', 'gain');
             this.invalidateAll();
             return { ok: true, inc: inc, growth: after };
         }
@@ -56245,7 +56408,8 @@ window.HY = window.HY || {};
             var Data = D();
             var every = num((Data.WUHUN_CONFIG || {}).TRIGGER_EVERY_TURNS, 3);
             /* 魂力越高，效果越強 */
-            var power = Data.wuhunAttrOf(w.years) * (1 + num(w.growth, 0));
+            var power = Data.wuhunAttrOf(w.years) *
+                (Data.wuhunGrowthMult ? Data.wuhunGrowthMult(w.growth) : 1);
             /* 每 1 點五屬性 → 技能強度 */
             var pct = Math.min(0.35, power / 400);      /* 上限 35% */
 
@@ -78775,13 +78939,47 @@ window.HY = window.HY || {};
             });
             return (bestRatio >= 0.999) ? null : best;
         }
-        applyHeal(charObj, hp, mp) {
+        _deferredVitals(charObj) {
+            if (!charObj) return null;
+            if (!charObj._battle) charObj._battle = {};
+            if (!charObj._battle.deferredVitals) {
+                charObj._battle.deferredVitals = { hp: 0, mp: 0 };
+            }
+            return charObj._battle.deferredVitals;
+        }
+        /** 氣血／內力回復佇列（下回合本人出手前結算，不與本招扣內在同一瞬間抵銷） */
+        queueVitalRestore(charObj, hp, mp) {
+            if (!charObj) return;
+            var h = Math.max(0, Math.floor(num(hp, 0)));
+            var m = Math.max(0, Math.floor(num(mp, 0)));
+            if (h <= 0 && m <= 0) return;
+            var q = this._deferredVitals(charObj);
+            q.hp += h;
+            q.mp += m;
+        }
+        /** 結算上一回合累積的回復（僅在本人新一手出招時呼叫，雙靈連擊不觸發） */
+        flushDeferredVitals(charObj) {
+            if (!charObj) return;
+            var b = charObj._battle;
+            if (!b || !b.deferredVitals) return;
+            var q = b.deferredVitals;
+            var hp = Math.max(0, num(q.hp, 0));
+            var mp = Math.max(0, num(q.mp, 0));
+            b.deferredVitals = { hp: 0, mp: 0 };
+            if (hp <= 0 && mp <= 0) return;
             var core = this.core;
             var featSys = window.HY.game && window.HY.game.sectFeatSys;
             if (hp > 0 && featSys && typeof featSys.notifyHeal === 'function') {
                 hp = featSys.notifyHeal(charObj, hp);
             }
-            core.charSys.restoreVitals(hp || 0, mp || 0, charObj);
+            core.charSys.restoreVitals(hp, mp, charObj);
+            core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
+            if (window.HY && window.HY.uiDexAtb) {
+                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
+            }
+        }
+        applyHeal(charObj, hp, mp) {
+            this.queueVitalRestore(charObj, hp, mp);
         }
         /* ══════════════════════════════════════════════════════════════
            ⭐⭐ POE 觸發機制結算（1:1）
@@ -78879,6 +79077,7 @@ window.HY = window.HY || {};
             var setFeatSys = window.HY.game && window.HY.game.sectFeatSys;
             var requestedSkillId = skillId;
             var art = Data.MARTIAL_ARTS[skillId] || Data.MARTIAL_ARTS.basic_punch;
+            if (!isTwinEcho) this.flushDeferredVitals(charObj);
             var isSupportMode = !!(healTarget && healTarget.currentHp > 0);
             /* ⭐ 復活技能：目標是「倒下的隊友」時，走復活流程而非一般支援 */
             var isReviveMode = !!(healTarget && healTarget.currentHp <= 0
@@ -78936,14 +79135,19 @@ window.HY = window.HY || {};
             var mpFallbackBasic = false;
             var mpPaid = 0;
             var lifePaidForSkill = 0;
+            var mpBefore = num(charObj.currentMp, 0);
             /* ⭐⭐ POE 旗標：Skills Cost Life instead of Mana（技能改耗生命） */
             var _poeFl = stats.__poeFlags || {};
             if (!isTwinEcho) {
-                var _cost = Math.max(0, num(art.mpCost, 0));
+                var _costRaw = Math.max(0, num(art.mpCost, 0));
+                var _mpRed = Math.min(90, Math.max(0, num(stats.mpCostReduce, 0)));
+                var _cost = Math.max(0, Math.floor(_costRaw * (1 - _mpRed / 100)));
+                var curMp = num(charObj.currentMp, 0);
+                var curHp = num(charObj.currentHp, 0);
                 if (_poeFl.skillsCostLife) {
                     /* 改為消耗生命 */
-                    if (charObj.currentHp > _cost + 20) {
-                        charObj.currentHp -= _cost;
+                    if (curHp > _cost + 20) {
+                        charObj.currentHp = curHp - _cost;
                         usedLifeForSkill = true;
                         lifePaidForSkill = _cost;
                     } else {
@@ -78953,11 +79157,11 @@ window.HY = window.HY || {};
                         isReviveMode = false;
                         mpFallbackBasic = true;
                     }
-                } else if (charObj.currentMp >= _cost) {
-                    charObj.currentMp -= _cost;
+                } else if (_cost > 0 && curMp >= _cost) {
+                    charObj.currentMp = curMp - _cost;
                     mpPaid = _cost;
-                } else if (bloodSpiritLv > 0 && charObj.currentHp > _cost + 20) {
-                    charObj.currentHp -= _cost;
+                } else if (bloodSpiritLv > 0 && _cost > 0 && curHp > _cost + 20) {
+                    charObj.currentHp = curHp - _cost;
                     usedBloodSpirit = true;
                     lifePaidForSkill = _cost;
                 } else {
@@ -79637,7 +79841,8 @@ window.HY = window.HY || {};
                 onKillHp += Math.floor(stats.maxHp * num(stats.lifeOnKillPct, 0) / 100) * killedNow;
             }
             if (killedNow > 0 && num(stats.manaOnKillPct, 0) > 0) {
-                charSys.restoreVitals(0, Math.floor(stats.maxMp * num(stats.manaOnKillPct, 0) / 100) * killedNow, charObj);
+                this.queueVitalRestore(charObj, 0,
+                    Math.floor(stats.maxMp * num(stats.manaOnKillPct, 0) / 100) * killedNow);
             }
             if (onKillHp > 0) {
                 this.applyHeal(charObj, onKillHp, 0);
@@ -79654,9 +79859,10 @@ window.HY = window.HY || {};
                 var woodHp = Math.max(2, Math.floor(stats.maxHp * (0.04 + woodLongLv * 0.0075) * GG_HALF));
                 var woodMp = Math.max(2, Math.floor(stats.maxMp * (0.04 + woodLongLv * 0.0075) * GG_HALF));
                 this.applyHeal(charObj, woodHp, woodMp);
-                leechText += ' [🌸水木長生+' + woodHp + 'HP/+' + woodMp + 'MP]';
+                leechText += ' [🌸水木長生 下回合+' + woodHp + 'HP/+' + woodMp + 'MP]';
             }
             var supportText = '';
+            var self = this;
             if (isSupportMode) {
                 /* ⭐ v523：精神（精）放大治療量
                    ──────────────────────────────────────────────────────────
@@ -79686,22 +79892,22 @@ window.HY = window.HY || {};
                         this.applyHeal(m, teamHeal, 0);
                         healedCount++;
                     }, this);
-                    supportText += ' [💚我方全體治療 ' + healedCount + '人 各+' + teamHeal + 'HP]';
+                    supportText += ' [💚下回合我方全體治療 ' + healedCount + '人 各+' + teamHeal + 'HP]';
                 } else if (art.healRatio) {
                     var healVal = Math.floor(stats.maxHp * (art.healRatio / MARTIAL_DIV) * _healMul);
                     this.applyHeal(healTarget, healVal, 0);
-                    supportText += ' [💚轉療【' + healTarget.name + '】+' + healVal + 'HP]';
+                    supportText += ' [💚下回合轉療【' + healTarget.name + '】+' + healVal + 'HP]';
                 }
                 if (art.mpRestore) {
                     var mpVal = Math.floor(art.mpRestore / MARTIAL_DIV);
                     if (isTeamHeal) {
                         (partyMembers || []).forEach(function (m) {
-                            if (m && m.currentHp > 0) charSys.restoreVitals(0, mpVal, m);
+                            if (m && m.currentHp > 0) self.queueVitalRestore(m, 0, mpVal);
                         });
-                        supportText += ' [💧我方全體回復內力 +' + mpVal + 'MP]';
+                        supportText += ' [💧下回合我方全體回內 +' + mpVal + 'MP]';
                     } else {
-                        charSys.restoreVitals(0, mpVal, healTarget);
-                        supportText += ' [💧轉補【' + healTarget.name + '】+' + mpVal + 'MP]';
+                        self.queueVitalRestore(healTarget, 0, mpVal);
+                        supportText += ' [💧下回合轉補【' + healTarget.name + '】+' + mpVal + 'MP]';
                     }
                 }
             } else {
@@ -79710,19 +79916,23 @@ window.HY = window.HY || {};
                     this.applyHeal(charObj, heal, 0);
                 }
                 if (art.mpRestore && !mpFallbackBasic) {
-                    charSys.restoreVitals(0, Math.floor(art.mpRestore / MARTIAL_DIV), charObj);
+                    self.queueVitalRestore(charObj, 0, Math.floor(art.mpRestore / MARTIAL_DIV));
                 }
             }
             var targetDesc = (art.isAoe && targetList.length > 1)
                 ? '敵方全體 (' + targetList.length + '人) 共造成 ' + totalDealt
                 : '【' + targetList[0].name + '】造成 ' + totalDealt;
             var elemTag = (elemDmgTotal > 0) ? ' [' + elemLogTotal + ']' : '';
+            var mpAfter = num(charObj.currentMp, 0);
+            var netMp = mpAfter - mpBefore;
             var prefix = isSupportMode ? '🤝 [隊員輔助] ' : (isTwinEcho ? '🔥 [雙靈共生・二連擊] ' : (isLeader ? '⚔️ ' : '👥 隊友'));
             var logMsg = prefix +
                 '【' + charObj.name + '】' +
                 (usedLifeForSkill ? '(🩸耗血代內 −' + lifePaidForSkill + ') ' : '') +
                 (usedBloodSpirit ? '(💧血靈燃血 −' + lifePaidForSkill + '氣血) ' : '') +
-                (mpPaid > 0 ? '(−' + mpPaid + '內力) ' : '') +
+                (mpPaid > 0 ? '(耗內 ' + mpPaid + ') ' : '') +
+                ((mpPaid > 0 || isTwinEcho || Math.abs(netMp) >= 1)
+                    ? '[內力淨' + (netMp >= 0 ? '+' : '') + netMp + '] ' : '') +
                 '施展《' + art.name + '》，對' + targetDesc + ' 點傷害' +
                 (critCount > 0 ? ' (💥會心!)' : '') + elemTag + supportText + leechText + '！';
             core.log(logMsg, 'combat');
@@ -79756,13 +79966,13 @@ window.HY = window.HY || {};
                 var healTarget = this.getMostWoundedMember(partyMembers, 'hp') || core.charSys.state;
                 var heal = Math.floor(25 + comp.lv * 15);
                 this.applyHeal(healTarget, heal, 0);
-                supportTags += ' [💚治療【' + healTarget.name + '】+' + heal + 'HP]';
+                supportTags += ' [💚下回合治療【' + healTarget.name + '】+' + heal + 'HP]';
             }
             if (comp.actionType === 'mp_support' || comp.actionType === 'all_round') {
                 var mpTarget = this.getMostWoundedMember(partyMembers, 'mp') || core.charSys.state;
                 var mpGain = Math.floor(15 + comp.lv * 8);
-                core.charSys.restoreVitals(0, mpGain, mpTarget);
-                supportTags += ' [💧回內【' + mpTarget.name + '】+' + mpGain + 'MP]';
+                this.queueVitalRestore(mpTarget, 0, mpGain);
+                supportTags += ' [💧下回合回內【' + mpTarget.name + '】+' + mpGain + 'MP]';
             }
             core.log(msg + supportTags, 'combat');
             if (target.currentHp <= 0 && affixSys) affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
@@ -80097,8 +80307,10 @@ window.HY = window.HY || {};
                 var wdMsg = '';
                 if (windDancerLv > 0) {
                     var wdHeal = 10 + windDancerLv * 8;
-                    charSys.restoreVitals(wdHeal, wdHeal, targetMember);
-                    wdMsg = ' [🍃風魔舞者祝福 +' + wdHeal + 'HP/MP]';
+                    var ptWd = core.playerTurn;
+                    if (ptWd && ptWd.queueVitalRestore) ptWd.queueVitalRestore(targetMember, wdHeal, wdHeal);
+                    else charSys.restoreVitals(wdHeal, wdHeal, targetMember);
+                    wdMsg = ' [🍃風魔舞者祝福 下回合+' + wdHeal + 'HP/MP]';
                 }
                 core.log('🍃 【' + targetMember.name + '】憑藉輕功閃過了【' + enemy.name + '】的' + skillLabel + manaText + wdMsg + '！', 'combat');
                 this.regenMp(enemy, extraActionAffix);
@@ -80209,8 +80421,10 @@ window.HY = window.HY || {};
             var cwdtTag = '';
             if (cwdtTriggered && targetMember.currentHp > 0) {
                 var cwdtHeal = Math.max(5, Math.floor(targetStats.maxHp * (0.03 + cwdtLv * 0.005)));
-                charSys.restoreVitals(cwdtHeal, 0, targetMember);
-                cwdtTag = ' [🛡️不朽怒嚎祝福 +' + cwdtHeal + 'HP]';
+                var ptCw = core.playerTurn;
+                if (ptCw && ptCw.queueVitalRestore) ptCw.queueVitalRestore(targetMember, cwdtHeal, 0);
+                else charSys.restoreVitals(cwdtHeal, 0, targetMember);
+                cwdtTag = ' [🛡️不朽怒嚎祝福 下回合+' + cwdtHeal + 'HP]';
             }
             if (unityLv > 0 && enemy.currentHp > 0) {
                 /* ⭐ v48：後天改命數值減半 */
@@ -83235,6 +83449,11 @@ window.HY = window.HY || {};
                     var _fixMax = Number(_fix && _fix.maxHp);
                     m.currentHp = (isFinite(_fixMax) && _fixMax > 0) ? _fixMax : 100;
                 }
+                if (typeof m.currentMp !== 'number' || !isFinite(m.currentMp)) {
+                    var _fixMp = self.charSys.getDerivedStatsForChar(m);
+                    var _mm0 = Number(_fixMp && _fixMp.maxMp);
+                    m.currentMp = (isFinite(_mm0) && _mm0 >= 0) ? _mm0 : 0;
+                }
                 if (m.currentHp <= 0) {
                     var d = self.charSys.getDerivedStatsForChar(m);
                     var _revMax = Number(d && d.maxHp);
@@ -84030,7 +84249,7 @@ window.HY = window.HY || {};
          * ⭐ v419：完整屬性面板
          * ──────────────────────────────────────────────────────────
          * 舊版只顯示 8 項（攻擊/防禦/命中/閃避/會心/暴抗/會傷/減傷），
-         * 玩家看不到抗性、格擋、吸取、掉落、靈獸等關鍵數值。
+         * 玩家看不到抗性、格擋、吸取、掉落、武魂等關鍵數值。
          *
          * 本方法依 StatRegistry 的 8 個分組，把 69 個屬性全部列出。
          * 設計原則：
@@ -84058,7 +84277,7 @@ window.HY = window.HY || {};
             var GROUPS = ['core', 'offense', 'defense', 'resist', 'resource', 'speed', 'minion'];
             var GROUP_ICON = {
                 core: '⚔️', offense: '🔥', defense: '🛡️', resist: '🌡️',
-                resource: '💚', speed: '⚡', minion: '🐉'
+                resource: '💚', speed: '⚡', minion: '🌌'
             };
             /* 顯示名稱覆寫（用本作武俠用語，而非 Registry 的通用名） */
             var NAME = {
@@ -84082,7 +84301,7 @@ window.HY = window.HY || {};
                 hpCostReduce: '氣血消耗減免', mpCostReduce: '內力消耗減免',
                 atkSpd: '出手速度', castSpd: '運功速度', moveSpd: '身法速度',
                 atbGain: '集氣速度', cooldownRec: '冷卻回復',
-                minionDmg: '靈獸傷害', minionHp: '靈獸氣血', minionSpd: '靈獸速度',
+                minionDmg: '武魂傷害', minionHp: '武魂氣血', minionSpd: '武魂速度',
                 totemDmg: '劍樁傷害', auraEffect: '真元效果', curseEffect: '陰煞效果',
                 aoeRadius: '招式範圍', projSpeed: '暗器速度', projCount: '額外暗器',
                 pierceCount: '暗器穿透', chainCount: '暗器連鎖', skillEffectDur: '招式持續',
@@ -87302,6 +87521,12 @@ window.HY = window.HY || {};
     return n || '未知';
   }
   function itemIcon(it) {
+    if (it && it.rarity === 'set') {
+      var Data = window.HY.Data;
+      if (Data && typeof Data.shjSetIconHtml === 'function') {
+        return Data.shjSetIconHtml(it, 28);
+      }
+    }
     var st = String((it && it.slotType) || '');
     if (st === 'ring') return '💍';
     var es = safe(function () { return APP().equipSys; }, null);
@@ -87699,6 +87924,35 @@ window.HY = window.HY || {};
  border-color:#fbbf24;box-shadow:0 0 0 1px rgba(251,191,36,.36),0 0 15px -1px rgba(251,191,36,.70);}
 .bagov-pickcard.r-unique{--pk-color:#f97316;--pk-glow:rgba(249,115,22,.55);
  border-color:#f97316;box-shadow:0 0 0 1px rgba(249,115,22,.40),0 0 17px -1px rgba(249,115,22,.80);}
+.bagov-pickcard.r-set{--pk-color:#a78bfa;--pk-glow:rgba(167,139,250,.55);
+ border-color:#a78bfa;box-shadow:0 0 0 1px rgba(167,139,250,.38),0 0 16px -1px rgba(167,139,250,.75);}
+/* ⭐ 山海套裝圖示（篆意抽象字） */
+.shj-set-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;flex:0 0 auto;border-radius:6px;overflow:hidden;
+ background:radial-gradient(120% 90% at 35% 22%,var(--shj-a,rgba(167,139,250,.9)) 0%,var(--shj-b,#1e1b4b) 72%);
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 0 10px -2px var(--shj-a,rgba(167,139,250,.5));
+ pointer-events:none;}
+.shj-set-icon__wm{position:absolute;inset:-15%;font-size:1.85em;line-height:1;font-weight:900;
+ font-family:"KaiTi","STKaiti","SimSun",serif;color:rgba(255,255,255,.07);
+ transform:rotate(-18deg) scale(1.35);letter-spacing:.35em;user-select:none;}
+.shj-set-icon__ring{position:absolute;inset:2px;border-radius:5px;
+ border:1px dashed rgba(255,255,255,.18);box-shadow:inset 0 0 12px rgba(0,0,0,.35);}
+.shj-set-icon__main{position:relative;z-index:1;font-size:1.05em;line-height:1;font-weight:900;
+ font-family:"KaiTi","STKaiti","FangSong","SimSun",serif;color:#fff9f0;
+ text-shadow:0 0 6px var(--shj-a),0 1px 0 #000,0 0 1px rgba(0,0,0,.9);
+ transform:scaleX(.92);letter-spacing:-.02em;}
+.shj-set-icon__piece{position:absolute;left:1px;bottom:0;z-index:2;font-size:.42em;line-height:1;
+ font-family:"KaiTi","STKaiti",serif;color:rgba(255,255,255,.92);
+ text-shadow:0 1px 2px rgba(0,0,0,.85);padding:1px 2px;border-radius:2px;
+ background:rgba(0,0,0,.35);}
+.shj-set-icon__seal{position:absolute;right:-1px;top:-1px;z-index:2;min-width:.95em;min-height:.95em;
+ font-size:.36em;line-height:.95em;text-align:center;font-weight:bold;
+ font-family:"KaiTi","STKaiti","SimSun",serif;color:#fecaca;
+ border:1px solid rgba(248,113,113,.75);border-radius:2px;
+ background:linear-gradient(145deg,rgba(127,29,29,.92),rgba(69,10,10,.95));
+ box-shadow:0 0 4px rgba(248,113,113,.45);}
+.bagov-cell .ci,.bagov-slot .ic,.bagov-pickcard .pk-img{display:flex;align-items:center;justify-content:center;}
+.bagov-cell .ci .shj-set-icon,.bagov-slot .ic .shj-set-icon{max-width:100%;max-height:100%;}
 /* 目前選中的改造目標：邊框再 +1px，並加白色虛線內圈 */
 .bagov-pickcard.is-target{border-width:4px;}
 .bagov-pickcard.is-target::after{
@@ -88416,9 +88670,14 @@ window.HY = window.HY || {};
     }
     if (it.implicit && it.implicit.text) h += '<div class="imp">✨ ' + esc(it.implicit.text) + '</div>';
     if (it.rarity === 'set' && it.setName) {
-      var zhen = (window.HY.Data && window.HY.Data.SHJ_ZHEN_PROC) ? window.HY.Data.SHJ_ZHEN_PROC.desc : '';
-      h += '<div class="imp" style="color:#a78bfa">🟣 套裝【' + esc(it.setName) + '】— 2/3/4/5 件套裝加成；' +
-        esc(zhen || '同套≥2：每回合5%「鎮」削全場敵方5%氣血') + '</div>';
+        var zhen = (window.HY.Data && window.HY.Data.SHJ_ZHEN_PROC) ? window.HY.Data.SHJ_ZHEN_PROC.desc : '';
+        var Data0 = window.HY.Data;
+        var iconHtml = (Data0 && typeof Data0.shjSetIconHtml === 'function')
+            ? Data0.shjSetIconHtml(it, 42) : '';
+        h += '<div class="imp" style="color:#a78bfa;display:flex;align-items:center;gap:8px;">' +
+            iconHtml +
+            '<span>套裝【' + esc(it.setName) + '】— 2/3/4/5 件套裝加成；' +
+            esc(zhen || '同套≥2：每回合5%「鎮」削全場敵方5%氣血') + '</span></div>';
     }
     var setMd = it.setMods || [];
     if (setMd.length) {
@@ -89977,6 +90236,12 @@ window.HY = window.HY || {};
     return { file: t.icon, path: t.iconPath || ('Art/2DItems/' + t.icon) };
   }
   function poeIconHtml(it, cls, px) {
+    if (it && it.rarity === 'set') {
+      var Data = window.HY.Data;
+      if (Data && typeof Data.shjSetIconHtml === 'function') {
+        return Data.shjSetIconHtml(it, px || 22);
+      }
+    }
     var ic = poeIconOf(it);
     if (!ic) return '';
     var chain = [POE_ICON_BASE + ic.file, POE_CDN_BASE + ic.path, POE_CDN_BASE + ic.path + '?w=1&h=1'];
@@ -109981,11 +110246,20 @@ window.HY.PoeItemIcons = {
   }
   function tplFor(item) {
     if (!item) return null;
+    if (item.rarity === 'set' && (item.shjSetId || item.setName)) return null;
     var t = tplOf(item.baseId);
     if (t && isPoe(t)) return t;
     var slot = String(item.slotType || (t && t.slotType) || '');
     var lv = item.reqLv || (t && t.reqLv) || 1;
     return nearestPoe(slot, lv);
+  }
+  function isShjSetItem(it) {
+    return !!(it && String(it.rarity) === 'set' && (it.shjSetId || it.setName));
+  }
+  function putShj(host, it, px) {
+    var Data = D();
+    if (!Data.shjSetIconInject) return false;
+    return Data.shjSetIconInject(host, it, px);
   }
   /* --------------------------------------------------- live item index */
   function bagItems() {
@@ -110106,9 +110380,14 @@ window.HY.PoeItemIcons = {
     var nm = el.querySelector('.cn');
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('cell', nm ? nm.textContent : el.textContent); return false; }
-    var tpl = tplFor(hit.it);
-    if (!tpl) { note('cell', hit.it.name); return false; }
-    if (!put(host, tpl, PX_CELL)) return false;
+    if (isShjSetItem(hit.it)) {
+      if (host.querySelector('.shj-set-icon')) return false;
+      if (!putShj(host, hit.it, PX_CELL)) { note('cell', hit.it.name); return false; }
+    } else {
+      var tpl = tplFor(hit.it);
+      if (!tpl) { note('cell', hit.it.name); return false; }
+      if (!put(host, tpl, PX_CELL)) return false;
+    }
     st.art++;
     if (hit.via === 'uid') st.byUid++; else st.byName++;
     if (samples.length < 8) samples.push((hit.it.name || '?') + ' -> ' + tpl.name + ' [' + hit.via + ']');
@@ -110122,9 +110401,14 @@ window.HY.PoeItemIcons = {
     var nm = el.querySelector('.si');
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('slot', nm ? nm.textContent : el.textContent); return false; }
-    var tpl = tplFor(hit.it);
-    if (!tpl) { note('slot', hit.it.name); return false; }
-    if (!put(host, tpl, PX_SLOT)) return false;
+    if (isShjSetItem(hit.it)) {
+      if (host.querySelector('.shj-set-icon')) return false;
+      if (!putShj(host, hit.it, PX_SLOT)) { note('slot', hit.it.name); return false; }
+    } else {
+      var tpl = tplFor(hit.it);
+      if (!tpl) { note('slot', hit.it.name); return false; }
+      if (!put(host, tpl, PX_SLOT)) return false;
+    }
     st.art++;
     if (hit.via === 'uid') st.byUid++; else st.byName++;
     return true;
@@ -110139,9 +110423,14 @@ window.HY.PoeItemIcons = {
     var nm = el.querySelector('.pk-name');
     var hit = findItem(nm ? nm.textContent : el.textContent, uidOfEl(el));
     if (!hit) { note('pick', nm ? nm.textContent : el.textContent); return false; }
-    var tpl = tplFor(hit.it);
-    if (!tpl) { note('pick', hit.it.name); return false; }
-    if (!put(host, tpl, 46)) return false;
+    if (isShjSetItem(hit.it)) {
+      if (host.querySelector('.shj-set-icon')) return false;
+      if (!putShj(host, hit.it, 46)) { note('pick', hit.it.name); return false; }
+    } else {
+      var tpl = tplFor(hit.it);
+      if (!tpl) { note('pick', hit.it.name); return false; }
+      if (!put(host, tpl, 46)) return false;
+    }
     st.art++;
     if (hit.via === 'uid') st.byUid++; else st.byName++;
     return true;
@@ -110151,9 +110440,15 @@ window.HY.PoeItemIcons = {
     st.card++;
     var hit = findItem(card.textContent, uidOfEl(card));
     if (!hit) { note('card', card.textContent); return false; }
-    var tpl = tplFor(hit.it);
-    if (!tpl) { note('card', hit.it.name); return false; }
-    if (!putBefore(card, tpl, PX_CARD)) return false;
+    if (isShjSetItem(hit.it)) {
+      var host = card.querySelector('h4') || card.querySelector('strong') || card;
+      if (host.querySelector('.shj-set-icon')) return false;
+      if (!putShj(host, hit.it, PX_CARD)) { note('card', hit.it.name); return false; }
+    } else {
+      var tpl = tplFor(hit.it);
+      if (!tpl) { note('card', hit.it.name); return false; }
+      if (!putBefore(card, tpl, PX_CARD)) return false;
+    }
     st.art++;
     if (uidOfEl(card)) st.byUid++; else st.byName++;
     return true;
@@ -110165,10 +110460,14 @@ window.HY.PoeItemIcons = {
     try {
       if (poe && typeof poe.getSelectedCraftItem === 'function') sel = poe.getSelectedCraftItem();
     } catch (e) { sel = null; }
-    var tpl = sel ? tplFor(sel) : null;
-    if (!tpl) { var h = findItem(pv.textContent, ''); tpl = h ? tplFor(h.it) : null; }
-    if (!tpl) { note('preview', pv.textContent); return false; }
-    if (!putBefore(pv, tpl, PX_HEAD)) return false;
+    if (sel && isShjSetItem(sel)) {
+      if (!putShj(pv, sel, PX_HEAD)) { note('preview', sel.name); return false; }
+    } else {
+      var tpl = sel ? tplFor(sel) : null;
+      if (!tpl) { var h = findItem(pv.textContent, ''); tpl = h ? tplFor(h.it) : null; }
+      if (!tpl) { note('preview', pv.textContent); return false; }
+      if (!putBefore(pv, tpl, PX_HEAD)) return false;
+    }
     st.art++;
     return true;
   }
@@ -115946,10 +116245,12 @@ window.HY = window.HY || {};
             var safeMax = (typeof max === 'number' && isFinite(max) && max > 0) ? max : 0;
             var nCur = Number(cur);
             /* ⚠️ null 也要視為無效（JSON 把 NaN 存成 null） */
-            if (cur === null || cur === undefined || !isFinite(nCur)) nCur = safeMax;
+            var isHp = (kind === 'hp');
+            if (cur === null || cur === undefined || !isFinite(nCur)) {
+                nCur = isHp ? safeMax : 0;
+            }
             var safeCur = Math.max(0, Math.min(nCur, safeMax));
             var pct = safeMax > 0 ? (safeCur / safeMax) * 100 : 0;
-            var isHp = (kind === 'hp');
             var cls = isHp
                 ? ('hpmp-bar hp' + (isEnemy ? ' enemy-hp' : ''))
                 : ('hpmp-bar mp' + (isEnemy ? ' enemy-mp' : ''));
@@ -116951,7 +117252,11 @@ window.HY = window.HY || {};
                 /* ⭐ v472：NaN / null 防護（同 buildHpmpBar 的理由） */
                 var safeMax = (typeof max === 'number' && isFinite(max) && max > 0) ? max : 0;
                 var nCur = Number(cur);
-                if (cur === null || cur === undefined || !isFinite(nCur)) nCur = safeMax;
+                var isMp = prefix.indexOf('mp') !== -1;
+                /* 內力若缺失不可用 max 填滿（會看起來永遠滿內）；氣血仍預設滿條較不易誤解 */
+                if (cur === null || cur === undefined || !isFinite(nCur)) {
+                    nCur = isMp ? 0 : safeMax;
+                }
                 var safeCur = Math.max(0, Math.min(nCur, safeMax));
                 var pct = safeMax > 0 ? (safeCur / safeMax) * 100 : 0;
                 var fill = document.getElementById(prefix + '-fill');
@@ -121734,16 +122039,22 @@ window.HY = window.HY || {};
                     /* 🌿 木 · 全隊治療 */
                     var partyMembers = this.app.partySys.getPartyMembers();
                     var healVal = Math.max(10, Math.floor(stats.maxHp * 0.07));
+                    var ptHeal = core.playerTurn;
                     partyMembers.forEach(function (m) {
-                        if (m.currentHp > 0) core.charSys.restoreVitals(healVal, 0, m);
+                        if (m.currentHp > 0) {
+                            if (ptHeal && ptHeal.queueVitalRestore) ptHeal.queueVitalRestore(m, healVal, 0);
+                            else core.charSys.restoreVitals(healVal, 0, m);
+                        }
                     });
-                    triggerLog = ' 🌿【' + rootMeta.triggerName + '】全隊回復 ' + healVal + ' 氣血！';
+                    triggerLog = ' 🌿【' + rootMeta.triggerName + '】下回合全隊回復 ' + healVal + ' 氣血！';
                 } else if (trigger === 'mpCycle') {
                     /* 💧 水 · 內力循環（溢出轉氣血） */
                     var mpMax = stats.maxMp || 100;
                     var mpGain = Math.floor(mpMax * 0.20);
-                    core.charSys.restoreVitals(0, mpGain, charObj);
-                    triggerLog = ' 💧【' + rootMeta.triggerName + '】回復 ' + mpGain + ' 內力！';
+                    var ptMp = core.playerTurn;
+                    if (ptMp && ptMp.queueVitalRestore) ptMp.queueVitalRestore(charObj, 0, mpGain);
+                    else core.charSys.restoreVitals(0, mpGain, charObj);
+                    triggerLog = ' 💧【' + rootMeta.triggerName + '】下回合回復 ' + mpGain + ' 內力！';
                 } else if (trigger === 'execute') {
                     /* 🔥 火 · 殘血處決（目標越殘越痛） */
                     var hpRatio = target.maxHp > 0 ? (target.currentHp / target.maxHp) : 1;
@@ -121756,8 +122067,10 @@ window.HY = window.HY || {};
                 } else if (trigger === 'thorns') {
                     /* 🪨 土 · 壁壘反震（受擊時觸發，見下方防禦段） */
                     var eHeal = Math.max(10, Math.floor(stats.maxHp * 0.06));
-                    core.charSys.restoreVitals(eHeal, 0, charObj);
-                    triggerLog = ' 🪨【' + rootMeta.triggerName + '】凝結壁壘回復 ' + eHeal + ' 氣血！';
+                    var ptTh = core.playerTurn;
+                    if (ptTh && ptTh.queueVitalRestore) ptTh.queueVitalRestore(charObj, eHeal, 0);
+                    else core.charSys.restoreVitals(eHeal, 0, charObj);
+                    triggerLog = ' 🪨【' + rootMeta.triggerName + '】下回合壁壘回復 ' + eHeal + ' 氣血！';
                 } else if (trigger === 'freezeDelay') {
                     /* ❄️ 冰 · 封脈延緩 */
                     target.atb = Math.max(0, (target.atb || 0) * 0.75);
@@ -121778,8 +122091,10 @@ window.HY = window.HY || {};
                     charObj.__omniBoost = { turns: 2, mult: 1.15 };
                     var cHeal = Math.max(10, Math.floor(stats.maxHp * 0.05));
                     var cMp = Math.max(6, Math.floor((stats.maxMp || 100) * 0.05));
-                    core.charSys.restoreVitals(cHeal, cMp, charObj);
-                    triggerLog = ' 🌌【' + rootMeta.triggerName + '】全屬性 +15%（2 回合），回復 ' +
+                    var ptOm = core.playerTurn;
+                    if (ptOm && ptOm.queueVitalRestore) ptOm.queueVitalRestore(charObj, cHeal, cMp);
+                    else core.charSys.restoreVitals(cHeal, cMp, charObj);
+                    triggerLog = ' 🌌【' + rootMeta.triggerName + '】全屬性 +15%（2 回合），下回合回復 ' +
                         cHeal + ' 氣血／' + cMp + ' 內力！';
                 }
             }
@@ -121813,9 +122128,11 @@ window.HY = window.HY || {};
                 var earthReflect = Math.max(5, Math.floor(targetStats.def * 0.5));
                 var earthAbsorb = Math.max(5, Math.floor(targetStats.maxHp * 0.03));
                 enemy.currentHp = Math.max(0, enemy.currentHp - earthReflect);
-                core.charSys.restoreVitals(earthAbsorb, 0, targetMember);
+                var ptEa = core.playerTurn;
+                if (ptEa && ptEa.queueVitalRestore) ptEa.queueVitalRestore(targetMember, earthAbsorb, 0);
+                else core.charSys.restoreVitals(earthAbsorb, 0, targetMember);
                 core.log(memberRoot.icon + '【' + memberRoot.triggerName + '】' +
-                    targetMember.name + ' 壁壘護體 (+' + earthAbsorb + 'HP)，反震 ' +
+                    targetMember.name + ' 壁壘護體 (下回合+' + earthAbsorb + 'HP)，反震 ' +
                     enemy.name + ' ' + earthReflect + ' 傷！', 'combat');
             } else if (memberRoot.trigger === 'counterOnDodge' && enemy.currentHp > 0 &&
                 Math.random() < 0.30) {
@@ -123365,8 +123682,12 @@ window.HY = window.HY || {};
             h += '<div class="wh-sec"><h5>武魂數據</h5>';
             h += kv('魂力', '<span class="hl">' + esc(Data.fmtYears(w.years)) + '</span>');
             h += kv('魂力上限', esc(Data.fmtYears(maxY)));
-            h += kv('成長值', num(w.growth, 0).toFixed(2) +
-                '（屬性 ×' + (1 + num(w.growth, 0)).toFixed(2) + '）');
+            var gCap = (Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5);
+            var gNow = num(w.growth, 0);
+            var gMult = (Data.wuhunGrowthMult) ? Data.wuhunGrowthMult(gNow) : (1 + gNow);
+            var gRate = num(cfg.GROWTH_ATTR_RATE, 0.2);
+            h += kv('成長值', gNow.toFixed(2) + ' / ' + gCap.toFixed(0) +
+                '（屬性 ×' + gMult.toFixed(2) + '，每點 +' + (gRate * 100).toFixed(0) + '%）');
             h += kv('五屬性總和', '<span class="hl">+' + total.toFixed(1) + '</span>');
             h += kv('每項屬性', '+' + a.str.toFixed(1));
             h += kv('戰鬥技能', esc(w.skill || '—') +
@@ -123415,7 +123736,9 @@ window.HY = window.HY || {};
                 '· 魂力 1 年 = 全屬性 +' + num(cfg.POWER_PER_YEAR, 0.01) + '（數值由魂力決定）<br>' +
                 '· <b>餵食</b>：魂力疊加，副武魂消失；可複選，並用批量鍵（未附身／同名／≤100年…）快速勾選<br>' +
                 '· <b>融合</b>：只限同名武魂，可複選批量融合，成長值 +' +
-                num(cfg.GROWTH_MIN, 0.1) + ' ~ +' + num(cfg.GROWTH_MAX, 0.3) + '<br>' +
+                num(cfg.GROWTH_MIN, 0.1) + ' ~ +' + num(cfg.GROWTH_MAX, 0.3) +
+                '，<b>成長上限 ' + ((Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5)) + '</b>' +
+                '（每點成長 +' + (num(cfg.GROWTH_ATTR_RATE, 0.2) * 100).toFixed(0) + '% 魂力屬性）<br>' +
                 '· 每個角色獨立附身，只能同時附身 1 隻武魂' +
                 '</div></div>';
 
@@ -123452,8 +123775,13 @@ window.HY = window.HY || {};
             var h = '';
             /* ⭐ v568：附身/卸下按鈕已移除 —— 改用「右鍵 → 選擇角色附身」
                這裡只保留武魂本身的成長操作（餵食 / 融合）。 */
+            var cfgActs = Data.WUHUN_CONFIG || {};
+            var gCapActs = (Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfgActs.GROWTH_CAP, 5);
+            var atGrowthCap = num(w.growth, 0) >= gCapActs - 0.0001;
             h += '<button class="wh-btn gold" data-act="feed">🍽️ 餵食（可多選・疊加魂力）</button>';
-            h += '<button class="wh-btn gold" data-act="fuse">🔗 融合（同名・可多選）</button>';
+            h += atGrowthCap
+                ? '<button class="wh-btn" disabled title="成長值已達上限 ' + gCapActs + '">🔗 融合（已滿）</button>'
+                : '<button class="wh-btn gold" data-act="fuse">🔗 融合（同名・可多選）</button>';
             h += '<button class="wh-btn" data-act="cancel">✖ 關閉選取</button>';
 
             this.el.acts.innerHTML = h;
@@ -123803,9 +124131,10 @@ window.HY = window.HY || {};
             var warn = ownN > 0
                 ? '\n\n⚠️ 其中 ' + ownN + ' 隻正附身於角色，融合後會自動卸下。'
                 : '';
+            var gCapF = (Data.wuhunGrowthCap) ? Data.wuhunGrowthCap() : num(cfg.GROWTH_CAP, 5);
             if (!confirm('確定要讓【' + main.name + '】融合 ' + n + ' 隻同名武魂？\n' +
                 '副武魂會消失，預估成長值 +' + (n * gMin).toFixed(2) +
-                ' ~ +' + (n * gMax).toFixed(2) + '（隨機）。' + warn)) return;
+                ' ~ +' + (n * gMax).toFixed(2) + '（隨機，上限 ' + gCapF + '）。' + warn)) return;
 
             var r = sys.fuseMany(mainUid, subUids);
             if (!r.ok) { alert(r.why || '融合失敗'); return; }
@@ -136527,6 +136856,10 @@ window.HY.Data = window.HY.Data || {};
        ⭐ v684：出航費 ÷100（500,000 → 5,000），長途仍有航線 order 加成。 */
     SHIP_FEE_RATE: 0.001,
     SHIP_FEE_MULT: 5000,
+    /* ⭐ 航運成功時，額外獎勵數量的全局倍率（疊加航線 mul） */
+    SHIP_REWARD_YIELD: 1.35,
+    /* 航運成功時，額外機率掉落洗隨丹 ×1（與獎勵池獨立） */
+    SHIP_XISUI_DROP_CHANCE: 0.10,
     /* 欠薪容忍：連續欠薪超過此週期數 → 士氣暴跌並隨機解雇 */
     WAGE_GRACE_TICKS: 5,
     /* 士氣上下限 */
@@ -136766,12 +137099,12 @@ window.HY.Data = window.HY.Data || {};
      rolls  = 抽幾項（每項可能是通貨/符文/精隨/化石）
      lucky  = 稀有獎勵權重加成（0 = 無加成，1 = 崇高石等權重 ×2） */
   var SHIP_TIERS = [
-    { minValue: 0,      rolls: 1, lucky: 0,   label: '寒酸' },
-    { minValue: 500,    rolls: 2, lucky: 0,   label: '普通' },
-    { minValue: 2000,   rolls: 3, lucky: 0.5, label: '豐盛' },
-    { minValue: 8000,   rolls: 4, lucky: 1,   label: '豪奢' },
-    { minValue: 30000,  rolls: 5, lucky: 2,   label: '滿載' },
-    { minValue: 100000, rolls: 6, lucky: 3,   label: '傾國' }
+    { minValue: 0,      rolls: 2, lucky: 0,   label: '寒酸' },
+    { minValue: 350,    rolls: 3, lucky: 0,   label: '普通' },
+    { minValue: 1400,   rolls: 4, lucky: 0.5, label: '豐盛' },
+    { minValue: 5500,   rolls: 5, lucky: 1,   label: '豪奢' },
+    { minValue: 20000,  rolls: 6, lucky: 2,   label: '滿載' },
+    { minValue: 65000,  rolls: 7, lucky: 3,   label: '傾國' }
   ];
   /* 航運結果：成功時的獎勵池（抽 2~3 項）
      ⭐ 已移除金幣與銀錠。
@@ -136783,17 +137116,19 @@ window.HY.Data = window.HY.Data || {};
      各類權重刻意接近，避免某一類被邊緣化。 */
   var SHIP_REWARDS = [
     /* ── 通貨 ── */
-    { kind: 'currency', id: 'orb_chaos',  name: '混沌石',   icon: '🟠', min: 1, max: 3, weight: 26 },
-    { kind: 'currency', id: 'orb_alt',    name: '改造石',   icon: '🔷', min: 3, max: 8, weight: 34 },
-    { kind: 'currency', id: 'orb_alch',   name: '點金石',   icon: '🟡', min: 1, max: 3, weight: 24 },
-    { kind: 'currency', id: 'orb_regal',  name: '富豪石',   icon: '🟣', min: 1, max: 2, weight: 18 },
-    { kind: 'currency', id: 'orb_exalt',  name: '崇高石',   icon: '🟨', min: 1, max: 1, weight: 7 },
+    { kind: 'currency', id: 'orb_chaos',  name: '混沌石',   icon: '🟠', min: 2, max: 5, weight: 26 },
+    { kind: 'currency', id: 'orb_alt',    name: '改造石',   icon: '🔷', min: 5, max: 14, weight: 34 },
+    { kind: 'currency', id: 'orb_alch',   name: '點金石',   icon: '🟡', min: 2, max: 5, weight: 24 },
+    { kind: 'currency', id: 'orb_regal',  name: '富豪石',   icon: '🟣', min: 2, max: 4, weight: 18 },
+    { kind: 'currency', id: 'orb_exalt',  name: '崇高石',   icon: '🟨', min: 1, max: 2, weight: 7 },
     /* ── 符文（金司馬區獨有） ── */
-    { kind: 'rune',     id: null,         name: '隨機符文', icon: '🔯', min: 1, max: 2, weight: 26 },
+    { kind: 'rune',     id: null,         name: '隨機符文', icon: '🔯', min: 2, max: 4, weight: 26 },
     /* ── 精隨（依階級加權，低階常見、高階稀有） ── */
-    { kind: 'essence',  id: null,         name: '精隨',     icon: '🔮', min: 1, max: 2, weight: 28 },
+    { kind: 'essence',  id: null,         name: '精隨',     icon: '🔮', min: 2, max: 4, weight: 28 },
     /* ── 化石（礦坑材料，航運的另一條取得管道） ── */
-    { kind: 'fossil',   id: null,         name: '化石',     icon: '🪨', min: 1, max: 2, weight: 26 }
+    { kind: 'fossil',   id: null,         name: '化石',     icon: '🪨', min: 2, max: 4, weight: 26 },
+    /* 洗隨丹：獎勵池稀有項（固定 ×1，不乘航運數量倍率） */
+    { kind: 'item', id: 'pill_xisui', name: '洗隨丹', icon: '♻️', min: 1, max: 1, weight: 9, noYieldMul: true }
   ];
   /* 航運失敗（遇險）結果 */
   var SHIP_FAILURES = [
@@ -137800,7 +138135,7 @@ window.HY = window.HY || {};
 //
 // 機制：
 //   把錠裝上船 → 選航線 → 真實時間航行 → 抵達時擲骰判定成敗
-//   成功：貨物價值 × 航線倍率 → 金幣 + 隨機額外獎勵
+//   成功：貨值×航線倍率決定分級與抽數；物資數量再乘航線／全局倍率
 //   失敗：依 SHIP_FAILURES 損失部分貨物
 //
 // 關鍵設計：
@@ -138016,12 +138351,22 @@ window.HY = window.HY || {};
         this.log('🌊 航運失敗：' + r.name + ' — ' + f.text, 'combat');
         return;
       }
-      /* 成功：純物資獎勵，數量與稀有度由貨值分級決定
-         ⭐ 原本獎勵數量固定（3 項），導致「只裝 1 個錠出航」最划算；
-         現在貨值越高，抽的項數越多、稀有獎勵權重也越高。 */
-      var tier = this.valueTier(ship.value);
-      var extras = this._rollExtras(tier.rolls, tier.lucky);
-      var extraTexts = this._grantExtras(extras);
+      /* 成功：純物資獎勵；貨值×航線倍率決定分級，遠洋再加抽數與數量倍率 */
+      var routeMul = num(r.mul, 1);
+      var prev = this.rewardPreview(ship.value, ship.routeId);
+      var tier = prev.tier;
+      var rollCount = prev.rolls;
+      var extras = this._rollExtras(rollCount, tier.lucky);
+      var extraTexts = this._grantExtras(extras, prev.yieldMult);
+      var meta = (this.def && this.def.META) || {};
+      var xisuiCh = num(meta.SHIP_XISUI_DROP_CHANCE, 0);
+      if (xisuiCh > 0 && Math.random() < xisuiCh) {
+        var xisuiHit = this._grantExtras(
+          [{ kind: 'item', id: 'pill_xisui', name: '洗隨丹', min: 1, max: 1, noYieldMul: true }],
+          1
+        );
+        if (xisuiHit.length) extraTexts = extraTexts.concat(xisuiHit);
+      }
       ship.status = 'arrived';
       ship.result = {
         ok: true,
@@ -138034,8 +138379,20 @@ window.HY = window.HY || {};
       this.km._pushLog('🎉 貨船平安返港！【' + r.name + '・' + tier.label + '】帶回：' +
         (extraTexts.length ? extraTexts.join('、') : '空手而歸（運氣不佳）') + '。');
       this.log('🎉 航運成功：' + r.name + '（貨值 ' + ship.value + '，' + tier.label +
-        '，' + tier.rolls + ' 抽）→ ' +
+        '，×' + routeMul.toFixed(2) + ' → ' + rollCount + ' 抽）→ ' +
         (extraTexts.length ? extraTexts.join('、') : '無收穫'), 'wealth');
+    }
+    /** 結算／UI 共用：航線倍率如何影響分級、抽數、數量倍率 */
+    rewardPreview(cargoValue, routeId) {
+      var r = routeId ? this.route(routeId) : null;
+      var routeMul = r ? num(r.mul, 1) : 1;
+      var meta = (this.def && this.def.META) || {};
+      var yieldBase = num(meta.SHIP_REWARD_YIELD, 1);
+      var tier = this.valueTier(num(cargoValue, 0) * routeMul);
+      var bonusRolls = Math.max(0, Math.floor((routeMul - 1) * 1.5));
+      var rolls = Math.min(10, num(tier.rolls, 1) + bonusRolls);
+      var yieldMult = yieldBase * (0.7 + routeMul * 0.3);
+      return { tier: tier, rolls: rolls, routeMul: routeMul, yieldMult: yieldMult };
     }
     /** 依貨值取得獎勵分級 */
     valueTier(cargoValue) {
@@ -138079,14 +138436,31 @@ window.HY = window.HY || {};
     /** 發放獎勵，回傳文字描述
         ⭐ 支援四類：通貨 / 符文 / 精隨 / 化石。
         金幣與銀錠已移除（金幣是出航費的付出端，不該再回收）。 */
-    _grantExtras(list) {
+    _grantExtras(list, yieldMult) {
       var k = this.state;
       var out = [];
       var self = this;
+      var yMul = num(yieldMult, 1);
       (list || []).forEach(function (rw) {
-        var amt = Math.max(1, num(rw.min, 1) +
-          Math.floor(Math.random() * Math.max(1, num(rw.max, 2) - num(rw.min, 1) + 1)));
-        if (rw.kind === 'currency') {
+        var spread = Math.max(1, num(rw.max, 2) - num(rw.min, 1) + 1);
+        var base = num(rw.min, 1) + Math.floor(Math.random() * spread);
+        var amt = rw.noYieldMul
+          ? Math.max(1, base)
+          : Math.max(1, Math.floor(base * yMul));
+        if (rw.kind === 'item') {
+          var iid = rw.id;
+          if (iid) {
+            var invSys = window.HY.game && window.HY.game.inventorySys;
+            if (!invSys && self.charSys && self.charSys.rootState) {
+              var inv = self.charSys.rootState.inventory || (self.charSys.rootState.inventory = {});
+              inv[iid] = num(inv[iid], 0) + amt;
+            } else if (invSys && typeof invSys.addItem === 'function') {
+              invSys.addItem(iid, amt);
+            }
+            var IT = (window.HY.Data && window.HY.Data.ITEMS && window.HY.Data.ITEMS[iid]) || {};
+            out.push((rw.icon ? rw.icon + ' ' : '') + (IT.name || rw.name || iid) + ' ×' + amt);
+          }
+        } else if (rw.kind === 'currency') {
           var wallet = self.charSys.rootState.currencies || (self.charSys.rootState.currencies = {});
           wallet[rw.id] = num(wallet[rw.id], 0) + amt;
           out.push(rw.name + ' ×' + amt);
@@ -141179,9 +141553,10 @@ window.HY = window.HY || {};
             }
             h += '<div style="background:#0d141b;border:1px solid #24313f;border-radius:5px;' +
                 'padding:7px 9px;margin-top:8px;font-size:.74rem;color:#94a3b8;line-height:1.7">' +
-                '貨值分級：<b style="color:#f0c674">' + esc(tier.label) + '</b>' +
+                '貨值分級（近海基準）：<b style="color:#f0c674">' + esc(tier.label) + '</b>' +
                 '（抽 <b style="color:#6ee7b7">' + tier.rolls + '</b> 項' +
                 (tier.lucky ? '，稀有加成 ×' + (1 + tier.lucky).toFixed(1) : '') + '）' +
+                '<br><span style="color:#64748b">遠洋航線以「貨值×航線倍率」升級分級，並額外加抽；成功返航另有機率帶回洗隨丹×1。</span>' +
                 (nextTier
                     ? '<br><span style="color:#64748b">再湊 ' +
                       fmt(num(nextTier.minValue, 0) - totalValue) +
@@ -141200,19 +141575,21 @@ window.HY = window.HY || {};
                 var fee = self.ship.calcFee(totalValue, r.id);
                 var afford = gold >= fee;
                 var canGo = ok && afford;
+                var shipPrev = self.ship.rewardPreview(totalValue, r.id);
                 h += '<div style="display:flex;align-items:center;gap:9px;padding:7px 0;' +
                     'border-bottom:1px solid #131b23' + (canGo ? '' : ';opacity:.45') + '">' +
                     '<span style="font-size:1.25rem">' + r.icon + '</span>' +
                     '<div style="flex:1 1 auto;min-width:0">' +
                     '<div style="font-size:.78rem;color:#e2e8f0">' + esc(r.name) +
                     '<span style="font-size:.66rem;color:#64748b;margin-left:6px">' +
-                    r.minutes + ' 分　風險 ' + pct(risk) + '</span></div>' +
+                    r.minutes + ' 分　風險 ' + pct(risk) + '　收益 ×' + num(r.mul, 1).toFixed(2) + '</span></div>' +
                     '<div style="font-size:.7rem;color:#64748b">' + esc(r.desc || '') + '</div>' +
                     '<div style="font-size:.7rem;color:#fca5a5;margin-top:2px">' +
                     '出航費 ' + fmt(fee) + ' 金</div>' +
                     '</div>' +
                     '<div style="text-align:right">' +
-                    '<div style="font-size:.7rem;color:#7dd3fc">帶回稀有物資</div>' +
+                    '<div style="font-size:.7rem;color:#7dd3fc">' +
+                    shipPrev.tier.label + ' · 約 ' + shipPrev.rolls + ' 抽</div>' +
                     '<button class="km-btn' + (canGo ? ' gold' : '') + '" data-send="' + r.id + '" ' +
                     (canGo ? '' : 'disabled') + ' style="padding:3px 10px;font-size:.7rem;margin-top:3px">' +
                     (ok ? (afford ? '出航' : '金幣不足') : '需碼頭 Lv.' + need) + '</button>' +
