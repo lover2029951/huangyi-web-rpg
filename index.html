@@ -861,6 +861,14 @@
         <a href="https://github.com/lover2029951/huangyi-web-rpg" target="_blank" rel="noopener">原始碼倉庫</a>
     </div>
 
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            try { navigator.serviceWorker.register('sw.js?v=745').catch(function () {}); } catch (e) {}
+        });
+    }
+    </script>
+
 </body>
 </html>
 

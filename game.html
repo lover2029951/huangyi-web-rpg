@@ -88619,6 +88619,7 @@ window.HY = window.HY || {};
     class UIEquipMarket {
         constructor(app) {
             this.app = app;
+            this._invTabSig = '';
         }
         renderInventoryTab() {
             const Data = window.HY.Data;
@@ -88630,6 +88631,31 @@ window.HY = window.HY || {};
             const rarityNames  = { normal: '普通白裝', magic: '魔法藍裝', rare: '稀有黃裝', unique: '傳奇暗金' };
             const selectedItem = app.poeSys.getSelectedCraftItem();
             const selectedUid = selectedItem ? selectedItem.uid : null;
+            const filter = app.inventorySys.filterType || 'all';
+            const bagEquips = app.charSys.rootState.equipBag || [];
+            const wallet = app.charSys.rootState.currencies || {};
+            const walletSig = Object.keys(wallet).sort().map(function (k) {
+                return k + ':' + (wallet[k] || 0);
+            }).join(',');
+            const bagSig = bagEquips.map(function (it) {
+                return (it && it.uid) ? (it.uid + '/' + (it.rarity || '') + '/' + (it.prefixes || []).length) : '';
+            }).join('|');
+            const sig = [
+                st.id, st.lv, selectedUid, filter,
+                JSON.stringify(st.equipment || {}),
+                bagSig, walletSig
+            ].join('#');
+            const invList = document.getElementById('inventory-list');
+            if (this._invTabSig === sig && invList && invList.children.length > 0) {
+                const targetLabelEl = document.getElementById('craft-target-label');
+                if (targetLabelEl) {
+                    targetLabelEl.textContent = selectedItem
+                        ? '當前選中打造：【' + (selectedItem.rareTitle || '') + selectedItem.name + '】'
+                        : '當前選中打造：尚未選擇裝備';
+                }
+                return;
+            }
+            this._invTabSig = sig;
             // ============ 1. 十大裝備槽位 ============
             const pdGrid = document.getElementById('paperdoll-grid');
             if (pdGrid) {
@@ -88726,7 +88752,6 @@ window.HY = window.HY || {};
             const orbBarEl = document.getElementById('currency-orb-bar');
             if (orbBarEl && Data.CURRENCIES) {
                 orbBarEl.innerHTML = '';
-                const wallet = app.charSys.rootState.currencies || {};
                 Object.values(Data.CURRENCIES).forEach(orb => {
                     const count = wallet[orb.id] || 0;
                     const isUniqueBlocked = selectedItem && selectedItem.rarity === 'unique' && orb.id !== 'orb_vaal';
@@ -88752,11 +88777,8 @@ window.HY = window.HY || {};
                 });
             }
             // ============ 3. 行囊 ============
-            const invList = document.getElementById('inventory-list');
             if (!invList) return;
             invList.innerHTML = '';
-            const filter = app.inventorySys.filterType || 'all';
-            const bagEquips = app.charSys.rootState.equipBag || [];
             const invPills = app.charSys.rootState.inventory || {};
             let hasRenderedAny = false;
             if (filter === 'all' || filter === 'equip') {
@@ -92189,7 +92211,37 @@ window.HY = window.HY || {};
     h += '</div>';
     return h;
   }
+  var _bagRenderSig = null;
+  function computeBagRenderSig() {
+    var all = bagAll();
+    var eq = ACC.equipped() || {};
+    var idBrief = [];
+    var n = Math.min(all.length, 120);
+    for (var i = 0; i < n; i++) {
+      var it = all[i];
+      idBrief.push(uidOf(it) + '/' + num(it._forgeLv, 0) + '/' + (isLocked(it) ? 1 : 0));
+    }
+    if (all.length > n) idBrief.push('…' + all.length);
+    var eqSlot = slotDefs().map(function (s) {
+      var it = eq[s.id];
+      return it ? uidOf(it) : '-';
+    }).join('|');
+    return [
+      charId(activeChar()),
+      craftTargetUid() || '',
+      _selUid || '',
+      JSON.stringify(_pref),
+      eqSlot,
+      idBrief.join(',')
+    ].join('#');
+  }
   function renderBag() {
+    var sig = computeBagRenderSig();
+    if (_bagRenderSig === sig && _els && _els.body && _els.body.querySelector('.bagov-grid')) {
+      try { refreshCraft(); } catch (eRf) { }
+      return;
+    }
+    _bagRenderSig = sig;
     var eq = ACC.equipped() || {};
     var all = bagAll();
     var list = filteredSorted();
@@ -94003,6 +94055,7 @@ window.HY = window.HY || {};
       }
     }
     _page = 'bag';
+    _bagRenderSig = null;
     e.mask.classList.remove('hidden');
     _open = true;
     renderModal();
@@ -94041,6 +94094,7 @@ window.HY = window.HY || {};
     if (_mapSyncTimer) return;
     _mapSyncTimer = setInterval(function () {
       if (!_open || _page !== 'mapstash') return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       var msys = mapSys();
       if (!msys || typeof msys.mapsVersion !== 'function') return;
       var v = msys.mapsVersion();
@@ -94048,7 +94102,7 @@ window.HY = window.HY || {};
       /* 記號先更新，避免重繪期間又觸發一次 */
       _mapStashVer = v;
       try { renderMapStash(); } catch (e) { }
-    }, 600);
+    }, 1200);
   }
   function stopMapSync() {
     if (_mapSyncTimer) { clearInterval(_mapSyncTimer); _mapSyncTimer = null; }
@@ -136555,7 +136609,7 @@ window.HY = window.HY || {};
                 var self = this;
                 this._searchTimer = setInterval(function () {
                     if (!self.isOpen) { self._stopSearchAnim(); return; }
-                    self._draw();
+                    self._scheduleDraw();
                 }, 90);
             } else {
                 this._stopSearchAnim();
@@ -138062,11 +138116,27 @@ window.HY = window.HY || {};
             try { this.talent.ensureRoot(this.app.charSys.state); } catch (e) { }
             this.isOpen = true;
             this.el.root.classList.remove('hidden');
-            this._resize();
-            this._center();
             this._refreshHeader();
             this.renderCharBar();
             this.renderSidePanel();
+            /* ⭐ 效能：先顯示面板框架，樹重繪放到下一幀（減少開啟卡頓） */
+            var selfOpen = this;
+            requestAnimationFrame(function () {
+                if (!selfOpen.isOpen) return;
+                selfOpen._resize();
+                selfOpen._center();
+            });
+        }
+        /** 合併同一幀內多次 _draw（搜尋動尋動畫、滾輪連打） */
+        _scheduleDraw() {
+            if (this._drawRafPending) return;
+            this._drawRafPending = true;
+            var self = this;
+            requestAnimationFrame(function () {
+                self._drawRafPending = false;
+                if (!self.isOpen) return;
+                try { self._draw(); } catch (e) { }
+            });
         }
         close() {
             this.isOpen = false;
@@ -138207,6 +138277,17 @@ window.HY = window.HY || {};
             /* ── ① 直接讀取角色實際屬性（含天賦 + 珠寶 + 裝備） ── */
             var st = {};
             try { st = cs.getDerivedStatsForChar(c) || {}; } catch (e) { st = {}; }
+            var sideSig = [
+                c.id,
+                JSON.stringify(t.allocated || {}),
+                JSON.stringify(t.sockets || {}),
+                Math.floor(st.atk || 0), Math.floor(st.maxHp || 0), Math.floor(st.maxMp || 0),
+                Math.floor(st.def || 0)
+            ].join('#');
+            if (this._sidePanelSig === sideSig && this.el.side.querySelector('#tl-open-codex')) {
+                return;
+            }
+            this._sidePanelSig = sideSig;
             var h = '';
             /* ── ① 「📊 目前能力」區塊已移除 ──
                原因：等級／可配置點數／剩餘點數等資訊在頂部工具列已經
@@ -171952,9 +172033,13 @@ window.HY = window.HY || {};
             this._wrapProto(HY.UIDexAtb, 'updateArenaBarsDOM', 'render.arenaBars');
             this._wrapProto(HY.UIDexAtb, 'renderFixedMaxBattleArena', 'render.arenaFull');
             this._wrapProto(HY.UITalent, 'open', 'render.talentOpen');
+            this._wrapProto(HY.UITalent, 'renderSidePanel', 'render.talentSidePanel');
             if (HY.BagOverhaul) {
                 this._wrapFn(HY.BagOverhaul, 'open', 'render.bagOpen');
                 this._wrapFn(HY.BagOverhaul, 'refresh', 'render.bagRefresh');
+            if (HY.UIEquipMarket) {
+                this._wrapProto(HY.UIEquipMarket, 'renderInventoryTab', 'render.inventoryTab');
+            }
             }
             if (HY.CharacterSystem) {
                 this._wrapProto(HY.CharacterSystem, 'getDerivedStatsForChar', 'data.derivedStats');
@@ -172025,6 +172110,15 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', function () { setTimeout(__HY_FINISH_BOOT__, 50); });
   /* 備援：即使 load 沒觸發，3 秒後也要移除 */
   setTimeout(__HY_FINISH_BOOT__, 3000);
+}
+
+/* ⭐ GitHub Pages：登錄 Service Worker，二次開啟快取 game.html */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    try {
+      navigator.serviceWorker.register('sw.js?v=745').catch(function () {});
+    } catch (eSw) {}
+  });
 }
 </script>
 </body>
