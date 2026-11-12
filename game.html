@@ -83840,21 +83840,34 @@ window.HY = window.HY || {};
             var last = typeof enemy._natMpRegenPhase === 'number' ? enemy._natMpRegenPhase : -1;
             return last < ph;
         }
-        /** 我方：距上次自然恢復須再滿 N 次完整出手（預設 N=3） */
+        /** 我方：本場第 3、6、9… 次出手（natRegenHits 為 iv 整數倍） */
         charNaturalRegenDue(char) {
             if (!char) return false;
             var iv = this.naturalVitalRegenInterval();
             var hits = this.charNatRegenHits(char);
-            if (hits < iv) return false;
+            if (hits < iv || (hits % iv) !== 0) return false;
             var b = char._battle || {};
-            var last = num(b._natRegenAtHit, 0);
-            return (hits - last) >= iv;
+            return num(b._natRegenAtHit, 0) !== hits;
         }
-        /** 立刻在九宮格播恢復飄字（舞台 render 後再由佇列刷新，避免被 DOM 重建吃掉） */
+        /** 立刻在九宮格播恢復飄字（優先 charId 對位；佇列在舞台同步後補播） */
         playAllyVitalStageFx(charObj, amount, kind, label) {
             if (!charObj || amount <= 0) return;
-            this._enqueueAllyVitalFloat(charObj, amount, kind, label);
-            try { this._flushPendingAllyVitalFloats(); } catch (eFx) { }
+            try {
+                var idx = this.allyStageIndex(charObj);
+                var st = document.getElementById('hy-battle-stage')
+                    || document.getElementById('hy-atlas-stage');
+                var BS = window.HY && window.HY.BattleStage;
+                if (!st || !BS || !BS.fx || typeof BS.fx.vital !== 'function') {
+                    this._enqueueAllyVitalFloat(charObj, amount, kind, label);
+                    return;
+                }
+                BS.fx.vital(st.id || 'hy-battle-stage', 'ally', idx, amount, kind, {
+                    label: label || '',
+                    charId: charObj.id != null ? String(charObj.id) : ''
+                });
+            } catch (eFx) {
+                this._enqueueAllyVitalFloat(charObj, amount, kind, label);
+            }
         }
         tryClaimEnemyMpNaturalRegen(enemy) {
             if (!enemy || !this.isEnemyNaturalMpRegenTurn(enemy)) return false;
@@ -83892,23 +83905,27 @@ window.HY = window.HY || {};
             _b._natRegenAtHit = hits;
             _b._natRegenOwnPhase = this.charNaturalRegenPhase(mm);
             self.log('🌿 【' + mm.name + '】本場第 ' + hits + ' 次出手（每 ' + iv + ' 次集氣滿）自然回復', 'combat');
+            g.charSys.restoreVitals(_hpGain, _mpGain, mm);
             if (_mpGain > 0) {
                 var _mpIdx = self.allyStageIndex(mm);
                 self.markStageFx('ally', _mpIdx, 'regenMp', { label: '內力恢復', charId: mm.id });
-                self._enqueueAllyVitalFloat(mm, _mpGain, 'regenMp', '內力恢復');
+                self.playAllyVitalStageFx(mm, _mpGain, 'regenMp', '內力恢復');
             }
             if (_hpGain > 0) {
                 var _hpIdx = self.allyStageIndex(mm);
                 self.markStageFx('ally', _hpIdx, 'regenHp', { label: '氣血恢復', charId: mm.id });
-                self._enqueueAllyVitalFloat(mm, _hpGain, 'regenHp', '氣血恢復');
+                self.playAllyVitalStageFx(mm, _hpGain, 'regenHp', '氣血恢復');
             }
-            g.charSys.restoreVitals(_hpGain, _mpGain, mm);
             var parts = [];
             if (_hpGain > 0) parts.push('＋' + _hpGain + ' 氣血');
             if (_mpGain > 0) parts.push('＋' + _mpGain + ' 內力');
             self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
             this.onUpdateUI && this.onUpdateUI();
-            try { this.refreshBattleStageNow(); } catch (eRf) { }
+            /* 延後刷新舞台，避免在 ATB 出手流程中同步 render 卡住集氣條 */
+            var selfRef = this;
+            setTimeout(function () {
+                try { selfRef.refreshBattleStageNow(); } catch (eRf) { }
+            }, 0);
         }
         applyPartyNaturalVitalRegen() {
             /* 舊呼叫點相容：不再全隊同拍結算 */
@@ -84344,17 +84361,17 @@ window.HY = window.HY || {};
             /* ⚠ 陰陽推進統一由 combatAtbSystem 負責（含時間戳去重）。
                這裡是舊路徑，若也累加會造成「出招一次跳 2」，因此移除。 */
             if (activeChar.currentHp > 0) {
-                this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
                 self.recordAllyCombatAction(activeChar);
+                this.playerTurn.performCharAttack(activeChar, leaderSkillId, true, partyMembers, false);
                 self.afterCombatActionBeat('ally', activeChar);
                 self.refreshBattleStageNow();
             }
             partyMembers.forEach(function (member) {
                 if (member.id === activeChar.id) return;
                 if (member.currentHp <= 0 || !self.currentEnemy) return;
+                self.recordAllyCombatAction(member);
                 var allySkill = self.autoTactics.pickTacticalSkillForChar(member, false);
                 self.playerTurn.performCharAttack(member, allySkill, false, partyMembers, false);
-                self.recordAllyCombatAction(member);
                 self.afterCombatActionBeat('ally', member);
                 self.refreshBattleStageNow();
             });
@@ -116375,11 +116392,11 @@ window.HY = window.HY || {};
                 ? combat._nextAllyActionToken() : null;
             if (typeof combat.bumpCombatActionBeat === 'function') combat.bumpCombatActionBeat();
             else combat._turnCounter = (combat._turnCounter || 0) + 1;
+            /* 恢復 v732：集氣滿出招當下計次（門派與 yyHits 同步）；避免延後計次導致 ATB 流程異常 */
+            if (typeof combat.recordAllyCombatAction === 'function') {
+                combat.recordAllyCombatAction(member, _actionTok);
+            }
             function _finishAllyAtbAction() {
-                /* 計數改在「整輪出手結束」才 +1（含疾風雙動），避免同拍重複或集氣未滿就結算自然恢復 */
-                if (typeof combat.recordAllyCombatAction === 'function') {
-                    combat.recordAllyCombatAction(member, _actionTok);
-                }
                 if (typeof combat.afterCombatActionBeat === 'function') {
                     combat.afterCombatActionBeat('ally', member);
                 }
@@ -116432,12 +116449,7 @@ window.HY = window.HY || {};
                 }
             }
             _finishAllyAtbAction();
-            if (window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI2) { }
-            }
-            if (typeof combat._flushPendingAllyVitalFloats === 'function') {
-                try { combat._flushPendingAllyVitalFloats(); } catch (ePf2) { }
-            }
+            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;

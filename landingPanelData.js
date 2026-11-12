@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v734 · 2026-11-12',
-        gameVer: 734,
+        newsVer: 'v735 · 2026-11-12',
+        gameVer: 735,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '戰鬥',
+            title: '集氣條修正 v735',
+            date: '2026-11-12',
+            bullets: [
+                '還原自然回復計數時機（出招開始計次），修復集氣滿後條卡住',
+                '自然恢復後<b>延後刷新舞台</b>，避免 ATB 途中同步 render',
+                '保留九宮格 <b>charId</b> 飄字與 v734 關閉符文圈'
+            ]
+        },
         {
             tag: 'ui', tagLabel: '戰鬥',
             title: '取消角色戰鬥圈圈',
