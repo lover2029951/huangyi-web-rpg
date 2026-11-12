@@ -35992,8 +35992,8 @@ window.HY = window.HY || {};
 
     /* 稀有度（決定顏色與是否廣播） */
     Data.ACH_RARITY = {
-        common: { id: 'common', name: '常見', color: '#94a3b8', broadcast: false },
-        rare: { id: 'rare', name: '稀有', color: '#38bdf8', broadcast: false },
+        common: { id: 'common', name: '常見', color: '#94a3b8', broadcast: true },
+        rare: { id: 'rare', name: '稀有', color: '#38bdf8', broadcast: true },
         epic: { id: 'epic', name: '史詩', color: '#a78bfa', broadcast: true },
         legend: { id: 'legend', name: '傳說', color: '#fbbf24', broadcast: true },
         myth: { id: 'myth', name: '神話', color: '#f472b6', broadcast: true }
@@ -36960,20 +36960,24 @@ window.HY = window.HY || {};
             }
         }
 
-        /** 全服廣播（只有史詩級以上才發） */
+        /** 全服廣播（所有稀有度皆播） */
         _announce(a) {
             try {
-                var rar = (D().ACH_RARITY || {})[a.rarity] || {};
-                if (!rar.broadcast) return;
                 var wb = HY.WorldBroadcast;
-                if (!wb || typeof wb.publish !== 'function') return;
-                wb.publish({
-                    eventType: 'achievement',
-                    playerName: (typeof wb.currentName === 'function') ? wb.currentName() : '',
-                    achName: a.name,
-                    achRarity: a.rarity,
-                    achDesc: a.desc || ''
-                });
+                if (!wb) return;
+                if (typeof wb.publishAchievement === 'function') {
+                    wb.publishAchievement(a.name, a.rarity || 'common', a.desc || '');
+                } else if (typeof wb.publish === 'function') {
+                    wb.publish({
+                        eventType: 'achievement',
+                        playerName: (typeof wb.currentName === 'function') ? wb.currentName() : '',
+                        achName: a.name,
+                        achRarity: a.rarity || 'common',
+                        achDesc: a.desc || '',
+                        partyName: (typeof wb.currentPartyName === 'function') ? wb.currentPartyName() : '',
+                        charTitle: (typeof wb.currentTitle === 'function') ? wb.currentTitle() : ''
+                    });
+                }
             } catch (e) { }
         }
 
@@ -37461,7 +37465,7 @@ window.HY = window.HY || {};
             btn.className = 'sys-btn';
             btn.style.borderColor = '#b45309';
             btn.style.color = '#fcd34d';
-            btn.title = '查看成就進度（史詩級以上解鎖會全服廣播）';
+            btn.title = '查看成就進度（解鎖時全服廣播）';
             btn.textContent = '🏆 成就';
 
             /* 徽章：顯示完成百分比 */
@@ -88139,6 +88143,24 @@ window.HY = window.HY || {};
 .bagov-cell .ci .shj-set-img-wrap,.bagov-slot .ic .shj-set-img-wrap{max-width:100%;max-height:100%;}
 .bagov-cell .ci.poe-keep-emoji,.bagov-cell .ci:has(.shj-set-icon),.bagov-cell .ci:has(.shj-set-img-wrap){font-size:initial;line-height:normal;}
 .bagov-cell .ci .shj-set-icon{width:36px!important;height:36px!important;}
+/* 套裝水墨圖：行囊格撐滿圖示區（保留底列品名） */
+.bagov-cell .ci:has(> .shj-set-img-wrap){
+ position:absolute;left:0;right:0;top:3px;bottom:11px;
+ display:flex;align-items:stretch;justify-content:stretch;padding:0;margin:0;z-index:0;}
+.bagov-cell .ci:has(> .shj-set-img-wrap) .shj-set-img-wrap{
+ width:100%!important;height:100%!important;max-width:none;max-height:none;
+ border-radius:4px;box-shadow:inset 0 0 0 1px var(--shj-a,#a78bfa);}
+.bagov-cell .ci:has(> .shj-set-img-wrap) .shj-set-piece-img{
+ width:100%!important;height:100%!important;object-fit:cover;}
+.bagov-cell:has(.shj-set-img-wrap) .cn{position:relative;z-index:2;margin-top:auto;
+ background:linear-gradient(180deg,transparent,rgba(18,26,34,.92) 35%);}
+.bagov-pickcard .pk-img:has(.shj-set-img-wrap){min-height:72px;padding:2px 0;}
+.bagov-pickcard .pk-img .shj-set-img-wrap{width:100%!important;height:64px!important;max-height:72px;}
+.bagov-pickcard .pk-img .shj-set-piece-img{width:100%!important;height:100%!important;object-fit:cover;}
+.bagov-slot .ic:has(.shj-set-img-wrap){
+ flex:0 0 40px;width:40px;height:40px;align-self:center;}
+.bagov-slot .ic .shj-set-img-wrap{width:100%!important;height:100%!important;max-width:none;max-height:none;}
+.bagov-slot .ic .shj-set-piece-img{width:100%!important;height:100%!important;object-fit:cover;}
 .bagov-shjset-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 2px;padding:6px 8px;
  background:rgba(30,27,75,.35);border:1px dashed #4c1d95;border-radius:8px;}
 .bagov-shj-mini{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:14px;
@@ -162747,6 +162769,12 @@ window.HY = window.HY || {};
             var self = this;
             newly.forEach(function (ach) {
                 self._log('🏅 成就達成：【' + ach.name + '】' + ach.desc, 'gain');
+                try {
+                    var wb = HY.WorldBroadcast;
+                    if (wb && typeof wb.publishAchievement === 'function') {
+                        wb.publishAchievement(ach.name, ach.rarity || 'common', ach.desc || '');
+                    }
+                } catch (eW) { }
             });
             return newly;
         }

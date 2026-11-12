@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v710 · 2026-11-12',
-        gameVer: 710,
+        newsVer: 'v711 · 2026-11-12',
+        gameVer: 711,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '調整',
+            title: '行囊套裝圖與成就廣播',
+            date: '2026-11-12',
+            bullets: [
+                '山海套裝水墨圖在行囊格<b>放大填滿</b>圖示區',
+                '所有成就達成（含常見／圖鑑）皆會全服彈幕廣播'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '調整',
             title: '氣血／內力自然回復',
