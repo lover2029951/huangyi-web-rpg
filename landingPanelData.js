@@ -5,13 +5,24 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v745 · 2026-11-13',
-        gameVer: 745,
+        newsVer: 'v746 · 2026-11-13',
+        gameVer: 746,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '效能',
+            title: '全系統 UI 簽章優化 v746',
+            date: '2026-11-13',
+            bullets: [
+                '掛機：<b>角色欄輕量</b>（氣血／內力／經驗／戰力增量），不再每幀整塊重繪',
+                '內掛戰術下拉、<b>角色欄分頁</b>、護法、黑市常駐店、幫會分頁皆加<b>簽章快取</b>',
+                '完整屬性面板依戰力摘要跳過無變化重繪；探針修正括號與角色欄計時',
+                '延續 v745：<code>renderCombatLite</code>、行囊／天賦、Service Worker'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '效能',
             title: '掛機／行囊／天賦效能包 v745',

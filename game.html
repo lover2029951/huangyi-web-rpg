@@ -85452,7 +85452,12 @@ window.HY = window.HY || {};
 window.HY = window.HY || {};
 (function () {
     class UICharacterParty {
-        constructor(app) { this.app = app; }
+        constructor(app) {
+            this.app = app;
+            this._charPanelSig = '';
+            this._fullStatsSig = '';
+            this._partyTabSig = '';
+        }
         /** ⭐ 百分比顯示：四捨五入到小數一位，整數不顯示小數
             fix1(0.8999999999999999) → "0.9"
             fix1(2.4000000000000004) → "2.4"
@@ -85726,6 +85731,68 @@ window.HY = window.HY || {};
          *   · 抗性類附上上限提示（例如 75% 上限）
          *   · 九元素抗性另外展開（本作核心特色）
          */
+        _computeCharPanelSig(st, d, app) {
+            var rs = app.charSys.rootState || {};
+            var roster = (rs.roster || []).map(function (c) {
+                return (c && c.id) ? (c.id + ':' + c.lv + ':' + (c.sect || '') + ':' + (c.name || '')) : '';
+            }).join(';');
+            var eq = st && st.equipment ? Object.keys(st.equipment).sort().map(function (k) {
+                var it = st.equipment[k];
+                return k + '=' + (it && it.uid ? it.uid : '');
+            }).join(',') : '';
+            var skills = Object.keys(st.skills || {}).sort().join(',');
+            return [
+                rs.activeCharIndex, roster, eq, skills,
+                st.sect, st.spiritRoot, st.spiritRootLv,
+                rs.activeCompanion, st.freePoints
+            ].join('#');
+        }
+        _patchCharPanelVolatile() {
+            var app = this.app;
+            var st = app.charSys.state;
+            if (!st) return;
+            var d = app.charSys.getDerivedStats();
+            this.syncVitals();
+            var setText = function (id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
+            setText('char-lv', st.lv);
+            setText('char-exp', st.exp + ' / ' + st.maxExp);
+            setText('char-power', d.powerScore);
+            setText('char-points', st.freePoints);
+            setText('char-sp', app.charSys.rootState.sp);
+            setText('char-gold', app.charSys.rootState.gold);
+            var pSize = app.partySys.getPartySize();
+            var badgeEl = document.getElementById('party-size-badge');
+            if (badgeEl) badgeEl.textContent = '🚩 上陣人數：' + pSize + '人 (遭遇' + pSize + '敵)';
+            var activeComp = app.companionSys.getActiveCompanionInfo();
+            var activeXinfa = app.martialSys.getActiveXinfaInfo();
+            var activeQg = app.martialSys.getActiveQinggongInfo();
+            setText('active-companion-name', activeComp ? activeComp.name + ' (Lv.' + activeComp.lv + ')' : '無');
+            setText('active-xinfa-name', activeXinfa ? activeXinfa.name + ' (第' + activeXinfa.lv + '層)' : '未運功');
+            setText('active-qinggong-name', activeQg ? activeQg.name + ' (第' + activeQg.lv + '境)' : '未常駐');
+            var feat = this.featInfo(st.sect);
+            var featEl = document.getElementById('active-sect-feature');
+            if (featEl && feat) {
+                var stacks = '';
+                var featSys = window.HY.game && window.HY.game.sectFeatSys;
+                if (featSys && typeof featSys.getStacksSummary === 'function') {
+                    stacks = featSys.getStacksSummary(st);
+                }
+                featEl.style.color = feat.color;
+                featEl.innerHTML = feat.icon + ' ' + feat.name + (stacks ? '（' + stacks + '）' : '');
+            }
+            var statsSig = String(d.powerScore) + '|' + Math.floor(d.maxHp || 0) + '|' + Math.floor(d.maxMp || 0) +
+                '|' + Math.floor(d.atk || 0) + '|' + this.fix1(d.atkSpd || 0);
+            if (this._fullStatsSig !== statsSig) {
+                this._fullStatsSig = statsSig;
+                try { this.renderFullStats(d); } catch (eFS) { }
+            }
+            var dexUi = window.HY && window.HY.uiDexAtb;
+            if (dexUi && typeof dexUi.updateElementRows === 'function') {
+                try { dexUi.updateElementRows(); } catch (eEl) { }
+            }
+            var spdEl = document.getElementById('stat-atkspd');
+            if (spdEl && d) spdEl.textContent = d.atkSpd || 100;
+        }
         renderFullStats(d) {
             var host = document.getElementById('stat-panel-full');
             if (!host) return;
@@ -86046,13 +86113,29 @@ window.HY = window.HY || {};
             }, 250);
         }
 
-        renderCharacterPanel() {
+        renderCharacterPanel(opts) {
+            opts = opts || {};
+            if (opts.lite) {
+                try { this._startVitalsSync(); } catch (eSv) { }
+                this._patchCharPanelVolatile();
+                return;
+            }
             /* ⭐ v483：啟動自律式氣血同步（只需啟動一次） */
             try { this._startVitalsSync(); } catch (eSv) { }
             const Data = window.HY.Data;
             const app = this.app;
             const st = app.charSys.state;
             const d = app.charSys.getDerivedStats();
+            var sig = this._computeCharPanelSig(st, d, app);
+            if (!opts.force && this._charPanelSig === sig) {
+                var sw = document.getElementById('sidebar-roster-switcher');
+                if (sw && sw.children.length > 0) {
+                    this._patchCharPanelVolatile();
+                    return;
+                }
+            }
+            this._charPanelSig = sig;
+            this._fullStatsSig = '';
             const activeComp = app.companionSys.getActiveCompanionInfo();
             const activeXinfa = app.martialSys.getActiveXinfaInfo();
             const activeQg = app.martialSys.getActiveQinggongInfo();
@@ -86333,6 +86416,19 @@ window.HY = window.HY || {};
             const app = this.app;
             const listEl = document.getElementById('roster-party-list');
             if (!listEl) return;
+            var rs = app.charSys.rootState || {};
+            var partyIds = (app.partySys.getPartyMembers && app.partySys.getPartyMembers()) || [];
+            var partySig = partyIds.map(function (m) { return m && m.id ? (m.id + ':' + (m.currentHp | 0)) : ''; }).join('|');
+            var rosterSig = (rs.roster || []).map(function (c) {
+                return c ? (c.id + ':' + c.lv + ':' + (app.partySys.isInParty(c.id) ? '1' : '0')) : '';
+            }).join(';');
+            var formSig = String(app.partySys.getSeed()) + '|' + String(rs.formation || 'none');
+            var tabSig = rs.activeCharIndex + '#' + partySig + '#' + rosterSig + '#' + formSig +
+                '#' + (app.partySys.getPartyName && app.partySys.getPartyName());
+            if (this._partyTabSig === tabSig && listEl.querySelector('.card-item')) {
+                return;
+            }
+            this._partyTabSig = tabSig;
             /* ⭐ v505：注入卡片排版樣式 */
             this._ensureRosterCardStyle();
             listEl.innerHTML = '';
@@ -87058,7 +87154,46 @@ window.HY = window.HY || {};
                 app.logger.add('⚙️ 內掛戰術設定已更新：《' + key + '》', 'time');
             };
         }
-        renderAutoTacticsSelects() {
+        _autoTacticsStructSig(st, at0) {
+            var editId = (at0 && typeof at0.editingCharId === 'function') ? at0.editingCharId() : '';
+            var skills = Object.keys(st.skills || {}).sort().join(',');
+            return editId + '|' + st.sect + '|' + skills;
+        }
+        _syncAutoTacticsValues(cfg) {
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+            setVal('cfg-emerg-skill', cfg.emergencySkillId);
+            setVal('cfg-aoe-skill', cfg.aoeSkillId);
+            setVal('cfg-primary-skill', cfg.primarySkillId);
+            setVal('cfg-ally-skill', cfg.allyHealSkillId || 'auto_heal_ally');
+            setVal('cfg-ally-target', cfg.supportTargetRule || 'most_wounded');
+            setVal('cfg-ally-hp-pct', cfg.allyHpThreshold);
+            setVal('cfg-ally-mp-pct', cfg.allyMpThreshold);
+            setVal('cfg-ally-heal-pct', cfg.allyHealThreshold);
+            setVal('cfg-ally-interval', cfg.allySupportInterval);
+            setVal('cfg-ally-hp-item', cfg.allyHpItemId || 'pill_major');
+            setVal('cfg-ally-mp-item', cfg.allyMpItemId || 'pill_major');
+            setChk('cfg-ally-use-pills', cfg.allyUsePills);
+            setChk('cfg-ally-support', cfg.allySupportEnabled);
+            setVal('cfg-target-rule', cfg.targetRule || 'current');
+            setChk('cfg-focus-rare', cfg.focusRare);
+            setChk('cfg-buff-enabled', cfg.buffEnabled);
+            setChk('cfg-buff-auto', cfg.buffAutoRefresh);
+            setVal('cfg-buff-refresh', cfg.buffRefreshTurns || 3);
+            setChk('cfg-buff-atk', cfg.buffAtk);
+            setChk('cfg-buff-def', cfg.buffDef);
+            setChk('cfg-buff-crit', cfg.buffCrit);
+            setChk('cfg-buff-eva', cfg.buffEva);
+            setChk('cfg-buff-regen', cfg.buffRegen);
+            setChk('cfg-buff-all', cfg.buffAll);
+            setChk('cfg-pause-rare', cfg.pauseOnRare);
+            setChk('cfg-pause-boss', cfg.pauseOnBoss);
+            setVal('cfg-retreat-pct', cfg.retreatHpPct || 0);
+            setChk('cfg-conserve-mp', cfg.conserveMp);
+            setChk('cfg-avoid-overkill', cfg.avoidOverkill);
+        }
+        renderAutoTacticsSelects(opts) {
+            opts = opts || {};
             const Data = window.HY.Data;
             const app = this.app;
             const st = app.charSys.state;
@@ -87067,6 +87202,14 @@ window.HY = window.HY || {};
             const cfg = (at0 && typeof at0.cfgFor === 'function')
                 ? at0.cfgFor(at0.editingCharId())
                 : app.combatSys.autoConfig;
+            var structSig = this._autoTacticsStructSig(st, at0);
+            if (!opts.force && this._autoTacticsStructSig === structSig &&
+                document.getElementById('cfg-primary-skill') &&
+                document.getElementById('cfg-primary-skill').options.length > 2) {
+                this._syncAutoTacticsValues(cfg);
+                return;
+            }
+            this._autoTacticsStructSig = structSig;
             const validSkillIds = Object.keys(st.skills || { basic_punch: 1 }).filter(sId => {
                 const art = Data.MARTIAL_ARTS[sId];
                 return art && (!art.sectReq || art.sectReq === st.sect);
@@ -87171,14 +87314,7 @@ window.HY = window.HY || {};
                 allyMpItemEl.value = cfg.allyMpItemId || 'pill_major';
             }
             // ── ⑦ 表單值回填 ──
-            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-            const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-            setVal('cfg-ally-hp-pct', cfg.allyHpThreshold);
-            setVal('cfg-ally-mp-pct', cfg.allyMpThreshold);
-            setVal('cfg-ally-heal-pct', cfg.allyHealThreshold);
-            setVal('cfg-ally-interval', cfg.allySupportInterval);
-            setChk('cfg-ally-use-pills', cfg.allyUsePills);
-            setChk('cfg-ally-support', cfg.allySupportEnabled);
+            this._syncAutoTacticsValues(cfg);
             // ── ⑧ 綁定 ──
             this.bindCfgField('cfg-ally-hp-pct',   'allyHpThreshold',    true);
             this.bindCfgField('cfg-ally-mp-pct',   'allyMpThreshold',    true);
@@ -87191,23 +87327,7 @@ window.HY = window.HY || {};
             this.bindCfgField('cfg-ally-interval', 'allySupportInterval',true);
             this.bindCfgField('cfg-ally-target',   'supportTargetRule',  false);
 
-            /* ⭐ v2 新增欄位：集火 / 增益丹 / 節奏 / 內力保護 */
-            setVal('cfg-target-rule', cfg.targetRule || 'current');
-            setChk('cfg-focus-rare', cfg.focusRare);
-            setChk('cfg-buff-enabled', cfg.buffEnabled);
-            setChk('cfg-buff-auto', cfg.buffAutoRefresh);
-            setVal('cfg-buff-refresh', cfg.buffRefreshTurns || 3);
-            setChk('cfg-buff-atk', cfg.buffAtk);
-            setChk('cfg-buff-def', cfg.buffDef);
-            setChk('cfg-buff-crit', cfg.buffCrit);
-            setChk('cfg-buff-eva', cfg.buffEva);
-            setChk('cfg-buff-regen', cfg.buffRegen);
-            setChk('cfg-buff-all', cfg.buffAll);
-            setChk('cfg-pause-rare', cfg.pauseOnRare);
-            setChk('cfg-pause-boss', cfg.pauseOnBoss);
-            setVal('cfg-retreat-pct', cfg.retreatHpPct || 0);
-            setChk('cfg-conserve-mp', cfg.conserveMp);
-            setChk('cfg-avoid-overkill', cfg.avoidOverkill);
+            /* ⭐ v2 新增欄位：集火 / 增益丹 / 節奏 / 內力保護（值已由 _syncAutoTacticsValues 回填） */
 
             this.bindCfgField('cfg-target-rule',    'targetRule',       false);
             this.bindCfgField('cfg-focus-rare',     'focusRare',        false, true);
@@ -88620,6 +88740,8 @@ window.HY = window.HY || {};
         constructor(app) {
             this.app = app;
             this._invTabSig = '';
+            this._bmShopBuilt = false;
+            this._bmSpecialSig = '';
         }
         renderInventoryTab() {
             const Data = window.HY.Data;
@@ -88880,7 +89002,11 @@ window.HY = window.HY || {};
             const app = this.app;
             app.marketSys.ensureState();
             const specialEl = document.getElementById('market-special-list');
-            if (specialEl) {
+            var dealsSig = JSON.stringify(app.marketSys.specialDeals || []);
+            if (specialEl && this._bmSpecialSig === dealsSig && specialEl.children.length > 0) {
+                /* 特惠列表無變化 → 跳過重建 */
+            } else if (specialEl) {
+                this._bmSpecialSig = dealsSig;
                 specialEl.innerHTML = '';
                 app.marketSys.specialDeals.forEach((deal, idx) => {
                     const item = Data.ITEMS[deal.itemId];
@@ -88905,7 +89031,9 @@ window.HY = window.HY || {};
             }
             const shopList = document.getElementById('shop-list');
             if (!shopList) return;
+            if (this._bmShopBuilt && shopList.children.length > 0) return;
             shopList.innerHTML = '';
+            this._bmShopBuilt = true;
             Object.values(Data.ITEMS).forEach(item => {
                 if (item.type !== 'consumable') return;
                 if (item.expeditionOnly) return;
@@ -94406,6 +94534,7 @@ window.HY = window.HY || {};
     class UICompanionPet {
         constructor(app) {
             this.app = app;
+            this._companionTabSig = '';
         }
         /* ⭐ v494：橫向卡片版面樣式（只注入一次）
            ──────────────────────────────────────────────────────────
@@ -94761,10 +94890,13 @@ window.HY = window.HY || {};
             const app = this.app;
             const cList = document.getElementById('companion-list');
             if (!cList) return;
-            cList.innerHTML = '';
             app.companionSys.ensureState();
             const recruited = app.charSys.rootState.companions;
             const activeId = app.charSys.rootState.activeCompanion;
+            var tabSig = activeId + '|' + JSON.stringify(recruited) + '|' + app.companionSys.getMaxCharLv();
+            if (this._companionTabSig === tabSig && cList.children.length > 0) return;
+            this._companionTabSig = tabSig;
+            cList.innerHTML = '';
             const maxCharLv = app.companionSys.getMaxCharLv();
             Object.values(Data.COMPANIONS).forEach(comp => {
                 const lv = recruited[comp.id] || 0;
@@ -95618,6 +95750,7 @@ window.HY = window.HY || {};
         constructor(app) {
             this.app = app;
             this.currentSubTab = 'g-sub-buildings';
+            this._guildTabSig = '';
             this.injectGuildDOM();
         }
         injectGuildDOM() {
@@ -95674,6 +95807,12 @@ window.HY = window.HY || {};
                 const tabEl = document.getElementById('tab-guild');
                 if (!tabEl || !tabEl.classList.contains('active')) return;
             }
+            const g0 = app.guildCore.getGuild();
+            var guildSig = this.currentSubTab + '|' + g0.lv + '|' + g0.funds + '|' + g0.contrib + '|' +
+                (g0.members ? g0.members.length : 0) + '|' + JSON.stringify(g0.buildings || {}) + '|' +
+                (g0.towerFloor || 0) + '|' + (this.__selCharId || '');
+            if (!force && this._guildTabSig === guildSig) return;
+            this._guildTabSig = guildSig;
             const curChar = app.charSys.state;
             app.guildSkillBeast.ensureCharGuildState(curChar);
 
@@ -116360,8 +116499,7 @@ window.HY = window.HY || {};
       };
       try {
         run('lite.sync', () => { this.charSys.syncActivePointer(); });
-        run('lite.charPanel', () => { this.uiCharParty.renderCharacterPanel(); });
-        run('lite.autoTactics', () => { this.uiCombatExplore.renderAutoTacticsSelects(); });
+        run('lite.charPanel', () => { this.uiCharParty.renderCharacterPanel({ lite: true }); });
         var visible = this._visibleTabs();
         if (visible['tab-explore']) {
           run('lite.explore', () => {
@@ -172037,9 +172175,13 @@ window.HY = window.HY || {};
             if (HY.BagOverhaul) {
                 this._wrapFn(HY.BagOverhaul, 'open', 'render.bagOpen');
                 this._wrapFn(HY.BagOverhaul, 'refresh', 'render.bagRefresh');
+            }
             if (HY.UIEquipMarket) {
                 this._wrapProto(HY.UIEquipMarket, 'renderInventoryTab', 'render.inventoryTab');
             }
+            if (HY.UICharacterParty) {
+                this._wrapProto(HY.UICharacterParty, 'renderCharacterPanel', 'render.charPanel');
+                this._wrapProto(HY.UICharacterParty, 'syncVitals', 'render.charVitals');
             }
             if (HY.CharacterSystem) {
                 this._wrapProto(HY.CharacterSystem, 'getDerivedStatsForChar', 'data.derivedStats');
@@ -172116,7 +172258,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=745').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=746').catch(function () {});
     } catch (eSw) {}
   });
 }
