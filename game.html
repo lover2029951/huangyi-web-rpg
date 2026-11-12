@@ -80579,6 +80579,11 @@ window.HY = window.HY || {};
                     return;
                 }
             }
+            if (typeof core.recordCombatNatRegenAction === 'function') {
+                var _eTok = (typeof core._nextAllyActionToken === 'function')
+                    ? core._nextAllyActionToken() : null;
+                core.recordCombatNatRegenAction(enemy, _eTok, false);
+            }
 
             var targetStats = charSys.getDerivedStatsForChar(targetMember);
             // ⭐ v46：我方門派特色的防禦力乘算（絕情谷陰劍 / 峨嵋慈悲全隊）
@@ -80693,12 +80698,13 @@ window.HY = window.HY || {};
                     });
 
                     enemy._aoeCd = Math.max(1, Number(chosenSkill.cooldownTurns || 3) - 1);
-                    this.regenMp(enemy, extraActionAffix);
-
                     /* 打完後檢查我方是否全滅 */
                     var _stillAlive = partyMembers.filter(function (m) { return m && m.currentHp > 0; });
                     if (_stillAlive.length === 0) { core.handleDefeat(); }
                     core.onUpdateUI && core.onUpdateUI();
+                    if (typeof core.afterCombatActionBeat === 'function') {
+                        core.afterCombatActionBeat('foe', enemy);
+                    }
                     return;
                 }
             }
@@ -80726,7 +80732,9 @@ window.HY = window.HY || {};
             if (blockChance > 0 && Math.random() * 100 < blockChance) {
                 var blkSkill = chosenSkill ? '絕技《' + chosenSkill.name + '》' : '攻勢';
                 core.log('🛡️ 【' + targetMember.name + '】以兵器格擋了【' + enemy.name + '】的' + blkSkill + manaText + '！', 'combat');
-                this.regenMp(enemy, extraActionAffix);
+                if (typeof core.afterCombatActionBeat === 'function') {
+                    core.afterCombatActionBeat('foe', enemy);
+                }
                 return;
             }
             var enemyHitChance = Math.min(95, Math.max(20, (enemy.hit || 95) - targetStats.eva));
@@ -80753,7 +80761,9 @@ window.HY = window.HY || {};
                     wdMsg = ' [🍃風魔舞者祝福 下回合+' + wdHeal + 'HP/MP]';
                 }
                 core.log('🍃 【' + targetMember.name + '】憑藉輕功閃過了【' + enemy.name + '】的' + skillLabel + manaText + wdMsg + '！', 'combat');
-                this.regenMp(enemy, extraActionAffix);
+                if (typeof core.afterCombatActionBeat === 'function') {
+                    core.afterCombatActionBeat('foe', enemy);
+                }
                 return;
             }
             try {
@@ -80933,35 +80943,14 @@ window.HY = window.HY || {};
             core.runPluginHooks('onAfterEnemyAttack', { enemy: enemy, targetMember: targetMember, enemyDmg: enemyDmg });
             /* ⭐ 出手後清除目標鎖定，下次預告會重新挑選並鎖定 */
             if (typeof core.clearEnemyTarget === 'function') core.clearEnemyTarget(enemy);
-            this.regenMp(enemy, extraActionAffix);
+            if (typeof core.afterCombatActionBeat === 'function') {
+                core.afterCombatActionBeat('foe', enemy);
+            }
             try { core.refreshBattleStageNow(); } catch (eRfE) { }
         }
+        /** 舊介面保留；自然恢復改由 afterCombatActionBeat('foe', enemy) 統一結算 */
         regenMp(enemy, extraActionAffix) {
-            if (!enemy || extraActionAffix) return;
-            if (enemy.currentHp <= 0) return;
-            var core = this.core;
-            if (core && typeof core.tryClaimEnemyMpNaturalRegen === 'function') {
-                if (!core.tryClaimEnemyMpNaturalRegen(enemy)) return;
-            } else if (core && typeof core.isNaturalVitalRegenTurn === 'function' && !core.isNaturalVitalRegenTurn()) {
-                return;
-            }
-            if (typeof enemy.maxMp !== 'number' || enemy.maxMp <= 0) return;
-            var cur = enemy.currentMp || 0;
-            if (cur >= enemy.maxMp) return;
-            var ratio = ENEMY_MP_REGEN;
-            try {
-                var G = window.HY && window.HY.GameConfig;
-                if (G && G.combat && typeof G.combat.enemyMpRegenRatio === 'number') {
-                    ratio = G.combat.enemyMpRegenRatio;
-                }
-            } catch (eCfg) { }
-            var regen = Math.max(1, Math.floor(enemy.maxMp * ratio));
-            enemy.currentMp = Math.min(enemy.maxMp, cur + regen);
-            try {
-                if (regen > 0) {
-                    core.markStageFx('foe', core.foeStageIndex(enemy), 'regenMp', { label: '內力恢復' });
-                }
-            } catch (eRg) { }
+            void enemy; void extraActionAffix;
         }
         enemiesTurn(partyMembers) {
             var self = this;
@@ -81019,7 +81008,6 @@ window.HY = window.HY || {};
                     affixSys.onEnemyTurnEnd(enemy);
                 }
             });
-            if (typeof core.afterCombatActionBeat === 'function') core.afterCombatActionBeat('foe');
             /* ⭐ 聖火（明教點燃）等「回合結束傷害」可能在這裡才把最後一名敵人打死。
                舊版結算完只檢查「我方是否全滅」，沒有回頭檢查敵方是否已全滅，
                於是 enemies 陣列裡留下一具 0 血的屍體 ——
@@ -84020,13 +84008,17 @@ window.HY = window.HY || {};
             var gains = this.computeNaturalVitalRegenGains(unit);
             var _hpGain = gains.hp;
             var _mpGain = gains.mp;
-            if (_mpGain <= 0 && _hpGain <= 0) return;
             var g = window.HY.game;
             if (!unit || unit.currentHp <= 0) return;
             var iv = this.naturalVitalRegenInterval();
             var hits = this.charNatRegenHits(unit);
             var self = this;
             var _b = unit._battle || (unit._battle = {});
+            /* 無回復量仍 consume 本週期，避免第 3 拍出不出字卻第 6 拍又觸發 */
+            if (_mpGain <= 0 && _hpGain <= 0) {
+                _b._natRegenAtHit = hits;
+                return;
+            }
             _b._natRegenAtHit = hits;
             _b._natRegenOwnPhase = this.charNaturalRegenPhase(unit);
             side = side === 'foe' ? 'foe' : 'ally';
@@ -84784,6 +84776,315 @@ window.HY = window.HY || {};
     }
     window.HY.CombatCore = CombatCore;
     window.HY.CombatSystem = CombatCore;
+
+    function _benchFlushCombatLog() {
+        var lg = window.HY.game && window.HY.game.logger;
+        if (!lg || !lg._q || !lg._q.length) return;
+        var batch = lg._q.slice();
+        lg._q = [];
+        lg._qOn = false;
+        for (var i = 0; i < batch.length; i++) {
+            if (typeof lg._commitLog === 'function') lg._commitLog(batch[i]);
+        }
+    }
+
+    function _benchCombatLogLines() {
+        _benchFlushCombatLog();
+        var el = document.getElementById('game-log');
+        if (!el) return [];
+        return String(el.innerText || el.textContent || '')
+            .split(/\r?\n/)
+            .map(function (s) { return s.trim(); })
+            .filter(function (s) { return s.length > 0; });
+    }
+
+    function _scanNatRegenLog(lines) {
+        var nat = [];
+        var badTiming = [];
+        var iv = 3;
+        try {
+            var G = window.HY && window.HY.GameConfig;
+            if (G && G.combat) iv = num(G.combat.vitalNaturalRegenTurns, 3);
+        } catch (eIv) { }
+        (lines || []).forEach(function (l) {
+            if (/🌿.*次出手.*自然恢復/.test(l) || /💧.*自然恢復\s*＋/.test(l)) {
+                nat.push(l);
+            }
+            if (l.indexOf('🌿') >= 0 && l.indexOf('次出手') >= 0) {
+                var m = l.match(/本場第\s*(\d+)\s*次出手/);
+                if (m) {
+                    var hit = Number(m[1]);
+                    if (hit >= iv && (hit % iv) !== 0) badTiming.push(l);
+                }
+            }
+        });
+        return { nat: nat, badTiming: badTiming };
+    }
+
+    function _benchNatRegenEnemyTpl(tpl, opts) {
+        opts = opts || {};
+        var baseHp = num(tpl && tpl.hp, num(tpl && tpl.maxHp, 100));
+        var mul = num(opts.hpMul, 8000);
+        var hp = Math.max(Math.round(baseHp * mul), num(opts.minHp, 600000));
+        var out = Object.assign({}, tpl);
+        out.hp = hp;
+        out.name = (tpl && tpl.name ? tpl.name : '木人') + '・自然恢復實測';
+        out.exp = 0;
+        out.sp = 0;
+        out.gold = 0;
+        return out;
+    }
+
+    /**
+     * 第 6 種：自動連刷多場，掃戰報中的自然恢復（Console：HY.benchNatRegenLive(10)）
+     */
+    window.HY.benchNatRegenLive = function (battles, opts) {
+        opts = opts || {};
+        battles = Math.max(1, Math.min(30, num(battles, 10)));
+        var maxTicks = num(opts.maxTicks, 14000);
+        var g = window.HY.game;
+        var core = g && g.combatSys;
+        if (!core || !(core instanceof CombatCore)) {
+            return { ok: false, error: '請先進入遊戲（需 HY.game.combatSys）' };
+        }
+        var atb = g.atbSys;
+        if (!atb || typeof atb.tickAtbStep !== 'function') {
+            return { ok: false, error: '需 HY.game.atbSys（ATB 未初始化）' };
+        }
+        var maps = window.HY.Data && window.HY.Data.MAPS;
+        var tpl = (maps && maps.star_ark && maps.star_ark.enemies && maps.star_ark.enemies[0])
+            || (maps && maps.yangzhou && maps.yangzhou.enemies && maps.yangzhou.enemies[0]);
+        if (!tpl) return { ok: false, error: '找不到測試用敵人模板' };
+        var benchTpl = _benchNatRegenEnemyTpl(tpl, opts);
+        var minTicksForNat = num(opts.minTicksForNat, 60);
+        var stubRegen = opts.stubRegen !== false;
+        var origDer = g.charSys.getDerivedStatsForChar;
+
+        var snap = {
+            autoBattle: core.isAutoBattle,
+            autoRepeat: core.autoRepeat,
+            inFight: !!(core.enemies && core.enemies.length)
+        };
+        try { core.autoRepeat = false; } catch (e0) { }
+        try { core.isAutoBattle = true; } catch (e1) { }
+        if (snap.inFight && typeof core.clearBattleState === 'function') {
+            try { core.clearBattleState(); } catch (eClr) { }
+        }
+
+        var party = g.partySys ? g.partySys.getPartyMembers() : [g.charSys.state];
+        var anyRegenStat = false;
+        if (stubRegen) {
+            g.charSys.getDerivedStatsForChar = function (ch) {
+                var d = origDer.call(g.charSys, ch);
+                if (!d || typeof d !== 'object') d = {};
+                return Object.assign({}, d, {
+                    lifeRegen: Math.max(num(d.lifeRegen, 0), 12),
+                    manaRegen: Math.max(num(d.manaRegen, 0), 8),
+                    manaRegenFlat: Math.max(num(d.manaRegenFlat, 0), 3)
+                });
+            };
+            anyRegenStat = true;
+        } else {
+            party.forEach(function (m) {
+                if (!m) return;
+                var d = g.charSys.getDerivedStatsForChar(m);
+                if (num(d.lifeRegen, 0) > 0 || num(d.manaRegen, 0) > 0 || num(d.manaRegenFlat, 0) > 0) {
+                    anyRegenStat = true;
+                }
+            });
+        }
+
+        var fails = [];
+        var battlesOut = [];
+        for (var b = 0; b < battles; b++) {
+            party.forEach(function (m) {
+                if (!m) return;
+                var d = g.charSys.getDerivedStatsForChar(m);
+                var mx = num(d.maxHp, num(m.maxHp, 500));
+                var mm = num(d.maxMp, num(m.maxMp, 300));
+                if (mx > 0) m.currentHp = Math.max(1, Math.floor(mx * 0.82));
+                if (mm > 0) m.currentMp = Math.max(0, Math.floor(mm * 0.55));
+            });
+            var lg = g.logger;
+            if (lg && typeof lg.clearChannel === 'function') lg.clearChannel('combat');
+            var line0 = 0;
+            try {
+                core.startBattle(benchTpl);
+            } catch (eSt) {
+                fails.push({ battle: b + 1, why: 'startBattle: ' + String(eSt) });
+                break;
+            }
+            var ticks = 0;
+            while (ticks < maxTicks) {
+                var aliveFoe = (core.enemies || []).some(function (e) {
+                    return e && e.currentHp > 0;
+                });
+                if (!aliveFoe) break;
+                try { atb.tickAtbStep(); } catch (eTk) { }
+                ticks++;
+            }
+            var won = !(core.enemies || []).some(function (e) { return e && e.currentHp > 0; });
+            var newLines = _benchCombatLogLines().slice(line0);
+            var scan = _scanNatRegenLog(newLines);
+            var row = {
+                battle: b + 1,
+                won: won,
+                ticks: ticks,
+                natLogCount: scan.nat.length,
+                badTiming: scan.badTiming.length,
+                natSamples: scan.nat.slice(0, 2)
+            };
+            battlesOut.push(row);
+            if (!won) fails.push({ battle: b + 1, why: '逾時或未擊敗敵人（ticks=' + ticks + '）' });
+            if (scan.badTiming.length > 0) {
+                fails.push({ battle: b + 1, why: '非第3倍數出手卻自然恢復', samples: scan.badTiming.slice(0, 2) });
+            }
+            if (won && ticks >= minTicksForNat && anyRegenStat && scan.nat.length === 0) {
+                fails.push({ battle: b + 1, why: '有回復詞綴但戰報無自然恢復飄字/日誌' });
+            }
+            try { core.clearBattleState(); } catch (eEnd) { }
+        }
+
+        try { g.charSys.getDerivedStatsForChar = origDer; } catch (eDer) { }
+        try { core.isAutoBattle = snap.autoBattle; } catch (eR0) { }
+        try { core.autoRepeat = snap.autoRepeat; } catch (eR1) { }
+        core.onUpdateUI && core.onUpdateUI();
+
+        return {
+            ok: fails.length === 0,
+            battles: battles,
+            anyRegenStat: anyRegenStat,
+            failCount: fails.length,
+            fails: fails.slice(0, 12),
+            battlesOut: battlesOut
+        };
+    };
+
+    /**
+     * 自然恢復邏輯自測（Console：HY.benchNatRegen(10)）
+     * 不依戰鬥 UI，模擬計次／due／結算／token 防重複；含第6種連刷掃戰報。
+     */
+    window.HY.benchNatRegen = function (runs, opts) {
+        opts = opts || {};
+        runs = Math.max(1, Math.min(50, num(runs, 10)));
+        var g = window.HY.game;
+        var core = g && g.combatSys;
+        if (!core || !(core instanceof CombatCore)) {
+            return { ok: false, error: '請先進入遊戲（需 HY.game.combatSys）' };
+        }
+        var origDer = g.charSys.getDerivedStatsForChar;
+        var report = { ok: true, runs: runs, scenarios: [] };
+
+        function scenario(name, fn) {
+            var fails = [];
+            for (var r = 0; r < runs; r++) {
+                try {
+                    var res = fn(r);
+                    if (res && res.fail) fails.push({ run: r, why: res.fail });
+                } catch (e) {
+                    fails.push({ run: r, why: String(e) });
+                }
+            }
+            report.scenarios.push({ name: name, fails: fails.length, samples: fails.slice(0, 3) });
+        }
+
+        g.charSys.getDerivedStatsForChar = function () {
+            return {
+                maxHp: 500, maxMp: 300,
+                lifeRegen: 8, manaRegen: 6, manaRegenFlat: 2
+            };
+        };
+
+        scenario('我方：第3/6/9次出手各觸發1次', function () {
+            var u = g.charSys.state;
+            if (!u) return { fail: '無主角' };
+            u._battle = {};
+            u.currentHp = 200;
+            u.currentMp = 80;
+            u.maxHp = num(u.maxHp, 500);
+            u.maxMp = num(u.maxMp, 300);
+            var fired = 0;
+            for (var h = 1; h <= 9; h++) {
+                core.recordAllyCombatAction(u, core._nextAllyActionToken());
+                var due = core.charNaturalRegenDue(u);
+                var hpB = u.currentHp;
+                var mpB = u.currentMp;
+                if (due) {
+                    core.applyNaturalVitalRegenForUnit(u, 'ally');
+                    if (u.currentHp > hpB || u.currentMp > mpB) fired++;
+                }
+            }
+            if (fired !== 3) return { fail: '觸發' + fired + '次，預期3次' };
+            if (num(u._battle._natRegenAtHit, 0) !== 9) {
+                return { fail: '_natRegenAtHit=' + u._battle._natRegenAtHit };
+            }
+            return null;
+        });
+
+        scenario('token防雙計：同token只+1次', function () {
+            var u = { id: 'tok', name: 'T', currentHp: 100, currentMp: 50, _battle: {} };
+            var tok = core._nextAllyActionToken();
+            core.recordAllyCombatAction(u, tok);
+            core.recordAllyCombatAction(u, tok);
+            if (core.charNatRegenHits(u) !== 1) return { fail: 'hits=' + core.charNatRegenHits(u) };
+            return null;
+        });
+
+        scenario('無實際回復量仍consume週期（內力已滿）', function () {
+            var e = { id: 'e_full', name: '滿內', currentHp: 100, currentMp: 200,
+                maxHp: 100, maxMp: 200, _battle: {} };
+            for (var i = 0; i < 3; i++) {
+                core.recordCombatNatRegenAction(e, core._nextAllyActionToken(), false);
+            }
+            core.applyNaturalVitalRegenForUnit(e, 'foe');
+            if (num(e._battle._natRegenAtHit, 0) !== 3) {
+                return { fail: '_natRegenAtHit=' + e._battle._natRegenAtHit };
+            }
+            if (core.charNaturalRegenDue(e)) return { fail: '第3次仍顯示due' };
+            return null;
+        });
+
+        scenario('敵方：第3次出手回內', function () {
+            g.charSys.getDerivedStatsForChar = origDer;
+            var e = { id: 'foe1', name: '敵', currentHp: 100, currentMp: 10,
+                maxHp: 100, maxMp: 200, _battle: {} };
+            var regen = false;
+            for (var j = 1; j <= 3; j++) {
+                core.recordCombatNatRegenAction(e, core._nextAllyActionToken(), false);
+                var mpB = e.currentMp;
+                core.applyNaturalVitalRegenForUnit(e, 'foe');
+                if (e.currentMp > mpB) regen = true;
+            }
+            if (!regen) return { fail: '第3拍未回內' };
+            return null;
+        });
+
+        scenario('疾風模擬：1次ATB只計1次（不雙計）', function () {
+            var u = { id: 'jf', name: '風', currentHp: 100, currentMp: 50, _battle: {} };
+            var tok = core._nextAllyActionToken();
+            core.recordAllyCombatAction(u, tok);
+            core.applyNaturalVitalRegenForUnit(u, 'ally');
+            if (core.charNatRegenHits(u) !== 1) return { fail: 'hits=' + core.charNatRegenHits(u) };
+            return null;
+        });
+
+        g.charSys.getDerivedStatsForChar = origDer;
+
+        if (opts.live !== false) {
+            var liveN = Math.min(runs, num(opts.liveBattles, 10));
+            var live = window.HY.benchNatRegenLive(liveN, { maxTicks: num(opts.maxTicks, 14000) });
+            report.live = live;
+            report.scenarios.push({
+                name: '自動連刷 ' + liveN + ' 場＋掃戰報自然恢復',
+                fails: live.failCount || 0,
+                samples: (live.fails || []).slice(0, 3)
+            });
+            if (live.failCount > 0) report.ok = false;
+        }
+
+        report.totalFails = report.scenarios.reduce(function (s, x) { return s + x.fails; }, 0);
+        return report;
+    };
 })();
 
 /* ===== 153 / 275 : timeTravelSystem.js ===== */
@@ -116643,7 +116944,7 @@ window.HY = window.HY || {};
                 }
             }
             if (affixSys && enemy.currentHp > 0) affixSys.onEnemyTurnEnd(enemy);
-            if (typeof combat.afterCombatActionBeat === 'function') combat.afterCombatActionBeat('foe');
+            /* 自然恢復在 executeSingleEnemyAction 結尾已逐次 afterCombatActionBeat('foe', enemy) */
             /* ⭐ 聖火等「回合結束傷害」可能在上一行才打死最後一名敵人。
                舊版這裡只檢查我方是否全滅，於是敵人 0 血卻仍留在陣列裡，
                currentEnemy 為 null 但 handleVictory() 從未被呼叫 ——
