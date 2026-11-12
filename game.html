@@ -79216,7 +79216,7 @@ window.HY = window.HY || {};
             return charObj._battle.deferredVitals;
         }
         /** 氣血／內力回復佇列（下回合本人出手前結算，不與本招扣內在同一瞬間抵銷） */
-        queueVitalRestore(charObj, hp, mp) {
+        queueVitalRestore(charObj, hp, mp, fxMeta) {
             if (!charObj) return;
             var h = Math.max(0, Math.floor(num(hp, 0)));
             var m = Math.max(0, Math.floor(num(mp, 0)));
@@ -79224,6 +79224,15 @@ window.HY = window.HY || {};
             var q = this._deferredVitals(charObj);
             q.hp += h;
             q.mp += m;
+            if (fxMeta) {
+                var fx = {
+                    vitalKind: fxMeta.vitalKind || 'heal',
+                    skill: fxMeta.skill || '',
+                    label: fxMeta.label || ''
+                };
+                if (h > 0) q.fxHp = fx;
+                if (m > 0) q.fxMp = fx;
+            }
         }
         /** 結算上一回合累積的回復（僅在本人新一手出招時呼叫，雙靈連擊不觸發） */
         flushDeferredVitals(charObj) {
@@ -79233,6 +79242,8 @@ window.HY = window.HY || {};
             var q = b.deferredVitals;
             var hp = Math.max(0, num(q.hp, 0));
             var mp = Math.max(0, num(q.mp, 0));
+            var fxHp = q.fxHp;
+            var fxMp = q.fxMp;
             b.deferredVitals = { hp: 0, mp: 0 };
             if (hp <= 0 && mp <= 0) return;
             var core = this.core;
@@ -79240,14 +79251,63 @@ window.HY = window.HY || {};
             if (hp > 0 && featSys && typeof featSys.notifyHeal === 'function') {
                 hp = featSys.notifyHeal(charObj, hp);
             }
+            var aIdx = core.allyStageIndex(charObj);
+            if (hp > 0) {
+                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxHp, 'hp'), {
+                    skill: fxHp && fxHp.skill, label: fxHp && fxHp.label
+                });
+            }
+            if (mp > 0) {
+                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fxMp, 'mp'), {
+                    skill: fxMp && fxMp.skill, label: fxMp && fxMp.label
+                });
+            }
             core.charSys.restoreVitals(hp, mp, charObj);
             core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
             if (window.HY && window.HY.uiDexAtb) {
                 try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
             }
         }
-        applyHeal(charObj, hp, mp) {
-            this.queueVitalRestore(charObj, hp, mp);
+        /** 偷取類：當回合立即加氣血／內力並標記舞台飄字（不進下回合佇列） */
+        applyVitalNow(charObj, hp, mp, fxMeta) {
+            if (!charObj) return;
+            var h = Math.max(0, Math.floor(num(hp, 0)));
+            var m = Math.max(0, Math.floor(num(mp, 0)));
+            if (h <= 0 && m <= 0) return;
+            var core = this.core;
+            var featSys = window.HY.game && window.HY.game.sectFeatSys;
+            if (h > 0 && featSys && typeof featSys.notifyHeal === 'function') {
+                h = featSys.notifyHeal(charObj, h);
+            }
+            var aIdx = core.allyStageIndex(charObj);
+            var fx = fxMeta || {};
+            if (h > 0) {
+                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'hp'), {
+                    skill: fx.skill || '', label: fx.label || ''
+                });
+            }
+            if (m > 0) {
+                core.markStageFx('ally', aIdx, CombatPlayerTurn._vitalFxKind(fx, 'mp'), {
+                    skill: fx.skill || '', label: fx.label || ''
+                });
+            }
+            core.charSys.restoreVitals(h, m, charObj);
+        }
+        applyHeal(charObj, hp, mp, fxMeta) {
+            var vk = fxMeta && fxMeta.vitalKind;
+            if (vk === 'stealHp' || vk === 'stealMp') {
+                this.applyVitalNow(charObj, hp, mp, fxMeta);
+                return;
+            }
+            this.queueVitalRestore(charObj, hp, mp, fxMeta);
+        }
+        static _vitalFxKind(fx, channel) {
+            var k = (fx && fx.vitalKind) || 'heal';
+            if (k === 'heal') return channel === 'mp' ? 'healMp' : 'heal';
+            if (k === 'healMp' || k === 'stealHp' || k === 'stealMp' || k === 'regenHp' || k === 'regenMp') {
+                return k;
+            }
+            return channel === 'mp' ? 'healMp' : 'heal';
         }
         /* ══════════════════════════════════════════════════════════════
            ⭐⭐ POE 觸發機制結算（1:1）
@@ -79750,6 +79810,9 @@ window.HY = window.HY || {};
                     finalDmg = 1;
                 }
                 target.currentHp = Math.max(0, num(target.currentHp, 0) - finalDmg);
+                try {
+                    core.markStageFx('foe', core.foeStageIndex(target), 'dmg', { skill: art.name });
+                } catch (eMk) { }
                 totalDealt += finalDmg;
                 if (elemSys && target.currentHp > 0) {
                     var eRes = elemSys.calcElementDamage(charObj, target);
@@ -79978,6 +80041,11 @@ window.HY = window.HY || {};
                             var _heal = Math.floor(stats.maxHp * ((_dp && _dp.healPerAbsorb) || 0.04));
                             if (_heal > 0) {
                                 charObj.currentHp = Math.min(stats.maxHp, charObj.currentHp + _heal);
+                                try {
+                                    core.markStageFx('ally', core.allyStageIndex(charObj), 'stealHp', {
+                                        label: '奪元吸取', skill: art.name
+                                    });
+                                } catch (eMk2) { }
                             }
                             elemLogTotal += ' [🌀奪元吸取【' + _dr.name + '】+' + _heal + '血（' + _dr.stacks + '/5）]';
                         }
@@ -80090,14 +80158,26 @@ window.HY = window.HY || {};
             var leechText = '';
             if (totalLeechRatio > 0 && totalDealt > 0) {
                 var leechHp = Math.max(2, Math.floor(totalDealt * totalLeechRatio));
-                this.applyHeal(charObj, leechHp, 0);
+                this.applyHeal(charObj, leechHp, 0, {
+                    vitalKind: 'stealHp', label: '氣血偷取', skill: art.name
+                });
                 leechText = ' [🩸吸血+' + leechHp + ']';
+            }
+            var poeManaLeechPct = num(stats.manaLeech, 0) / 100;
+            if (poeManaLeechPct > 0 && totalDealt > 0) {
+                var leechMp = Math.max(1, Math.floor(totalDealt * poeManaLeechPct));
+                this.applyVitalNow(charObj, 0, leechMp, {
+                    vitalKind: 'stealMp', label: '內力偷取', skill: art.name
+                });
+                leechText += ' [💧內力偷取+' + leechMp + ']';
             }
             /* ⭐ 擊中回血（固定值，每命中一次回一次，上限 totalDealt 的 25% 避免過強） */
             var onHitHp = Math.floor(num(stats.lifeOnHit, 0)) * Math.max(1, targetList.length - missCount);
             if (onHitHp > 0) {
                 onHitHp = Math.min(onHitHp, Math.max(1, Math.floor(totalDealt * 0.25)));
-                this.applyHeal(charObj, onHitHp, 0);
+                this.applyHeal(charObj, onHitHp, 0, {
+                    vitalKind: 'heal', label: '擊中回血', skill: art.name
+                });
                 leechText += ' [💚擊中+' + onHitHp + ']';
             }
             /* 擊殺回血（本次攻擊有敵人死亡才觸發） */
@@ -80109,11 +80189,15 @@ window.HY = window.HY || {};
                 onKillHp += Math.floor(stats.maxHp * num(stats.lifeOnKillPct, 0) / 100) * killedNow;
             }
             if (killedNow > 0 && num(stats.manaOnKillPct, 0) > 0) {
-                this.queueVitalRestore(charObj, 0,
-                    Math.floor(stats.maxMp * num(stats.manaOnKillPct, 0) / 100) * killedNow);
+                this.applyVitalNow(charObj, 0,
+                    Math.floor(stats.maxMp * num(stats.manaOnKillPct, 0) / 100) * killedNow, {
+                        vitalKind: 'healMp', label: '擊殺回內', skill: art.name
+                    });
             }
             if (onKillHp > 0) {
-                this.applyHeal(charObj, onKillHp, 0);
+                this.applyHeal(charObj, onKillHp, 0, {
+                    vitalKind: 'heal', label: '擊殺回血', skill: art.name
+                });
                 leechText += ' [💀擊殺+' + onKillHp + ']';
             }
             /* ⭐⭐ POE 擊殺觸發：充能球／增益（N% chance to gain a X Charge on Kill） */
@@ -80126,7 +80210,9 @@ window.HY = window.HY || {};
             if (woodLongLv > 0) {
                 var woodHp = Math.max(2, Math.floor(stats.maxHp * (0.04 + woodLongLv * 0.0075) * GG_HALF));
                 var woodMp = Math.max(2, Math.floor(stats.maxMp * (0.04 + woodLongLv * 0.0075) * GG_HALF));
-                this.applyHeal(charObj, woodHp, woodMp);
+                this.applyHeal(charObj, woodHp, woodMp, {
+                    vitalKind: 'heal', label: '水木長生', skill: art.name
+                });
                 leechText += ' [🌸水木長生 下回合+' + woodHp + 'HP/+' + woodMp + 'MP]';
             }
             var supportText = '';
@@ -80157,34 +80243,48 @@ window.HY = window.HY || {};
                         return m && m.currentHp > 0;
                     });
                     teamList.forEach(function (m) {
-                        this.applyHeal(m, teamHeal, 0);
+                        this.applyHeal(m, teamHeal, 0, {
+                            vitalKind: 'heal', skill: art.name
+                        });
                         healedCount++;
                     }, this);
                     supportText += ' [💚下回合我方全體治療 ' + healedCount + '人 各+' + teamHeal + 'HP]';
                 } else if (art.healRatio) {
                     var healVal = Math.floor(stats.maxHp * (art.healRatio / MARTIAL_DIV) * _healMul);
-                    this.applyHeal(healTarget, healVal, 0);
+                    this.applyHeal(healTarget, healVal, 0, {
+                        vitalKind: 'heal', skill: art.name
+                    });
                     supportText += ' [💚下回合轉療【' + healTarget.name + '】+' + healVal + 'HP]';
                 }
                 if (art.mpRestore) {
                     var mpVal = Math.floor(art.mpRestore / MARTIAL_DIV);
                     if (isTeamHeal) {
                         (partyMembers || []).forEach(function (m) {
-                            if (m && m.currentHp > 0) self.queueVitalRestore(m, 0, mpVal);
+                            if (m && m.currentHp > 0) {
+                                self.queueVitalRestore(m, 0, mpVal, {
+                                    vitalKind: 'healMp', skill: art.name
+                                });
+                            }
                         });
                         supportText += ' [💧下回合我方全體回內 +' + mpVal + 'MP]';
                     } else {
-                        self.queueVitalRestore(healTarget, 0, mpVal);
+                        self.queueVitalRestore(healTarget, 0, mpVal, {
+                            vitalKind: 'healMp', skill: art.name
+                        });
                         supportText += ' [💧下回合轉補【' + healTarget.name + '】+' + mpVal + 'MP]';
                     }
                 }
             } else {
                 if (art.healRatio) {
                     var heal = Math.floor(stats.maxHp * (art.healRatio / MARTIAL_DIV));
-                    this.applyHeal(charObj, heal, 0);
+                    this.applyHeal(charObj, heal, 0, {
+                        vitalKind: 'heal', skill: art.name
+                    });
                 }
                 if (art.mpRestore && !mpFallbackBasic) {
-                    self.queueVitalRestore(charObj, 0, Math.floor(art.mpRestore / MARTIAL_DIV));
+                    self.queueVitalRestore(charObj, 0, Math.floor(art.mpRestore / MARTIAL_DIV), {
+                        vitalKind: 'healMp', skill: art.name
+                    });
                 }
             }
             var targetDesc = (art.isAoe && targetList.length > 1)
@@ -80510,13 +80610,9 @@ window.HY = window.HY || {};
                             '》擊中【' + tm.name + '】，造成 ' + dmg + ' 點傷害' +
                             (isCrit ? '（暴擊！）' : ''), 'combat');
                         try {
-                            var _BS3 = window.HY && window.HY.BattleStage;
-                            var _st3 = document.getElementById('hy-battle-stage');
-                            if (_BS3 && _BS3.fx && _st3) {
-                                var _i3 = (partyMembers || []).indexOf(tm);
-                                _BS3.fx.hit('hy-battle-stage', 'ally', _i3 >= 0 ? _i3 : 0,
-                                    dmg, isCrit, null, enemy.element);
-                            }
+                            var _i3 = (partyMembers || []).indexOf(tm);
+                            var _sk3 = chosenSkill && chosenSkill.name ? chosenSkill.name : '普攻';
+                            core.markStageFx('ally', _i3 >= 0 ? _i3 : 0, 'dmg', { skill: _sk3 });
                         } catch (eF3) { }
                     });
 
@@ -80672,6 +80768,11 @@ window.HY = window.HY || {};
                注意：不是刪掉整段就沒事 —— 下方組字串時有引用 esTag，
                保留變數但永遠為空字串，避免影響傷害訊息格式。 */
             targetMember.currentHp = Math.max(0, targetMember.currentHp - enemyDmg);
+            try {
+                var _aHit = (partyMembers || []).indexOf(targetMember);
+                var _skHit = chosenSkill ? chosenSkill.name : '普攻';
+                core.markStageFx('ally', _aHit >= 0 ? _aHit : 0, 'dmg', { skill: _skHit });
+            } catch (eMkE) { }
             var elemTag = '';
             if (elemSys && targetMember.currentHp > 0) {
                 var eRes = elemSys.calcEnemyElementDamage(enemy, targetMember);
@@ -80725,6 +80826,11 @@ window.HY = window.HY || {};
                         extraMsg += ' [⏳倒流！吸元→反噬 ' + _revDr.reversed + ']';
                     } else {
                         enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + _revDr.healed);
+                        try {
+                            core.markStageFx('foe', core.foeStageIndex(enemy), 'stealHp', {
+                                label: '吸元', skill: chosenSkill ? chosenSkill.name : ''
+                            });
+                        } catch (eDrFx) { }
                         extraMsg += ' [吸元 +' + _revDr.healed + 'HP]';
                     }
                 }
@@ -80734,6 +80840,11 @@ window.HY = window.HY || {};
                         if (other.id !== targetMember.id) {
                             // ⭐ v46：改為 Math.max(0, ...)，與主傷害一致（可致死）
                             other.currentHp = Math.max(0, other.currentHp - splashDmg);
+                            try {
+                                var _si = (partyMembers || []).indexOf(other);
+                                var _sn = chosenSkill ? chosenSkill.name : '普攻';
+                                core.markStageFx('ally', _si >= 0 ? _si : 0, 'dmg', { skill: _sn });
+                            } catch (eSp) { }
                         }
                     });
                     extraMsg += ' [劍氣橫掃全隊 ' + splashDmg + '傷!]';
@@ -80766,6 +80877,11 @@ window.HY = window.HY || {};
             } catch (eCfg) { }
             var regen = Math.max(1, Math.floor(enemy.maxMp * ratio));
             enemy.currentMp = Math.min(enemy.maxMp, cur + regen);
+            try {
+                if (regen > 0) {
+                    core.markStageFx('foe', core.foeStageIndex(enemy), 'regenMp', { label: '自然回復' });
+                }
+            } catch (eRg) { }
         }
         enemiesTurn(partyMembers) {
             var self = this;
@@ -83646,14 +83762,13 @@ window.HY = window.HY || {};
                 if (_hpRate > 0) {
                     _hpGain = Math.floor(num(_d.maxHp, 0) * (_hpRate / 100) * 0.08);
                 }
-                var _ptR = self.playerTurn;
                 if (_mpGain > 0 && mm.currentMp < num(_d.maxMp, 0)) {
-                    if (_ptR && _ptR.queueVitalRestore) _ptR.queueVitalRestore(mm, 0, _mpGain);
-                    else mm.currentMp = Math.min(num(_d.maxMp, 0), mm.currentMp + _mpGain);
+                    g.charSys.restoreVitals(0, _mpGain, mm);
+                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenMp', { label: '自然回復' });
                 }
                 if (_hpGain > 0 && mm.currentHp < num(_d.maxHp, 0)) {
-                    if (_ptR && _ptR.queueVitalRestore) _ptR.queueVitalRestore(mm, _hpGain, 0);
-                    else mm.currentHp = Math.min(num(_d.maxHp, 0), mm.currentHp + _hpGain);
+                    g.charSys.restoreVitals(_hpGain, 0, mm);
+                    self.markStageFx('ally', self.allyStageIndex(mm), 'regenHp', { label: '自然回復' });
                 }
                 if (_hpGain > 0 || _mpGain > 0) {
                     var parts = [];
@@ -83662,6 +83777,56 @@ window.HY = window.HY || {};
                     self.log('💧 【' + mm.name + '】自然回復 ' + parts.join(' / '), 'combat');
                 }
             });
+            this.onUpdateUI && this.onUpdateUI();
+        }
+        /** 戰鬥舞台舞台飄字：預先標記來源（招式／偷取／自然回復等） */
+        _ensureStageFxMarks() {
+            if (!this._stageFxMarks) this._stageFxMarks = { ally: {}, foe: {} };
+        }
+        markStageFx(side, index, kind, opts) {
+            if (!side || typeof index !== 'number' || index < 0 || !kind) return;
+            opts = opts || {};
+            this._ensureStageFxMarks();
+            var bucket = this._stageFxMarks[side] || (this._stageFxMarks[side] = {});
+            bucket[index] = bucket[index] || {};
+            bucket[index][kind] = {
+                skill: String(opts.skill || '').slice(0, 16),
+                label: String(opts.label || '').slice(0, 14),
+                at: Date.now()
+            };
+        }
+        consumeStageFx(side, index, kind) {
+            if (!this._stageFxMarks || !kind) return null;
+            var bucket = this._stageFxMarks[side];
+            if (!bucket || !bucket[index]) return null;
+            var slot = bucket[index];
+            var m = slot[kind];
+            if (!m) return null;
+            if (Date.now() - m.at > 5000) {
+                delete slot[kind];
+                return null;
+            }
+            delete slot[kind];
+            return m;
+        }
+        allyStageIndex(charObj) {
+            if (!charObj) return 0;
+            var g = window.HY.game;
+            var ps = g && g.partySys;
+            var mem = (ps && ps.getPartyMembers) ? ps.getPartyMembers() : [];
+            if (!mem.length && this.charSys && this.charSys.state) {
+                mem = [this.charSys.state];
+            }
+            var i;
+            for (i = 0; i < mem.length; i++) {
+                if (mem[i] === charObj) return i;
+                if (mem[i] && charObj.id != null && mem[i].id === charObj.id) return i;
+            }
+            return 0;
+        }
+        foeStageIndex(enemy) {
+            var i = (this.enemies || []).indexOf(enemy);
+            return i >= 0 ? i : 0;
         }
         getCharBlessingLv(charObj, blessingId) {
             var gSB = window.HY.game && window.HY.game.guildSkillBeast;
@@ -118513,6 +118678,8 @@ window.HY = window.HY || {};
         if (!node) return;
         try {
             if (node.parentNode) node.parentNode.removeChild(node);
+            node.textContent = '';
+            node.classList.remove('has-src');
             if (POOL.length < POOL_MAX) POOL.push(node);
         } catch (e) { }
     }
@@ -119046,6 +119213,36 @@ window.HY = window.HY || {};
                 '-2px -2px 0 #002b14,2px -2px 0 #002b14,-2px 2px 0 #002b14,2px 2px 0 #002b14,' +
                 '0 -2px 0 #002b14,0 2px 0 #002b14,-2px 0 0 #002b14,2px 0 0 #002b14,' +
                 '0 0 16px rgba(52,211,153,.95);}',
+        '.hy-fx-dmg.has-src{display:flex;flex-direction:column;align-items:center;line-height:1.05;}',
+        '.hy-fx-dmg .fx-src{font-size:.68rem;font-weight:700;font-family:"Microsoft JhengHei",sans-serif;' +
+            'margin-bottom:2px;max-width:10em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+        '.hy-fx-dmg.dmg .fx-src{color:#fde68a;}',
+        '.hy-fx-dmg.stealHp{color:#fda4af;}',
+        '.hy-fx-dmg.stealHp .fx-src{color:#f9a8d4;}',
+        '.hy-fx-dmg.stealMp{color:#7dd3fc;font-size:1.3rem;}',
+        '.hy-fx-dmg.stealMp .fx-src{color:#93c5fd;}',
+        '.hy-fx-dmg.regenHp{color:#86efac;}',
+        '.hy-fx-dmg.regenMp{color:#67e8f9;font-size:1.3rem;}',
+        '.hy-fx-dmg.regenHp .fx-src,.hy-fx-dmg.regenMp .fx-src{color:#bef264;}',
+        '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
+            'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
+        /* ⭐ v724：恢復→方格左上角；偷取→方格右上角（仍保留上飄動畫） */
+        '.hy-fx-dmg.fx-tl{left:2px;top:2px;right:auto;transform:translate(var(--dx,0),var(--dy,0));' +
+            'align-items:flex-start;text-align:left;' +
+            'animation:hy-fx-rise-tl 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.fx-tr{left:auto;right:2px;top:2px;transform:translate(var(--dx,0),var(--dy,0));' +
+            'align-items:flex-end;text-align:right;' +
+            'animation:hy-fx-rise-tr 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.fx-tl,.hy-fx-dmg.fx-tr{font-size:1.12rem;}',
+        '.hy-fx-dmg.fx-tl .fx-src,.hy-fx-dmg.fx-tr .fx-src{max-width:5.5em;font-size:.62rem;}',
+        '@keyframes hy-fx-rise-tl{0%{opacity:0;transform:translate(var(--dx,0),calc(6px + var(--dy,0))) scale(.65);}' +
+            '14%{opacity:1;transform:translate(var(--dx,0),calc(-2px + var(--dy,0))) scale(1.12);}' +
+            '72%{opacity:1;transform:translate(var(--dx,0),calc(-18px + var(--dy,0))) scale(1);}' +
+            '100%{opacity:0;transform:translate(var(--dx,0),calc(-32px + var(--dy,0))) scale(.92);}}',
+        '@keyframes hy-fx-rise-tr{0%{opacity:0;transform:translate(var(--dx,0),calc(6px + var(--dy,0))) scale(.65);}' +
+            '14%{opacity:1;transform:translate(var(--dx,0),calc(-2px + var(--dy,0))) scale(1.12);}' +
+            '72%{opacity:1;transform:translate(var(--dx,0),calc(-18px + var(--dy,0))) scale(1);}' +
+            '100%{opacity:0;transform:translate(var(--dx,0),calc(-32px + var(--dy,0))) scale(.92);}}',
         '.hy-fx-dmg.miss{color:#a5f3fc;font-size:1.3rem;letter-spacing:4px;font-style:italic;' +
             'font-family:"Microsoft JhengHei",sans-serif;' +
             'text-shadow:' +
@@ -120371,8 +120568,8 @@ window.HY = window.HY || {};
             } catch (eB) { }
         }
 
-        applySide(el, party, 'ally', id, rebuilt);
-        applySide(el, enemies, 'foe', id, rebuilt);
+        applySide(el, party, 'ally', id, rebuiltAlly);
+        applySide(el, enemies, 'foe', id, rebuiltFoe);
         /* v680：全量重建後再等版面穩定校正一次（避免開戰首幀錯格） */
         if (needFull || newBattle) {
             var elRef = el;
@@ -121104,21 +121301,21 @@ window.HY = window.HY || {};
                 if (d < -0.5) {
                     var dmg = Math.abs(d);
                     var crit = dmg >= Math.max(1, (Number(p.max) || 0) * 0.18);
-                    playHit(el, node, side, di, dmg, crit, null, u.element);
+                    var fxDmg = consumeStageFxMarked(side, di, ['dmg']);
+                    var skD = fxDmg && fxDmg.meta ? fxDmg.meta.skill : '';
+                    playHit(el, node, side, di, dmg, crit, null, u.element, skD);
                     /* ⭐ v513：我方打敵方 → 累積連擊 */
                     if (side === 'foe') bumpCombo(el, stageId);
                 } else if (d > 0.5) {
-                    /* ⭐ v517：找最近的活著友方當治療施術者（畫綠色連線） */
-                    var _healer = null;
-                    try {
-                        var _mates = el.querySelectorAll('.hy-stage-unit.' + side + ':not(.dead)');
-                        for (var _hi = 0; _hi < _mates.length; _hi++) {
-                            if (_mates[_hi] !== node) { _healer = _mates[_hi]; break; }
-                        }
-                    } catch (eH) { }
-                    playHeal(node, d, _healer);
+                    var fxHpUp = consumeStageFxMarked(side, di, ['stealHp', 'regenHp', 'heal']);
+                    playVitalFloat(node, d, (fxHpUp && fxHpUp.kind) || 'heal', fxHpUp && fxHpUp.meta);
                     /* ⭐ v513：補血統計 */
                     try { statsOf(stageId).healTotal += d; } catch (e0) { }
+                }
+                var dMp = (Number(u.mp) || 0) - (Number(p.mp) || 0);
+                if (dMp > 0.5) {
+                    var fxMpUp = consumeStageFxMarked(side, di, ['stealMp', 'regenMp', 'healMp']);
+                    playVitalFloat(node, dMp, (fxMpUp && fxMpUp.kind) || 'healMp', fxMpUp && fxMpUp.meta);
                 }
                 /* 存活 → 倒地 */
                 if (p.alive !== false && u.alive === false) playDeath(node);
@@ -121193,6 +121390,7 @@ window.HY = window.HY || {};
         SNAPSHOT[stageId][side] = list.map(function (u) {
             return {
                 cur: Number(u.cur) || 0, max: Number(u.max) || 0,
+                mp: Number(u.mp) || 0,
                 alive: u.alive !== false,
                 skill: u.skill || null
             };
@@ -121378,10 +121576,68 @@ window.HY = window.HY || {};
        特效
        ══════════════════════════════════════════════════════ */
 
-    /** ⭐ v513：飄字（改用物件池）
+    function consumeStageFxMarked(side, index, kinds) {
+        var k, cs, m;
+        for (k = 0; k < kinds.length; k++) {
+            try {
+                cs = window.HY.game && window.HY.game.combatSys;
+                if (cs && typeof cs.consumeStageFx === 'function') {
+                    m = cs.consumeStageFx(side, index, kinds[k]);
+                    if (m) return { kind: kinds[k], meta: m };
+                }
+            } catch (eFx) { }
+        }
+        return null;
+    }
+
+    function floatSrcLine(meta, floatKind) {
+        if (!meta) return '';
+        var k = floatKind || '';
+        if (k.indexOf('steal') === 0 || k.indexOf('regen') === 0) {
+            if (meta.label) return meta.label;
+        }
+        if (meta.skill) return '《' + meta.skill + '》';
+        if (meta.label) return meta.label;
+        return '';
+    }
+
+    function applyFloatSrc(el, meta, floatKind) {
+        var line = floatSrcLine(meta, floatKind);
+        if (!line || !el) return;
+        el.classList.add('has-src');
+        var sp = el.querySelector('.fx-src');
+        if (!sp) {
+            sp = document.createElement('span');
+            sp.className = 'fx-src';
+            el.insertBefore(sp, el.firstChild);
+        }
+        sp.textContent = line;
+    }
+
+    function setFloatMain(el, text) {
+        if (!el) return;
+        var numEl = el.querySelector('.fx-num');
+        if (!numEl) {
+            numEl = document.createElement('span');
+            numEl.className = 'fx-num';
+            el.appendChild(numEl);
+        }
+        numEl.textContent = text;
+    }
+
+    /** 恢復類→左上；偷取類→右上；其餘維持頭頂中央 */
+    function floatCornerForKind(kind) {
+        if (!kind) return '';
+        if (kind.indexOf('steal') === 0) return 'fx-tr';
+        if (kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') return 'fx-tl';
+        return '';
+    }
+
+  /** ⭐ v513：飄字（改用物件池）
         ⭐ v517：加入水平抖動、垂直錯開與「同目標短時間累積」 */
-    function floatText(node, text, kind) {
+    function floatText(node, text, kind, meta) {
         if (!node) return;
+        meta = meta || null;
 
         /* 同目標 500ms 內的同類傷害 → 合併累加（避免數字糊成一團） */
         if (kind && kind.indexOf('dmg') === 0) {
@@ -121396,38 +121652,40 @@ window.HY = window.HY || {};
                    仍是普通白色字級，玩家看不出那是暴擊。 */
                 var upCrit = (kind.indexOf('crit') >= 0) || !!last.crit;
                 if (upCrit) last.crit = true;
-                last.el.className = 'hy-fx-dmg dmg' + (upCrit ? ' crit' : '');
-                last.el.textContent = (upCrit ? '💥 ' : '') +
-                    Math.round(last.sum).toLocaleString();
+                if (meta && meta.skill && !last.skill) last.skill = meta.skill;
+                last.el.className = 'hy-fx-dmg dmg' + (upCrit ? ' crit' : '') +
+                    (last.skill ? ' has-src' : '');
+                setFloatMain(last.el, (upCrit ? '💥 ' : '') +
+                    Math.round(last.sum).toLocaleString());
+                if (last.skill) applyFloatSrc(last.el, { skill: last.skill }, kind);
                 return;
             }
         }
 
-        var d = takeNode('hy-fx-dmg ' + kind);
-        d.textContent = text;
-        /* 水平隨機偏移 ±18px、垂直依序錯開 */
-        var dx = (Math.random() * 36 - 18).toFixed(1);
-        var stack = (node.__dmgStack = (node.__dmgStack || 0) + 1) % 4;
-        var dy = (stack * 20).toFixed(1);
-
-        /* ⭐ v623【關鍵】不同種類從不同高度起飛
-           ──────────────────────────────────────────────────────────
-           原本所有飄字都從 top:4px 起跑，因此「傷害 + 補血 + 閃避」
-           同時出現時會完全疊在一起（實測截圖：閃避與 ＋ 符號直接蓋住
-           傷害數字的頭兩位，兩者都看不清）。
-           這裡給每種一個垂直基準，讓它們天然分層：
-             傷害 / 暴擊  0px    （最靠近角色頭上，最常看）
-             補血        +34px
-             閃避        +64px
-             其他/盾     +92px
-           再疊上 20px 的「同類連續」錯開，四連擊也不會互相壓到。 */
-        var baseY = 0;
-        if (kind) {
-            if (kind.indexOf('heal') >= 0) baseY = 34;
-            else if (kind.indexOf('miss') >= 0) baseY = 64;
-            else if (kind.indexOf('shield') >= 0) baseY = 92;
+        var corner = floatCornerForKind(kind);
+        var d = takeNode('hy-fx-dmg ' + kind + (corner ? (' ' + corner) : ''));
+        setFloatMain(d, text);
+        if (meta) applyFloatSrc(d, meta, kind);
+        var stackKey = corner || 'mid';
+        var stackMap = node.__fxStack = node.__fxStack || {};
+        var stack = (stackMap[stackKey] = ((stackMap[stackKey] || 0) + 1) % 4);
+        var dx;
+        var dy;
+        if (corner === 'fx-tl') {
+            dx = (Math.random() * 10).toFixed(1);
+            dy = String(stack * 14);
+        } else if (corner === 'fx-tr') {
+            dx = (-Math.random() * 10).toFixed(1);
+            dy = String(stack * 14);
+        } else {
+            dx = (Math.random() * 36 - 18).toFixed(1);
+            var baseY = 0;
+            if (kind) {
+                if (kind.indexOf('miss') >= 0) baseY = 64;
+                else if (kind.indexOf('shield') >= 0) baseY = 92;
+            }
+            dy = String(baseY + stack * 20);
         }
-        dy = String(baseY + stack * 20);
 
         d.style.setProperty('--dx', dx + 'px');
         d.style.setProperty('--dy', dy + 'px');
@@ -121437,7 +121695,8 @@ window.HY = window.HY || {};
             var n2 = Number(String(text).replace(/[^\d.-]/g, ''));
             node.__lastDmg = {
                 el: d, sum: isFinite(n2) ? n2 : 0, ts: Date.now(),
-                crit: kind.indexOf('crit') >= 0
+                crit: kind.indexOf('crit') >= 0,
+                skill: meta && meta.skill ? meta.skill : ''
             };
         }
 
@@ -121517,7 +121776,7 @@ window.HY = window.HY || {};
         setTimeout(function () { giveNode(r); }, 1100);
     }
 
-    function playHit(el, node, side, i, dmg, crit, actorNode, element) {
+    function playHit(el, node, side, i, dmg, crit, actorNode, element, skillName) {
         if (!node) return;
 
         var atkEl = el.querySelector('.hy-stage-side.' + ((side === 'foe') ? 'ally' : 'foe'));
@@ -121541,7 +121800,8 @@ window.HY = window.HY || {};
 
         /* 傷害飄字 */
         var n = Math.round(dmg);
-        floatText(node, (crit ? '💥 ' : '') + n.toLocaleString(), crit ? 'dmg crit' : 'dmg');
+        var fxMeta = skillName ? { skill: skillName } : null;
+        floatText(node, (crit ? '💥 ' : '') + n.toLocaleString(), crit ? 'dmg crit' : 'dmg', fxMeta);
 
         /* 暴擊衝擊環 */
         if (crit) {
@@ -121762,9 +122022,15 @@ window.HY = window.HY || {};
         void el; void party; void enemies;
     }
 
-    function playHeal(node, amount, fromNode, element) {
+    function playVitalFloat(node, amount, floatKind, meta) {
         if (!node) return;
-        floatText(node, '＋' + Math.round(amount).toLocaleString(), 'heal');
+        var k = floatKind || 'heal';
+        floatText(node, '＋' + Math.round(amount).toLocaleString(), k, meta);
+    }
+
+    function playHeal(node, amount, fromNode, element, meta) {
+        if (!node) return;
+        playVitalFloat(node, amount, 'heal', meta);
     }
 
     function playDeath(node) {
@@ -122020,7 +122286,7 @@ window.HY = window.HY || {};
         showShjZhenFx: showShjZhenFx,
         /* 對外手動觸發（給特殊技能表現用） */
         fx: {
-            hit: function (id, side, index, dmg, crit, actorIndex, element) {
+            hit: function (id, side, index, dmg, crit, actorIndex, element, skillName) {
                 var el = document.getElementById(id || 'hy-battle-stage');
                 if (!el) return;
                 var n = el.querySelector('.hy-stage-unit[data-side="' + side + '"][data-i="' + index + '"]');
@@ -122030,7 +122296,7 @@ window.HY = window.HY || {};
                         (side === 'foe' ? 'ally' : 'foe') + '"][data-i="' + actorIndex + '"]');
                 }
                 if (n) {
-                    playHit(el, n, side, index, dmg || 0, !!crit, actor, element);
+                    playHit(el, n, side, index, dmg || 0, !!crit, actor, element, skillName);
                     /* ⭐ v513：我方打敵方 → 累積連擊 */
                     if (side === 'foe') bumpCombo(el, id || 'hy-battle-stage');
                 }
