@@ -5,13 +5,40 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v704 · 2026-11-12',
-        gameVer: 704,
+        newsVer: 'v705 · 2026-11-12',
+        gameVer: 705,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '內力消耗與戰報',
+            date: '2026-11-12',
+            bullets: [
+                '扣內後即時刷新內力條；內力不足改基本拳不再誤回內',
+                '燃血代內／血靈／疾風追擊戰報標示更清楚'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '區域 BOSS 切換卡住',
+            date: '2026-11-12',
+            bullets: [
+                '打 BOSS 中途改點其他地圖 BOSS 可確認放棄，不再永遠「戰鬥進行中」',
+                '戰鬥狀態與舞台同步；開一般戰會清殘留 BOSS 鎖'
+            ]
+        },
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '山海異獸連刷與強度',
+            date: '2026-11-12',
+            bullets: [
+                '異獸戰勝後<b>不納入內掛連刷</b>，須回山海經地圖再挑戰',
+                '遭遇戰氣血／攻防對齊同級頭目（珍稀／傳說明顯加強）'
+            ]
+        },
         {
             tag: 'add', tagLabel: '新增',
             title: '離線金司馬刷圖',

@@ -37792,7 +37792,17 @@ window.HY = window.HY || {};
         perRegionMax: 3,
         respawnMs: 6 * 60 * 60 * 1000,
         padX: 0.20,
-        padY: 0.22
+        padY: 0.22,
+        /* ⭐ 遭遇戰強度（對齊同 Lv 時空探索頭目；單體應付 5 人隊） */
+        combat: {
+            hpFlat: 280,
+            hpPerLv: 125,
+            atkFlat: 32,
+            atkPerLv: 6.2,
+            defFlat: 18,
+            defPerLv: 4.5,
+            rewardMul: 1.15
+        }
     };
 
     Data.shjRoot = function () {
@@ -37940,13 +37950,17 @@ window.HY = window.HY || {};
             }
         }
         var elv = Math.max(def.minLv || 1, lv + (SHJ_RARITY_LV[beast.rarity] || 0));
-        var pow = 1 + elv * 0.09;
         var rMul = beast.rarity === 'legend' ? 2.4 : (beast.rarity === 'epic' ? 1.75 : (beast.rarity === 'rare' ? 1.35 : 1));
-        var hp = Math.floor(95 * pow * rMul);
-        var atk = Math.floor(14 * pow * Math.sqrt(rMul));
-        var defStat = Math.floor(6 + elv * 1.15 * rMul);
+        var cCfg = (Data.SHJ_CONFIG && Data.SHJ_CONFIG.combat) || {};
+        var hpCore = (Number(cCfg.hpFlat) || 280) + elv * (Number(cCfg.hpPerLv) || 125);
+        var hp = Math.floor(hpCore * Math.pow(rMul, 1.28));
+        var atkCore = (Number(cCfg.atkFlat) || 32) + elv * (Number(cCfg.atkPerLv) || 6.2);
+        var atk = Math.floor(atkCore * Math.pow(rMul, 0.72));
+        var defStat = Math.floor(((Number(cCfg.defFlat) || 18) + elv * (Number(cCfg.defPerLv) || 4.5)) *
+            Math.pow(rMul, 0.9));
+        var rewMul = Number(cCfg.rewardMul) || 1.15;
         var skillName = def.skill || '異獸撲擊';
-        var skillMult = beast.rarity === 'legend' ? 1.55 : (beast.rarity === 'epic' ? 1.42 : 1.32);
+        var skillMult = beast.rarity === 'legend' ? 1.62 : (beast.rarity === 'epic' ? 1.48 : (beast.rarity === 'rare' ? 1.38 : 1.28));
 
         var enemy = {
             id: 'shj_' + beast.id,
@@ -37954,13 +37968,14 @@ window.HY = window.HY || {};
             name: '【山海】' + beast.name,
             lv: elv,
             hp: hp, maxHp: hp, atk: atk, def: defStat,
-            hit: Math.min(118, 90 + Math.floor(elv * 0.35)),
-            eva: Math.min(28, 6 + Math.floor(elv * 0.22)),
-            crit: Math.min(35, 8 + Math.floor(elv * 0.28)),
-            critRes: Math.min(30, 4 + Math.floor(elv * 0.2)),
-            exp: Math.floor(40 * pow * rMul),
-            sp: Math.floor(28 * pow * rMul),
-            gold: Math.floor(35 * pow * rMul),
+            hit: Math.min(128, 92 + Math.floor(elv * 0.42) + (beast.rarity === 'legend' ? 4 : 0)),
+            eva: Math.min(34, 8 + Math.floor(elv * 0.26) + Math.floor(rMul * 2)),
+            crit: Math.min(42, 10 + Math.floor(elv * 0.32) + (beast.rarity === 'legend' ? 6 : 0)),
+            critRes: Math.min(38, 6 + Math.floor(elv * 0.24) + Math.floor(rMul * 3)),
+            atkSpd: Math.min(145, 100 + Math.floor(elv * 0.35) + (beast.rarity === 'epic' || beast.rarity === 'legend' ? 8 : 0)),
+            exp: Math.floor(hp * 0.42 * rewMul),
+            sp: Math.floor(hp * 0.28 * rewMul),
+            gold: Math.floor(hp * 0.32 * rewMul),
             faction: '山海經・' + (beast.source || '佚卷'),
             skills: [{ name: skillName, mult: skillMult, effect: def.skillType === 'buff' ? 'normal' : 'pierce' }],
             isShjBeast: true,
@@ -56446,10 +56461,89 @@ window.HY = window.HY || {};
             return left > 0 ? Math.ceil(left / 1000) : 0;
         }
 
+        /** 戰場上是否仍有存活區域 BOSS */
+        _hasLiveBossInCombat() {
+            var g = this.app || window.HY.game;
+            var cs = g && g.combatSys;
+            if (!cs) return false;
+            var list = cs.enemies || [];
+            return list.some(function (e) {
+                return e && e.isRegionBoss && num(e.currentHp, 0) > 0;
+            });
+        }
+
+        /** _inFight 與實際戰鬥同步（避免戰已結束卻永遠「戰鬥進行中」） */
+        syncFightState() {
+            if (!this._inFight || this._settling) return;
+            if (this._hasLiveBossInCombat()) return;
+            this._inFight = false;
+            this._boss = null;
+            this._mapId = '';
+            this._pendingBoss = null;
+            this._pendingMapId = '';
+            var arb = window.HY.CombatArbiter;
+            if (arb) arb.release('normal');
+        }
+
+        /**
+         * 放棄當前區域 BOSS（不結算擊殺／不掉落）
+         * @param {string|null} msg 自訂日誌；null 則用預設
+         */
+        abandonFight(msg, opts) {
+            opts = opts || {};
+            var was = this._inFight;
+            var bossName = (this._boss && this._boss.name) || '';
+            var g = this.app || window.HY.game;
+            var cs = g && g.combatSys;
+            if (cs && (this._hasLiveBossInCombat() || (was && cs.currentEnemy))) {
+                if (typeof cs.clearBattleState === 'function') cs.clearBattleState();
+                else {
+                    cs.enemies = [];
+                    cs.currentEnemy = null;
+                }
+                try {
+                    var ui = window.HY && window.HY.uiDexAtb;
+                    var partyMembers = (g.partySys && g.partySys.getPartyMembers)
+                        ? g.partySys.getPartyMembers() : [g.charSys.state];
+                    if (ui && typeof ui.renderBattleStage === 'function') {
+                        ui.renderBattleStage(partyMembers, false, false);
+                    }
+                } catch (eUi) { }
+                try { if (typeof cs.onUpdateUI === 'function') cs.onUpdateUI(); } catch (eUi2) { }
+            }
+            this._inFight = false;
+            this._boss = null;
+            this._mapId = '';
+            this._pendingBoss = null;
+            this._pendingMapId = '';
+            this._settling = false;
+            var arb = window.HY.CombatArbiter;
+            if (arb) arb.release('normal');
+            if (!opts.silent) {
+                if (msg) this._log(msg, 'system');
+                else if (was && bossName) {
+                    this._log('🏳 已退出區域 BOSS【' + bossName + '】（不計擊殺）。', 'system');
+                }
+            }
+            try { if (g && g.renderAll) g.renderAll(true); } catch (eR) { }
+            return { ok: true };
+        }
+
         canChallenge(mapId) {
+            this.syncFightState();
             var boss = this.bossOf(mapId);
             if (!boss) return { ok: false, why: '此地圖沒有區域 BOSS' };
-            if (this._inFight) return { ok: false, why: '戰鬥進行中' };
+            if (this._inFight) {
+                if (this._mapId === mapId) {
+                    return { ok: false, why: '正在挑戰此區域 BOSS' };
+                }
+                return {
+                    ok: false,
+                    why: '戰鬥進行中',
+                    needReplace: true,
+                    inFightMapId: this._mapId
+                };
+            }
 
             /* ⭐ v571：地圖未解鎖 → 不可挑戰 BOSS
                ──────────────────────────────────────────────────────────
@@ -56503,7 +56597,13 @@ window.HY = window.HY || {};
         /* ══════════════════════════════════════════════════
            開戰
            ══════════════════════════════════════════════════ */
-        start(mapId) {
+        start(mapId, opts) {
+            opts = opts || {};
+            if (opts.replace && this._inFight) {
+                var oldBoss = this._boss;
+                var oldName = oldBoss ? oldBoss.name : '其他區域 BOSS';
+                this.abandonFight('🏳 已放棄【' + oldName + '】，改戰其他區域。');
+            }
             var chk = this.canChallenge(mapId);
             if (!chk.ok) return chk;
 
@@ -56527,7 +56627,7 @@ window.HY = window.HY || {};
                 claimed = true;
             }
 
-            var enemy = this._buildBossEnemy(boss);
+            var enemy = this._buildBossEnemy(boss, mapId);
 
             var combat = g.combatSys;
             if (!combat) {
@@ -56588,7 +56688,7 @@ window.HY = window.HY || {};
             return { ok: true, enemy: enemy, boss: boss, warn: chk.warn };
         }
 
-        _buildBossEnemy(boss) {
+        _buildBossEnemy(boss, mapId) {
             /* ⭐ v635：區域 BOSS 強化（使用者要求）
                ──────────────────────────────────────────────────────────
                ① 血量 ×5
@@ -56632,6 +56732,7 @@ window.HY = window.HY || {};
                 lv: boss.lv,
                 isRegionBoss: true,
                 isBoss: true,
+                regionBossMapId: mapId || boss.mapId || '',
                 /* ⭐ v567：這裡必須用 hp（combatCore.startBattle 讀的是 hp）
                    ──────────────────────────────────────────────────────────
                    原本只給 maxHp / currentHp，但 startBattle 內部是
@@ -78134,9 +78235,12 @@ window.HY = window.HY || {};
                        ⭐ v619：渡劫 BOSS 同樣不自動接戰（連刷 BUG 的主因之一） */
                     var t0 = this.core.lastEnemyTemplate;
                     var t0Blocked = t0 && (
-                        t0.isRegionBoss || t0.isTribulation ||
+                        t0.isRegionBoss || t0.isTribulation || t0.isShjBeast ||
+                        !!(t0.shjSpawnKey || t0.shjBeastId) ||
                         /^rboss_/.test(String(t0.uid || '')) ||
-                        /^trib_/.test(String(t0.uid || ''))
+                        /^trib_/.test(String(t0.uid || '')) ||
+                        /^shj_/.test(String(t0.uid || '')) ||
+                        /^shj_/.test(String(t0.id || ''))
                     );
                     if (!t0Blocked) {
                         this.core.startBattle(t0);
@@ -78258,6 +78362,15 @@ window.HY = window.HY || {};
                由 regionBossSys 檢查冷卻。 */
             if (tpl && (tpl.isRegionBoss || /^rboss_/.test(String(tpl.uid || '')))) {
                 this.core.log('👑 區域 BOSS 戰結束，自動連刷已跳過（需回地圖重新挑戰，冷卻時間照常計算）。', 'system');
+                return;
+            }
+
+            /* ⭐ 山海經異獸不列入自動連刷
+               勝利後若用 lastEnemyTemplate 再開戰，會繞過 shjMarkDefeated／
+               共同鎮壓與重生計時 → 同一隻可無限農。 */
+            if (tpl && (tpl.isShjBeast || tpl.shjSpawnKey || tpl.shjBeastId ||
+                /^shj_/.test(String(tpl.uid || '')) || /^shj_/.test(String(tpl.id || '')))) {
+                this.core.log('🗺️ 山海異獸戰結束，自動連刷已跳過（請回山海經地圖尋找下一隻）。', 'system');
                 return;
             }
             this.core.log('🔄 自動連刷啟動中：準備再次迎戰下一波【' + tpl.name + '】...', 'time');
@@ -78764,6 +78877,7 @@ window.HY = window.HY || {};
             var affixSys = window.HY.game && window.HY.game.affixSys;
             var elemSys = window.HY.game && window.HY.game.elementSys;
             var setFeatSys = window.HY.game && window.HY.game.sectFeatSys;
+            var requestedSkillId = skillId;
             var art = Data.MARTIAL_ARTS[skillId] || Data.MARTIAL_ARTS.basic_punch;
             var isSupportMode = !!(healTarget && healTarget.currentHp > 0);
             /* ⭐ 復活技能：目標是「倒下的隊友」時，走復活流程而非一般支援 */
@@ -78818,29 +78932,49 @@ window.HY = window.HY || {};
             if (typeof window.HY.__GG_HALF !== 'number') window.HY.__GG_HALF = 0.5;
             var GG_HALF = window.HY.__GG_HALF;
             var usedBloodSpirit = false;
+            var usedLifeForSkill = false;
+            var mpFallbackBasic = false;
+            var mpPaid = 0;
+            var lifePaidForSkill = 0;
             /* ⭐⭐ POE 旗標：Skills Cost Life instead of Mana（技能改耗生命） */
             var _poeFl = stats.__poeFlags || {};
             if (!isTwinEcho) {
+                var _cost = Math.max(0, num(art.mpCost, 0));
                 if (_poeFl.skillsCostLife) {
                     /* 改為消耗生命 */
-                    if (charObj.currentHp > art.mpCost + 20) {
-                        charObj.currentHp -= art.mpCost;
+                    if (charObj.currentHp > _cost + 20) {
+                        charObj.currentHp -= _cost;
+                        usedLifeForSkill = true;
+                        lifePaidForSkill = _cost;
                     } else {
                         art = Data.MARTIAL_ARTS.basic_punch;
                         skillId = 'basic_punch';
                         isSupportMode = false;
                         isReviveMode = false;
+                        mpFallbackBasic = true;
                     }
-                } else if (charObj.currentMp >= art.mpCost) {
-                    charObj.currentMp -= art.mpCost;
-                } else if (bloodSpiritLv > 0 && charObj.currentHp > art.mpCost + 20) {
-                    charObj.currentHp -= art.mpCost;
+                } else if (charObj.currentMp >= _cost) {
+                    charObj.currentMp -= _cost;
+                    mpPaid = _cost;
+                } else if (bloodSpiritLv > 0 && charObj.currentHp > _cost + 20) {
+                    charObj.currentHp -= _cost;
                     usedBloodSpirit = true;
+                    lifePaidForSkill = _cost;
                 } else {
                     art = Data.MARTIAL_ARTS.basic_punch;
                     skillId = 'basic_punch';
                     isSupportMode = false;
                     isReviveMode = false;
+                    mpFallbackBasic = true;
+                }
+                if (mpFallbackBasic && requestedSkillId !== 'basic_punch') {
+                    var _reqArt = Data.MARTIAL_ARTS[requestedSkillId];
+                    core.log('💧 【' + charObj.name + '】內力不足，無法施展《' +
+                        (_reqArt ? _reqArt.name : requestedSkillId) + '》，改以《' + art.name + '》應戰。',
+                        'combat');
+                }
+                if (window.HY && window.HY.uiDexAtb) {
+                    try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUiMp) { }
                 }
             }
             var lv = (charObj.skills && charObj.skills[skillId]) || 1;
@@ -79575,7 +79709,7 @@ window.HY = window.HY || {};
                     var heal = Math.floor(stats.maxHp * (art.healRatio / MARTIAL_DIV));
                     this.applyHeal(charObj, heal, 0);
                 }
-                if (art.mpRestore) {
+                if (art.mpRestore && !mpFallbackBasic) {
                     charSys.restoreVitals(0, Math.floor(art.mpRestore / MARTIAL_DIV), charObj);
                 }
             }
@@ -79585,7 +79719,11 @@ window.HY = window.HY || {};
             var elemTag = (elemDmgTotal > 0) ? ' [' + elemLogTotal + ']' : '';
             var prefix = isSupportMode ? '🤝 [隊員輔助] ' : (isTwinEcho ? '🔥 [雙靈共生・二連擊] ' : (isLeader ? '⚔️ ' : '👥 隊友'));
             var logMsg = prefix +
-                '【' + charObj.name + '】' + (usedBloodSpirit ? '(💧血靈燃血) ' : '') + '施展《' + art.name + '》，對' + targetDesc + ' 點傷害' +
+                '【' + charObj.name + '】' +
+                (usedLifeForSkill ? '(🩸耗血代內 −' + lifePaidForSkill + ') ' : '') +
+                (usedBloodSpirit ? '(💧血靈燃血 −' + lifePaidForSkill + '氣血) ' : '') +
+                (mpPaid > 0 ? '(−' + mpPaid + '內力) ' : '') +
+                '施展《' + art.name + '》，對' + targetDesc + ' 點傷害' +
                 (critCount > 0 ? ' (💥會心!)' : '') + elemTag + supportText + leechText + '！';
             core.log(logMsg, 'combat');
             if (!isTwinEcho) {
@@ -83034,6 +83172,16 @@ window.HY = window.HY || {};
                 }
             }
 
+            var _isRBossTpl = !!(enemyTemplate &&
+                (enemyTemplate.isRegionBoss || /^rboss_/.test(String(enemyTemplate.uid || ''))));
+            var _rbSys = window.HY.game && window.HY.game.regionBossSys;
+            if (_rbSys) {
+                if (typeof _rbSys.syncFightState === 'function') _rbSys.syncFightState();
+                if (_rbSys._inFight && !_isRBossTpl && typeof _rbSys.abandonFight === 'function') {
+                    _rbSys.abandonFight(null, { silent: true });
+                }
+            }
+
             /* ⭐ 統一互斥：三種戰鬥系統（一般／輿圖／礦坑）同時只能進行一種。
                atlasSystem 內部開圖時會設 _spawningMapBattle = true 來繞過。 */
             var arb = window.HY.CombatArbiter;
@@ -83512,6 +83660,16 @@ window.HY = window.HY || {};
                 try { BS.loot(lootShow, { stageId: 'hy-battle-stage' }); } catch (eL) { }
             }
             this.runPluginHooks('onVictory', { defeatedEnemies: defeatedList });
+            /* ⭐ 山海經異獸：清掉連刷模板，避免內掛再用同一遭遇戰開下一場 */
+            if (defeatedList.some(function (e) {
+                return e && (e.isShjBeast || e.shjSpawnKey || e.shjBeastId);
+            })) {
+                var _lt = this.lastEnemyTemplate;
+                if (_lt && (_lt.isShjBeast || _lt.shjSpawnKey || _lt.shjBeastId ||
+                    /^shj_/.test(String(_lt.uid || '')) || /^shj_/.test(String(_lt.id || '')))) {
+                    this.lastEnemyTemplate = null;
+                }
+            }
             this.onUpdateUI();
             /* ⭐ 異界地圖內不自動連刷 —— 地圖由 atlasSystem 接管補怪節奏，
                這裡若再觸發會造成「同時開新一場」的衝突。 */
@@ -85618,8 +85776,25 @@ window.HY = window.HY || {};
                         }
                     } catch (e) { }
                     self._closeMapEnemyDialog();
+                    var targetBoss = rb2.bossOf(map.id) || {};
                     var r = rb2.start(map.id);
+                    if (!r.ok && r.needReplace) {
+                        var curBoss = rb2.bossOf(r.inFightMapId) || {};
+                        var curNm = curBoss.name || '其他區域 BOSS';
+                        if (!confirm('目前正在挑戰「' + curNm + '」。\n\n' +
+                            '要放棄並改打「' + (targetBoss.name || '此區 BOSS') + '」嗎？\n' +
+                            '（退出戰鬥，不計擊殺、無獎勵）')) {
+                            return;
+                        }
+                        r = rb2.start(map.id, { replace: true });
+                    }
                     if (!r.ok) {
+                        if (r.why === '正在挑戰此區域 BOSS') {
+                            if (app.logger) {
+                                app.logger.add('⚔️ 已在與此地 BOSS 交戰，請返回戰鬥舞台。', 'system');
+                            }
+                            return;
+                        }
                         if (app.logger) app.logger.add('❌ ' + (r.why || '無法挑戰'), 'system');
                         alert(r.why || '無法挑戰區域 BOSS');
                     }
@@ -85723,6 +85898,9 @@ window.HY = window.HY || {};
                     if (box.__cdTimer) clearInterval(box.__cdTimer);
                     return;
                 }
+                try {
+                    if (typeof rb.syncFightState === 'function') rb.syncFightState();
+                } catch (eSync) { }
                 var left = rb.cooldownLeft(mapId);
                 if (left > 0) {
                     goEl.textContent = '⏳ ' + self._fmtCd(left);
@@ -115036,7 +115214,7 @@ window.HY = window.HY || {};
                     if (combat.currentEnemy) {
                         member.__inDoubleExtra = true;
                         combat.log('⚡ 【' + member.name + '】疾風雙動 → 追擊一次！', 'combat');
-                        combat.playerTurn.performCharAttack(member, skillId, false, partyMembers, false, null);
+                        combat.playerTurn.performCharAttack(member, skillId, false, partyMembers, true, null);
                         member.__inDoubleExtra = false;
                     }
                 }
