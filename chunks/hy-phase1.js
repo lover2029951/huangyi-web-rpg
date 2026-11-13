@@ -18578,7 +18578,7 @@ window.HY = window.HY || {};
 //
 // 【效果詞條】
 //   一律使用 wuxiaStatParser 認得的武俠詞條（氣血上限／外功傷害／會心／
-//   輕功／罡氣上限／九元素內抗…），確保掛上就真的算進屬性。
+//   輕功／氣血／九元素內勁…），確保掛上就真的算進屬性（v766 移除範圍／身法速度等廢詞）。
 //   核心機制的「敘述型」效果另外放進 KEYSTONES，由系統層解讀。
 // ══════════════════════════════════════════════════════════════════════
 window.HY = window.HY || {};
@@ -18838,15 +18838,15 @@ window.HY.Data = window.HY.Data || {};
                   所以數值本身就必須是 0.1~0.3。 */
             { n: '內力回復', v: [0.1, 0.2, 0.25, 0.3], isPct: true },
             { n: '氣血回復', v: [12, 15, 18, 22], isPct: true },
-            { n: '罡氣上限', v: [8, 10, 12, 15], isPct: true },
+            { n: '精', v: [8, 10, 12, 15], isPct: false },
             { n: '智', v: [8, 10, 12, 15], isPct: false }
         ],
         utility: [
             { n: '輕功', v: [5, 6, 8, 10], isPct: true },
             { n: '敏', v: [8, 10, 12, 15], isPct: false },
-            { n: '招式範圍', v: [8, 10, 12, 15], isPct: true },
-            { n: '物品稀有度', v: [10, 12, 15, 18], isPct: true },
-            { n: '物品數量', v: [6, 8, 10, 12], isPct: true }
+            { n: '命中', v: [6, 8, 10, 12], isPct: true },
+            { n: '格擋', v: [3, 4, 5, 6], isPct: true },
+            { n: '出手速度', v: [4, 5, 6, 8], isPct: true }
         ],
         elem: [
             { n: '九元素內勁', v: [8, 10, 12, 15], isPct: true },
@@ -18869,11 +18869,11 @@ window.HY.Data = window.HY.Data || {};
             { n: '贖罪', st: ['氣血上限 +22%', '氣血回復 +35%'] }
         ],
         Hierophant: [
-            { n: '符籙精通', st: ['招式範圍 +30%', '真元效果 +30%'] },
+            { n: '符籙精通', st: ['九元素內勁 +30%', '內力回復 +0.3%'] },
             { n: '陣樞之心', st: ['內力上限 +30%', '內力回復 +0.3%'] },
             { n: '天師印', st: ['九元素內勁 +40%'] },
-            { n: '太乙玄門', st: ['罡氣上限 +35%', '罡氣效果 +25%'] },
-            { n: '符火', st: ['火勁傷害 +40%', '招式範圍 +20%'] },
+            { n: '太乙玄門', st: ['氣血上限 +35%', '氣血回復 +25%'] },
+            { n: '符火', st: ['火勁傷害 +40%', '出手速度 +20%'] },
             { n: '萬象歸元', st: ['智 +24', '內力上限 +25%'] },
             { n: '護法', st: ['氣血上限 +25%', '外功減免 +12%'] }
         ],
@@ -18907,14 +18907,14 @@ window.HY.Data = window.HY.Data || {};
         Chieftain: [
             { n: '戰吼宗師', st: ['外功傷害 +30%', '氣血上限 +25%'] },
             { n: '先祖庇佑', st: ['九元素抗性 +30%', '氣血回復 +35%'] },
-            { n: '圖騰之力', st: ['外功傷害 +40%', '招式範圍 +25%'] },
-            { n: '烈焰圖騰', st: ['火勁傷害 +45%'] },
+            { n: '戰陣之力', st: ['外功傷害 +40%', '命中 +25%'] },
+            { n: '烈焰戰意', st: ['火勁傷害 +45%'] },
             { n: '戰意', st: ['出手速度 +15%', '外功傷害 +25%'] },
             { n: '蠻力', st: ['力 +24', '外功傷害 +20%'] },
             { n: '部族守護', st: ['氣血上限 +30%', '外功減免 +12%'] }
         ],
         Raider: [
-            { n: '疾風步', st: ['身法速度 +30%', '輕功 +25%'] },
+            { n: '疾風步', st: ['出手速度 +30%', '輕功 +25%'] },
             { n: '連環打擊', st: ['出手速度 +20%', '外功傷害 +30%'] },
             { n: '身法如風', st: ['輕功 +30%', '敏 +24'] },
             { n: '迅捷', st: ['出手速度 +18%', '命中 +15%'] },
@@ -18923,31 +18923,31 @@ window.HY.Data = window.HY.Data || {};
             { n: '殘像', st: ['輕功 +20%', '格擋 +12%'] }
         ],
         Deadeye: [
-            { n: '穿雲箭', st: ['暗器傷害 +45%', '命中 +22%'] },
+            { n: '穿雲箭', st: ['外功傷害 +45%', '命中 +22%'] },
             { n: '神射', st: ['會心 +30%', '會心傷害 +50%'] },
             { n: '鷹眼', st: ['命中 +30%', '會心 +18%'] },
             { n: '致命一擊', st: ['會心傷害 +60%'] },
-            { n: '遠程專精', st: ['暗器傷害 +35%', '暗器速度 +25%'] },
+            { n: '遠程專精', st: ['外功傷害 +35%', '出手速度 +25%'] },
             { n: '精準', st: ['命中 +25%'] },
-            { n: '獵殺', st: ['會心 +22%', '暗器傷害 +25%'] }
+            { n: '獵殺', st: ['會心 +22%', '外功傷害 +25%'] }
         ],
         Pathfinder: [
             { n: '百草精通', st: ['氣血回復 +50%', '內力回復 +0.3%'] },
             { n: '丹道', st: ['氣血上限 +30%', '氣血回復 +35%'] },
             { n: '毒性專精', st: ['毒勁傷害 +50%'] },
-            { n: '續戰', st: ['內力回復 +0.3%', '罡氣上限 +25%'] },
+            { n: '續戰', st: ['內力回復 +0.3%', '氣血上限 +25%'] },
             { n: '藥理', st: ['氣血回復 +40%'] },
             { n: '自然之友', st: ['九元素抗性 +28%'] },
             { n: '堅韌', st: ['氣血上限 +28%'] }
         ],
         Occultist: [
-            { n: '陰煞精通', st: ['陰煞效果 +45%', '九元素內勁 +25%'] },
-            { n: '奪元', st: ['內力回復 +0.3%', '陰煞效果 +30%'] },
-            { n: '詛咒宗師', st: ['陰煞效果 +50%'] },
+            { n: '陰煞精通', st: ['混元攻擊 +45%', '九元素內勁 +25%'] },
+            { n: '奪元', st: ['內力回復 +0.3%', '毒勁傷害 +30%'] },
+            { n: '詛咒宗師', st: ['毒勁傷害 +50%'] },
             { n: '暗影之力', st: ['九元素內勁 +40%'] },
             { n: '魂魄', st: ['智 +24', '內力上限 +28%'] },
-            { n: '虛無', st: ['罡氣上限 +30%', '九元素抗性 +20%'] },
-            { n: '腐蝕', st: ['毒勁傷害 +40%', '陰煞效果 +20%'] }
+            { n: '虛無', st: ['氣血上限 +30%', '九元素抗性 +20%'] },
+            { n: '腐蝕', st: ['毒勁傷害 +40%', '混元攻擊 +20%'] }
         ],
         Elementalist: [
             { n: '五行精通', st: ['九元素內勁 +50%'] },
@@ -18959,10 +18959,10 @@ window.HY.Data = window.HY.Data || {};
             { n: '內勁貫通', st: ['九元素內勁 +30%', '命中 +15%'] }
         ],
         Necromancer: [
-            { n: '傀儡精通', st: ['靈獸傷害 +50%', '靈獸氣血 +40%'] },
+            { n: '傀儡精通', st: ['武魂傷害 +50%', '武魂氣血 +40%'] },
             { n: '血祭', st: ['氣血上限 +30%', '外功傷害 +30%'] },
-            { n: '馭屍', st: ['靈獸傷害 +45%'] },
-            { n: '亡者之志', st: ['靈獸氣血 +45%', '靈獸攻速 +25%'] },
+            { n: '馭屍', st: ['武魂傷害 +45%'] },
+            { n: '亡者之志', st: ['武魂氣血 +45%', '武魂攻速 +25%'] },
             { n: '血池', st: ['氣血回復 +45%'] },
             { n: '陰魂', st: ['九元素內勁 +35%'] },
             { n: '骨甲', st: ['血鎧值 +45%'] }
@@ -19013,13 +19013,13 @@ window.HY.Data = window.HY.Data || {};
             { n: '影分身', st: ['輕功 +25%', '外功傷害 +22%'] }
         ],
         Saboteur: [
-            { n: '機關精通', st: ['機關傷害 +55%'] },
-            { n: '火雷宗師', st: ['火雷傷害 +55%'] },
-            { n: '陷阱大師', st: ['機關傷害 +40%', '招式範圍 +25%'] },
-            { n: '爆裂', st: ['火勁傷害 +45%', '機關傷害 +25%'] },
-            { n: '巧妙', st: ['命中 +20%', '機關傷害 +25%'] },
-            { n: '工程學', st: ['機關傷害 +35%'] },
-            { n: '爆破專家', st: ['火雷傷害 +40%', '會心傷害 +25%'] }
+            { n: '機關精通', st: ['外功傷害 +55%'] },
+            { n: '火雷宗師', st: ['火勁傷害 +55%'] },
+            { n: '陷阱大師', st: ['外功傷害 +40%', '會心 +25%'] },
+            { n: '爆裂', st: ['火勁傷害 +45%', '外功傷害 +25%'] },
+            { n: '巧妙', st: ['命中 +20%', '外功傷害 +25%'] },
+            { n: '工程學', st: ['外功傷害 +35%'] },
+            { n: '爆破專家', st: ['火勁傷害 +40%', '會心傷害 +25%'] }
         ],
         Ascendant: [
             { n: '萬法歸一', st: ['外功傷害 +30%', '九元素內勁 +30%'] },
@@ -19034,15 +19034,15 @@ window.HY.Data = window.HY.Data || {};
             { n: '兵器通', st: ['外功傷害 +40%', '命中 +20%'] },
             { n: '藏鋒', st: ['會心 +25%', '會心傷害 +35%'] },
             { n: '百兵', st: ['外功傷害 +35%', '出手速度 +12%'] },
-            { n: '寶庫', st: ['物品稀有度 +40%'] },
-            { n: '鑑賞', st: ['物品數量 +25%', '物品稀有度 +20%'] },
+            { n: '寶庫', st: ['會心 +28%', '命中 +20%'] },
+            { n: '鑑賞', st: ['外功傷害 +25%', '會心傷害 +20%'] },
             { n: '銳鋒', st: ['外功傷害 +45%'] },
             { n: '珍藏', st: ['九元素抗性 +28%', '氣血上限 +20%'] }
         ],
         Luminary: [
             { n: '明光普照', st: ['九元素抗性 +35%', '氣血上限 +25%'] },
             { n: '護持', st: ['氣血回復 +40%', '外功減免 +12%'] },
-            { n: '光環宗師', st: ['真元效果 +40%', '罡氣效果 +30%'] },
+            { n: '明光護持', st: ['內力上限 +40%', '氣血回復 +30%'] },
             { n: '聖輝', st: ['氣血上限 +28%'] },
             { n: '恩澤', st: ['氣血回復 +35%'] },
             { n: '純淨', st: ['九元素抗性 +30%'] },
@@ -19485,12 +19485,9 @@ window.HY = window.HY || {};
                     }
                     break;
                 }
-                /* 至尊殿・萬法：每點節點額外全屬性 */
-                case 'multiMastery': {
-                    var st2 = c.asc && c.asc.allocated ? Object.keys(c.asc.allocated).length : 0;
-                    out.atkMult *= (1 + st2 * 0.01);
+                /* 萬法：全屬性／副修由 ascendancySystem.getBonusFor 結算（面板可見） */
+                case 'multiMastery':
                     break;
-                }
                 /* 明光台・明光：存活回合數堆疊 */
                 case 'aura': {
                     var turns = num(b.turns, 0);
@@ -47221,7 +47218,8 @@ window.HY = window.HY || {};
         /* 速度 */
         { re: /^出手速度$/, key: 'atkSpd', kind: 'more' },
         { re: /^運功速度$/, key: 'castSpd', kind: 'more' },
-        { re: /^身法速度$/, key: 'moveSpd', kind: 'more' },
+        /* v766：身法速度在回合制 ATB 不讀 moveSpd，與出手速度同等對待 */
+        { re: /^身法速度$/, key: 'atkSpd', kind: 'more' },
         { re: /^招式持續$/, key: 'skillEffectDur', kind: 'more' },
 
         /* 續航 */
@@ -47229,21 +47227,28 @@ window.HY = window.HY || {};
         { re: /^內力回復$/, key: 'manaRegen', kind: 'more' },
 
         /* 特殊 */
-        { re: /^暗器傷害$/, key: 'projDmg', kind: 'more' },
-        { re: /^暗器速度$/, key: 'projSpeed', kind: 'more' },
+        /* ⭐ v765：暗器／機關／火雷等舊 POE 通道在戰鬥層未讀取，改走 atkPct／atkSpd／元素通道 */
+        { re: /^暗器傷害$/, key: 'atkPct', kind: 'more' },
+        { re: /^暗器速度$/, key: 'atkSpd', kind: 'more' },
         { re: /^武魂傷害$/, key: 'minionDmg', kind: 'more' },
         { re: /^武魂氣血$/, key: 'minionHp', kind: 'more' },
         { re: /^武魂攻速$/, key: 'minionSpd', kind: 'more' },
         { re: /^武魂身法$/, key: 'minionSpd', kind: 'more' },
-        { re: /^劍樁傷害$/, key: 'totemDmg', kind: 'more' },
-        { re: /^機關傷害$/, key: 'trapDmg', kind: 'more' },
-        { re: /^火雷傷害$/, key: 'mineDmg', kind: 'more' },
-        { re: /^真言印傷害$/, key: 'brandDmg', kind: 'more' },
-        { re: /^招式範圍$/, key: 'aoeRadius', kind: 'more' },
-        { re: /^陰煞效果$/, key: 'curseEffect', kind: 'more' },
-        { re: /^真元效果$/, key: 'auraEffect', kind: 'more' },
-        { re: /^罡氣效果$/, key: 'auraEffect', kind: 'more' },
-        { re: /^持續傷害$/, key: 'dotDmg', kind: 'more' },
+        { re: /^靈獸傷害$/, key: 'minionDmg', kind: 'more' },
+        { re: /^靈獸氣血$/, key: 'minionHp', kind: 'more' },
+        { re: /^靈獸攻速$/, key: 'minionSpd', kind: 'more' },
+        { re: /^劍樁傷害$/, key: 'atkPct', kind: 'more' },
+        { re: /^機關傷害$/, key: 'atkPct', kind: 'more' },
+        { re: /^火雷傷害$/, key: 'elemAtk_fire', kind: 'more' },
+        { re: /^真言印傷害$/, key: 'dotDmg', kind: 'more' },
+        /* v766：招式範圍僅極少數群攻吃 aoeRadius，昇華／詞條統一走外功 */
+        { re: /^招式範圍$/, key: 'atkPct', kind: 'more' },
+        /* v765：真元／罡氣／陰煞不再走光環・詛咒（本作無對應機制） */
+        { re: /^陰煞效果$/, key: 'dotDmg', kind: 'more' },
+        { re: /^真元效果$/, key: 'manaRegen', kind: 'more' },
+        { re: /^罡氣效果$/, key: 'lifeRegen', kind: 'more' },
+        /* v766：持續傷害詞條改映射毒／混元元素（DoT 機制已弱化） */
+        { re: /^持續傷害$/, key: 'elemAtk_chaos', kind: 'more' },
         { re: /^物品稀有度$/, key: 'itemRarity', kind: 'more' },
         { re: /^物品數量$/, key: 'itemQuantity', kind: 'more' },
         { re: /^視野$/, key: 'lightRadius', kind: 'more' }
@@ -47427,7 +47432,7 @@ window.HY = window.HY || {};
         }
         m = /^每秒(?:回復|恢復)\s*([\d.]+)\s*%\s*(氣血|內力|罡氣)$/.exec(s);
         if (m) {
-            var regKey = { '氣血': 'lifeRegen', '內力': 'manaRegen', '罡氣': 'maxEs' }[m[2]];
+            var regKey = { '氣血': 'lifeRegen', '內力': 'manaRegen', '罡氣': 'lifeRegen' }[m[2]];
             if (regKey) return { kind: 'more', key: regKey, val: num(m[1], 0) };
         }
 
@@ -47436,7 +47441,7 @@ window.HY = window.HY || {};
         if (m) {
             var preMap = {
                 '最大氣血': ['maxHp', 'more'], '最大內力': ['maxMp', 'more'],
-                '最大罡氣': ['maxEs', 'more'], '視野範圍': ['lightRadius', 'more'],
+                '最大罡氣': ['maxHp', 'more'], '視野範圍': ['lightRadius', 'more'],
                 '命中': ['hit', 'flat'], '會心': ['crit', 'flat'],
                 '五行抗性': ['elemResAll', 'flat']
             };
@@ -50387,6 +50392,12 @@ window.HY = window.HY || {};
             Object.keys(a.allocated).forEach(function (id) {
                 if (!N[id]) delete a.allocated[id];
             });
+            /* v768：萬法副修 —— 額外 2 個他系顯著節點 uid */
+            if (!Array.isArray(a.subNotables)) a.subNotables = [];
+            a.subNotables = a.subNotables.filter(function (sid) {
+                var sn = N[sid];
+                return sn && sn.type === 2 && sn.asc && sn.asc !== a.branch;
+            });
             /* ⭐ 重算點數（用 _syncing 旗標防止 syncPoints → ensureState 遞迴） */
             if (!this._syncing) {
                 this._syncing = true;
@@ -50731,6 +50742,143 @@ window.HY = window.HY || {};
             return n;
         }
 
+        /** 武俠詞條合併進 bonus 物件（內部共用） */
+        _mergeStatBonus(out, pb) {
+            if (!out || !pb) return;
+            var WP = HY.WuxiaStatParser;
+            var PARSER = HY.TalentStatsParser;
+            function apply(x) {
+                if (!x) return;
+                Object.keys(x.attr || {}).forEach(function (k) {
+                    if (out.attr[k] !== undefined) out.attr[k] += num(x.attr[k], 0);
+                });
+                Object.keys(x.flat || {}).forEach(function (k) {
+                    out.flat[k] = num(out.flat[k], 0) + num(x.flat[k], 0);
+                });
+                Object.keys(x.more || {}).forEach(function (k) {
+                    out.more[k] = num(out.more[k], 0) + num(x.more[k], 0);
+                });
+                Object.keys(x.extra || {}).forEach(function (k) {
+                    out.extra[k] = num(out.extra[k], 0) + num(x.extra[k], 0);
+                });
+            }
+            if (WP && typeof WP.bonusOfStats === 'function') {
+                try {
+                    var wb = WP.bonusOfStats(pb);
+                    if (wb) { apply(wb); return; }
+                } catch (eW) { }
+            }
+            if (typeof pb === 'object' && (pb.attr || pb.flat || pb.more)) {
+                apply(pb);
+                return;
+            }
+            if (Array.isArray(pb) && PARSER && typeof PARSER.bonusOfStats === 'function') {
+                try { apply(PARSER.bonusOfStats(pb)); } catch (e) { }
+            }
+        }
+
+        _parseNodeStats(stats) {
+            if (!stats || !stats.length) return;
+            var out = {
+                attr: { con: 0, str: 0, agi: 0, int: 0, spi: 0 },
+                flat: {}, more: {}, extra: {}
+            };
+            this._mergeStatBonus(out, stats);
+            return out;
+        }
+
+        /** 萬法核心：每點昇華節點 +N 五屬；副修顯著詞條併入 */
+        _applyKeystonePassives(out, charObj) {
+            if (!out || !charObj) return;
+            var a = this.ensureState(charObj);
+            if (!a) return;
+            var AM = HY.AscMechanics;
+            if (AM && typeof AM.has === 'function' && AM.has(charObj, 'multiMastery')) {
+                var p = (typeof AM.paramsOf === 'function') ? AM.paramsOf(charObj) : {};
+                var per = Math.max(0, num(p.attrPerNode, 1));
+                var spent = Object.keys(a.allocated || {}).length;
+                var add = per * spent;
+                if (add > 0) {
+                    ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
+                        out.attr[k] = num(out.attr[k], 0) + add;
+                    });
+                }
+            }
+            var N = this.nodes();
+            (a.subNotables || []).forEach(function (sid) {
+                var sn = N[sid];
+                if (sn && sn.stats && sn.stats.length) {
+                    this._mergeStatBonus(out, sn.stats);
+                }
+            }, this);
+        }
+
+        /** 可選副修顯著（他系 type 2） */
+        subNotableOptions(charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var a = this.ensureState(c);
+            var AM = HY.AscMechanics;
+            if (!a || !a.branch || !AM || !AM.has(c, 'multiMastery')) return [];
+            var cap = Math.max(1, num((AM.paramsOf(c) || {}).bonusNodes, 2));
+            var N = this.nodes();
+            var picked = {};
+            (a.subNotables || []).forEach(function (id) { picked[id] = 1; });
+            var out = [];
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (!n || n.type !== 2 || !n.asc || n.asc === a.branch) return;
+                if (!n.stats || !n.stats.length) return;
+                out.push({
+                    id: id,
+                    name: this.nameZh(n),
+                    branch: n.asc,
+                    stats: n.stats,
+                    picked: !!picked[id]
+                });
+            }, this);
+            out.sort(function (x, y) {
+                if (x.branch !== y.branch) return String(x.branch).localeCompare(String(y.branch));
+                return String(x.name).localeCompare(String(y.name));
+            });
+            out._cap = cap;
+            return out;
+        }
+
+        pickSubNotable(nodeId, charObj) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var a = this.ensureState(c);
+            var AM = HY.AscMechanics;
+            if (!AM || !AM.has(c, 'multiMastery')) {
+                return { ok: false, why: '尚未點選「萬法」核心機制' };
+            }
+            var N = this.nodes();
+            var n = N[nodeId];
+            if (!n || n.type !== 2) return { ok: false, why: '只能選擇顯著節點' };
+            if (!a.branch || n.asc === a.branch) return { ok: false, why: '不能選本分支的節點' };
+            var cap = Math.max(1, num((AM.paramsOf(c) || {}).bonusNodes, 2));
+            if (!Array.isArray(a.subNotables)) a.subNotables = [];
+            var ix = a.subNotables.indexOf(nodeId);
+            if (ix >= 0) {
+                a.subNotables.splice(ix, 1);
+                this._invalidate(c);
+                this._log('↩️ 已取消副修：' + this.nameZh(n), 'system');
+                return { ok: true, removed: true };
+            }
+            var sameBranch = -1;
+            for (var i = 0; i < a.subNotables.length; i++) {
+                var on = N[a.subNotables[i]];
+                if (on && on.asc === n.asc) { sameBranch = i; break; }
+            }
+            if (sameBranch >= 0) a.subNotables.splice(sameBranch, 1);
+            else if (a.subNotables.length >= cap) {
+                return { ok: false, why: '副修名額已滿（' + cap + '），請先取消一項' };
+            }
+            a.subNotables.push(nodeId);
+            this._invalidate(c);
+            this._log('📜 副修習得：' + this.nameZh(n), 'system');
+            return { ok: true, node: n };
+        }
+
         /* ──────────────────────────────────────────────────────────
            加成彙總
            ────────────────────────────────────────────────────────── */
@@ -50765,25 +50913,12 @@ window.HY = window.HY || {};
                 } catch (e) { }
             }
 
-            /* 後備：舊的 parser */
-            var PARSER = HY.TalentStatsParser;
             Object.keys(a.allocated).forEach(function (id) {
                 var n = N[id];
                 if (!n || !n.stats || !n.stats.length) return;
-                if (PARSER) {
-                    try {
-                        var pb = PARSER.bonusOfStats(n.stats);
-                        if (pb) {
-                            Object.keys(pb.attr || {}).forEach(function (k) {
-                                if (out.attr[k] !== undefined) out.attr[k] += num(pb.attr[k], 0);
-                            });
-                            Object.keys(pb.flat || {}).forEach(function (k) { out.flat[k] = num(out.flat[k], 0) + num(pb.flat[k], 0); });
-                            Object.keys(pb.more || {}).forEach(function (k) { out.more[k] = num(out.more[k], 0) + num(pb.more[k], 0); });
-                            Object.keys(pb.extra || {}).forEach(function (k) { out.extra[k] = num(out.extra[k], 0) + num(pb.extra[k], 0); });
-                        }
-                    } catch (e) { }
-                }
-            });
+                this._mergeStatBonus(out, n.stats);
+            }, this);
+            this._applyKeystonePassives(out, c);
             return out;
         }
 
@@ -51003,25 +51138,51 @@ window.HY = window.HY || {};
             var base = orig.call(this, charObj);
             try {
                 var asys = HY.game && HY.game.ascSys;
-                if (asys && base) {
-                    var agg = asys.aggregateFor(charObj);
-                    if (agg) {
-                        var extra = toLegacyBonus(agg);
+                if (asys && base && typeof asys.getBonusFor === 'function') {
+                    /* v768：昇華節點全是中文詞條，aggregateFor（POE 英文）常為 null；
+                       必須走 getBonusFor → WuxiaStatParser / 已包裝的 TalentStatsParser。 */
+                    var ab = asys.getBonusFor(charObj);
+                    if (ab) {
                         base.attr = base.attr || { con: 0, str: 0, agi: 0, int: 0, spi: 0 };
-                        Object.keys(extra.attr).forEach(function (k) {
-                            base.attr[k] = num(base.attr[k], 0) + num(extra.attr[k], 0);
+                        Object.keys(ab.attr || {}).forEach(function (k) {
+                            if (base.attr[k] !== undefined) {
+                                base.attr[k] = num(base.attr[k], 0) + num(ab.attr[k], 0);
+                            }
                         });
                         ['flat', 'more', 'extra'].forEach(function (pool) {
                             base[pool] = base[pool] || {};
-                            Object.keys(extra[pool]).forEach(function (k) {
-                                base[pool][k] = num(base[pool][k], 0) + num(extra[pool][k], 0);
+                            var src = ab[pool] || {};
+                            Object.keys(src).forEach(function (k) {
+                                base[pool][k] = num(base[pool][k], 0) + num(src[k], 0);
                             });
                         });
-                        /* 機制旗標／觸發帶到 base 上，供 characterSystem 取用 */
-                        base.__asc = {
-                            flags: agg.flags, counts: agg.counts,
-                            conv: agg.conv, procs: agg.procs
-                        };
+                        if (ab.__poe) {
+                            base.__asc = {
+                                flags: ab.__poe.flags, counts: ab.__poe.counts,
+                                conv: ab.__poe.conv, procs: ab.__poe.procs
+                            };
+                        }
+                    }
+                    /* 英文條件 mod 仍走 aggregate（與數值加成可並存） */
+                    if (typeof asys.aggregateFor === 'function') {
+                        var agg = asys.aggregateFor(charObj);
+                        if (agg && (!base.__asc || !(base.__asc.flags && Object.keys(base.__asc.flags).length))) {
+                            var extra = toLegacyBonus(agg);
+                            Object.keys(extra.attr || {}).forEach(function (k) {
+                                if (base.attr[k] !== undefined) {
+                                    base.attr[k] = num(base.attr[k], 0) + num(extra.attr[k], 0);
+                                }
+                            });
+                            ['flat', 'more', 'extra'].forEach(function (pool) {
+                                Object.keys(extra[pool] || {}).forEach(function (k) {
+                                    base[pool][k] = num(base[pool][k], 0) + num(extra[pool][k], 0);
+                                });
+                            });
+                            base.__asc = {
+                                flags: agg.flags, counts: agg.counts,
+                                conv: agg.conv, procs: agg.procs
+                            };
+                        }
                     }
                 }
             } catch (e) { }
@@ -53750,6 +53911,54 @@ window.HY = window.HY || {};
                 });
             }
 
+            /* ⭐ v768：萬法核心 —— 副修顯著選擇 */
+            var AM = HY.AscMechanics;
+            if (joined && AM && typeof AM.has === 'function' && AM.has(c, 'multiMastery') &&
+                typeof sys.subNotableOptions === 'function') {
+                var subs = sys.subNotableOptions(c);
+                var cap = subs._cap || 2;
+                var pickedN = (a.subNotables || []).length;
+                html += '<div class="asc-sh" style="margin-top:12px;">📜 副修（' + pickedN + '/' + cap + '）</div>';
+                html += '<div style="font-size:.72rem;color:#94a3b8;line-height:1.6;margin-bottom:8px">' +
+                    '從<b>其他昇華分支</b>各挑 1 個顯著節點（免費），效果併入角色屬性。<br>' +
+                    '另：每點 1 個昇華節點，五屬各 +1（含核心）。</div>';
+                if ((a.subNotables || []).length) {
+                    (a.subNotables || []).forEach(function (sid) {
+                        var sn = N[sid];
+                        if (!sn) return;
+                        var nm2 = ZH ? ZH.nodeName(sn) : sn.name;
+                        html += '<div class="asc-pick" style="border-left:3px solid #6ee7b7;">' +
+                            '<div class="pn" style="display:flex;justify-content:space-between;align-items:center;">' +
+                            '<span>✓ ' + nm2 + '</span>' +
+                            '<button type="button" class="asc-sub-pick" data-sub="' + sid + '" ' +
+                            'style="font-size:.68rem;padding:2px 6px;background:#1e293b;color:#fca5a5;border:1px solid #475569;border-radius:4px;cursor:pointer;">取消</button>' +
+                            '</div>';
+                        (sn.stats || []).forEach(function (s) {
+                            html += '<div class="pe">' + s + '</div>';
+                        });
+                        html += '</div>';
+                    });
+                }
+                if (pickedN < cap) {
+                    html += '<div style="max-height:160px;overflow-y:auto;border:1px solid #1e2a36;border-radius:6px;padding:4px;">';
+                    var lastBr = '';
+                    subs.forEach(function (opt) {
+                        if (!opt.picked && pickedN >= cap) return;
+                        if (opt.branch !== lastBr) {
+                            lastBr = opt.branch;
+                            var bnm = (ZH && ZH.branch) ? ZH.branch(opt.branch) : opt.branch;
+                            html += '<div style="font-size:.68rem;color:#64748b;padding:4px 2px 2px;">' + bnm + '</div>';
+                        }
+                        if (opt.picked) return;
+                        html += '<button type="button" class="asc-sub-pick" data-sub="' + opt.id + '" ' +
+                            'style="display:block;width:100%;text-align:left;margin:2px 0;padding:5px 7px;' +
+                            'background:#0f172a;color:#7dd3fc;border:1px solid #334155;border-radius:4px;' +
+                            'font-size:.7rem;cursor:pointer;font-family:inherit;">＋ ' + opt.name + '</button>';
+                    });
+                    html += '</div>';
+                }
+            }
+
             /* ⭐ v66：底部固定「屬性說明」入口
                玩家在天賦畫面看到「+40 力道」「+18% 護體防禦」這些字，
                往往不知道實際作用與計算方式。這裡直接開屬性圖鑑，
@@ -53770,6 +53979,17 @@ window.HY = window.HY || {};
                     if (window.HY.uiStatCodex) window.HY.uiStatCodex.open();
                 });
             }
+            this.el.side.querySelectorAll('.asc-sub-pick').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var nid = btn.getAttribute('data-sub');
+                    if (!nid || !sys.pickSubNotable) return;
+                    var r = sys.pickSubNotable(nid, self.char);
+                    if (!r.ok && r.why) self._toast(r.why, true);
+                    else if (r.ok) self._toast(r.removed ? '已取消副修' : '副修已生效');
+                    self._renderSide();
+                    if (self.app && self.app.renderAll) self.app.renderAll();
+                });
+            });
         }
 
         /* ──────────────────────────────────────────────────────────

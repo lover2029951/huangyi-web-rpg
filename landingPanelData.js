@@ -5,13 +5,33 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v767 · 2026-11-13',
-        gameVer: 767,
+        newsVer: 'v768 · 2026-11-13',
+        gameVer: 768,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '昇華',
+            title: '昇華加成掛鉤 v768',
+            date: '2026-11-13',
+            bullets: [
+                '中文昇華詞條改走 <code>WuxiaStatParser</code>／<code>getBonusFor</code>，不再只靠 POE 英文聚合',
+                '點了顯著有變化的外功、防禦、命中、攻速等，會進角色面板與戰鬥結算',
+                '與 v767 詞條戰鬥化配套；舊存檔已點節點下次讀檔即重算'
+            ]
+        },
+        {
+            tag: 'add', tagLabel: '萬法',
+            title: '萬法核心實裝 v768',
+            date: '2026-11-13',
+            bullets: [
+                '萬法顯著可選 <b>2 個他系副修</b>，昇華面板右欄副修 UI',
+                '每點萬法節點五屬各 +<code>attrPerNode</code> 進面板；<code>multiMastery</code> 不再假增傷',
+                '血鎧值等詞條＝防禦％加成（面板 <b>防禦</b> 提升）'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '金司馬',
             title: '刷圖常駐修復 v767',

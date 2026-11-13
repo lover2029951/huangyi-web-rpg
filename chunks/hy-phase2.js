@@ -20281,6 +20281,15 @@ window.HY = window.HY || {};
       if (!b) return { ok: false, why: '該位置沒有建築' };
       var B = this.def.BUILDINGS[b.id];
       if (b.id === 'camp') return { ok: false, why: '工棚是開鎮基石，無法拆除' };
+      /* v671：拆刷圖營地前先解除常駐（保留 pending 戰利品） */
+      if (b.id === 'runnerCamp') {
+        var R = (this.charSys && window.HY.game && window.HY.game.kmRunners) || null;
+        if (R && typeof R.unstation === 'function' && k.runners) {
+          k.runners.slice().forEach(function (r) {
+            if (r && r.uid) R.unstation(r.uid);
+          });
+        }
+      }
       /* 先撤出工人 */
       k.workers.forEach(function (w) {
         if (w.buildingSlot === slot) w.buildingSlot = null;
@@ -20389,7 +20398,22 @@ window.HY = window.HY || {};
         if (k.workers[i].uid === uid) { w = k.workers[i]; break; }
       }
       if (!w) return { ok: false, why: '找不到該工人' };
+      var R = (this.charSys && window.HY.game && window.HY.game.kmRunners) || null;
       if (slot === null || slot === undefined) {
+        if (R && typeof R.campSlot === 'function') {
+          var campSlot = R.campSlot();
+          var curSlot = (w.buildingSlot === null || w.buildingSlot === undefined)
+            ? null : num(w.buildingSlot);
+          if (campSlot !== null && curSlot === num(campSlot)) {
+            var runnerUid = null;
+            (k.runners || []).forEach(function (r) {
+              if (r && r.workerId === uid) runnerUid = r.uid;
+            });
+            if (runnerUid && typeof R.unstation === 'function') {
+              return R.unstation(runnerUid);
+            }
+          }
+        }
         w.buildingSlot = null;
         this.requestRender();
         return { ok: true };
@@ -20398,6 +20422,18 @@ window.HY = window.HY || {};
       if (!b) return { ok: false, why: '該位置沒有建築' };
       var B = this.def.BUILDINGS[b.id];
       if (!B || !B.workers) return { ok: false, why: '此建築不需要工人' };
+      if (b.id === 'runnerCamp') {
+        if (!R || typeof R.station !== 'function') {
+          return { ok: false, why: '刷圖系統未載入' };
+        }
+        return R.station(uid);
+      }
+      if (k.runners && k.runners.length) {
+        var atRunner = k.runners.some(function (r) { return r && r.workerId === uid; });
+        if (atRunner) {
+          return { ok: false, why: '該工人常駐刷圖營地中，請先至「刷圖」分頁解除常駐' };
+        }
+      }
       var at = this.getWorkersAt(slot);
       var cap = this.getWorkerSlots(slot);
       if (at.length >= cap) return { ok: false, why: '該建築工人已滿（' + at.length + '/' + cap + '）' };
@@ -21840,10 +21876,13 @@ window.HY = window.HY || {};
             var campSlot = this.campSlot();
             var workerMap = {};
             (k.workers || []).forEach(function (w) { workerMap[w.uid] = w; });
+            var campSlotN = (campSlot === null || campSlot === undefined) ? null : num(campSlot);
             k.runners = k.runners.filter(function (r) {
                 var w = workerMap[r.workerId];
                 if (!w) return false;                            /* 工人不存在 */
-                if (campSlot !== null && num(w.buildingSlot, -999) !== campSlot) {
+                var ws = (w.buildingSlot === null || w.buildingSlot === undefined)
+                    ? null : num(w.buildingSlot);
+                if (campSlotN !== null && ws !== campSlotN) {
                     /* 工人被調離營地 → 停止常駐（保留 pending 戰利品，移到全域暫存） */
                     if (r.pending && r.pending.length) {
                         k.runnerPending = (k.runnerPending || []).concat(r.pending);
@@ -21852,6 +21891,31 @@ window.HY = window.HY || {};
                 }
                 return true;
             });
+            /* v671：礦冶「派工」曾只設 buildingSlot 未建 runner → 自動補建或釋放幽靈佔位 */
+            if (campSlotN !== null) {
+                var runnerIds = {};
+                k.runners.forEach(function (r) { runnerIds[r.workerId] = 1; });
+                var self = this;
+                var capRunners = self.campWorkerSlots();
+                (k.workers || []).forEach(function (w) {
+                    if (!w) return;
+                    var ws = (w.buildingSlot === null || w.buildingSlot === undefined)
+                        ? null : num(w.buildingSlot);
+                    if (ws !== campSlotN) return;
+                    if (runnerIds[w.uid]) return;
+                    if (k.runners.length >= capRunners) {
+                        w.buildingSlot = null;
+                        self.log('⚠️【' + (w.name || '工人') + '】營地已滿，已從刷圖營地調回待命（請至「刷圖」分頁派駐）。');
+                        return;
+                    }
+                    self._seq += 1;
+                    var nr = makeRunner(w.uid, 'runner_sync_' + Date.now() + '_' + self._seq);
+                    k.runners.push(nr);
+                    runnerIds[w.uid] = 1;
+                    self.log('🔧 已同步【' + (w.name || '工人') + '】的刷圖常駐狀態。');
+                    self._startNext(nr, k);
+                });
+            }
             /* 舊資料相容：pending 欄位 */
             if (!Array.isArray(k.runnerPending)) k.runnerPending = [];
             return k;
@@ -22023,9 +22087,14 @@ window.HY = window.HY || {};
             if (k.runners.some(function (r) { return r.workerId === workerId; })) {
                 return { ok: false, why: '該工人已在營地' };
             }
+            var prevSlot = (w.buildingSlot === null || w.buildingSlot === undefined)
+                ? null : num(w.buildingSlot);
+            if (prevSlot !== null && prevSlot !== num(campSlot)) {
+                return { ok: false, why: '該工人正在其他建築工作，請先調回待命' };
+            }
 
             /* ⭐ 關鍵：佔用 buildingSlot（與礦場/熔爐互斥） */
-            w.buildingSlot = campSlot;
+            w.buildingSlot = num(campSlot);
 
             this._seq += 1;
             var runner = makeRunner(workerId, 'runner_' + Date.now() + '_' + this._seq);
@@ -23095,8 +23164,11 @@ window.HY = window.HY || {};
                 } else if (self._tab === 'runner') {
                     var R = window.HY.game && window.HY.game.kmRunners;
                     if (R) {
+                        try {
+                            if (typeof R.settle === 'function') R.settle(Date.now());
+                        } catch (eSet) { }
                         var sum = R.summary();
-                        if (sum.running > 0 || sum.pending > 0) {
+                        if (sum.running > 0 || sum.pending > 0 || sum.pool > 0) {
                             self.renderPanel();
                         }
                     }
@@ -23418,6 +23490,9 @@ window.HY = window.HY || {};
                 return '<div class="km-empty">刷圖系統未載入（kingsmarchMapRunners.js）。</div>';
             }
             R.ensureState();
+            if (typeof R.settle === 'function') {
+                try { R.settle(Date.now()); } catch (eSt) { }
+            }
             if (typeof R.maybeResumeRunners === 'function') R.maybeResumeRunners();
             var sum = R.summary();
             var atlas = window.HY.game.atlasSys;
@@ -23609,7 +23684,7 @@ window.HY = window.HY || {};
                 if (campLv <= 0) { col = '#7f1d1d'; icon = '🚫'; msg = '尚未建造刷圖營地'; }
                 else if (!pool.length && !running.length) { col = '#7f1d1d'; icon = '⚠️'; msg = '倉庫沒圖，工人全部停擺'; }
                 else if (!pool.length) { col = '#a16207'; icon = '⏳'; msg = '倉庫已空，這批跑完就會停'; }
-                else if (!running.length && list.length) {
+                else if (!running.length && runners.length) {
                     col = '#a16207'; icon = '😴';
                     msg = '有圖，工人待命（若未開跑：先領取滿倉戰利品或重開本分頁）';
                 } else if (!running.length) {
@@ -23829,22 +23904,35 @@ window.HY = window.HY || {};
                 if (B.workers) {
                     var at = this.km.getWorkersAt(slot);
                     var cap = this.km.getWorkerSlots(slot);
+                    var Rm = window.HY.game && window.HY.game.kmRunners;
+                    var stationedN = 0;
+                    if (existing.id === 'runnerCamp' && Rm && typeof Rm.runners === 'function') {
+                        stationedN = Rm.runners().length;
+                    }
                     h += '<div style="font-size:.74rem;color:#94a3b8;margin-bottom:6px">' +
-                        '工人 ' + at.length + '/' + cap + '：' +
-                        (at.length ? at.map(function (w) { return esc(w.name); }).join('、') : '（空）') +
+                        '工人 ' + (existing.id === 'runnerCamp' ? stationedN : at.length) + '/' + cap + '：' +
+                        (existing.id === 'runnerCamp'
+                            ? (stationedN ? '（見「刷圖」分頁常駐清單）' : '（空）')
+                            : (at.length ? at.map(function (w) { return esc(w.name); }).join('、') : '（空）')) +
                         '</div>';
-                    /* 分配工人按鈕 */
-                    var idle = k.workers.filter(function (w) {
-                        return w.buildingSlot === null || w.buildingSlot === undefined;
-                    });
-                    if (idle.length && at.length < cap) {
-                        h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">';
-                        idle.forEach(function (w) {
-                            h += '<button class="km-btn" data-assign="' + esc(w.uid) +
-                                '" data-slot2="' + slot + '" style="padding:3px 9px;font-size:.7rem">' +
-                                '派 ' + esc(w.name) + '</button>';
+                    if (existing.id === 'runnerCamp') {
+                        h += '<div style="font-size:.72rem;color:#7dd3fc;line-height:1.7;margin-bottom:8px">' +
+                            '刷圖營地請到上方 <b>🏕️ 刷圖</b> 分頁按「派駐」常駐工人；' +
+                            '在此按「派工」不會自動跑圖。</div>';
+                    } else {
+                        /* 分配工人按鈕 */
+                        var idle = k.workers.filter(function (w) {
+                            return w.buildingSlot === null || w.buildingSlot === undefined;
                         });
-                        h += '</div>';
+                        if (idle.length && at.length < cap) {
+                            h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">';
+                            idle.forEach(function (w) {
+                                h += '<button class="km-btn" data-assign="' + esc(w.uid) +
+                                    '" data-slot2="' + slot + '" style="padding:3px 9px;font-size:.7rem">' +
+                                    '派 ' + esc(w.name) + '</button>';
+                            });
+                            h += '</div>';
+                        }
                     }
                 }
                 /* 升級 / 拆除 */
