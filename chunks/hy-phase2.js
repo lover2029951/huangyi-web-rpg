@@ -7118,7 +7118,7 @@ window.HY = window.HY || {};
 })();
 /* --- salvageExpeditionSystem.js --- */
 // js/salvageExpeditionSystem.js  (v29)
-// 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 靈獸時空探險
+// 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 被動時空探險（原靈獸探險）
 //
 // v29 修正（元素體系去重）：
 //   ⭐ 移除 getDerivedStatsForChar 中的 elemAtkPct/elemDefPct 處理
@@ -7222,7 +7222,6 @@ window.HY = window.HY || {};
         ensureState() {
             var root = this.app.charSys.rootState;
             if (root.spiritStones === undefined) root.spiritStones = 20;
-            if (!root.petExpeditions) root.petExpeditions = {};
             (root.roster || []).forEach(function (c) {
                 if (!c.activeBuffs) c.activeBuffs = {};
             });
@@ -7309,7 +7308,7 @@ window.HY = window.HY || {};
                 var inv = self.app.charSys.rootState.inventory;
                 var pillCount = inv.pill_wash_root || 0;
                 if (pillCount <= 0) {
-                    self.app.logger.add('🚫 重塑本命靈根需要消耗 1 顆【🌈 太虛洗靈丹】（派遣靈獸探險有 0.1% 機率尋獲）！', 'system');
+                    self.app.logger.add('🚫 重塑本命靈根需要消耗 1 顆【🌈 太虛洗靈丹】（時空探險有 0.1% 機率尋獲）！', 'system');
                     return false;
                 }
                 var c = self.app.charSys.state;
@@ -7421,62 +7420,27 @@ window.HY = window.HY || {};
                 });
             }
         }
-        togglePetExpedition(petId) {
-            this.ensureState();
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            if (!root.pets || !root.pets[petId]) return false;
-            root.petExpeditions[petId] = !root.petExpeditions[petId];
-            var petName = Data.PETS[petId] ? Data.PETS[petId].name : '靈獸';
-            if (root.petExpeditions[petId]) {
-                this.app.logger.add('🗺️ 已派遣靈獸【' + petName + '】加入時空探險隊（每 3 分鐘自動收集一次狀態 Buff 丹藥）！', 'time');
-            } else {
-                this.app.logger.add('⛺ 已召回探險中的靈獸【' + petName + '】。', 'system');
-            }
+        /** 被動探險始終開啟（不依賴靈獸） */
+        isPassiveExpeditionOn() {
             return true;
-        }
-        getExpeditionPetList() {
-            this.ensureState();
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            var list = [];
-            Object.keys(root.pets || {}).forEach(function (petId) {
-                if (root.pets[petId] > 0 && root.petExpeditions[petId] && Data.PETS[petId]) {
-                    list.push({
-                        id: petId,
-                        name: Data.PETS[petId].name,
-                        lv: root.pets[petId]
-                    });
-                }
-            });
-            return list;
         }
         startExpeditionTicker() {
             var self = this;
             if (this.timer) clearInterval(this.timer);
             this.timer = setInterval(function () {
-                var activePets = self.getExpeditionPetList();
-                var root = self.app.charSys.rootState;
-                if (activePets.length === 0 && root.pets) {
-                    Object.keys(root.pets).forEach(function (pId) {
-                        if (root.pets[pId] > 0 && root.petExpeditions[pId] === undefined) {
-                            root.petExpeditions[pId] = true;
-                        }
-                    });
-                    activePets = self.getExpeditionPetList();
-                }
-                if (activePets.length === 0) return;
+                if (!self.isPassiveExpeditionOn()) return;
                 self.expeditionRemaining -= 1;
                 if (self.expeditionRemaining <= 0) {
                     self.expeditionRemaining = self.EXPEDITION_DURATION;
-                    self.completeExpeditionCycle(activePets);
-                    self.app.renderAll();
+                    self.completeExpeditionCycle();
+                    if (self.app.renderAllThrottled) self.app.renderAllThrottled();
+                    else self.app.renderAll();
                 } else if (window.HY.uiSalvageExp) {
                     window.HY.uiSalvageExp.updateTimerTextOnly();
                 }
             }, 1000);
         }
-        completeExpeditionCycle(activePets) {
+        completeExpeditionCycle() {
             var invSys = this.app.inventorySys;
             var Data = window.HY.Data;
             var self = this;
@@ -7485,24 +7449,22 @@ window.HY = window.HY || {};
                 'pill_buff_eva', 'pill_buff_regen', 'pill_buff_all',
                 'pill_hp', 'pill_major'
             ];
-            activePets.forEach(function (pet) {
-                var pickedPillId = buffPillPool[Math.floor(Math.random() * buffPillPool.length)];
-                if (Data.ITEMS[pickedPillId]) {
-                    invSys.addItem(pickedPillId, 1);
-                    self.app.logger.add('🎁 掉落物品：【' + Data.ITEMS[pickedPillId].name + '】x1', 'loot');
-                }
-                if (Math.random() * 100 < 0.1) {
-                    invSys.addItem('pill_wash_root', 1);
-                    self.app.logger.add('🌟 掉落物品：【🌈 太虛洗靈丹 (0.1%奇珍)】x1', 'loot');
-                }
-            });
+            var pickedPillId = buffPillPool[Math.floor(Math.random() * buffPillPool.length)];
+            if (Data.ITEMS[pickedPillId]) {
+                invSys.addItem(pickedPillId, 1);
+                self.app.logger.add('🎁 時空探險歸來：【' + Data.ITEMS[pickedPillId].name + '】x1', 'loot');
+            }
+            if (Math.random() * 100 < 0.1) {
+                invSys.addItem('pill_wash_root', 1);
+                self.app.logger.add('🌟 時空探險尋獲【🌈 太虛洗靈丹 (0.1%奇珍)】x1', 'loot');
+            }
         }
     }
     window.HY.SalvageExpeditionSystem = SalvageExpeditionSystem;
 })();
 /* --- uiSalvageExpedition.js --- */
 // js/uiSalvageExpedition.js  (v50.1)
-// 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 靈獸探險 UI
+// 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 被動時空探險 UI
 //
 // v50.1 修正：
 //   ⭐ 移除 decorateSpiritRootButtons 的「覆寫淬鍊按鈕文字」邏輯（殘留程式碼）
@@ -7565,7 +7527,7 @@ window.HY = window.HY || {};
                 self.decorateInventorySalvageButtons();
                 // ⭐ v50.1：已移除 decorateSpiritRootButtons 呼叫
                 //    （靈根按鈕文字現由 uiSpiritRoot.buildUpgradeInfo() 統一產生）
-                self.decoratePetExpeditionPanel();
+                self.updatePassiveExpeditionBanner();
             };
             var uiMarket = this.app.uiEquipMarket;
             if (uiMarket) {
@@ -7644,66 +7606,26 @@ window.HY = window.HY || {};
             // 意圖留空：不再覆寫 #btn-up-spirit-root / #btn-reroll-spirit-root 的內容
             return;
         }
-        decoratePetExpeditionPanel() {
-            var petTab = document.getElementById('tab-pet');
-            var petListEl = document.getElementById('pet-list');
-            if (!petTab || !petListEl) return;
-            var banner = document.getElementById('pet-expedition-banner');
+        updatePassiveExpeditionBanner() {
+            var resBox = document.getElementById('char-spirit-stones');
+            if (!resBox) return;
+            var host = resBox.closest('.resource-box');
+            if (!host) return;
+            var banner = document.getElementById('hy-passive-exp-banner');
             if (!banner) {
                 banner = document.createElement('div');
-                banner.id = 'pet-expedition-banner';
-                banner.style.background = '#121822';
-                banner.style.border = '1px solid #38bdf8';
-                banner.style.borderRadius = '6px';
-                banner.style.padding = '12px';
-                banner.style.marginBottom = '14px';
-                petTab.insertBefore(banner, petListEl);
+                banner.id = 'hy-passive-exp-banner';
+                banner.style.cssText = 'margin-top:8px;padding:8px 10px;background:#121822;border:1px solid #38bdf8;border-radius:6px;font-size:.78rem;';
+                host.appendChild(banner);
             }
-            var expPets = this.sys.getExpeditionPetList();
             var mins = Math.floor(this.sys.expeditionRemaining / 60);
             var secs = this.sys.expeditionRemaining % 60;
             var timeStr = mins + ' 分 ' + (secs < 10 ? '0' + secs : secs) + ' 秒';
             banner.innerHTML =
-                '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">' +
-                    '<div>' +
-                        '<h4 style="margin:0; color:#38bdf8; font-size:1rem;">🗺️ 靈獸時空探險隊（每 3 分鐘自動收集一次 10 回合增益靈丹！）</h4>' +
-                        '<p style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">' +
-                            '✨ 探險收穫池：<strong>狂暴戰神丹、金剛不壞丹、天眼必中丹、太虛幻影丹、長生回春丹、五氣朝元丹 (皆持續 10 回合)</strong>，以及 <strong style="color:#f43f5e;">0.1% 機率尋獲【🌈 太虛洗靈丹】</strong>！' +
-                        '</p>' +
-                        '<p style="font-size:0.82rem; color:#4ade80; margin-top:3px;">' +
-                            '🐎 當前派遣探險中靈獸：<strong>' + (expPets.length > 0 ? expPets.map(function (p) { return p.name + '(Lv.' + p.lv + ')'; }).join('、') : '尚無靈獸探險 (收服靈獸後自動派遣)') + '</strong>' +
-                        '</p>' +
-                    '</div>' +
-                    '<div style="background:#18202c; border:1px solid #00e5ff; padding:8px 14px; border-radius:6px; text-align:center;">' +
-                        '<div style="font-size:0.76rem; color:#94a3b8;">距離下次探險歸來</div>' +
-                        '<strong id="pet-exp-countdown" style="font-size:1.1rem; color:#00e5ff;">⏳ ' + (expPets.length > 0 ? timeStr : '等待派遣靈獸') + '</strong>' +
-                    '</div>' +
-                '</div>';
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            var cards = petListEl.querySelectorAll('.card-item');
-            var allPets = Object.values(Data.PETS || {});
-            var self = this;
-            allPets.forEach(function (pet, idx) {
-                var lv = (root.pets && root.pets[pet.id]) || 0;
-                var card = cards[idx];
-                if (!card || lv <= 0 || card.querySelector('.btn-pet-exp')) return;
-                var isExploring = root.petExpeditions && root.petExpeditions[pet.id];
-                var btnRow = card.querySelector('.btn-group-row');
-                if (btnRow) {
-                    var expBtn = document.createElement('button');
-                    expBtn.className = 'action-btn btn-pet-exp';
-                    expBtn.style.borderColor = isExploring ? '#38bdf8' : '#64748b';
-                    expBtn.style.color = isExploring ? '#38bdf8' : '#94a3b8';
-                    expBtn.textContent = isExploring ? '🗺️ 探險收集中' : '⛺ 派遣探險';
-                    expBtn.addEventListener('click', function () {
-                        if (self.sys.togglePetExpedition(pet.id)) {
-                            self.app.renderAll();
-                        }
-                    });
-                    btnRow.appendChild(expBtn);
-                }
-            });
+                '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+                '<span style="color:#38bdf8;font-weight:bold;">🗺️ 時空探險（每 3 分鐘）</span>' +
+                '<strong id="pet-exp-countdown" style="color:#00e5ff;">⏳ ' + timeStr + '</strong></div>' +
+                '<p style="margin:4px 0 0;color:#94a3b8;font-size:.75rem;">自動收集 10 回合增益靈丹，0.1% 太虛洗靈丹（原靈獸探險，現改武魂）。</p>';
         }
         updateTimerTextOnly() {
             var el = document.getElementById('pet-exp-countdown');
@@ -8363,19 +8285,13 @@ window.HY = window.HY || {};
             } else {
                 guildCycles = 0;
             }
-            /* ── 靈獸探險 ── */
+            /* ── 被動時空探險（原靈獸探險） ── */
             var expCycles = Math.min(MAX_EXP_CYCLES, Math.floor(sec / 180));
-            if (expCycles > 0 && app.salvageExpSys) {
+            if (expCycles > 0 && app.salvageExpSys &&
+                typeof app.salvageExpSys.completeExpeditionCycle === 'function') {
                 try {
-                    var activePets = (typeof app.salvageExpSys.getExpeditionPetList === 'function')
-                        ? app.salvageExpSys.getExpeditionPetList() : [];
-                    if (activePets && activePets.length > 0 &&
-                        typeof app.salvageExpSys.completeExpeditionCycle === 'function') {
-                        for (var pIdx = 0; pIdx < expCycles; pIdx++) {
-                            app.salvageExpSys.completeExpeditionCycle(activePets);
-                        }
-                    } else {
-                        expCycles = 0;
+                    for (var pIdx = 0; pIdx < expCycles; pIdx++) {
+                        app.salvageExpSys.completeExpeditionCycle();
                     }
                 } catch (e) { expCycles = 0; }
             } else {
@@ -8469,11 +8385,11 @@ window.HY = window.HY || {};
                     '<div>🪙 獲得大唐紋銀：<strong class="gold-color">+' + report.gold.toLocaleString() + ' 兩</strong></div>' +
                 '</div>' +
                 '<div style="background:#121822; padding:12px; border-radius:6px; border-left:4px solid #10b981;">' +
-                    '<h4 style="margin:0 0 6px 0; color:#10b981;">🎁 離線打寶、幫會生產與靈獸探險</h4>' +
+                    '<h4 style="margin:0 0 6px 0; color:#10b981;">🎁 離線打寶、幫會生產與時空探險</h4>' +
                     '<div>🗡️ 離線裝備掉落：' + eqStr + '</div>' +
                     '<div>💎 離線通貨掉落：' + orbStr + '</div>' +
                     '<div>🏯 幫會建築自動徵收：已完成 <strong>' + report.guildCycles + '</strong> 輪生產結算</div>' +
-                    '<div>🐉 靈獸時空探險隊：已完成 <strong>' + report.expCycles + '</strong> 次探險收集</div>' +
+                    '<div>🗺️ 時空探險：已完成 <strong>' + report.expCycles + '</strong> 次靈丹收集</div>' +
                     (report.kmTicks > 0
                         ? '<div>⛏️ 金司馬區礦冶：離線結算 <strong>' + report.kmTicks + '</strong> 個週期</div>'
                         : '') +
@@ -9162,11 +9078,6 @@ window.HY = window.HY || {};
                 var comp = this.app.companionSys.getActiveCompanionInfo();
                 if (comp && comp.elAtk) this.mergeInto(atk, comp.elAtk);
                 if (comp && comp.elDef) this.mergeInto(def, comp.elDef);
-            }
-            if (this.app.petSys) {
-                var pet = this.app.petSys.getActivePetInfo();
-                if (pet && pet.elAtk) this.mergeInto(atk, pet.elAtk);
-                if (pet && pet.elDef) this.mergeInto(def, pet.elDef);
             }
             // 9. ⭐ 丹藥 Buff 的元素攻防加成
             //    （原在 salvageExpeditionSystem.getDerivedStatsForChar）
@@ -10587,15 +10498,12 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
         },
         {
             id: 'companionPet',
-            title: '⑫ 🤝 群俠／🐉 靈獸',
+            title: '⑫ 🤝 群俠',
             desc: '只有全域倍率已接線。',
             fields: [
                 { path: 'companionPet.companionGrowth', label: '群俠每階光環成長', type: 'num', step: 0.01, min: 0, max: 5, live: 'dead', hint: '0.15 = 每階 +15%' },
-                { path: 'companionPet.petGrowth',       label: '靈獸每級光環成長', type: 'num', step: 0.01, min: 0, max: 5, live: 'dead', hint: '0.16 = 每級 +16%' },
                 { path: 'companionPet.allBonusMult',    label: '⚡ 全域數值倍率',  type: 'num', step: 0.1, min: 0, max: 20, live: 'reapply' },
-                { path: 'companionPet.companionUpgradePow', label: '群俠升階曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' },
-                { path: 'companionPet.petFeedGoldPow',  label: '靈獸餵養金曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' },
-                { path: 'companionPet.petFeedSpPow',    label: '靈獸餵養點曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' }
+                { path: 'companionPet.companionUpgradePow', label: '群俠升階曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' }
             ]
         },
         {

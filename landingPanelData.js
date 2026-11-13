@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v751 · 2026-11-13',
-        gameVer: 751,
+        newsVer: 'v752 · 2026-11-13',
+        gameVer: 752,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '清理',
+            title: '移除靈獸殘留 v752',
+            date: '2026-11-13',
+            bullets: [
+                '刪除靈獸 UI／戰鬥回合／探險派遣／作弊參數等殘留程式',
+                '時空探險改為<b>被動每 3 分鐘</b>；小鎮鎮守改為<b>武魂</b>',
+                '讀檔自動清除舊存檔 <code>pets</code>／<code>activePet</code> 欄位'
+            ]
+        },
         {
             tag: 'ui', tagLabel: '戰鬥',
             title: '回復飄字分流 v751',

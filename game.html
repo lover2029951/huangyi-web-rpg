@@ -1693,15 +1693,12 @@ window.HY = window.HY || {};
             harvestMult: 1.0                 // ✖ 徵收生產倍率
         },
         // ═══════════════════════════════════════════════════════════════
-        // ⑫ 🤝 群俠／🐉 靈獸
+        // ⑫ 🤝 群俠
         // ═══════════════════════════════════════════════════════════════
         companionPet: {
             companionGrowth: 0.15,           // ✖ 群俠每階光環成長
-            petGrowth: 0.16,                 // ✖ 靈獸每級光環成長
             allBonusMult: 1.0,               // ⚡ 全域數值倍率
-            companionUpgradePow: 1.45,       // ✖ 群俠升階曲線底數
-            petFeedGoldPow: 1.35,            // ✖ 靈獸餵養金曲線底數
-            petFeedSpPow: 1.40               // ✖ 靈獸餵養點曲線底數
+            companionUpgradePow: 1.45       // ✖ 群俠升階曲線底數
         },
         // ═══════════════════════════════════════════════════════════════
         // ⑬ 🧘 離線掛機（此區段全部未接線）
@@ -2226,9 +2223,6 @@ window.HY = window.HY || {};
         Object.values(D.COMPANIONS || {}).forEach(function (c) {
             if (c.passive) refs.companions = refs.companions.concat(collectNestedRefs(c.passive));
         });
-        Object.values(D.PETS || {}).forEach(function (p) {
-            if (p.bonus) refs.pets = refs.pets.concat(collectNestedRefs(p.bonus));
-        });
         CFG.__origRefs = refs;
     }
     function restoreRefs(list) {
@@ -2345,10 +2339,8 @@ window.HY = window.HY || {};
         if (!R) return;
         var mult = CFG.companionPet.allBonusMult;
         restoreRefs(R.companions);
-        restoreRefs(R.pets);
         if (mult !== 1) {
             scaleRefs(R.companions, mult);
-            scaleRefs(R.pets, mult);
         }
     });
     console.log('[GameConfig 3/5] ✓ 套用器 A 已註冊（目前 ' + CFG.__appliers.length + ' 個）');
@@ -3416,54 +3408,8 @@ window.HY = window.HY || {};
       tags: ['epic'], synergy: { with: ['mastery'], mul: 1.15, note: '精通習得加快' },
       desc: '若有若無，難以捉摸。' }
   ];
-  /* ══════════════════════════════════════════════════════
-     ④ 寵物（12 種，含五行、技能、進化）
-     ══════════════════════════════════════════════════════ */
-  C.PETS = [
-    { id: 'pet_wolf',   name: '雪狼',   icon: '🐺', element: 'water', tier: 1, maxLv: 10,
-      bonus: { atkPct: 0.04, atbMul: 0.04 }, tags: ['atk', 'spd', 'water'],
-      evolveTo: 'pet_frostwolf', evolveLv: 8, skill: { name: '撕咬', mul: 1.15 },
-      desc: '北地雪狼，迅捷兇猛。' },
-    { id: 'pet_frostwolf', name: '霜牙狼王', icon: '🐺', element: 'water', tier: 3, maxLv: 15,
-      bonus: { atkPct: 0.10, atbMul: 0.08, critAdd: 3 }, tags: ['atk', 'spd', 'crit', 'water', 'epic'],
-      skill: { name: '霜牙噬', mul: 1.45 }, desc: '雪狼之王者，爪下無生。' },
-    { id: 'pet_fox',    name: '火狐',   icon: '🦊', element: 'fire', tier: 1, maxLv: 10,
-      bonus: { atkPct: 0.05, critAdd: 2 }, tags: ['atk', 'crit', 'fire'],
-      evolveTo: 'pet_ninefox', evolveLv: 8, skill: { name: '狐火', mul: 1.20 },
-      desc: '尾燃靈火，狡黠靈動。' },
-    { id: 'pet_ninefox', name: '九尾天狐', icon: '🦊', element: 'fire', tier: 4, maxLv: 15,
-      bonus: { atkPct: 0.13, critAdd: 6, spMul: 0.08 }, tags: ['atk', 'crit', 'sp', 'fire', 'legend'],
-      skill: { name: '九尾焚天', mul: 1.60 }, desc: '九尾齊現，魅惑眾生。' },
-    { id: 'pet_turtle', name: '玄龜',   icon: '🐢', element: 'earth', tier: 2, maxLv: 12,
-      bonus: { defPct: 0.08, hpPct: 0.08 }, tags: ['def', 'hp', 'earth'],
-      evolveTo: 'pet_dragonturtle', evolveLv: 10, skill: { name: '龜甲', mul: 0.85 },
-      desc: '背負玄甲，堅不可摧。' },
-    { id: 'pet_dragonturtle', name: '龍龜', icon: '🐢', element: 'earth', tier: 4, maxLv: 15,
-      bonus: { defPct: 0.16, hpPct: 0.16 }, tags: ['def', 'hp', 'earth', 'epic'],
-      skill: { name: '龍甲壁', mul: 0.70 }, desc: '龜龍合體，萬法不侵。' },
-    { id: 'pet_crane',  name: '仙鶴',   icon: '🕊️', element: 'wood', tier: 2, maxLv: 12,
-      bonus: { hpPct: 0.06, spMul: 0.10 }, tags: ['hp', 'sp', 'wood'],
-      skill: { name: '鶴唳', mul: 1.10 }, desc: '羽翼輕靈，助人修行。' },
-    { id: 'pet_tiger',  name: '白虎',   icon: '🐯', element: 'metal', tier: 3, maxLv: 14,
-      bonus: { atkPct: 0.11, defPct: 0.04 }, tags: ['atk', 'def', 'metal', 'rare'],
-      evolveTo: 'pet_whiteking', evolveLv: 12, skill: { name: '虎嘯', mul: 1.40 },
-      desc: '西方神獸，殺伐果決。' },
-    { id: 'pet_whiteking', name: '白虎戰神', icon: '🐯', element: 'metal', tier: 5, maxLv: 18,
-      bonus: { atkPct: 0.18, defPct: 0.10, critAdd: 5 }, tags: ['atk', 'def', 'crit', 'metal', 'legend'],
-      skill: { name: '白虎天罡', mul: 1.80 }, desc: '殺神降世，擋者披靡。' },
-    { id: 'pet_crow',   name: '墨鴉',   icon: '🐦‍⬛', element: 'water', tier: 1, maxLv: 10,
-      bonus: { dropMul: 0.08, goldMul: 0.06 }, tags: ['drop', 'gold', 'water'],
-      skill: { name: '啄目', mul: 1.05 }, desc: '喜啄珍寶，尋寶好手。' },
-    { id: 'pet_qilin',  name: '麒麟',   icon: '🦌', element: 'wood', tier: 5, maxLv: 18,
-      bonus: { atkPct: 0.10, defPct: 0.10, hpPct: 0.10, expMul: 0.10 },
-      tags: ['atk', 'def', 'hp', 'exp', 'wood', 'legend'],
-      skill: { name: '祥瑞', mul: 1.25 }, desc: '祥瑞之獸，所至皆吉。' },
-    { id: 'pet_dragon', name: '青龍',   icon: '🐉', element: 'wood', tier: 5, maxLv: 20,
-      bonus: { atkPct: 0.16, hpPct: 0.12, atbMul: 0.10, spMul: 0.10 },
-      tags: ['atk', 'hp', 'spd', 'sp', 'wood', 'legend'],
-      synergy: { with: ['formation'], mul: 1.20, note: '與陣法共鳴' },
-      skill: { name: '龍騰', mul: 1.75 }, desc: '東方神獸，呼風喚雨。' }
-  ];
+  /* 靈獸系統已移除（改武魂） */
+  C.PETS = [];
   /* ══════════════════════════════════════════════════════
      ⑤ 同伴職責（8 種）
      ══════════════════════════════════════════════════════ */
@@ -4583,7 +4529,6 @@ window.HY = window.HY || {};
     },
     {
       id: 'pet', name: '寵物系統', icon: '🐾', desc: '寵物捕捉培養。',
-      probe: ['HY.game.petSys', 'HY.game.petSystem', 'HY.PetSystem'],
       caps: ['data', 'api'],
       build: function (o) {
         return {
@@ -33308,7 +33253,6 @@ window.HY = window.HY || {};
     { id: 'formation', name: '陣法',      icon: '☯️', cfg: 'FORMATION_ENABLE',   ext: ['HY.Data.XIANXIA_FORMATIONS', 'HY.game.formationSys'], desc: '好友可學陣法，出團／世界王／戰鬥套用。' },
     { id: 'spirit',    name: '靈根',      icon: '💎', cfg: 'SPIRIT_ENABLE',      ext: ['HY.Data.SPIRIT_ROOTS', 'HY.game.spiritRootSys'],     desc: '好友有靈根，影響成長與四維。' },
     { id: 'element',   name: '五行',      icon: '🌀', cfg: 'ELEMENT_ENABLE',     ext: ['HY.Data.ELEMENTS', 'HY.game.elementSys'],            desc: '五行相剋影響傷害。' },
-    { id: 'pet',       name: '寵物',      icon: '🐾', cfg: 'PET_ENABLE',         ext: ['HY.Data.PETS', 'HY.game.petSys'],                    desc: '好友可帶寵物。' },
     { id: 'companion', name: '同伴',      icon: '👥', cfg: 'COMPANION_ENABLE',   ext: ['HY.Data.COMPANIONS', 'HY.game.companionSys'],        desc: '好友可派為同伴。' },
     { id: 'affix',     name: '怪物詞綴',  icon: '🧬', cfg: 'AFFIX_ENABLE',       ext: ['HY.Data.MONSTER_AFFIXES', 'HY.game.affixSys'],       desc: '副本怪帶詞綴。' },
     { id: 'guild',     name: '冒險者公會', icon: '🏛️', cfg: 'GUILD_ENABLE',       ext: ['HY.game.guildCoreSys', 'HY.Data.GUILD_BUILDINGS'],   desc: '好友可當公會賓客。' },
@@ -34912,7 +34856,7 @@ window.HY = window.HY || {};
             if (typeof st.gold !== 'number' || !isFinite(st.gold)) st.gold = 150;
             if (typeof st.sp !== 'number' || !isFinite(st.sp)) st.sp = 50;
             if (!st.inventory || typeof st.inventory !== 'object') st.inventory = { pill_hp: 3 };
-            if (!st.petExpeditions || typeof st.petExpeditions !== 'object') st.petExpeditions = {};
+            try { delete st.pets; delete st.activePet; delete st.petExpeditions; } catch (ePet) { }
             /* 每個角色的必要欄位 */
             st.roster.forEach(function (c) {
                 if (!c || typeof c !== 'object') return;
@@ -65381,7 +65325,7 @@ window.HY = window.HY || {};
         logs: [],
         settlers: [],   // ⭐ v2：定居的角色 [{ charId, post, buildingIdx, exp, joined }]
         guests: [],     // ⭐ v2：客居的群俠 [compId]
-        guardians: [],  // ⭐ v2：鎮守的靈獸 [petId]
+        guardians: [],  // 鎮守的武魂 uid
         stats: { built: 0, upgraded: 0, demolished: 0, ticks: 0, events: 0, pills: 0, levelUps: 0 }
       };
     }
@@ -65610,18 +65554,19 @@ window.HY = window.HY || {};
       return true;
     }
     getGuardians() { return this.ensureState().guardians; }
-    toggleGuardian(petId) {
+    toggleGuardian(wuhunUid) {
       var t = this.ensureState();
-      var Data = window.HY.Data || {};
-      var pet = Data.PETS && Data.PETS[petId];
-      if (!pet) return false;
-      var at = t.guardians.indexOf(petId);
+      var root = this.charSys.rootState;
+      var owned = (root.wuhun && root.wuhun.owned) || {};
+      var w = owned[wuhunUid];
+      if (!w) return false;
+      var at = t.guardians.indexOf(wuhunUid);
       if (at === -1) {
-        t.guardians.push(petId);
-        this.log('🐾 靈獸【' + pet.name + '】開始鎮守小鎮，宵小不敢近。', 'time');
+        t.guardians.push(wuhunUid);
+        this.log('🌌 武魂【' + (w.name || wuhunUid) + '】開始鎮守小鎮，宵小不敢近。', 'time');
       } else {
         t.guardians.splice(at, 1);
-        this.log('🐾 靈獸【' + pet.name + '】解除鎮守，返回你身邊。', 'time');
+        this.log('🌌 武魂【' + (w.name || wuhunUid) + '】解除鎮守。', 'time');
       }
       this.requestRender();
       return true;
@@ -65644,15 +65589,17 @@ window.HY = window.HY || {};
     }
     getGuardianList() {
       var self = this;
-      var Data = window.HY.Data || {};
-      var owned = this.charSys.rootState.pets || {};
+      var owned = (this.charSys.rootState.wuhun && this.charSys.rootState.wuhun.owned) || {};
       var list = [];
-      Object.keys(owned).forEach(function (id) {
-        var pet = Data.PETS && Data.PETS[id];
-        if (!pet) return;
+      Object.keys(owned).forEach(function (uid) {
+        var w = owned[uid];
+        if (!w) return;
         list.push({
-          id: id, name: pet.name, species: pet.species, reqLv: pet.reqLv,
-          here: self.getGuardians().indexOf(id) !== -1
+          id: uid,
+          name: w.name || uid,
+          species: (w.years ? (w.years + '年魂力') : '武魂'),
+          reqLv: 1,
+          here: self.getGuardians().indexOf(uid) !== -1
         });
       });
       return list;
@@ -65660,6 +65607,7 @@ window.HY = window.HY || {};
     getVisitorBonus() {
       var D = this.def, t = this.ensureState();
       var Data = window.HY.Data || {};
+      var charSys = this.charSys;
       var out = { appeal: 0, incomeMul: 0, order: 0, guests: t.guests.length, guardians: t.guardians.length };
       t.guests.forEach(function (id) {
         var comp = Data.COMPANIONS && Data.COMPANIONS[id];
@@ -65672,9 +65620,9 @@ window.HY = window.HY || {};
         out.appeal += tier.appeal;
         out.incomeMul += tier.incomeMul;
       });
-      t.guardians.forEach(function (id) {
-        var pet = Data.PETS && Data.PETS[id];
-        if (!pet) return;
+      t.guardians.forEach(function (uid) {
+        var w = (charSys.rootState.wuhun && charSys.rootState.wuhun.owned) || {};
+        if (!w[uid]) return;
         out.appeal += D.GUARDIAN.appeal;
         out.incomeMul += D.GUARDIAN.incomeMul;
         out.order += D.GUARDIAN.order;
@@ -80944,109 +80892,8 @@ window.HY = window.HY || {};
             core.log(msg + supportTags, 'combat');
             if (target.currentHp <= 0 && affixSys) affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
         }
-        petTurn(playerStats, partyMembers) {
-            var core = this.core;
-            var petSys = window.HY.game && window.HY.game.petSys;
-            var affixSys = window.HY.game && window.HY.game.affixSys;
-            if (!petSys || !core.currentEnemy) return;
-            var pet = petSys.getActivePetInfo();
-            if (!pet) return;
-
-            /* ⭐ v3：依「定位」分流（多功能靈獸系統）
-               ──────────────────────────────────────────────────────────
-               舊版：所有靈獸都是 atk × powerMult 的固定傷害。
-               新版：5 種定位各有不同行為 ——
-                 attack 猛攻：純輸出
-                 guard  守護：低傷害 + 機率替主人分攤傷害
-                 heal   治療：低傷害 + 定期治療
-                 debuff 干擾：中傷害 + 削弱敵人防禦
-                 burst  爆發：低傷害 + 每 4 回合一次巨額爆發
-               ────────────────────────────────────────────────────────── */
-            var profile = null;
-            try {
-                profile = petSys.combatProfile(pet, playerStats);
-            } catch (ePf) { profile = null; }
-
-            /* 沒有 profile（舊存檔或異常）→ 退回舊公式 */
-            if (!profile) {
-                var oldDmg = Math.floor(playerStats.atk * pet.powerMult - core.currentEnemy.def * 0.25);
-                if (pet.effectType === 'dragon_breath') oldDmg = Math.floor(playerStats.atk * pet.powerMult);
-                oldDmg = Math.max(5, oldDmg);
-                core.currentEnemy.currentHp = Math.max(0, core.currentEnemy.currentHp - oldDmg);
-                core.log('🐉 靈獸【' + pet.name + '】發動《' + pet.skillName + '》，對【' +
-                    core.currentEnemy.name + '】造成 ' + oldDmg + ' 點傷害！', 'combat');
-                return;
-            }
-
-            var target = core.currentEnemy;
-            var roleIcon = petSys.roleIcon(pet);
-            var roleName = petSys.roleName(pet);
-            var defFactor = target.def * 0.25;
-            var dmg = Math.max(5, Math.floor(profile.dmg - defFactor));
-            var extras = [];
-
-            /* ── 各定位的特殊行為 ── */
-            if (pet.role === 'guard') {
-                /* 守護型：登記本回合的守護狀態，敵方回合會用到 */
-                if (!this._petGuard) this._petGuard = {};
-                this._petGuard[pet.id] = {
-                    pct: Math.min(0.60, profile.guardPct),
-                    src: pet.name
-                };
-                extras.push('🛡️ 張開守護（' + Math.round(Math.min(0.60, profile.guardPct) * 100) + '% 分攤）');
-            }
-
-            if (pet.role === 'heal') {
-                /* 治療型：每 2 回合治療一次 */
-                if (!this._petHealCd) this._petHealCd = 0;
-                this._petHealCd++;
-                if (this._petHealCd >= 2) {
-                    this._petHealCd = 0;
-                    var healTarget = this.getMostWoundedMember(partyMembers, 'hp') || core.charSys.state;
-                    var heal = Math.max(1, profile.heal);
-                    this.applyHeal(healTarget, heal, Math.floor(heal * 0.6));
-                    extras.push('💚 治療【' + healTarget.name + '】+' + heal + ' 氣血');
-                }
-            }
-
-            if (pet.role === 'debuff') {
-                /* 干擾型：削弱敵人防禦 */
-                var db = profile.debuff;
-                if (target.def > 0) {
-                    var cut = Math.floor(target.def * db.defDown);
-                    target.def = Math.max(0, target.def - cut);
-                    extras.push('🕸️ 破防 -' + cut);
-                }
-                /* 也降低集氣 */
-                if (typeof target.atb === 'number') {
-                    target.atb = Math.max(0, target.atb * 0.85);
-                    extras.push('減速 15%');
-                }
-            }
-
-            if (pet.role === 'burst') {
-                /* 爆發型：每 4 回合一次大爆發 */
-                if (!this._petBurstCd) this._petBurstCd = 0;
-                this._petBurstCd++;
-                if (this._petBurstCd >= 4) {
-                    this._petBurstCd = 0;
-                    var burstDmg = Math.floor(dmg * profile.burstMult);
-                    dmg = burstDmg;
-                    extras.push('💥 積蓄爆發 ×' + profile.burstMult);
-                }
-            }
-
-            /* 扣血 */
-            target.currentHp = Math.max(0, target.currentHp - dmg);
-
-            var msg = roleIcon + ' 靈獸【' + pet.name + '】（' + roleName + '）發動《' + pet.skillName +
-                '》，對【' + target.name + '】造成 ' + dmg + ' 點傷害！';
-            if (extras.length) msg += ' [' + extras.join('、') + ']';
-            core.log(msg, 'combat');
-
-            if (target.currentHp <= 0 && affixSys) {
-                affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
-            }
+        petTurn() {
+            /* 靈獸戰鬥回合已移除（由武魂 wuhunSystem 取代） */
         }
     }
     window.HY.CombatPlayerTurn = CombatPlayerTurn;
@@ -94854,12 +94701,7 @@ window.HY = window.HY || {};
 })();
 
 /* ===== 164 / 281 : uiCompanionPet.js ===== */
-// js/uiCompanionPet.js  (v28)
-// 群俠助戰與靈獸坐騎分頁
-//
-// v28 修正：
-//   ⭐ 顯示的「光環/騎乘加成」改為「含成長的實際生效值」，
-//      不再顯示 Lv.1 基礎值（避免數字與實際不符）。
+// js/uiCompanionPet.js — 群俠助戰分頁（靈獸系統已移除，改由武魂系統取代）
 window.HY = window.HY || {};
 (function () {
     class UICompanionPet {
@@ -94867,355 +94709,6 @@ window.HY = window.HY || {};
             this.app = app;
             this._companionTabSig = '';
         }
-        /* ⭐ v494：橫向卡片版面樣式（只注入一次）
-           ──────────────────────────────────────────────────────────
-           目標：一屏能看到更多靈獸，且說明文字不再被擠成多行。
-
-           版面配置（三個區塊橫排）：
-             ┌──────┬────────────────────────────┬──────────┐
-             │ 插畫 │ 名稱 / 定位 / 說明 / 加成  │  按鈕    │
-             │ 76px │        彈性寬度            │  固定寬  │
-             └──────┴────────────────────────────┴──────────┘ */
-        _ensureRowStyle() {
-            if (document.getElementById('hy-pet-row-style')) return;
-            var css =
-                /* 清單變單欄（原本 enemy-grid 是多欄 grid） */
-                '#pet-list{' +
-                    'display:block !important;' +
-                    'grid-template-columns:none !important;' +
-                    'gap:0 !important;' +
-                '}' +
-                /* 每張卡橫向 */
-                '#pet-list .pet-card-row{' +
-                    'display:flex !important;' +
-                    'flex-direction:row !important;' +
-                    'align-items:center !important;' +
-                    'justify-content:flex-start !important;' +
-                    'gap:14px !important;' +
-                    'padding:10px 14px !important;' +
-                    'margin-bottom:8px !important;' +
-                    'min-height:0 !important;' +
-                '}' +
-                /* 卡內第一層（插畫 + 資訊）也要橫排並且撐滿 */
-                '#pet-list .pet-card-row > div:first-child{' +
-                    'flex:1 1 auto !important;' +
-                    'min-width:0 !important;' +
-                    'align-items:center !important;' +
-                '}' +
-                /* 說明文字限制在兩行內，避免單卡過高 */
-                '#pet-list .pet-card-row p{' +
-                    'margin:1px 0 !important;' +
-                    'display:-webkit-box;' +
-                    '-webkit-line-clamp:2;' +
-                    '-webkit-box-orient:vertical;' +
-                    'overflow:hidden;' +
-                '}' +
-                /* 按鈕區靠右、不壓縮 */
-                '#pet-list .pet-card-row > .btn-primary,' +
-                '#pet-list .pet-card-row > .btn-group-row{' +
-                    'flex:0 0 auto !important;' +
-                    'align-self:center !important;' +
-                '}' +
-                '#pet-list .pet-card-row .btn-primary{' +
-                    'white-space:nowrap !important;' +
-                '}' +
-                /* 窄視窗（<820px）改回上下堆疊，否則按鈕會被擠出畫面 */
-                '@media (max-width: 820px){' +
-                    '#pet-list .pet-card-row{flex-direction:column !important;align-items:stretch !important;}' +
-                    '#pet-list .pet-card-row > .btn-primary,' +
-                    '#pet-list .pet-card-row > .btn-group-row{width:100% !important;}' +
-                '}';
-            var st = document.createElement('style');
-            st.id = 'hy-pet-row-style';
-            st.textContent = css;
-            document.head.appendChild(st);
-        }
-
-        renderPetTab() {
-            /* ⭐ 靈獸系統已移除（改用武魂）；不再渲染靈獸分頁 */
-            return;
-            const Data = window.HY.Data;
-            const app = this.app;
-            const petListEl = document.getElementById('pet-list');
-            if (!petListEl || !Data.PETS) return;
-            app.petSys.ensureState();
-
-            /* ⭐ v494：靈獸卡片改為「橫向一行一隻」
-               ──────────────────────────────────────────────────────────
-               原本 enemy-grid 用 auto-fill minmax(175px, 1fr)，
-               每張卡只有 ~175px 寬，插畫 + 名稱 + 說明 + 按鈕全部被迫窄擠，
-               一屏只看得到 3~4 隻。改成整列橫向：
-                 ① #pet-list 變單欄
-                 ② 每張卡內部「插畫｜資訊｜按鈕」三段橫排
-                 這樣一屏能看 8~10 隻，且說明文字不再擠成好幾行。 */
-            this._ensureRowStyle();
-
-            /* 簽章必須含橫向版面旗標，否則舊版（直向）會被快取擋住不重繪 */
-            /* ⭐⭐⭐ v485：靈獸介面跳動修正
-               症狀：靈獸面板會不停跳動、閃爍，滾動位置也會被拉回頂端。
-
-               根因（實測確認）：
-                 · 面板一次渲染 122 隻靈獸，每隻都是完整卡片（DOM 高度 8202px）
-                 · 每次畫面更新（戰鬥 tick、任何互動觸發 app.renderAll）
-                   都會執行 petListEl.innerHTML = '' 把 122 張卡全清空再重建
-                 · 重建瞬間高度歸零 → 滾動條被拉回頂端
-                 · 122 張卡的重新計算與重排 → 明顯閃爍
-
-               解法：簽章比對。
-                 把「會影響畫面的所有輸入」濃縮成一個字串簽章，
-                 與上次渲染的簽章比對，相同就整段跳過（完全不動 DOM）。
-                 只有真的換了篩選、收服、餵養、切換出戰時才重建。
-
-               ⚠️ 簽章必須包含所有會改變畫面的狀態，否則會「該更新卻不更新」：
-                  篩選條件、已擁有靈獸與等級、當前出戰靈獸、角色等級（影響鎖定）。 */
-            const ownedPets0 = app.charSys.rootState.pets || {};
-            const activePetId0 = app.charSys.rootState.activePet;
-            const maxCharLv0 = app.petSys.getMaxCharLv();
-            const F0 = this._petFilter || { role: 'all', element: 'all', quality: 'all', ownedOnly: false };
-            const sig = [
-                F0.role, F0.element, F0.quality, F0.ownedOnly ? 1 : 0,
-                activePetId0 || '', maxCharLv0, 'row1',   /* row1 = v494 橫向版面 */
-                Object.keys(ownedPets0).sort().map(function (k) {
-                    var v = ownedPets0[k];
-                    return k + ':' + (typeof v === 'object' ? (v.lv || 0) : v);
-                }).join(',')
-            ].join('|');
-            if (this.__petSig === sig && petListEl.children.length > 0) {
-                return;   /* 內容完全相同 → 不動 DOM，徹底消除跳動 */
-            }
-            this.__petSig = sig;
-
-            /* 重建前記住滾動位置，重建後還原（避免視窗跳回頂端） */
-            var _scrollHost = petListEl.closest('.tab-content') || petListEl.parentNode;
-            var _scrollTop = _scrollHost ? _scrollHost.scrollTop : 0;
-            var _winScroll = window.scrollY || 0;
-
-            petListEl.innerHTML = '';
-            const ownedPets = ownedPets0;
-            const activePetId = activePetId0;
-            const maxCharLv = maxCharLv0;
-
-            /* ⭐ v3：200 隻靈獸需要篩選器（全部列出會捲不完）
-               ──────────────────────────────────────────────────────────
-               篩選維度：定位（5 種）／元素（8 種）／品階（5 種）／已擁有
-               狀態存在 this._petFilter，切換時只重繪不重建篩選器。 */
-            if (!this._petFilter) {
-                this._petFilter = { role: 'all', element: 'all', quality: 'all', ownedOnly: false };
-            }
-            const F = this._petFilter;
-
-            /* 篩選器 UI */
-            var filterHost = document.getElementById('pet-filter');
-            if (!filterHost) {
-                filterHost = document.createElement('div');
-                filterHost.id = 'pet-filter';
-                filterHost.style.cssText = 'margin-bottom:10px;padding:8px 10px;background:#121822;' +
-                    'border:1px solid #2e3b4e;border-radius:6px;font-size:.82rem;';
-                petListEl.parentNode.insertBefore(filterHost, petListEl);
-            }
-
-            function chipGroup(label, key, opts, cur) {
-                var h = '<div style="margin-bottom:5px;"><span style="color:#64748b;margin-right:6px;">' + label + '</span>';
-                opts.forEach(function (o) {
-                    var on = (cur === o.v);
-                    h += '<button data-pf="' + key + '" data-pv="' + o.v + '" style="' +
-                        'margin:0 4px 2px 0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;' +
-                        'font-family:inherit;' +
-                        (on
-                            ? 'background:#1e3a5f;border:1px solid #38bdf8;color:#7dd3fc;'
-                            : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
-                        '">' + o.n + '</button>';
-                });
-                return h + '</div>';
-            }
-
-            var roleOpts = [{ v: 'all', n: '全部' }];
-            Object.keys(Data.PET_ROLE_NAMES || {}).forEach(function (k) {
-                roleOpts.push({ v: k, n: (Data.PET_ROLE_ICONS[k] || '') + Data.PET_ROLE_NAMES[k] +
-                    ' (' + ((Data.PET_BY_ROLE[k] || []).length) + ')' });
-            });
-            var elemOpts = [{ v: 'all', n: '全部' }];
-            (Data.ELEMENT_RING || Object.keys(Data.ELEMENTS || {})).forEach(function (k) {
-                var m = (Data.ELEMENTS || {})[k];
-                if (m) elemOpts.push({ v: k, n: m.icon + m.name });
-            });
-            var qualOpts = [{ v: 'all', n: '全部' }];
-            (Data.PET_QUALITY_ORDER || ['common', 'rare', 'epic', 'legend', 'myth']).forEach(function (k) {
-                qualOpts.push({ v: k, n: Data.PET_QUALITY_NAMES[k] });
-            });
-
-            var ownedCount = Object.keys(ownedPets).length;
-            /* ⭐ v494：把「顯示 N 隻（已篩選）」搬到篩選列最右側
-               ──────────────────────────────────────────────────────────
-               原本它是一個獨立區塊印在清單上方，佔一行空間又容易忽略。
-               現在直接在篩選列右下角，和總數並排顯示。 */
-            filterHost.innerHTML =
-                chipGroup('定位', 'role', roleOpts, F.role) +
-                chipGroup('元素', 'element', elemOpts, F.element) +
-                chipGroup('品階', 'quality', qualOpts, F.quality) +
-                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-                    '<span style="color:#64748b;margin-right:2px;">其他</span>' +
-                    '<button data-pf="owned" data-pv="' + (F.ownedOnly ? '0' : '1') + '" style="' +
-                        'margin:0;padding:2px 9px;border-radius:11px;cursor:pointer;font-size:.8rem;font-family:inherit;' +
-                        (F.ownedOnly ? 'background:#14532d;border:1px solid #10b981;color:#6ee7b7;'
-                                     : 'background:#0f1720;border:1px solid #2e3b4e;color:#94a3b8;') +
-                        '">' + (F.ownedOnly ? '✔ ' : '') + '僅顯示已收服 (' + ownedCount + ')</button>' +
-                    '<span id="pet-list-count" style="margin-left:auto;color:#7dd3fc;font-weight:bold;' +
-                        'font-size:.82rem;white-space:nowrap;"></span>' +
-                '</div>';
-
-            /* 綁定篩選 */
-            var self = this;
-            filterHost.querySelectorAll('[data-pf]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var k = btn.getAttribute('data-pf');
-                    var v = btn.getAttribute('data-pv');
-                    if (k === 'owned') { F.ownedOnly = (v === '1'); }
-                    else { F[k] = v; }
-                    self.renderPetTab();
-                });
-            });
-
-            /* 產出符合條件的清單 */
-            var listIds = (Data.PET_IDS || Object.keys(Data.PETS)).filter(function (id) {
-                var p = Data.PETS[id];
-                if (!p) return false;
-                if (F.role !== 'all' && p.role !== F.role) return false;
-                if (F.element !== 'all' && p.element !== F.element) return false;
-                if (F.quality !== 'all' && p.quality !== F.quality) return false;
-                if (F.ownedOnly && !ownedPets[id]) return false;
-                return true;
-            });
-
-            /* 顯示筆數（⭐ v494：寫在篩選列最右側，不再佔用清單空間）
-               ⚠️ 原本還有一行橘色警告「僅顯示前 120 隻，請用上方篩選器縮小範圍」，
-                  使用者要求移除。改為在筆數上直接標示實際渲染數量，
-                  資訊還在但不再多佔一行、也不刺眼。 */
-            const LIMIT = 120;
-            var shown = listIds.slice(0, LIMIT);
-            var totalAll = Object.keys(Data.PETS).length;
-
-            var countEl = document.getElementById('pet-list-count');
-            if (countEl) {
-                if (listIds.length > LIMIT) {
-                    countEl.textContent = '顯示 ' + shown.length + ' / ' + listIds.length + ' 隻';
-                    countEl.style.color = '#fbbf24';
-                } else if (listIds.length < totalAll) {
-                    countEl.textContent = '顯示 ' + listIds.length + ' 隻（已篩選）';
-                    countEl.style.color = '#7dd3fc';
-                } else {
-                    countEl.textContent = '共 ' + totalAll + ' 隻';
-                    countEl.style.color = '#7dd3fc';
-                }
-            }
-
-            shown.forEach(petId => {
-                const pet = Data.PETS[petId];
-                const lv = ownedPets[pet.id] || 0;
-                const isActive = activePetId === pet.id;
-                const feedCost = app.petSys.getFeedCost(pet.id);
-                const lockedAdopt = maxCharLv < (pet.reqLv || 1);
-                const lockedFeed = maxCharLv < feedCost.reqLv;
-                // ⭐ 顯示含成長的實際加成（已擁有時）；未擁有顯示 Lv.1 基礎值
-                let bonusText;
-                if (lv > 0) {
-                    const scale = 1 + (lv - 1) * 0.16;
-                    const grown = {};
-                    Object.keys(pet.bonus).forEach(k => { grown[k] = Math.floor(pet.bonus[k] * scale); });
-                    bonusText = app.equipSys.formatBonusText(grown) + ' <small style="color:#94a3b8;">(Lv.' + lv + ' 實際)</small>';
-                } else {
-                    bonusText = app.equipSys.formatBonusText(pet.bonus) + ' <small style="color:#94a3b8;">(Lv.1 基礎)</small>';
-                }
-                const card = document.createElement('div');
-                card.className = 'card-item pet-card-row';
-                card.style.borderColor = isActive ? '#10b981' : '#2e3b4e';
-                let actionHtml = '';
-                if (lv === 0) {
-                    actionHtml = '<button class="btn-primary btn-adopt-pet" ' + (lockedAdopt ? 'disabled' : '') + '>' +
-                        (lockedAdopt ? '🔒 需角色達 Lv.' + pet.reqLv + ' 解鎖' : '🐉 收服馴養 (' + pet.adoptGold + ' 兩紋銀)') +
-                    '</button>';
-                } else {
-                    actionHtml =
-                        '<div class="btn-group-row">' +
-                            '<button class="btn-primary btn-active-pet" ' + (isActive ? 'disabled' : '') + '>' +
-                                (isActive ? '🐎 隨行出戰中' : '🐉 召喚隨行') +
-                            '</button>' +
-                            '<button class="action-btn btn-feed-pet" ' + (lockedFeed ? 'disabled' : '') + '>' +
-                                (lockedFeed ? '🔒 進化需 Lv.' + feedCost.reqLv : '🍖 餵養進化 (' + feedCost.gold + '兩/' + feedCost.sp + '武點)') +
-                            '</button>' +
-                        '</div>';
-                }
-                card.innerHTML =
-                    '<div style="display:flex;gap:12px;align-items:flex-start;">' +
-                        /* ⭐ v486：靈獸插畫（左側） */
-                        this._artHtml(pet, lv > 0) +
-                        '<div style="flex:1;min-width:0;">' +
-                            '<h4>' +
-                                '<span style="color:' + (pet.qualityColor || '#94a3b8') + '">' +
-                                    (Data.PET_ROLE_ICONS[pet.role] || '⚔️') + ' ' + pet.name +
-                                '</span> ' +
-                                '<small style="color:#10b981;">[需 Lv.' + pet.reqLv + '+ | ' + pet.species + ']</small> ' +
-                                (lv > 0 ? '<span class="sp-color">(Lv.' + lv + ')</span>' : '<span style="color:#64748b;">(未收服)</span>') +
-                            '</h4>' +
-                            '<p style="color:#94a3b8;font-size:.82em;margin:2px 0;">' +
-                                (Data.PET_ROLE_DESC[pet.role] || '') +
-                            '</p>' +
-                            '<p style="font-size:.85em;margin:2px 0;">' + pet.desc + '</p>' +
-                            '<p style="font-size:.85em;margin:2px 0;">💥 靈獸戰技：<strong>《' + pet.skillName + '》</strong> | 騎乘加成：' + bonusText + '</p>' +
-                        '</div>' +
-                    '</div>' +
-                    actionHtml;
-                if (lv === 0) {
-                    card.querySelector('.btn-adopt-pet').addEventListener('click', () => {
-                        if (app.petSys.adoptPet(pet.id)) app.renderAll();
-                    });
-                } else {
-                    card.querySelector('.btn-active-pet').addEventListener('click', () => {
-                        if (app.petSys.setActivePet(pet.id)) app.renderAll();
-                    });
-                    card.querySelector('.btn-feed-pet').addEventListener('click', () => {
-                        if (app.petSys.feedPet(pet.id)) app.renderAll();
-                    });
-                }
-                petListEl.appendChild(card);
-            });
-
-            /* ⭐ v485：還原重建前的滾動位置（避免視窗跳回頂端） */
-            try {
-                if (_scrollHost && _scrollTop > 0) _scrollHost.scrollTop = _scrollTop;
-                if (_winScroll > 0) window.scrollTo(window.scrollX || 0, _winScroll);
-            } catch (eScroll) { }
-        }
-        /* ⭐⭐⭐ v486：靈獸插畫
-           ──────────────────────────────────────────────────────────
-           25 張手繪插畫對應「定位 × 獸種」，200 隻靈獸共用。
-           靠三層視覺差異做出辨識度：
-             ① 造型：定位（猛攻／守護／治療／干擾／爆發）決定是哪隻獸
-             ② 色調：元素決定 CSS hue-rotate（金0° 木60° 水165° 火335°…）
-             ③ 光輝：品質決定外框顏色與強度（凡品灰 → 神品紅）
-           未收服的靈獸降低飽和度並壓暗，一眼看出「還沒養」。 */
-        _artHtml(pet, owned) {
-            if (!pet || !pet.art) return '';
-            var hue = (typeof pet.hue === 'number') ? pet.hue : 0;
-            var qColor = pet.qualityColor || '#94a3b8';
-            var isMyth = (pet.quality === 'myth');
-            var isLegend = (pet.quality === 'legend');
-            /* 神品與絕品加脈動光暈 */
-            var glow = isMyth ? ('0 0 14px ' + qColor + ',0 0 26px ' + qColor)
-                : (isLegend ? ('0 0 10px ' + qColor) : ('0 0 6px rgba(0,0,0,.6)'));
-            var filter = 'hue-rotate(' + hue + 'deg)' +
-                (owned ? ' saturate(1.05)' : ' saturate(.35) brightness(.62)');
-            return '<div style="flex:0 0 auto;width:76px;height:76px;border-radius:10px;overflow:hidden;' +
-                'border:2px solid ' + qColor + ';box-shadow:' + glow + ';background:#0b1220;' +
-                'display:flex;align-items:center;justify-content:center;">' +
-                /* ⭐ v486：不用 loading="lazy" —— 靈獸列表一屏就看得到 10+ 張，
-                   lazy 會讓畫面外的圖延後載入，快速滾動時會看到空白方塊。
-                   圖檔已壓到 14KB 左右，直接載入不影響效能。 */
-                '<img src="' + pet.art + '" alt="" width="76" height="76" decoding="async" ' +
-                'style="width:100%;height:100%;object-fit:cover;filter:' + filter + ';">' +
-            '</div>';
-        }
-
         renderCompanionTab() {
             const Data = window.HY.Data;
             const app = this.app;
@@ -95239,7 +94732,6 @@ window.HY = window.HY || {};
                 const upReqLv = app.companionSys.getUpgradeReqLv(comp.id);
                 const lockedRecruit = maxCharLv < (comp.reqLv || 1);
                 const lockedUp = maxCharLv < upReqLv;
-                // ⭐ 顯示含成長的實際光環
                 let bonusText;
                 if (lv > 0) {
                     const scale = 1 + (lv - 1) * 0.15;
@@ -95295,6 +94787,7 @@ window.HY = window.HY || {};
     }
     window.HY.UICompanionPet = UICompanionPet;
 })();
+
 
 /* ===== 165 / 281 : uiLogPanels.js ===== */
 // js/uiLogPanels.js  (v50)
@@ -96947,7 +96440,7 @@ window.HY = window.HY || {};
         '<div class="town-colbody">' +
           this._sec('roster', '👤 我的角色（定居小鎮）', 'town-roster') +
           this._sec('guests', '🧭 群俠客居', 'town-guests') +
-          this._sec('guardians', '🐾 靈獸鎮守', 'town-guardians') +
+          this._sec('guardians', '🌌 武魂鎮守', 'town-guardians') +
         '</div>';
       var rightHtml =
         '<div class="town-colhead" data-col="right">' +
@@ -97412,12 +96905,12 @@ window.HY = window.HY || {};
         el.addEventListener('click', function () { T.toggleGuest(el.getAttribute('data-guest')); self.render(); });
       });
     }
-    /* ══════════ ⭐ 靈獸鎮守 ══════════ */
+    /* ══════════ 武魂鎮守 ══════════ */
     renderGuardians() {
       var self = this, T = this.town, D = T.def;
       var list = T.getGuardianList ? T.getGuardianList() : [];
       if (!list.length) {
-        this.el.guardians.innerHTML = '<div class="town-empty">尚無靈獸。於「🐾 靈獸」領養後，即可派其鎮守小鎮。</div>';
+        this.el.guardians.innerHTML = '<div class="town-empty">尚無武魂。擊敗區域 BOSS 取得武魂後，可派其鎮守小鎮。</div>';
         return;
       }
       var here = list.filter(function (x) { return x.here; }).length;
@@ -105511,7 +105004,7 @@ window.HY = window.HY || {};
     toggle: function (v) { L.setOff(v, !L.isOff(v)); render(); },
     bind: function (v) {
       var cur = (L.audit().filter(function (x) { return x.id === v; })[0] || {}).boundPath || '';
-      var p = prompt('輸入綁定路徑（例如 HY.game.petSys）\n留空 = 清除', cur);
+      var p = prompt('輸入綁定路徑（例如 HY.game.wuhunSys）\n留空 = 清除', cur);
       if (p === null) return;
       L.setBinding(v, p.trim());
       L.discover(true);
@@ -106764,7 +106257,7 @@ window.HY = window.HY || {};
   var ATTR = 'data-ppc-hidden';
   var CFG = {
     /* 要比對的標籤前綴 */
-    MARKS: ['🔥 主控心法', '🤝 隨行護法', '🐉 隨行靈獸'],
+    MARKS: ['🔥 主控心法', '🤝 隨行護法'],
     /* 比對方式：'contains' | 'startsWith' */
     MATCH: 'contains',
     /* 處理方式：'hide'（display:none）| 'remove'（真的從 DOM 移除） */
@@ -116549,7 +116042,6 @@ window.HY = window.HY || {};
       }
       var root = this.charSys.rootState;
       if (root.spiritStones === undefined) root.spiritStones = 20;
-      if (!root.petExpeditions) root.petExpeditions = {};
       if (!Array.isArray(root.equipBag)) root.equipBag = [];
       (root.roster || []).forEach(function (c) {
         if (!c.activeBuffs) c.activeBuffs = {};
@@ -116871,7 +116363,7 @@ window.HY = window.HY || {};
       /* 若頁面結構不同（沒有 .tab-content），保守起見全部視為可見 */
       if (!list.length) return { 'tab-party': 1, 'tab-explore': 1, 'tab-martial': 1, 'tab-sect': 1,
                                  'tab-inventory': 1, 'tab-blackmarket': 1, 'tab-companion': 1,
-                                 'tab-pet': 1, 'tab-guild': 1, 'tab-town': 1 };
+                                 'tab-guild': 1, 'tab-town': 1 };
       return map;
     }
     /**
@@ -117309,16 +116801,7 @@ window.HY = window.HY || {};
                     if (qg.bonus.atkSpd === undefined) qg.bonus.atkSpd = 0;
                 });
             }
-            // ④ 靈獸攻速
-            if (Data.PETS) {
-                Object.values(Data.PETS).forEach(function (pet) {
-                    if (!pet.bonus) pet.bonus = {};
-                    if (pet.bonus.atkSpd === undefined) {
-                        pet.bonus.atkSpd = Math.max(1, Math.floor((8 + (pet.reqLv || 1) * 0.25) / 6));
-                    }
-                });
-            }
-            // ⑤ 群俠攻速
+            // ④ 群俠攻速
             if (Data.COMPANIONS) {
                 Object.values(Data.COMPANIONS).forEach(function (comp) {
                     if (!comp.passive) comp.passive = {};
@@ -117447,13 +116930,6 @@ window.HY = window.HY || {};
                     var cLv = (charSys.rootState.companions && charSys.rootState.companions[activeCompId]) || 1;
                     if (comp.passive && comp.passive.atkSpd) {
                         rawBonusSpd += Math.floor(comp.passive.atkSpd * (1 + (cLv - 1) * 0.15));
-                    }
-                }
-                // ── 靈獸攻速 ──
-                if (self.app.petSys) {
-                    var petInfo = self.app.petSys.getActivePetInfo();
-                    if (petInfo && petInfo.bonus && petInfo.bonus.atkSpd) {
-                        rawBonusSpd += petInfo.bonus.atkSpd;
                     }
                 }
                 // ── 最終：基礎 100 + 後天加成 ÷3 ──
@@ -126950,7 +126426,7 @@ window.HY = window.HY || {};
 
 /* ===== 209 / 281 : salvageExpeditionSystem.js ===== */
 // js/salvageExpeditionSystem.js  (v29)
-// 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 靈獸時空探險
+// 裝備分解 / 靈石淬鍊 / 10 回合狀態 Buff 丹藥 / 被動時空探險（原靈獸探險）
 //
 // v29 修正（元素體系去重）：
 //   ⭐ 移除 getDerivedStatsForChar 中的 elemAtkPct/elemDefPct 處理
@@ -127054,7 +126530,6 @@ window.HY = window.HY || {};
         ensureState() {
             var root = this.app.charSys.rootState;
             if (root.spiritStones === undefined) root.spiritStones = 20;
-            if (!root.petExpeditions) root.petExpeditions = {};
             (root.roster || []).forEach(function (c) {
                 if (!c.activeBuffs) c.activeBuffs = {};
             });
@@ -127141,7 +126616,7 @@ window.HY = window.HY || {};
                 var inv = self.app.charSys.rootState.inventory;
                 var pillCount = inv.pill_wash_root || 0;
                 if (pillCount <= 0) {
-                    self.app.logger.add('🚫 重塑本命靈根需要消耗 1 顆【🌈 太虛洗靈丹】（派遣靈獸探險有 0.1% 機率尋獲）！', 'system');
+                    self.app.logger.add('🚫 重塑本命靈根需要消耗 1 顆【🌈 太虛洗靈丹】（時空探險有 0.1% 機率尋獲）！', 'system');
                     return false;
                 }
                 var c = self.app.charSys.state;
@@ -127253,62 +126728,27 @@ window.HY = window.HY || {};
                 });
             }
         }
-        togglePetExpedition(petId) {
-            this.ensureState();
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            if (!root.pets || !root.pets[petId]) return false;
-            root.petExpeditions[petId] = !root.petExpeditions[petId];
-            var petName = Data.PETS[petId] ? Data.PETS[petId].name : '靈獸';
-            if (root.petExpeditions[petId]) {
-                this.app.logger.add('🗺️ 已派遣靈獸【' + petName + '】加入時空探險隊（每 3 分鐘自動收集一次狀態 Buff 丹藥）！', 'time');
-            } else {
-                this.app.logger.add('⛺ 已召回探險中的靈獸【' + petName + '】。', 'system');
-            }
+        /** 被動探險始終開啟（不依賴靈獸） */
+        isPassiveExpeditionOn() {
             return true;
-        }
-        getExpeditionPetList() {
-            this.ensureState();
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            var list = [];
-            Object.keys(root.pets || {}).forEach(function (petId) {
-                if (root.pets[petId] > 0 && root.petExpeditions[petId] && Data.PETS[petId]) {
-                    list.push({
-                        id: petId,
-                        name: Data.PETS[petId].name,
-                        lv: root.pets[petId]
-                    });
-                }
-            });
-            return list;
         }
         startExpeditionTicker() {
             var self = this;
             if (this.timer) clearInterval(this.timer);
             this.timer = setInterval(function () {
-                var activePets = self.getExpeditionPetList();
-                var root = self.app.charSys.rootState;
-                if (activePets.length === 0 && root.pets) {
-                    Object.keys(root.pets).forEach(function (pId) {
-                        if (root.pets[pId] > 0 && root.petExpeditions[pId] === undefined) {
-                            root.petExpeditions[pId] = true;
-                        }
-                    });
-                    activePets = self.getExpeditionPetList();
-                }
-                if (activePets.length === 0) return;
+                if (!self.isPassiveExpeditionOn()) return;
                 self.expeditionRemaining -= 1;
                 if (self.expeditionRemaining <= 0) {
                     self.expeditionRemaining = self.EXPEDITION_DURATION;
-                    self.completeExpeditionCycle(activePets);
-                    self.app.renderAll();
+                    self.completeExpeditionCycle();
+                    if (self.app.renderAllThrottled) self.app.renderAllThrottled();
+                    else self.app.renderAll();
                 } else if (window.HY.uiSalvageExp) {
                     window.HY.uiSalvageExp.updateTimerTextOnly();
                 }
             }, 1000);
         }
-        completeExpeditionCycle(activePets) {
+        completeExpeditionCycle() {
             var invSys = this.app.inventorySys;
             var Data = window.HY.Data;
             var self = this;
@@ -127317,17 +126757,15 @@ window.HY = window.HY || {};
                 'pill_buff_eva', 'pill_buff_regen', 'pill_buff_all',
                 'pill_hp', 'pill_major'
             ];
-            activePets.forEach(function (pet) {
-                var pickedPillId = buffPillPool[Math.floor(Math.random() * buffPillPool.length)];
-                if (Data.ITEMS[pickedPillId]) {
-                    invSys.addItem(pickedPillId, 1);
-                    self.app.logger.add('🎁 掉落物品：【' + Data.ITEMS[pickedPillId].name + '】x1', 'loot');
-                }
-                if (Math.random() * 100 < 0.1) {
-                    invSys.addItem('pill_wash_root', 1);
-                    self.app.logger.add('🌟 掉落物品：【🌈 太虛洗靈丹 (0.1%奇珍)】x1', 'loot');
-                }
-            });
+            var pickedPillId = buffPillPool[Math.floor(Math.random() * buffPillPool.length)];
+            if (Data.ITEMS[pickedPillId]) {
+                invSys.addItem(pickedPillId, 1);
+                self.app.logger.add('🎁 時空探險歸來：【' + Data.ITEMS[pickedPillId].name + '】x1', 'loot');
+            }
+            if (Math.random() * 100 < 0.1) {
+                invSys.addItem('pill_wash_root', 1);
+                self.app.logger.add('🌟 時空探險尋獲【🌈 太虛洗靈丹 (0.1%奇珍)】x1', 'loot');
+            }
         }
     }
     window.HY.SalvageExpeditionSystem = SalvageExpeditionSystem;
@@ -127335,7 +126773,7 @@ window.HY = window.HY || {};
 
 /* ===== 210 / 281 : uiSalvageExpedition.js ===== */
 // js/uiSalvageExpedition.js  (v50.1)
-// 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 靈獸探險 UI
+// 分解 / 靈石 / 10 回合狀態 Buff 丹藥 / 被動時空探險 UI
 //
 // v50.1 修正：
 //   ⭐ 移除 decorateSpiritRootButtons 的「覆寫淬鍊按鈕文字」邏輯（殘留程式碼）
@@ -127398,7 +126836,7 @@ window.HY = window.HY || {};
                 self.decorateInventorySalvageButtons();
                 // ⭐ v50.1：已移除 decorateSpiritRootButtons 呼叫
                 //    （靈根按鈕文字現由 uiSpiritRoot.buildUpgradeInfo() 統一產生）
-                self.decoratePetExpeditionPanel();
+                self.updatePassiveExpeditionBanner();
             };
             var uiMarket = this.app.uiEquipMarket;
             if (uiMarket) {
@@ -127477,66 +126915,26 @@ window.HY = window.HY || {};
             // 意圖留空：不再覆寫 #btn-up-spirit-root / #btn-reroll-spirit-root 的內容
             return;
         }
-        decoratePetExpeditionPanel() {
-            var petTab = document.getElementById('tab-pet');
-            var petListEl = document.getElementById('pet-list');
-            if (!petTab || !petListEl) return;
-            var banner = document.getElementById('pet-expedition-banner');
+        updatePassiveExpeditionBanner() {
+            var resBox = document.getElementById('char-spirit-stones');
+            if (!resBox) return;
+            var host = resBox.closest('.resource-box');
+            if (!host) return;
+            var banner = document.getElementById('hy-passive-exp-banner');
             if (!banner) {
                 banner = document.createElement('div');
-                banner.id = 'pet-expedition-banner';
-                banner.style.background = '#121822';
-                banner.style.border = '1px solid #38bdf8';
-                banner.style.borderRadius = '6px';
-                banner.style.padding = '12px';
-                banner.style.marginBottom = '14px';
-                petTab.insertBefore(banner, petListEl);
+                banner.id = 'hy-passive-exp-banner';
+                banner.style.cssText = 'margin-top:8px;padding:8px 10px;background:#121822;border:1px solid #38bdf8;border-radius:6px;font-size:.78rem;';
+                host.appendChild(banner);
             }
-            var expPets = this.sys.getExpeditionPetList();
             var mins = Math.floor(this.sys.expeditionRemaining / 60);
             var secs = this.sys.expeditionRemaining % 60;
             var timeStr = mins + ' 分 ' + (secs < 10 ? '0' + secs : secs) + ' 秒';
             banner.innerHTML =
-                '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">' +
-                    '<div>' +
-                        '<h4 style="margin:0; color:#38bdf8; font-size:1rem;">🗺️ 靈獸時空探險隊（每 3 分鐘自動收集一次 10 回合增益靈丹！）</h4>' +
-                        '<p style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">' +
-                            '✨ 探險收穫池：<strong>狂暴戰神丹、金剛不壞丹、天眼必中丹、太虛幻影丹、長生回春丹、五氣朝元丹 (皆持續 10 回合)</strong>，以及 <strong style="color:#f43f5e;">0.1% 機率尋獲【🌈 太虛洗靈丹】</strong>！' +
-                        '</p>' +
-                        '<p style="font-size:0.82rem; color:#4ade80; margin-top:3px;">' +
-                            '🐎 當前派遣探險中靈獸：<strong>' + (expPets.length > 0 ? expPets.map(function (p) { return p.name + '(Lv.' + p.lv + ')'; }).join('、') : '尚無靈獸探險 (收服靈獸後自動派遣)') + '</strong>' +
-                        '</p>' +
-                    '</div>' +
-                    '<div style="background:#18202c; border:1px solid #00e5ff; padding:8px 14px; border-radius:6px; text-align:center;">' +
-                        '<div style="font-size:0.76rem; color:#94a3b8;">距離下次探險歸來</div>' +
-                        '<strong id="pet-exp-countdown" style="font-size:1.1rem; color:#00e5ff;">⏳ ' + (expPets.length > 0 ? timeStr : '等待派遣靈獸') + '</strong>' +
-                    '</div>' +
-                '</div>';
-            var root = this.app.charSys.rootState;
-            var Data = window.HY.Data;
-            var cards = petListEl.querySelectorAll('.card-item');
-            var allPets = Object.values(Data.PETS || {});
-            var self = this;
-            allPets.forEach(function (pet, idx) {
-                var lv = (root.pets && root.pets[pet.id]) || 0;
-                var card = cards[idx];
-                if (!card || lv <= 0 || card.querySelector('.btn-pet-exp')) return;
-                var isExploring = root.petExpeditions && root.petExpeditions[pet.id];
-                var btnRow = card.querySelector('.btn-group-row');
-                if (btnRow) {
-                    var expBtn = document.createElement('button');
-                    expBtn.className = 'action-btn btn-pet-exp';
-                    expBtn.style.borderColor = isExploring ? '#38bdf8' : '#64748b';
-                    expBtn.style.color = isExploring ? '#38bdf8' : '#94a3b8';
-                    expBtn.textContent = isExploring ? '🗺️ 探險收集中' : '⛺ 派遣探險';
-                    expBtn.addEventListener('click', function () {
-                        if (self.sys.togglePetExpedition(pet.id)) {
-                            self.app.renderAll();
-                        }
-                    });
-                    btnRow.appendChild(expBtn);
-                }
-            });
+                '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+                '<span style="color:#38bdf8;font-weight:bold;">🗺️ 時空探險（每 3 分鐘）</span>' +
+                '<strong id="pet-exp-countdown" style="color:#00e5ff;">⏳ ' + timeStr + '</strong></div>' +
+                '<p style="margin:4px 0 0;color:#94a3b8;font-size:.75rem;">自動收集 10 回合增益靈丹，0.1% 太虛洗靈丹（原靈獸探險，現改武魂）。</p>';
         }
         updateTimerTextOnly() {
             var el = document.getElementById('pet-exp-countdown');
@@ -128198,19 +127596,13 @@ window.HY = window.HY || {};
             } else {
                 guildCycles = 0;
             }
-            /* ── 靈獸探險 ── */
+            /* ── 被動時空探險（原靈獸探險） ── */
             var expCycles = Math.min(MAX_EXP_CYCLES, Math.floor(sec / 180));
-            if (expCycles > 0 && app.salvageExpSys) {
+            if (expCycles > 0 && app.salvageExpSys &&
+                typeof app.salvageExpSys.completeExpeditionCycle === 'function') {
                 try {
-                    var activePets = (typeof app.salvageExpSys.getExpeditionPetList === 'function')
-                        ? app.salvageExpSys.getExpeditionPetList() : [];
-                    if (activePets && activePets.length > 0 &&
-                        typeof app.salvageExpSys.completeExpeditionCycle === 'function') {
-                        for (var pIdx = 0; pIdx < expCycles; pIdx++) {
-                            app.salvageExpSys.completeExpeditionCycle(activePets);
-                        }
-                    } else {
-                        expCycles = 0;
+                    for (var pIdx = 0; pIdx < expCycles; pIdx++) {
+                        app.salvageExpSys.completeExpeditionCycle();
                     }
                 } catch (e) { expCycles = 0; }
             } else {
@@ -128304,11 +127696,11 @@ window.HY = window.HY || {};
                     '<div>🪙 獲得大唐紋銀：<strong class="gold-color">+' + report.gold.toLocaleString() + ' 兩</strong></div>' +
                 '</div>' +
                 '<div style="background:#121822; padding:12px; border-radius:6px; border-left:4px solid #10b981;">' +
-                    '<h4 style="margin:0 0 6px 0; color:#10b981;">🎁 離線打寶、幫會生產與靈獸探險</h4>' +
+                    '<h4 style="margin:0 0 6px 0; color:#10b981;">🎁 離線打寶、幫會生產與時空探險</h4>' +
                     '<div>🗡️ 離線裝備掉落：' + eqStr + '</div>' +
                     '<div>💎 離線通貨掉落：' + orbStr + '</div>' +
                     '<div>🏯 幫會建築自動徵收：已完成 <strong>' + report.guildCycles + '</strong> 輪生產結算</div>' +
-                    '<div>🐉 靈獸時空探險隊：已完成 <strong>' + report.expCycles + '</strong> 次探險收集</div>' +
+                    '<div>🗺️ 時空探險：已完成 <strong>' + report.expCycles + '</strong> 次靈丹收集</div>' +
                     (report.kmTicks > 0
                         ? '<div>⛏️ 金司馬區礦冶：離線結算 <strong>' + report.kmTicks + '</strong> 個週期</div>'
                         : '') +
@@ -128999,11 +128391,6 @@ window.HY = window.HY || {};
                 var comp = this.app.companionSys.getActiveCompanionInfo();
                 if (comp && comp.elAtk) this.mergeInto(atk, comp.elAtk);
                 if (comp && comp.elDef) this.mergeInto(def, comp.elDef);
-            }
-            if (this.app.petSys) {
-                var pet = this.app.petSys.getActivePetInfo();
-                if (pet && pet.elAtk) this.mergeInto(atk, pet.elAtk);
-                if (pet && pet.elDef) this.mergeInto(def, pet.elDef);
             }
             // 9. ⭐ 丹藥 Buff 的元素攻防加成
             //    （原在 salvageExpeditionSystem.getDerivedStatsForChar）
@@ -130427,15 +129814,12 @@ window.HY.CheatPanel = window.HY.CheatPanel || function () {
         },
         {
             id: 'companionPet',
-            title: '⑫ 🤝 群俠／🐉 靈獸',
+            title: '⑫ 🤝 群俠',
             desc: '只有全域倍率已接線。',
             fields: [
                 { path: 'companionPet.companionGrowth', label: '群俠每階光環成長', type: 'num', step: 0.01, min: 0, max: 5, live: 'dead', hint: '0.15 = 每階 +15%' },
-                { path: 'companionPet.petGrowth',       label: '靈獸每級光環成長', type: 'num', step: 0.01, min: 0, max: 5, live: 'dead', hint: '0.16 = 每級 +16%' },
                 { path: 'companionPet.allBonusMult',    label: '⚡ 全域數值倍率',  type: 'num', step: 0.1, min: 0, max: 20, live: 'reapply' },
-                { path: 'companionPet.companionUpgradePow', label: '群俠升階曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' },
-                { path: 'companionPet.petFeedGoldPow',  label: '靈獸餵養金曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' },
-                { path: 'companionPet.petFeedSpPow',    label: '靈獸餵養點曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' }
+                { path: 'companionPet.companionUpgradePow', label: '群俠升階曲線底數', type: 'num', step: 0.05, min: 1, max: 3, live: 'dead' }
             ]
         },
         {
@@ -172722,7 +172106,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=751').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=752').catch(function () {});
     } catch (eSw) {}
   });
 }
