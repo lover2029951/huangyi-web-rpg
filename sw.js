@@ -2,14 +2,14 @@
 /* global self, caches, fetch */
 'use strict';
 
-var CACHE = 'huangyi-game-v758';
+var CACHE = 'huangyi-game-v759';
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
       return cache.addAll([
         './game.html', './game-chunked.html', './landingPanelData.js', './index.html', './style.css',
-        './chunks/hy-phase1.js', './chunks/hy-phase2.js', './chunks/manifest.json'
+        './chunks/hy-phase1.js', './chunks/hy-phase2.js', './chunks/hy-perf.js', './chunks/manifest.json'
       ]).catch(function () {});
     }).then(function () { return self.skipWaiting(); })
   );

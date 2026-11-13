@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v758 · 2026-11-13',
-        gameVer: 758,
+        newsVer: 'v759 · 2026-11-13',
+        gameVer: 759,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '清理',
+            title: '系統瘦身 v759',
+            date: '2026-11-13',
+            bullets: [
+                '連動面板移除<b>寵物</b>殘留；屬性圖鑑不再顯示已移除的<b>罡氣 ES</b>',
+                '<code>hyPerfProbe</code> 改按需載入（<code>?perf=1</code> 或 <code>localStorage hy_perf=1</code>）',
+                '通緝因果註解精簡；<code>loadOrder</code> 589'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '體驗',
             title: '戰鬥不閃刷 v758',

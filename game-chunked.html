@@ -549,12 +549,28 @@
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=758"></script>
+<script src="chunks/hy-phase1.js?v=759"></script>
 <script>
 (function () {
+  function shouldLoadPerfProbe() {
+    try {
+      var q = String(window.location.search || '');
+      if (/\bperf=(1|summary|true)\b/i.test(q)) return true;
+      if (window.localStorage && localStorage.getItem('hy_perf') === '1') return true;
+    } catch (eQ) {}
+    return false;
+  }
+  function loadPerfProbeOptional() {
+    if (!shouldLoadPerfProbe()) return;
+    var sp = document.createElement('script');
+    sp.src = 'chunks/hy-perf.js?v=759';
+    sp.async = true;
+    document.head.appendChild(sp);
+  }
   function finishChunk() {
     try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) {}
     try { document.body.classList.add('hy-ready'); } catch (eR) {}
+    loadPerfProbeOptional();
     var ov = document.getElementById('hy-boot-overlay');
   if (ov) {
       ov.style.transition = 'opacity 0.22s ease';
@@ -565,7 +581,7 @@
     if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
   }
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=758';
+  s.src = 'chunks/hy-phase2.js?v=759';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };

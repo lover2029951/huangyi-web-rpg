@@ -1890,7 +1890,7 @@ window.HY = window.HY || {};
     { id: 'fm_earth', name: '地煞玄龜陣', icon: '🐢', tier: 2, reqLv: 10, element: 'earth',
       bonus: { atkPct: 0.02, defPct: 0.10, hpPct: 0.08 },
       tags: ['def', 'hp', 'earth'],
-      synergy: { with: ['pet'], mul: 1.10, note: '與寵物同陣，防禦再增' },
+      synergy: { with: ['companion'], mul: 1.10, note: '與同伴同陣，防禦再增' },
       desc: '玄武鎮守，堅不可破。' },
     { id: 'fm_fire', name: '烈焰焚天陣', icon: '🔥', tier: 3, reqLv: 20, element: 'fire',
       bonus: { atkPct: 0.12, defPct: 0.00, hpPct: 0.02 },
@@ -2192,11 +2192,10 @@ window.HY = window.HY || {};
      ⑰ 交叉關聯表（系統 ↔ 系統）
      ══════════════════════════════════════════════════════ */
   C.SYNERGY_MAP = {
-    formation:  ['spirit', 'element', 'pet', 'mastery', 'guild', 'affix'],
+    formation:  ['spirit', 'element', 'companion', 'mastery', 'guild', 'affix'],
     spirit:     ['formation', 'mastery', 'element', 'exp'],
     element:    ['formation', 'affix', 'salvage', 'spirit'],
-    pet:        ['formation', 'companion', 'exp', 'drop'],
-    companion:  ['pet', 'formation', 'atk', 'gold'],
+    companion:  ['formation', 'atk', 'gold', 'exp'],
     affix:      ['element', 'formation', 'drop', 'mastery'],
     guild:      ['formation', 'town', 'gold', 'sp'],
     sect:       ['mastery', 'formation', 'sp'],
@@ -2289,7 +2288,6 @@ window.HY = window.HY || {};
     { id:'formation', name:'陣法',     icon:'☯️', desc:'好友可學陣法，出團／世界王／戰鬥套用。' },
     { id:'spirit',    name:'靈根',     icon:'💎', desc:'好友有靈根，影響成長與四維。' },
     { id:'element',   name:'五行',     icon:'🌀', desc:'五行相剋影響傷害，場所亦有關聯。' },
-    { id:'pet',       name:'寵物',     icon:'🐾', desc:'好友可收服、培養、進化寵物。' },
     { id:'companion', name:'同伴',     icon:'👥', desc:'好友可派為同伴，提供被動加成。' },
     { id:'affix',     name:'怪物詞綴', icon:'🧬', desc:'副本怪帶詞綴，有反制關係。' },
     { id:'guild',     name:'公會',     icon:'🏛️', desc:'好友可當公會賓客，享建築加成。' },
@@ -2345,7 +2343,6 @@ window.HY = window.HY || {};
   /* 靈根 */
   L.effect({ sys: 'spirit', scope: 'friend', target: 'expMul', label: '靈根·成長', cond: function (c) { return c.spiritRoot; }, value: 0.06, tags: ['exp'] });
   L.effect({ sys: 'spirit', scope: 'friend', target: 'atkPct', label: '靈根·攻', cond: function (c) { return c.spiritRoot; }, value: 0.02, tags: ['atk'] });
-  /* 寵物 */
   /* 同伴 */
   L.effect({ sys: 'companion', scope: 'friend', target: 'atkPct', label: '同伴·攻', cond: function (c) { return c.companionRole; }, value: 0.04, tags: ['atk'] });
   L.effect({ sys: 'companion', scope: 'friend', target: 'defPct', label: '同伴·防', cond: function (c) { return c.companionRole; }, value: 0.04, tags: ['def'] });
@@ -2600,7 +2597,7 @@ window.HY = window.HY || {};
   /* ══════════════════════════════════════════════════════
      鉤子實作：讓所有系統互相咬合
      ══════════════════════════════════════════════════════ */
-  /* 每期：離線模式推進 + 精通自然成長 + 寵物進化檢查 */
+  /* 每期：精通自然成長 */
   L.hook('onTick', function (dt) {
     var t = G().townSys;
     if (!t || !t.friendAll) return;
@@ -103102,7 +103099,7 @@ window.HY = window.HY || {};
         '<span>' + esc(s.target) + ' = <b>' +
         (s.mul !== null && s.mul !== undefined ? pct(s.mul) : num(s.value, 0).toFixed(3)) + '</b></span></div>';
     });
-    if (!(res.sources || []).length) html += '<div class="lk-dim">（無效果觸發 — 好友尚未學陣法／養寵物／入公會…）</div>';
+    if (!(res.sources || []).length) html += '<div class="lk-dim">（無效果觸發 — 好友尚未學陣法／任同伴／入公會…）</div>';
     return html + '</div></div><div class="lk-chips" style="margin-top:8px">' +
       '<button class="lk-btn" data-lk="collectAll">📊 全好友聚合（Console）</button></div></div></details>';
   }
@@ -103209,31 +103206,6 @@ window.HY = window.HY || {};
       html += '<span class="lk-chip ' + (num(cnt[el.id], 0) > 0 ? 'b' : '') + '">' + (el.icon || '') + esc(el.name) + ' × ' + num(cnt[el.id], 0) + '</span>';
     });
     return html + '</div>';
-  }
-  function petHtml(R) {
-    var html = '<div class="lk-dim">好友可收服、培養、進化寵物。</div>';
-    if (!R.pets.length) return html + '<div class="lk-dim">寵物資料未載入。</div>';
-    html += '<div class="lk-grid">';
-    R.pets.slice(0, 12).forEach(function (p) {
-      html += '<div class="lk-card"><div class="lk-head2"><span class="lk-name">' + (p.icon || '🐾') + ' ' + esc(p.name) + '</span></div>';
-      if (R.list.length) {
-        html += '<div class="lk-chips">指派：';
-        R.list.slice(0, 4).forEach(function (x) {
-          html += '<button class="lk-btn" data-lk="setPet" data-lkv="' + x.id + '|' + p.id + '">' + x.icon + esc(x.name) + '</button>';
-        });
-        html += '</div>';
-      }
-      html += '</div>';
-    });
-    html += '</div><div class="lk-dim" style="margin-top:8px">好友寵物：</div>';
-    var any = false;
-    R.list.forEach(function (x) {
-      if (!x.pet) return;
-      any = true;
-      html += '<div class="lk-row"><span>' + x.icon + ' <b>' + esc(x.name) + '</b>　🐾' + esc(x.pet.name || x.pet.id) + '</span><span>Lv.' + num(x.pet.lv, 1) + '</span></div>';
-    });
-    if (!any) html += '<div class="lk-dim">目前沒有好友養寵物。</div>';
-    return html;
   }
   function companionHtml(R) {
     var html = '<div class="lk-dim">好感達標才能出任同伴。</div><div class="lk-grid">';
@@ -103452,7 +103424,6 @@ window.HY = window.HY || {};
       render();
     },
     setFm: function (v) { var p = String(v).split('|'); if (T().fr6SetFormation(p[0], p[1])) render(); },
-    setPet: function (v) { var p = String(v).split('|'); if (T().fr6SetPet(p[0], p[1])) render(); },
     setComp: function (v) { var p = String(v).split('|'); if (T().fr6SetCompanionRole(p[0], p[1])) render(); },
     guildJoin: function (v) { var t = T(); if (t.fr6GuildGuests().indexOf(v) !== -1) t.fr6GuildLeave(v); else t.fr6GuildJoin(v); render(); },
     guildLeave: function (v) { T().fr6GuildLeave(v); render(); },
