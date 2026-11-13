@@ -87303,12 +87303,19 @@ window.HY = window.HY || {};
                     const impHtml = selectedItem.implicit
                         ? '<div style="color:#34d399; font-weight:bold; padding:4px 0; border-bottom:1px dashed #334155;">' + selectedItem.implicit.text + ' (固定上詞綴 Implicit)</div>'
                         : '';
-                    const prefixHtml = (selectedItem.prefixes || []).map(p =>
-                        '<div style="color:#38bdf8;">🔹 [前綴 ' + p.tName + '] ' + p.label + ' <strong>+' + p.val + p.unit + '</strong> <small style="color:#64748b;">(' + p.min + '~' + p.max + ')</small></div>'
-                    ).join('');
-                    const suffixHtml = (selectedItem.suffixes || []).map(s =>
-                        '<div style="color:#a78bfa;">🔸 [後綴 ' + s.tName + '] ' + s.label + ' <strong>+' + s.val + s.unit + '</strong> <small style="color:#64748b;">(' + s.min + '~' + s.max + ')</small></div>'
-                    ).join('');
+                    var renderAff = (window.HY.BagOverhaul && window.HY.BagOverhaul.renderAffixMod)
+                        || function (m, k) {
+                            var col = k === 'prefix' ? '#38bdf8' : '#a78bfa';
+                            return '<div style="color:' + col + ';">◆ [' + (m.tName || '') + '] ' + m.label +
+                                ' <strong>+' + m.val + (m.unit || '') + '</strong> <small style="color:#64748b;">(' +
+                                m.min + '~' + m.max + ')</small></div>';
+                        };
+                    const prefixHtml = (selectedItem.prefixes || []).map(function (p) {
+                        return renderAff(p, 'prefix');
+                    }).join('');
+                    const suffixHtml = (selectedItem.suffixes || []).map(function (s) {
+                        return renderAff(s, 'suffix');
+                    }).join('');
                     const uniqueHtml = (selectedItem.uniqueMods || []).map(u =>
                         '<div style="color:#f97316; font-weight:bold;">' + u.text + '</div>'
                     ).join('');
@@ -87800,6 +87807,36 @@ window.HY = window.HY || {};
       arr.push(label + (v > 0 ? '+' : '') + shown + unit);
     });
     return arr.join('、') || '基礎白板';
+  }
+  /** 裝備詞綴效果說明（讀屬性圖鑑，與滑鼠提示一致） */
+  function affixModEffectDesc(mod) {
+    if (!mod) return '';
+    var sk = mod.statKey;
+    var ST = window.HY && window.HY.StatTooltip;
+    if (sk && ST && typeof ST.info === 'function') {
+      var inf = ST.info(sk);
+      if (inf) {
+        if (inf.desc && inf.note) return inf.desc + '（' + inf.note + '）';
+        return inf.desc || inf.note || inf.formula || '';
+      }
+    }
+    return '';
+  }
+  function renderEquipAffixMod(mod, kind) {
+    if (!mod) return '';
+    var isPre = kind === 'prefix';
+    var col = isPre ? '#38bdf8' : '#c4b5fd';
+    var tier = mod.tName ? ('[' + mod.tName + '] ') : '';
+    var rng = (typeof mod.min === 'number' && typeof mod.max === 'number')
+      ? '(' + mod.min + '~' + mod.max + ')' : '';
+    var head = tier + esc(mod.label || '') + ' +' + mod.val + esc(mod.unit || '') +
+      (rng ? ' <span class="dim">' + esc(rng) + '</span>' : '');
+    var desc = affixModEffectDesc(mod);
+    return '<div class="mc2-mod" style="--aff-col:' + col + '">' +
+      '<span class="i" style="color:' + col + '">◆</span>' +
+      '<span class="n" style="color:' + col + '">' + head + '</span>' +
+      (desc ? '<span class="d">' + esc(desc) + '</span>' : '') +
+      '</div>';
   }
   function sellPrice(it) {
     var es = safe(function () { return APP().equipSys; }, null);
@@ -88526,6 +88563,9 @@ window.HY = window.HY || {};
 .mc2-mod .i{flex:0 0 auto;}
 .mc2-mod .n{flex:0 0 auto;font-weight:bold;}
 .mc2-mod .d{flex:1 1 auto;min-width:0;color:#64748b;}
+.bagov-mods .mc2-mod,.bagov-iw .mc2-mod{margin:2px 0;}
+.bagov-mods .mc2-mod .n,.bagov-iw .mc2-mod .n{font-weight:bold;flex:0 1 auto;}
+.bagov-mods .mc2-mod .d,.bagov-iw .mc2-mod .d{font-size:.68rem;line-height:1.45;}
 .mc2-nomod{font-size:.7rem;color:#475569;border-top:1px solid #253244;padding-top:6px;
  margin-bottom:6px;}
 .mc2-stat{display:flex;gap:10px;font-size:.7rem;color:#94a3b8;
@@ -88908,14 +88948,8 @@ window.HY = window.HY || {};
     if (uq.length || pf.length || sf.length) {
       h += '<div class="tsec">';
       uq.forEach(function (u) { h += '<div class="uq">' + esc(u.text || '') + '</div>'; });
-      pf.forEach(function (p) {
-        h += '<div class="pf">🔹 [' + esc(p.tName || '') + '] ' + esc(p.label || '') +
-          ' <b>+' + p.val + esc(p.unit || '') + '</b> <span class="dim">(' + p.min + '~' + p.max + ')</span></div>';
-      });
-      sf.forEach(function (s) {
-        h += '<div class="sf">🔸 [' + esc(s.tName || '') + '] ' + esc(s.label || '') +
-          ' <b>+' + s.val + esc(s.unit || '') + '</b> <span class="dim">(' + s.min + '~' + s.max + ')</span></div>';
-      });
+      pf.forEach(function (p) { h += renderEquipAffixMod(p, 'prefix'); });
+      sf.forEach(function (s) { h += renderEquipAffixMod(s, 'suffix'); });
       h += '</div>';
     } else if (!it.implicit) {
       h += '<div class="tsec"><div class="dim">白裝無隨機詞綴 — 可用蛻變石／點金石打造</div></div>';
@@ -89296,14 +89330,8 @@ window.HY = window.HY || {};
     if (it.implicit && it.implicit.text) h += '<div class="m-imp">✨ ' + esc(it.implicit.text) + '</div>';
     var uq = it.uniqueMods || [], pf = it.prefixes || [], sf = it.suffixes || [];
     uq.forEach(function (u) { h += '<div class="m-uq">' + esc(u.text || '') + '</div>'; });
-    pf.forEach(function (p) {
-      h += '<div class="m-pf">🔹 [前綴 ' + esc(p.tName || '') + '] ' + esc(p.label || '') +
-        ' <b>+' + p.val + esc(p.unit || '') + '</b> <span style="color:#64748b">(' + p.min + '~' + p.max + ')</span></div>';
-    });
-    sf.forEach(function (s) {
-      h += '<div class="m-sf">🔸 [後綴 ' + esc(s.tName || '') + '] ' + esc(s.label || '') +
-        ' <b>+' + s.val + esc(s.unit || '') + '</b> <span style="color:#64748b">(' + s.min + '~' + s.max + ')</span></div>';
-    });
+    pf.forEach(function (p) { h += renderEquipAffixMod(p, 'prefix'); });
+    sf.forEach(function (s) { h += renderEquipAffixMod(s, 'suffix'); });
     if (!uq.length && !pf.length && !sf.length && !it.implicit) {
       h += '<div class="m-none">（白裝無隨機詞綴）</div>';
     }
@@ -89903,9 +89931,13 @@ window.HY = window.HY || {};
           var rng = (typeof md.min === 'number' && typeof md.max === 'number')
             ? '（' + md.min + '~' + md.max + (md.unit || '') + '）' : '';
           var tierTag = md.tName ? ('[' + md.tName + '] ') : '';
+          var jdesc = md.statKey ? affixModEffectDesc(md) : '';
+          if (!jdesc && md.name && !md.text) jdesc = affixModEffectDesc({ statKey: md.statKey, label: md.name });
           h += '<div class="jcm-row">' +
             '<span class="k">' + (md.name ? '•' : '') + '</span>' +
-            '<span class="v">' + esc(tierTag + txt) + '</span>' +
+            '<span class="v">' + esc(tierTag + txt) +
+            (jdesc ? '<span style="color:#64748b;margin-left:6px;">— ' + esc(jdesc) + '</span>' : '') +
+            '</span>' +
             (rng ? '<span class="r">' + esc(rng) + '</span>' : '') +
             '</div>';
         });
@@ -92852,6 +92884,9 @@ window.HY = window.HY || {};
   window.HY.BagOverhaul = {
     version: '8.0',
     ready: false,
+    /** 裝備詞綴一行 HTML（含圖鑑效果說明） */
+    renderAffixMod: renderEquipAffixMod,
+    affixEffectDesc: affixModEffectDesc,
     open: open, close: close, toggle: toggle,
     stash: function (v) {
       if (!_open) open();

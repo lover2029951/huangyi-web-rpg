@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v753 · 2026-11-13',
-        gameVer: 753,
+        newsVer: 'v754 · 2026-11-13',
+        gameVer: 754,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'ui', tagLabel: '工藝',
+            title: '裝備詞綴效果說明 v754',
+            date: '2026-11-13',
+            bullets: [
+                '通貨倉庫「改造目標」、裝備詳情、工藝台預覽：詞綴旁顯示<b>屬性圖鑑</b>效果說明',
+                '例：磐固→護體防禦、涵元→最大內力、反震→受擊反射傷害、避風→風抗'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '清理',
             title: '移除靈獸殘留 v752',
