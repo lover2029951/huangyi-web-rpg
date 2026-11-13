@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v754 · 2026-11-13',
-        gameVer: 754,
+        newsVer: 'v755 · 2026-11-13',
+        gameVer: 755,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '山海',
+            title: '山海異獸加強 v755',
+            date: '2026-11-13',
+            bullets: [
+                '山海經地圖遭遇戰異獸：<b>氣血／攻擊／防禦與招式倍率 ×1.3</b>（加強 0.3 倍）',
+                '調整位於 <code>SHJ_CONFIG.combat.statMul</code>，可再於資料檔微調'
+            ]
+        },
         {
             tag: 'ui', tagLabel: '工藝',
             title: '裝備詞綴效果說明 v754',

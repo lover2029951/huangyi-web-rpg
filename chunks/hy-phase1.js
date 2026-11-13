@@ -36722,7 +36722,9 @@ window.HY = window.HY || {};
             defPerLv: 5.2,
             rewardMul: 1.15,
             partyMulBase: 0.52,
-            partyMulPerMember: 0.19
+            partyMulPerMember: 0.19,
+            /* 全體異獸遭遇戰強度倍率（1.3 = 加強 0.3 倍） */
+            statMul: 1.3
         }
     };
 
@@ -36993,9 +36995,18 @@ window.HY = window.HY || {};
             critResVal = Math.max(critResVal, Math.round(bench.critRes * bossFac));
         }
 
+        var statMul = Number(cCfg.statMul);
+        if (!isFinite(statMul) || statMul <= 0) statMul = 1;
+        if (statMul !== 1) {
+            hp = Math.max(1, Math.round(hp * statMul));
+            atk = Math.max(1, Math.round(atk * statMul));
+            defStat = Math.max(0, Math.round(defStat * statMul));
+        }
+
         var rewMul = Number(cCfg.rewardMul) || 1.15;
         var skillName = def.skill || '異獸撲擊';
         var skillMult = beast.rarity === 'legend' ? 1.68 : (beast.rarity === 'epic' ? 1.52 : (beast.rarity === 'rare' ? 1.42 : 1.32));
+        if (statMul !== 1) skillMult = Math.round(skillMult * statMul * 100) / 100;
 
         var enemy = {
             id: 'shj_' + beast.id,
