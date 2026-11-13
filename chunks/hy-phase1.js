@@ -78144,7 +78144,9 @@ window.HY = window.HY || {};
             core.charSys.restoreVitals(hp, mp, charObj);
             core.log('💫 【' + charObj.name + '】上回合積累回復 ＋' + hp + ' 氣血 / ＋' + mp + ' 內力', 'combat');
             if (window.HY && window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
+                try {
+                    if (core.onUpdateUI) core.onUpdateUI();
+                } catch (eUi) { }
             }
         }
         /** 偷取／擊中：當回合立即加氣血＋內力（同一標記、一次 restore） */
@@ -78419,9 +78421,9 @@ window.HY = window.HY || {};
                         (_reqArt ? _reqArt.name : requestedSkillId) + '》，改以《' + art.name + '》應戰。',
                         'combat');
                 }
-                if (window.HY && window.HY.uiDexAtb) {
-                    try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUiMp) { }
-                }
+                try {
+                    if (core.onUpdateUI) core.onUpdateUI();
+                } catch (eUiMp) { }
             }
             var lv = (charObj.skills && charObj.skills[skillId]) || 1;
             var skillMult = art.baseMult + (lv - 1) * 0.14;
@@ -82521,7 +82523,7 @@ window.HY = window.HY || {};
         /** 立刻同步戰鬥舞台（飄字依賴血量差 + markStageFx，需及時刷新） */
         refreshBattleStageNow() {
             if (window.HY && window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUi) { }
+                try { window.HY.uiDexAtb.updateArenaBarsDOM({ lite: true, forceStage: true }); } catch (eUi) { }
             }
             try { this._flushPendingAllyVitalFloats(); } catch (ePf) { }
         }
@@ -87822,35 +87824,47 @@ window.HY = window.HY || {};
     });
     return arr.join('、') || '基礎白板';
   }
-  /** 裝備詞綴效果說明（讀屬性圖鑑，與滑鼠提示一致） */
-  function affixModEffectDesc(mod) {
-    if (!mod) return '';
+  /** 詞綴效果說明拆成主文／補充（詳情面板用上下排版） */
+  function affixModEffectParts(mod) {
+    if (!mod) return { desc: '', note: '' };
     var sk = mod.statKey;
     var ST = window.HY && window.HY.StatTooltip;
     if (sk && ST && typeof ST.info === 'function') {
       var inf = ST.info(sk);
       if (inf) {
-        if (inf.desc && inf.note) return inf.desc + '（' + inf.note + '）';
-        return inf.desc || inf.note || inf.formula || '';
+        return {
+          desc: String(inf.desc || inf.formula || '').trim(),
+          note: String(inf.note || '').trim()
+        };
       }
     }
-    return '';
+    return { desc: '', note: '' };
+  }
+  /** 裝備詞綴效果說明（單行字串；工藝台等仍可用） */
+  function affixModEffectDesc(mod) {
+    var p = affixModEffectParts(mod);
+    if (p.desc && p.note) return p.desc + '（' + p.note + '）';
+    return p.desc || p.note || '';
   }
   function renderEquipAffixMod(mod, kind) {
     if (!mod) return '';
     var isPre = kind === 'prefix';
     var col = isPre ? '#38bdf8' : '#c4b5fd';
-    var tier = mod.tName ? ('[' + mod.tName + '] ') : '';
     var rng = (typeof mod.min === 'number' && typeof mod.max === 'number')
       ? '(' + mod.min + '~' + mod.max + ')' : '';
-    var head = tier + esc(mod.label || '') + ' +' + mod.val + esc(mod.unit || '') +
-      (rng ? ' <span class="dim">' + esc(rng) + '</span>' : '');
-    var desc = affixModEffectDesc(mod);
-    return '<div class="mc2-mod" style="--aff-col:' + col + '">' +
-      '<span class="i" style="color:' + col + '">◆</span>' +
-      '<span class="n" style="color:' + col + '">' + head + '</span>' +
-      (desc ? '<span class="d">' + esc(desc) + '</span>' : '') +
-      '</div>';
+    var parts = affixModEffectParts(mod);
+    var h = '<div class="mc2-mod mc2-mod-stack" style="--aff-col:' + col + '">';
+    h += '<div class="mc2-mod-hd">';
+    h += '<span class="i" style="color:' + col + '">◆</span>';
+    if (mod.tName) h += '<span class="mc2-tier">[' + esc(mod.tName) + ']</span>';
+    h += '<span class="mc2-name" style="color:' + col + '">' + esc(mod.label || '') + '</span>';
+    h += '<span class="mc2-val">+' + esc(String(mod.val)) + esc(mod.unit || '') + '</span>';
+    if (rng) h += '<span class="mc2-rng dim">' + esc(rng) + '</span>';
+    h += '</div>';
+    if (parts.desc) h += '<div class="mc2-mod-desc">' + esc(parts.desc) + '</div>';
+    if (parts.note) h += '<div class="mc2-mod-note">' + esc(parts.note) + '</div>';
+    h += '</div>';
+    return h;
   }
   function sellPrice(it) {
     var es = safe(function () { return APP().equipSys; }, null);
@@ -88577,9 +88591,20 @@ window.HY = window.HY || {};
 .mc2-mod .i{flex:0 0 auto;}
 .mc2-mod .n{flex:0 0 auto;font-weight:bold;}
 .mc2-mod .d{flex:1 1 auto;min-width:0;color:#64748b;}
-.bagov-mods .mc2-mod,.bagov-iw .mc2-mod{margin:2px 0;}
-.bagov-mods .mc2-mod .n,.bagov-iw .mc2-mod .n{font-weight:bold;flex:0 1 auto;}
-.bagov-mods .mc2-mod .d,.bagov-iw .mc2-mod .d{font-size:.68rem;line-height:1.45;}
+.mc2-mod.mc2-mod-stack{display:block;margin:5px 0;padding:5px 8px 6px;
+ background:rgba(12,18,28,.72);border-radius:5px;border-left:2px solid var(--aff-col,#38bdf8);}
+.mc2-mod-stack .mc2-mod-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 5px;
+ font-size:.73rem;line-height:1.35;}
+.mc2-mod-stack .mc2-mod-hd .i{font-size:.58rem;opacity:.9;margin-right:1px;}
+.mc2-mod-stack .mc2-tier{color:var(--aff-col);font-size:.66rem;font-weight:bold;opacity:.9;}
+.mc2-mod-stack .mc2-name{font-weight:bold;}
+.mc2-mod-stack .mc2-val{color:#f1f5f9;font-weight:bold;}
+.mc2-mod-stack .mc2-rng{font-size:.64rem;margin-left:auto;white-space:nowrap;}
+.mc2-mod-stack .mc2-mod-desc{margin-top:4px;padding-left:10px;font-size:.67rem;line-height:1.48;
+ color:#94a3b8;border-left:1px solid rgba(51,65,85,.65);}
+.mc2-mod-stack .mc2-mod-note{margin-top:2px;padding-left:10px;font-size:.62rem;line-height:1.42;
+ color:#64748b;border-left:1px solid rgba(51,65,85,.45);font-style:italic;}
+.bagov-mods .mc2-mod-stack,.bagov-iw .mc2-mod-stack{margin:4px 0;}
 .mc2-nomod{font-size:.7rem;color:#475569;border-top:1px solid #253244;padding-top:6px;
  margin-bottom:6px;}
 .mc2-stat{display:flex;gap:10px;font-size:.7rem;color:#94a3b8;
@@ -88625,6 +88650,10 @@ window.HY = window.HY || {};
 .jcm-row .k{flex:0 0 auto;color:#38bdf8;}
 .jcm-row .v{flex:1 1 auto;min-width:0;color:#cbd5e1;}
 .jcm-row .r{flex:0 0 auto;color:#64748b;font-size:.66rem;}
+.jcm-row-stack{display:block;margin:4px 0;padding:4px 6px;background:rgba(12,18,28,.5);border-radius:4px;}
+.jcm-row-stack .jcm-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;}
+.jcm-row-stack .jcm-desc{margin-top:3px;padding-left:8px;font-size:.66rem;line-height:1.45;color:#94a3b8;}
+.jcm-row-stack .jcm-note{margin-top:2px;padding-left:8px;font-size:.62rem;color:#64748b;font-style:italic;}
 .jcm-nomod{font-size:.7rem;color:#475569;margin:7px 0;padding:6px 8px;
  background:rgba(0,0,0,.3);border-radius:4px;border-left:2px solid #334155;}
 
@@ -88747,7 +88776,7 @@ window.HY = window.HY || {};
 .bagov-foot b{color:#e2e8f0;}
 
 /* ══ ★ 雙裝備視窗 ══ */
-.bagov-iw{position:fixed;z-index:9900;width:308px;max-width:46vw;pointer-events:none;
+.bagov-iw{position:fixed;z-index:9900;width:332px;max-width:48vw;pointer-events:none;
  background:rgba(8,12,17,.985);border:2px solid #334155;border-radius:7px;
  box-shadow:0 16px 46px rgba(0,0,0,.92);padding:10px 12px;font-size:.76rem;
  color:#cbd5e1;line-height:1.55;}
@@ -89945,15 +89974,17 @@ window.HY = window.HY || {};
           var rng = (typeof md.min === 'number' && typeof md.max === 'number')
             ? '（' + md.min + '~' + md.max + (md.unit || '') + '）' : '';
           var tierTag = md.tName ? ('[' + md.tName + '] ') : '';
-          var jdesc = md.statKey ? affixModEffectDesc(md) : '';
-          if (!jdesc && md.name && !md.text) jdesc = affixModEffectDesc({ statKey: md.statKey, label: md.name });
-          h += '<div class="jcm-row">' +
-            '<span class="k">' + (md.name ? '•' : '') + '</span>' +
-            '<span class="v">' + esc(tierTag + txt) +
-            (jdesc ? '<span style="color:#64748b;margin-left:6px;">— ' + esc(jdesc) + '</span>' : '') +
-            '</span>' +
-            (rng ? '<span class="r">' + esc(rng) + '</span>' : '') +
-            '</div>';
+          var jparts = md.statKey ? affixModEffectParts(md) : { desc: '', note: '' };
+          if (!jparts.desc && !jparts.note && md.name && !md.text) {
+            jparts = affixModEffectParts({ statKey: md.statKey, label: md.name });
+          }
+          h += '<div class="jcm-row jcm-row-stack">';
+          h += '<div class="jcm-hd"><span class="k">•</span><span class="v">' + esc(tierTag + txt) + '</span>';
+          if (rng) h += '<span class="r">' + esc(rng) + '</span>';
+          h += '</div>';
+          if (jparts.desc) h += '<div class="jcm-desc">' + esc(jparts.desc) + '</div>';
+          if (jparts.note) h += '<div class="jcm-note">' + esc(jparts.note) + '</div>';
+          h += '</div>';
         });
         h += '</div>';
       } else {
@@ -114822,7 +114853,7 @@ window.HY = window.HY || {};
                 typeof dexUi.renderFixedMaxBattleArena === 'function') {
               dexUi.renderFixedMaxBattleArena();
             } else if (typeof dexUi.updateArenaBarsDOM === 'function') {
-              dexUi.updateArenaBarsDOM();
+              dexUi.updateArenaBarsDOM({ lite: true });
             }
           });
         }
@@ -115557,7 +115588,7 @@ window.HY = window.HY || {};
                 self.pillState = {};
                 if (combat.autoTactics) combat.autoTactics._pillCooldown = {};
                 self.initBattleAtbBars();
-                if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+                if (combat.onUpdateUI) combat.onUpdateUI();
             };
             // useSkill 支援第二參數 healTarget（手動點招時可略）
             combat.useSkill = function (leaderSkillId, healTarget) {
@@ -115760,7 +115791,7 @@ window.HY = window.HY || {};
                     self.executeEnemyFullAtbTurn(e, partyMembers);
                 }
             }
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            if (combat.onUpdateUI) combat.onUpdateUI();
         }
         executeUnitFullAtbTurn(member, isLeader, skillId, healTarget) {
             var combat = this.combat;
@@ -115801,9 +115832,7 @@ window.HY = window.HY || {};
                             if (typeof _sfSys.advanceTurn === 'function') _sfSys.advanceTurn(combat, member);
                         } catch (eAdv) { }
                         member.atb = 0;
-                        if (window.HY.uiDexAtb) {
-                            try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI0) { }
-                        }
+                        if (combat.onUpdateUI) combat.onUpdateUI();
                         return;
                     }
                 }
@@ -115843,9 +115872,6 @@ window.HY = window.HY || {};
             /* ⭐ 攻擊後「立刻」刷新 UI，讓出手次數與模式馬上反映。
                原本只在函式結尾刷新，但下面有多個 handleVictory(); return;
                會直接跳過 → 打死怪物的那一招，畫面還停在舊次數。 */
-            if (window.HY.uiDexAtb) {
-                try { window.HY.uiDexAtb.updateArenaBarsDOM(); } catch (eUI) { }
-            }
             combat.syncCurrentEnemyPointer();
             if (!combat.currentEnemy) {
                 _finishAllyAtbAction();
@@ -115863,7 +115889,7 @@ window.HY = window.HY || {};
                 }
             }
             _finishAllyAtbAction();
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            if (combat.onUpdateUI) combat.onUpdateUI();
         }
         executeEnemyFullAtbTurn(enemy, partyMembers) {
             var combat = this.combat;
@@ -115909,7 +115935,7 @@ window.HY = window.HY || {};
                         if (!combat.currentEnemy) { combat.handleVictory(); return; }
                         var _alive2 = partyMembers.filter(function (m) { return m.currentHp > 0; });
                         if (_alive2.length === 0) { combat.handleDefeat(); return; }
-                        if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+                        if (combat.onUpdateUI) combat.onUpdateUI();
                         return;
                     }
                 }
@@ -115938,7 +115964,7 @@ window.HY = window.HY || {};
             if (!combat.currentEnemy) { combat.handleVictory(); return; }
             var stillAlive = partyMembers.filter(function (m) { return m.currentHp > 0; });
             if (stillAlive.length === 0) { combat.handleDefeat(); return; }
-            if (window.HY.uiDexAtb) window.HY.uiDexAtb.updateArenaBarsDOM();
+            if (combat.onUpdateUI) combat.onUpdateUI();
         }
         checkAutoPills(partyMembers) {
             this.combat.autoTactics.processAutoPills(partyMembers);
@@ -117670,7 +117696,30 @@ window.HY = window.HY || {};
             if (!slot) return;
             slot.style.opacity = isDead ? '0.45' : '1';
         }
-        updateArenaBarsDOM() {
+        /** 戰鬥 tick 請用 game.renderCombatLiteThrottled()，勿直接狂刷 updateArenaBarsDOM */
+        requestArenaUiUpdate() {
+            var app = this.app;
+            if (app && typeof app.renderCombatLiteThrottled === 'function') {
+                app.renderCombatLiteThrottled();
+            } else {
+                this.updateArenaBarsDOM({ lite: true });
+            }
+        }
+        _arenaVitalSig(partyMembers, foes) {
+            var p = (partyMembers || []).map(function (m) {
+                if (!m) return '-';
+                return String(m.id) + ':' + Math.round(num(m.atb, 0)) + ':' +
+                    Math.round(num(m.currentHp, 0)) + ':' + Math.round(num(m.currentMp, 0));
+            }).join('|');
+            var e = (foes || []).map(function (x) {
+                if (!x) return '-';
+                return String(x.uid || x.id || x.name) + ':' + Math.round(num(x.atb, 0)) + ':' +
+                    Math.round(num(x.currentHp, 0));
+            }).join('|');
+            return p + '#' + e;
+        }
+        updateArenaBarsDOM(opts) {
+            opts = opts || {};
             var app = this.app;
             var combat = app.combatSys;
             /* ⭐ 一般戰鬥面板與輿圖戰鬥面板分離：
@@ -117753,7 +117802,7 @@ window.HY = window.HY || {};
                 var pwEl = document.getElementById('ally-pw-' + idx);
                 if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
                 this.refreshNextAction(m, 'ally-next-' + idx, false);
-                this.refreshFeatTable(m, 'ally-feat-' + idx);
+                if (!opts.lite) this.refreshFeatTable(m, 'ally-feat-' + idx);
                 this.updateSlotDeadState('ally-head-' + idx, isDead);
             }, this);
             // 敵方
@@ -117781,17 +117830,28 @@ window.HY = window.HY || {};
             // 存活徽章
             var inBattle = !!combat.currentEnemy && !_inMapNow;
 
-            /* ⭐ v509/v510：戰鬥畫面每 tick 同步（只更新血條／集氣／狀態圖示，不重建 DOM） */
+            /* ⭐ v509/v758：舞台就地更新 —— tick 節流，避免每 100ms 整段重繪造成「一直刷新」 */
             try {
-                var BS = window.HY && window.HY.BattleStage;
-                var stageEl = document.getElementById('hy-battle-stage');
-                if (BS && stageEl && stageEl.parentNode) {
-                    var pl = this._stagePayload(BS, partyMembers, _inMapNow, false);
-                    BS.render(stageEl.parentNode, {
-                        party: pl.party, enemies: pl.enemies,
-                        id: 'hy-battle-stage', scene: pl.scene,
-                        battleSeq: Number(combat._battleSeq) || 0
-                    });
+                var foesLive = _inMapNow ? [] : (combat.enemies || []);
+                var vitalSig = this._arenaVitalSig(partyMembers, foesLive);
+                var now = Date.now();
+                var stageGap = opts.forceStage ? 0 : (opts.lite ? 90 : 0);
+                var dueStage = opts.forceStage ||
+                    vitalSig !== this._arenaVitalSigCache ||
+                    (now - (this._arenaStagePaintTs || 0)) >= stageGap;
+                if (dueStage) {
+                    this._arenaVitalSigCache = vitalSig;
+                    this._arenaStagePaintTs = now;
+                    var BS = window.HY && window.HY.BattleStage;
+                    var stageEl = document.getElementById('hy-battle-stage');
+                    if (BS && stageEl && stageEl.parentNode) {
+                        var pl = this._stagePayload(BS, partyMembers, _inMapNow, false);
+                        BS.render(stageEl.parentNode, {
+                            party: pl.party, enemies: pl.enemies,
+                            id: 'hy-battle-stage', scene: pl.scene,
+                            battleSeq: Number(combat._battleSeq) || 0
+                        });
+                    }
                 }
             } catch (eStage) { }
 

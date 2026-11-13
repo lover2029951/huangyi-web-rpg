@@ -5379,8 +5379,13 @@ window.HY = window.HY || {};
                 'background:#0b1620;color:#94a3b8;cursor:pointer;transition:.12s;}',
                 '.wh-chip:hover{border-color:#38bdf8;color:#cbd5e1;}',
                 '.wh-chip.on{background:#0e2a3d;border-color:#38bdf8;color:#7dd3fc;}',
-                '.wh-grid{flex:1 1 auto;overflow-y:auto;padding:12px;',
+                '.wh-grid{flex:1 1 auto;overflow-y:auto;padding:12px;min-height:0;',
                 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;align-content:start;}',
+                /* ⭐ v758：虛擬捲動時改 block，避免 .hy-vscroll 只佔 grid 第一欄（左側窄條 bug） */
+                '.wh-grid.wh-grid-virt{display:block;overflow:hidden;padding:0;}',
+                '.wh-grid.wh-grid-virt .hy-vscroll{height:100%;max-height:none;overflow:auto;',
+                'padding:12px;box-sizing:border-box;width:100%;}',
+                '.wh-grid .hy-vscroll{grid-column:1/-1;width:100%;min-width:0;}',
                 '.wh-card{background:#0c1620;border:1px solid #1e3a52;border-radius:8px;padding:10px 6px;',
                 'text-align:center;cursor:pointer;position:relative;transition:.12s;user-select:none;}',
                 '.wh-card:hover{background:#12202c;border-color:#38bdf8;transform:translateY(-2px);}',
@@ -6020,6 +6025,7 @@ window.HY = window.HY || {};
             var show = this.applyFilters(list);
 
             if (!show.length) {
+                this.el.grid.classList.remove('wh-grid-virt');
                 this.el.grid.innerHTML =
                     '<div class="wh-empty">' +
                     (list.length
@@ -6055,16 +6061,20 @@ window.HY = window.HY || {};
             }
             var VS = window.HY && window.HY.VirtualScroll;
             if (show.length >= this._whVirtMin && VS) {
+                this.el.grid.classList.add('wh-grid-virt');
                 var listRef = show;
+                var gw = this.el.grid.clientWidth || 640;
+                var cols = Math.max(3, Math.min(8, Math.floor((gw - 28) / 138)));
                 this._whVirt = new VS({
                     host: this.el.grid,
                     count: show.length,
-                    cols: 4,
+                    cols: cols,
                     itemHeight: 112,
-                    gap: 8,
+                    gap: 10,
                     overscan: 2,
                     renderSlice: function (i0, i1) {
-                        var hh = '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">';
+                        var hh = '<div class="wh-virt-slice" style="display:grid;grid-template-columns:repeat(' +
+                            cols + ',minmax(0,1fr));gap:10px;">';
                         for (var i = i0; i < i1; i++) {
                             hh += self.whCardHtml(listRef[i], eqMap);
                         }
@@ -6075,6 +6085,7 @@ window.HY = window.HY || {};
                 this._whVirt.mount();
                 this._bindWhGridCards();
             } else {
+                this.el.grid.classList.remove('wh-grid-virt');
                 var h = '';
                 show.forEach(function (w) {
                     h += self.whCardHtml(w, eqMap);
@@ -14544,7 +14555,7 @@ window.HY = window.HY || {};
             this._stopBattleTicker();
             this._btlTimer = setInterval(function () {
                 if (!self.isOpen) { self._stopBattleTicker(); return; }
-                if (self._inBattle()) self.render();
+                if (self._inBattle()) self._renderBattle();
             }, 180);
         }
         _stopBattleTicker() {
@@ -32546,6 +32557,19 @@ window.HY = window.HY || {};
         }
 
         /** ⭐ 戰鬥狀態變更時的輕量同步（不重建整個中間欄，避免 hover 中斷） */
+        _atlasBattlePanelSig(members, enemies) {
+            var p = (members || []).map(function (m) {
+                if (!m) return '-';
+                return String(m.id) + ':' + Math.round(num(m.atb, 0)) + ':' +
+                    Math.round(num(m.currentHp, 0)) + ':' + Math.round(num(m.currentMp, 0));
+            }).join('|');
+            var e = (enemies || []).map(function (x) {
+                if (!x) return '-';
+                return String(x.uid || x.id || x.name) + ':' + Math.round(num(x.atb, 0)) + ':' +
+                    Math.round(num(x.currentHp, 0));
+            }).join('|');
+            return p + '#' + e;
+        }
         syncBattle() {
             if (!this.isOpen || !this.sys || !this.el.mid) return;
             var sys = this.sys;
@@ -32554,20 +32578,26 @@ window.HY = window.HY || {};
                （避免一般戰鬥的數據流進輿圖面板） */
             if (!inMap) return;
 
-            /* 敵方區塊單獨重繪 */
-            var enemyWrap = this.el.mid.querySelector('.at-side.enemy .at-teamcol');
-            if (enemyWrap) enemyWrap.innerHTML = this._enemyHtml();
-            /* 我方區塊單獨重繪 */
-            var allyWrap = this.el.mid.querySelector('.at-side.ally .at-teamcol');
-            if (allyWrap) {
-                allyWrap.innerHTML = this._teamHtml();
-                this._bindTeamHover();
-            }
-            /* 存活數 */
             var combat = this.app.combatSys;
             var partySys = this.app.partySys;
             var members = partySys ? partySys.getPartyMembers() : [this.app.charSys.state];
             var enemies = (combat && combat.enemies) || [];
+            var panelSig = this._atlasBattlePanelSig(members, enemies);
+            var panelsDirty = panelSig !== this._atlasPanelSig;
+
+            if (panelsDirty) {
+                this._atlasPanelSig = panelSig;
+                /* 敵方區塊單獨重繪 */
+                var enemyWrap = this.el.mid.querySelector('.at-side.enemy .at-teamcol');
+                if (enemyWrap) enemyWrap.innerHTML = this._enemyHtml();
+                /* 我方區塊單獨重繪 */
+                var allyWrap = this.el.mid.querySelector('.at-side.ally .at-teamcol');
+                if (allyWrap) {
+                    allyWrap.innerHTML = this._teamHtml();
+                    this._bindTeamHover();
+                }
+            }
+            /* 存活數 */
             var allyAlive = members.filter(function (m) { return m && num(m.currentHp, 0) > 0; }).length;
             var enemyAlive = enemies.filter(function (e) { return e && num(e.currentHp, 0) > 0; }).length;
             var allyEl = this.el.mid.querySelector('.at-side.ally .alive');
@@ -32589,8 +32619,8 @@ window.HY = window.HY || {};
                         ? '　<span style="color:#94a3b8">詞綴：' + esc(map.modNames.join('、')) + '</span>'
                         : '');
             }
-            /* 左欄進度也一起更新 */
-            if (this.el.left) this._renderLeft();
+            /* 左欄進度（戰鬥 tick 不整欄重繪，避免閃爍） */
+            if (panelsDirty && this.el.left) this._renderLeft();
             /* ⭐ v598：舞台也必須每輪更新
                ⚠️ 這是「打霸主沒有戰鬥效果」的最終根因：
                   syncBattle 每 250ms 被同步迴圈呼叫，但它只更新表格數值、

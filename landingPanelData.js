@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v757 · 2026-11-13',
-        gameVer: 757,
+        newsVer: 'v758 · 2026-11-13',
+        gameVer: 758,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '體驗',
+            title: '戰鬥不閃刷 v758',
+            date: '2026-11-13',
+            bullets: [
+                'ATB tick 改走 <code>renderCombatLiteThrottled</code>，取消重複整頁重繪',
+                '舞台同步節流；輿圖隊伍簽章未變不重畫 HTML；礦坑 tick 只刷戰鬥區',
+                '裝備詞綴效果<b>上下分層</b>；武魂列表虛擬捲動版面修復'
+            ]
+        },
         {
             tag: 'ui', tagLabel: '戰鬥',
             title: '戰鬥舞台統一 v757',
