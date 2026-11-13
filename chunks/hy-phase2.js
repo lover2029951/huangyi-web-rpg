@@ -27450,9 +27450,10 @@ window.HY = window.HY || {};
             items: [
                 { k: 'primarySkillId', t: 'skill', label: '主攻絕招', desc: 'auto_best = 自動選威力最高的一招' },
                 { k: 'targetRule', t: 'select', label: '集火規則',
-                  opts: [['lowest_hp', '🎯 殘血優先（秒殺）'], ['highest_hp', '💪 高血優先'],
-                         ['boss_first', '👑 霸主優先'], ['nearest', '📍 隨機目標']],
-                  desc: '決定自動出招打哪一隻' },
+                  opts: [['front_then_lowest_hp', '⚔️ 前排＋殘血（推薦）'], ['front_row', '🛡️ 僅打前排'],
+                         ['lowest_hp', '🎯 殘血優先（秒殺）'], ['highest_hp', '💪 高血優先'],
+                         ['boss_first', '👑 霸主優先'], ['current', '🎯 鎖定當前'], ['nearest', '📍 隨機目標']],
+                  desc: '決定自動出招打哪一隻（站位權重由 combatTargeting 計算）' },
                 { k: 'focusBoss', t: 'bool', label: '霸主優先集火', desc: '霸主在場時無視小怪' },
                 { k: 'rushBoss', t: 'bool', label: '直接衝霸主（隊伍共識）', desc: '⚠️ 隊伍中任一人開啟即全隊直衝霸主：清完當前 5 隻就出霸主，小怪無任何掉落，收益僅限霸主寶藏' },
                 { k: 'aoeEnabled', t: 'bool', label: '群體招式', desc: '多怪時改用 AOE' },
@@ -31249,8 +31250,9 @@ window.HY = window.HY || {};
             var meName = me && me.name ? String(me.name) : '角色';
             function on(v) { return v ? '<span style="color:#6ee7b7">開</span>' : '<span style="color:#475569">關</span>'; }
             var targetMap = {
+                front_then_lowest_hp: '⚔️ 前排+殘血', front_row: '🛡️ 前排',
                 lowest_hp: '🎯 殘血', highest_hp: '💪 高血',
-                boss_first: '👑 霸主', nearest: '📍 隨機'
+                boss_first: '👑 霸主', current: '🎯 當前', nearest: '📍 隨機'
             };
             var h = '<div class="at-sec"><h4>🎛️ 打圖戰術' +
                 '<span class="n" style="cursor:pointer" id="at-open-tactics">⚙ 設定</span></h4>';

@@ -161,7 +161,9 @@
                 <div id="tab-explore" class="tab-content active">
                     <div id="map-selector-box">
                         <h3>🛸 馬博士七大紀元時空導航儀 (Lv.1 ~ Lv.300，擊敗怪物可掉落神兵防具與打造材料！)</h3>
-                        <div id="map-list" class="button-grid"></div>
+                        <div id="hy-era-rec-hint" class="hy-era-rec-hint" aria-live="polite"></div>
+                        <div id="hy-era-timeline" class="hy-era-timeline" role="presentation"></div>
+                        <div id="map-list" class="hy-era-rail"></div>
                     </div>
 
                     <div id="combat-zone">
@@ -551,7 +553,7 @@
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=760"></script>
+<script src="chunks/hy-phase1.js?v=761"></script>
 <script>
 (function () {
   function shouldLoadPerfProbe() {
@@ -565,7 +567,7 @@
   function loadPerfProbeOptional() {
     if (!shouldLoadPerfProbe()) return;
     var sp = document.createElement('script');
-    sp.src = 'chunks/hy-perf.js?v=760';
+    sp.src = 'chunks/hy-perf.js?v=761';
     sp.async = true;
     document.head.appendChild(sp);
   }
@@ -583,7 +585,7 @@
     if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
   }
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=760';
+  s.src = 'chunks/hy-phase2.js?v=761';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };

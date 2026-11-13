@@ -85696,6 +85696,7 @@ window.HY = window.HY || {};
         constructor(app) {
             this.app = app;
             this._ensureDialogStyle();
+            this._ensureEraNavKeys();
         }
 
         /** ⭐ v507：紀元地圖選怪視窗樣式（只注入一次） */
@@ -85817,7 +85818,87 @@ window.HY = window.HY || {};
                     'color:#64748b;background:#0b1220;border:1px solid #26313f;' +
                     'border-radius:8px;padding:0 5px;vertical-align:middle;}',
 
+                /* ═══ 七大紀元導航儀（時空月台）═══ */
+                '#map-selector-box{padding-bottom:4px;}',
+                '.hy-era-rec-hint{font-size:.8rem;color:#94a3b8;margin:6px 0 10px;line-height:1.5;}',
+                '.hy-era-rec-hint b{color:#7dd3fc;font-weight:600;}',
+                '.hy-era-timeline{margin:0 0 14px;padding:10px 12px 8px;background:#0c1219;' +
+                    'border:1px solid #243044;border-radius:8px;}',
+                '.hy-era-timeline-track{position:relative;height:8px;background:#1e293b;border-radius:99px;' +
+                    'overflow:visible;margin:6px 0 22px;}',
+                '.hy-era-timeline-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;' +
+                    'background:linear-gradient(90deg,#0891b2,#00e5ff 70%,#a78bfa);' +
+                    'box-shadow:0 0 12px rgba(0,229,255,.45);transition:width .35s ease;}',
+                '.hy-era-timeline-marker{position:absolute;top:50%;width:14px;height:14px;margin-top:-7px;' +
+                    'margin-left:-7px;border-radius:50%;background:#00e5ff;border:2px solid #0f172a;' +
+                    'box-shadow:0 0 0 3px rgba(0,229,255,.35),0 0 16px rgba(0,229,255,.65);' +
+                    'transition:left .35s ease;pointer-events:none;}',
+                '.hy-era-timeline-ticks{display:flex;justify-content:space-between;font-size:.65rem;' +
+                    'color:#475569;margin-top:2px;}',
+                '.hy-era-timeline-era{display:flex;justify-content:space-between;gap:4px;margin-top:6px;}',
+                '.hy-era-timeline-era span{flex:1;text-align:center;font-size:.58rem;color:#64748b;' +
+                    'line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+
+                '.hy-era-rail{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 14px;' +
+                    'scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}',
+                '.hy-era-rail::-webkit-scrollbar{height:8px;}',
+                '.hy-era-rail::-webkit-scrollbar-thumb{background:#334155;border-radius:99px;}',
+
+                '.hy-era-platform{flex:0 0 min(268px,78vw);scroll-snap-align:start;display:flex;' +
+                    'flex-direction:column;gap:8px;padding:10px 11px 12px;background:#101820;' +
+                    'border:1px solid #2e3b4e;border-radius:10px;min-height:120px;' +
+                    'border-left:3px solid var(--hy-era-accent,#64748b);}' +
+                '.hy-era-platform.is-era-dim{opacity:.72;}',
+                '.hy-era-platform.is-era-locked{opacity:.58;filter:saturate(.55);}',
+
+                '.hy-era-platform-head{font-size:.76rem;font-weight:bold;color:var(--hy-era-accent,#c89d54);' +
+                    'line-height:1.35;margin-bottom:2px;}',
+                '.hy-era-platform-sub{font-size:.68rem;color:#64748b;margin-bottom:4px;}',
+
+                '.hy-era-maps{display:flex;flex-direction:column;gap:8px;}',
+
+                '.hy-era-map-card{width:100%;text-align:left;cursor:pointer;font-family:inherit;' +
+                    'background:#121822;border:1px solid #334155;border-radius:8px;padding:9px 10px;' +
+                    'transition:border-color .14s,box-shadow .14s,transform .14s,background .14s;}',
+                '.hy-era-map-card:hover:not(.is-locked){border-color:var(--hy-era-accent,#00e5ff);' +
+                    'background:#16212e;box-shadow:0 0 14px rgba(0,229,255,.2);transform:translateY(-1px);}',
+                '.hy-era-map-card.is-current{border-color:#00e5ff;background:rgba(0,229,255,.12);' +
+                    'box-shadow:0 0 18px rgba(0,229,255,.32),inset 0 0 0 1px rgba(0,229,255,.25);}',
+                '.hy-era-map-card.is-locked{opacity:.58;cursor:not-allowed;}',
+                '.hy-era-map-card.is-locked:hover{transform:none;box-shadow:none;border-color:#334155;background:#121822;}',
+
+                '.hy-era-map-card-top{display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;}',
+                '.hy-era-map-name{flex:1;font-size:.84rem;font-weight:bold;color:#e2e8f0;line-height:1.3;}',
+                '.hy-era-map-pin{font-size:.75rem;line-height:1;}',
+                '.hy-era-map-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:4px;}',
+                '.hy-era-map-lv{font-size:.7rem;color:#fbbf24;background:rgba(251,191,36,.12);' +
+                    'border:1px solid rgba(251,191,36,.35);border-radius:6px;padding:1px 6px;}',
+                '.hy-era-map-card .hy-era-map-count{margin-left:0;font-size:.66rem;}',
+                '.hy-era-map-badge{font-size:.65rem;padding:1px 5px;border-radius:5px;' +
+                    'border:1px solid #26313f;background:#0b1220;color:#6ee7b7;}',
+                '.hy-era-map-desc{font-size:.7rem;color:#64748b;line-height:1.45;margin:0;' +
+                    'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+                '.hy-era-map-lock{display:block;margin-top:5px;font-size:.68rem;color:#fbbf24;}',
+                '.hy-era-map-badge-boss{color:#fca5a5;border-color:#7f1d1d;background:rgba(127,29,29,.35);}',
+                '.hy-era-map-badge-boss-ready{color:#fecaca;border-color:#ef4444;' +
+                    'background:rgba(239,68,68,.2);box-shadow:0 0 8px rgba(239,68,68,.25);}',
+                '.hy-era-map-badge-boss-cd{color:#a8a29e;border-color:#57534e;}',
+
+                '.hy-era-head-row{display:flex;align-items:center;gap:8px;margin-bottom:2px;}',
+                '.hy-era-head-row .hy-era-platform-head{flex:1;min-width:0;}',
+                '.hy-era-ring{flex:0 0 auto;width:24px;height:24px;border-radius:50%;position:relative;' +
+                    'background:conic-gradient(var(--hy-era-accent,#00e5ff) calc(var(--hy-era-pct,0) * 1%),' +
+                    '#1e293b 0);box-shadow:inset 0 0 0 2px #0f172a;}',
+                '.hy-era-ring::after{content:attr(data-pct);position:absolute;inset:3px;border-radius:50%;' +
+                    'background:#101820;font-size:.52rem;color:#94a3b8;display:flex;align-items:center;' +
+                    'justify-content:center;font-variant-numeric:tabular-nums;}',
+
+                '.hy-era-swipe-hint{font-size:.72rem;color:#64748b;text-align:center;margin:0 0 8px;' +
+                    'padding:5px 8px;border:1px dashed #334155;border-radius:6px;transition:opacity .4s;}',
+                '.hy-era-swipe-hint-hide{opacity:0;pointer-events:none;height:0;padding:0;margin:0;border:none;overflow:hidden;}',
+
                 '@media (max-width:640px){' +
+                    '.hy-era-platform{flex-basis:min(240px,88vw);}' +
                     '.hy-med-stats span{font-size:.7rem;padding:2px 6px;}' +
                     '.hy-med-foot .action-btn{flex:1 1 100%;}' +
                     '.hy-med-hint{margin-left:0;}' +
@@ -86476,18 +86557,173 @@ window.HY = window.HY || {};
         buildEsBar(cur, max, isEnemy) {
             return '';
         }
-        _mapListSignature(curMap, charLv) {
-            return String(curMap.id) + '|' + charLv + '|' + (curMap.hasMedicalPod ? '1' : '0');
+        _eraAccent(eraId) {
+            var t = {
+                modern: '#22d3ee', datang: '#fbbf24', xunqin: '#a78bfa',
+                bianhuang: '#f87171', fuyu: '#38bdf8', riyue: '#fb923c', posui: '#c084fc'
+            };
+            return t[eraId] || '#c89d54';
         }
-        /** 僅重繪「當前地圖」高亮，不重掛數十顆地圖按鈕 */
+        _maxRosterLv() {
+            var ts = this.app.timeSys;
+            if (ts && typeof ts.getMaxRosterLv === 'function') return ts.getMaxRosterLv();
+            return (this.app.charSys.state && this.app.charSys.state.lv) || 1;
+        }
+        _eraUnlockMeta() {
+            if (this._eraMetaCache) return this._eraMetaCache;
+            const Data = window.HY.Data;
+            const eras = Data.ERAS || [];
+            const meta = {};
+            eras.forEach(function (era, idx) {
+                const maps = Object.values(Data.MAPS || {}).filter(function (m) { return m.era === era.id; });
+                const mins = maps.map(function (m) { return m.minLv || 1; });
+                const minLv = mins.length ? Math.min.apply(null, mins) : 1;
+                var nextMin = 300;
+                for (var j = idx + 1; j < eras.length; j++) {
+                    const nm = Object.values(Data.MAPS || {}).filter(function (m) {
+                        return m.era === eras[j].id;
+                    }).map(function (m) { return m.minLv || 1; });
+                    if (nm.length) { nextMin = Math.min.apply(null, nm) - 1; break; }
+                }
+                meta[era.id] = { minLv: minLv, maxLv: nextMin, mapCount: maps.length, name: era.name };
+            });
+            this._eraMetaCache = meta;
+            return meta;
+        }
+        _recommendEraLabel(maxLv) {
+            const meta = this._eraUnlockMeta();
+            const Data = window.HY.Data;
+            const eras = Data.ERAS || [];
+            var pick = eras[0];
+            eras.forEach(function (era) {
+                const m = meta[era.id];
+                if (!m) return;
+                if (maxLv >= m.minLv) pick = era;
+            });
+            return pick ? pick.name : '時空地圖';
+        }
+        _escAttr(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+        _escHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        _regionBossBadgeHtml(mapId) {
+            var app = this.app;
+            var rb = app && app.regionBossSys;
+            if (!rb || typeof rb.bossOf !== 'function') return '';
+            var boss = rb.bossOf(mapId);
+            if (!boss) return '';
+            var cd = typeof rb.cooldownLeft === 'function' ? rb.cooldownLeft(mapId) : 0;
+            if (cd > 0) {
+                return '<span class="hy-era-map-badge hy-era-map-badge-boss hy-era-map-badge-boss-cd" title="區域 BOSS 冷卻中">⏳ ' +
+                    cd + 's</span>';
+            }
+            var chk = typeof rb.canChallenge === 'function' ? rb.canChallenge(mapId) : { ok: false };
+            if (chk.ok) {
+                return '<span class="hy-era-map-badge hy-era-map-badge-boss hy-era-map-badge-boss-ready" title="可挑戰區域 BOSS">👑 BOSS</span>';
+            }
+            var why = chk.why ? this._escAttr(chk.why) : '區域 BOSS';
+            return '<span class="hy-era-map-badge hy-era-map-badge-boss" title="' + why + '">👑 BOSS</span>';
+        }
+        _ensureSwipeHint() {
+            var storeKey = 'hy_era_swipe_hint_v1';
+            try { if (localStorage.getItem(storeKey)) return; } catch (eSt) { return; }
+            var rail = document.getElementById('map-list');
+            if (!rail) return;
+            var hint = document.getElementById('hy-era-swipe-hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'hy-era-swipe-hint';
+                hint.className = 'hy-era-swipe-hint';
+                hint.textContent = '💡 左右滑動紀元月台，或以鍵盤 ← → 捲動；Tab 選擇地圖後 Enter 開啟';
+                rail.parentNode.insertBefore(hint, rail);
+            }
+            var self = this;
+            var dismissed = false;
+            function dismiss() {
+                if (dismissed) return;
+                dismissed = true;
+                hint.classList.add('hy-era-swipe-hint-hide');
+                try { localStorage.setItem(storeKey, '1'); } catch (e2) { }
+            }
+            rail.addEventListener('scroll', dismiss, { once: true, passive: true });
+            setTimeout(dismiss, 14000);
+            hint.addEventListener('click', dismiss);
+        }
+        _ensureEraNavKeys() {
+            if (this._eraKeysBound) return;
+            this._eraKeysBound = true;
+            var self = this;
+            document.addEventListener('keydown', function (e) {
+                var tab = document.getElementById('tab-explore');
+                if (!tab || !tab.classList.contains('active')) return;
+                if (e.target && /^(INPUT|SELECT|TEXTAREA)$/i.test(e.target.tagName)) return;
+                if (e.target && e.target.isContentEditable) return;
+                var rail = document.getElementById('map-list');
+                if (!rail) return;
+                var step = Math.max(240, Math.floor(rail.clientWidth * 0.72));
+                if (e.key === 'ArrowLeft') {
+                    rail.scrollBy({ left: -step, behavior: 'smooth' });
+                    e.preventDefault();
+                } else if (e.key === 'ArrowRight') {
+                    rail.scrollBy({ left: step, behavior: 'smooth' });
+                    e.preventDefault();
+                }
+            });
+        }
+        _renderTimelineRail() {
+            var el = document.getElementById('hy-era-timeline');
+            if (!el || el.getAttribute('data-built') === '1') return;
+            var self = this;
+            var meta = this._eraUnlockMeta();
+            var Data = window.HY.Data;
+            var eras = Data.ERAS || [];
+            var eraTicks = eras.map(function (era) {
+                var m = meta[era.id];
+                var lbl = m ? 'Lv.' + m.minLv : '';
+                return '<span title="' + self._escAttr(era.name) + '">' + lbl + '</span>';
+            }).join('');
+            el.innerHTML =
+                '<div class="hy-era-timeline-track">' +
+                    '<div class="hy-era-timeline-fill" style="width:0%"></div>' +
+                    '<div class="hy-era-timeline-marker" style="left:0%" title="隊伍等級"></div>' +
+                '</div>' +
+                '<div class="hy-era-timeline-ticks"><span>Lv.1</span><span>Lv.300</span></div>' +
+                '<div class="hy-era-timeline-era">' + eraTicks + '</div>';
+            el.setAttribute('data-built', '1');
+        }
+        _updateEraNavChrome(curMap, maxLv) {
+            this._renderTimelineRail();
+            var pct = Math.min(100, Math.max(0, (maxLv / 300) * 100));
+            var fill = document.querySelector('.hy-era-timeline-fill');
+            var marker = document.querySelector('.hy-era-timeline-marker');
+            if (fill) fill.style.width = pct + '%';
+            if (marker) {
+                marker.style.left = pct + '%';
+                marker.setAttribute('title', '隊伍最高 Lv.' + maxLv);
+            }
+            var hint = document.getElementById('hy-era-rec-hint');
+            if (hint) {
+                var rec = this._recommendEraLabel(maxLv);
+                var curName = curMap && curMap.name ? curMap.name : '—';
+                hint.innerHTML = '👥 隊伍最高 <b>Lv.' + maxLv + '</b>　｜　建議歷練：<b>' +
+                    rec + '</b>　｜　當前駐留：<b>' + curName + '</b>';
+            }
+        }
+        _mapListSignature(curMap, maxLv) {
+            return String(curMap.id) + '|' + maxLv;
+        }
+        /** 僅重繪「當前地圖」高亮，不重掛地圖卡片 */
         _syncMapListCurrentHighlight(curMapId) {
-            const list = document.querySelectorAll('.hy-era-map-btn[data-map-id]');
+            const list = document.querySelectorAll('.hy-era-map-card[data-map-id]');
             list.forEach(btn => {
                 const mid = btn.getAttribute('data-map-id');
-                const isCurrent = mid === curMapId;
-                const locked = (btn.textContent || '').indexOf('🔒') !== -1;
-                btn.style.borderColor = isCurrent ? '#00e5ff' : (locked ? '#334155' : '#64748b');
-                btn.style.background = isCurrent ? 'rgba(0, 229, 255, 0.18)' : '#1a2434';
+                btn.classList.toggle('is-current', mid === curMapId);
+                const pin = btn.querySelector('.hy-era-map-pin');
+                if (pin) pin.textContent = mid === curMapId ? '📍' : '';
             });
         }
         _rebuildMapList(curMap) {
@@ -86495,38 +86731,93 @@ window.HY = window.HY || {};
             const app = this.app;
             const mapListEl = document.getElementById('map-list');
             if (!mapListEl) return;
+            const maxLv = this._maxRosterLv();
+            const meta = this._eraUnlockMeta();
+            const self = this;
             mapListEl.innerHTML = '';
             const eras = Data.ERAS || [{ id: 'default', name: '時空地圖' }];
             eras.forEach(era => {
                 const mapsInEra = Object.values(Data.MAPS).filter(m => m.era === era.id);
                 if (mapsInEra.length === 0) return;
-                const eraGroup = document.createElement('div');
-                eraGroup.style.marginBottom = '10px';
-                eraGroup.innerHTML = '<div style="font-size:0.82rem; color:#c89d54; margin-bottom:5px; font-weight:bold;">' + era.name + '</div>';
-                const grid = document.createElement('div');
-                grid.className = 'button-grid';
-                grid.style.marginBottom = '4px';
+                const em = meta[era.id] || { minLv: 1, maxLv: 300, mapCount: mapsInEra.length };
+                const accent = self._eraAccent(era.id);
+                const eraLocked = maxLv < em.minLv;
+                const eraOpen = maxLv >= em.minLv && maxLv <= em.maxLv;
+                const platform = document.createElement('div');
+                platform.className = 'hy-era-platform' +
+                    (eraLocked ? ' is-era-locked' : (eraOpen ? '' : ' is-era-dim'));
+                platform.setAttribute('data-era', era.id);
+                platform.style.setProperty('--hy-era-accent', accent);
+                var unlockedCnt = mapsInEra.filter(function (m) { return maxLv >= m.minLv; }).length;
+                var eraPct = mapsInEra.length
+                    ? Math.round((unlockedCnt / mapsInEra.length) * 100) : 0;
+                const headRow = document.createElement('div');
+                headRow.className = 'hy-era-head-row';
+                var ring = document.createElement('span');
+                ring.className = 'hy-era-ring';
+                ring.style.setProperty('--hy-era-pct', String(eraPct));
+                ring.setAttribute('data-pct', eraPct + '%');
+                ring.setAttribute('title', '本紀元解鎖 ' + unlockedCnt + ' / ' + mapsInEra.length);
+                const head = document.createElement('div');
+                head.className = 'hy-era-platform-head';
+                head.textContent = era.name;
+                headRow.appendChild(ring);
+                headRow.appendChild(head);
+                const sub = document.createElement('div');
+                sub.className = 'hy-era-platform-sub';
+                sub.textContent = unlockedCnt + '/' + mapsInEra.length + ' 已解鎖　·　推薦 Lv.' + em.minLv +
+                    (em.maxLv < 300 ? ' ~ ' + em.maxLv : '+');
+                platform.appendChild(headRow);
+                platform.appendChild(sub);
+                const mapsWrap = document.createElement('div');
+                mapsWrap.className = 'hy-era-maps';
                 mapsInEra.forEach(m => {
                     const isCurrent = m.id === curMap.id;
-                    const isLocked = app.charSys.state.lv < m.minLv;
+                    const isLocked = maxLv < m.minLv;
                     const btn = document.createElement('button');
-                    btn.className = 'action-btn hy-era-map-btn';
+                    btn.type = 'button';
+                    btn.className = 'hy-era-map-card hy-era-map-btn' +
+                        (isCurrent ? ' is-current' : '') + (isLocked ? ' is-locked' : '');
                     btn.setAttribute('data-map-id', m.id);
-                    btn.style.borderColor = isCurrent ? '#00e5ff' : (isLocked ? '#334155' : '#64748b');
-                    btn.style.opacity = isLocked ? '0.55' : '1';
-                    btn.style.background = isCurrent ? 'rgba(0, 229, 255, 0.18)' : '#1a2434';
-                    btn.innerHTML = (isLocked ? '🔒 ' : (isCurrent ? '📍 ' : '')) + m.name +
-                        ' <small>(Lv.' + m.minLv + ')</small>' +
-                        '<span class="hy-era-map-count">' + (m.enemies ? m.enemies.length : 0) + ' 怪</span>';
+                    if (m.desc) btn.setAttribute('title', m.desc);
+                    if (!isLocked) btn.setAttribute('tabindex', '0');
+                    var badges = self._regionBossBadgeHtml(m.id);
+                    if (m.hasMedicalPod) {
+                        badges += '<span class="hy-era-map-badge" title="奈米時空醫療艙">🏥 醫療艙</span>';
+                    }
+                    var lockHtml = isLocked
+                        ? '<span class="hy-era-map-lock">🔒 需隊伍 Lv.' + m.minLv +
+                            '（目前最高 Lv.' + maxLv + '）</span>' : '';
+                    var descHtml = m.desc
+                        ? '<p class="hy-era-map-desc">' + self._escHtml(m.desc) + '</p>' : '';
+                    btn.innerHTML =
+                        '<div class="hy-era-map-card-top">' +
+                            '<span class="hy-era-map-name">' + self._escHtml(m.name) + '</span>' +
+                            '<span class="hy-era-map-pin">' + (isCurrent ? '📍' : '') + '</span>' +
+                        '</div>' +
+                        '<div class="hy-era-map-meta">' +
+                            '<span class="hy-era-map-lv">Lv.' + m.minLv + '</span>' +
+                            '<span class="hy-era-map-count">' + (m.enemies ? m.enemies.length : 0) + ' 怪</span>' +
+                            badges +
+                        '</div>' +
+                        descHtml + lockHtml;
                     btn.addEventListener('click', () => {
-                        this._openMapEnemyDialog(m, isLocked);
+                        self._openMapEnemyDialog(m, isLocked);
                     });
-                    grid.appendChild(btn);
+                    mapsWrap.appendChild(btn);
                 });
-                eraGroup.appendChild(grid);
-                mapListEl.appendChild(eraGroup);
+                platform.appendChild(mapsWrap);
+                mapListEl.appendChild(platform);
             });
-            this._mapListSigCache = this._mapListSignature(curMap, app.charSys.state.lv);
+            this._mapListSigCache = this._mapListSignature(curMap, maxLv);
+            this._updateEraNavChrome(curMap, maxLv);
+            try {
+                var curPlat = mapListEl.querySelector('.hy-era-platform[data-era="' + curMap.era + '"]');
+                if (curPlat && typeof curPlat.scrollIntoView === 'function') {
+                    curPlat.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+                }
+            } catch (eScroll) { }
+            this._ensureSwipeHint();
         }
         renderExploreAndCombat(opts) {
             opts = opts || {};
@@ -86562,18 +86853,21 @@ window.HY = window.HY || {};
             }
             const mapListEl = document.getElementById('map-list');
             if (!mapListEl) return;
-            const mapSig = this._mapListSignature(curMap, app.charSys.state.lv);
-            const hasMaps = !!mapListEl.querySelector('.hy-era-map-btn');
+            const maxLv = this._maxRosterLv();
+            const mapSig = this._mapListSignature(curMap, maxLv);
+            const hasMaps = !!mapListEl.querySelector('.hy-era-map-card');
             if (lite) {
                 if (!hasMaps || this._mapListSigCache !== mapSig) {
                     this._rebuildMapList(curMap);
                 } else {
                     this._syncMapListCurrentHighlight(curMap.id);
+                    this._updateEraNavChrome(curMap, maxLv);
                 }
             } else if (!hasMaps || this._mapListSigCache !== mapSig || opts.forceMaps) {
                 this._rebuildMapList(curMap);
             } else {
                 this._syncMapListCurrentHighlight(curMap.id);
+                this._updateEraNavChrome(curMap, maxLv);
             }
             const enemyListEl = document.getElementById('enemy-list');
             const arenaEl = document.getElementById('battle-arena');
