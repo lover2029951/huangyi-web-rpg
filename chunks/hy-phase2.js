@@ -14962,6 +14962,41 @@ window.HY = window.HY || {};
             this._toast('🏃 已撤離戰鬥，本層節點仍可探索。', false);
             setTimeout(function () { self.render(); }, 60);
         }
+
+        /** ⭐ v757：與主畫面相同的舞台 payload（礦坑敵人來自 delveBattle） */
+        _buildDelveStagePayload(BS, dbRef) {
+            if (!BS) BS = window.HY && window.HY.BattleStage;
+            if (!BS || !dbRef) return null;
+            var dex = window.HY && window.HY.uiDexAtb;
+            if (!dex || typeof dex._stagePayload !== 'function') return null;
+            var partySys = this.app.partySys;
+            var members = partySys ? partySys.getPartyMembers() : [this.app.charSys.state];
+            return dex._stagePayload(BS, members, true, false, {
+                delve: true,
+                enemies: dbRef.enemies || [],
+                scene: 'delve',
+                combatRef: dbRef
+            });
+        }
+
+        /** ⭐ v757：BS.render 參數對齊主畫面（battleSeq、集火回呼） */
+        _delveStageRenderOpts(pl, dbRef) {
+            pl = pl || {};
+            dbRef = dbRef || {};
+            return {
+                party: pl.party,
+                enemies: pl.enemies,
+                id: 'hy-delve-stage',
+                scene: pl.scene || 'delve',
+                battleSeq: Number(dbRef._battleSeq) || 0,
+                onTarget: function (side, idx, unit) {
+                    if (!unit || !window.HY.game || !window.HY.game.logger) return;
+                    window.HY.game.logger.add(
+                        '🎯 已將【' + (unit.name || '敵人') + '】設為集火目標。', 'system');
+                }
+            };
+        }
+
         _renderBattle() {
             var el = this.el;
             if (!el || !el.battle) return;
@@ -14979,83 +15014,13 @@ window.HY = window.HY || {};
             el.battle.classList.remove('hidden');
             this._renderToolbar();
 
-            /* ⭐ v509：戰鬥畫面（我方／敵方立繪對峙），插在兩張表格上方
-               ⭐ v510：加入礦坑場景、狀態圖示與集火鎖定 */
+            /* ⭐ v757：舞台 payload 與主畫面同源（UIDexAtb._stagePayload） */
             try {
                 var BS = window.HY && window.HY.BattleStage;
                 var dbRef = this.app.delveBattle || (window.HY.game && window.HY.game.delveBattle);
                 if (BS && dbRef) {
-                    var app2 = this.app;
-                    var _party = [];
-                    (app2.partySys.getPartyMembers() || []).forEach(function (m) {
-                        if (!m) return;
-                        var md3 = {};
-                        try { md3 = app2.charSys.getDerivedStatsForChar(m) || {}; } catch (e1) { md3 = {}; }
-                        var mx = Number(md3.maxHp);
-                        if (!isFinite(mx) || mx <= 0) mx = Number(m.maxHp) || 0;
-                        var cu = Number(m.currentHp);
-                        if (!isFinite(cu)) cu = mx;
-                        var _metaA = (HY.uiDexAtb && HY.uiDexAtb._stageSkillMeta)
-                            ? HY.uiDexAtb._stageSkillMeta(m, false) : { element: null, aoe: false };
-                        /* ⭐ v612：分層圖只取一次，避免重複計算 */
-                        var _wl = (HY.uiDexAtb && HY.uiDexAtb._wuhunLayersOf)
-                            ? HY.uiDexAtb._wuhunLayersOf(m) : { halo: '', body: '' };
-                        _party.push({
-                            name: m.name || '隊員',
-                            cur: cu, max: mx,
-                            mp: Number(m.currentMp) || 0,
-                            mpMax: Number(md3.maxMp) || 0,
-                            alive: cu > 0,
-                            ready: Number(m.atb || 0) >= 100,
-                            atb: Number(m.atb || 0),
-                            skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
-                                ? HY.uiDexAtb._stageSkillName(m, false) : null,
-                            element: _metaA.element,
-                            aoe: _metaA.aoe,
-                            sprite: BS.charSprite(m),
-                            color: BS.charColor(m),
-                            /* ⭐ v570：附身武魂（戰鬥舞台顯示在角色背後） */
-                            wuhun: (HY.uiDexAtb && HY.uiDexAtb._wuhunSpriteOf)
-                                ? HY.uiDexAtb._wuhunSpriteOf(m) : '',
-                            /* ⭐ v612：分層圖（光圈自轉、主體固定） */
-                            wuhunHalo: _wl.halo || '',
-                            wuhunBody: _wl.body || '',
-                            buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
-                        });
-                    });
-                    var _foes2 = [];
-                    (dbRef.enemies || []).forEach(function (e) {
-                        if (!e) return;
-                        var mx2 = Number(e.maxHp) || 0;
-                        var cu2 = Number(e.currentHp);
-                        if (!isFinite(cu2)) cu2 = mx2;
-                        var _eMp2 = (typeof e.maxMp === 'number' && e.maxMp > 0)
-                            ? e.maxMp
-                            : Math.floor(80 + (e.lv || 1) * 25 + (e.atk || 20) * 0.15);
-                        var _metaB = (HY.uiDexAtb && HY.uiDexAtb._stageSkillMeta)
-                            ? HY.uiDexAtb._stageSkillMeta(e, true) : { element: null, aoe: false };
-                        _foes2.push({
-                            name: e.name || '敵人',
-                            cur: cu2, max: mx2,
-                            mp: (typeof e.currentMp === 'number') ? e.currentMp : _eMp2,
-                            mpMax: _eMp2,
-                            alive: cu2 > 0,
-                            ready: Number(e.atb || 0) >= 100,
-                            atb: Number(e.atb || 0),
-                            skill: (HY.uiDexAtb && HY.uiDexAtb._stageSkillName)
-                                ? HY.uiDexAtb._stageSkillName(e, true) : null,
-                            element: _metaB.element,
-                            aoe: _metaB.aoe,
-                            sprite: BS.monSprite(e),
-                            avatar: BS.monAvatar(e),
-                            target: (dbRef.currentEnemy === e),
-                            buffs: BS.buffIconsOf ? BS.buffIconsOf(e) : []
-                        });
-                    });
-                    BS.render(el.battle, {
-                        party: _party, enemies: _foes2,
-                        id: 'hy-delve-stage', scene: 'delve'
-                    });
+                    var pl = this._buildDelveStagePayload(BS, dbRef);
+                    if (pl) BS.render(el.battle, this._delveStageRenderOpts(pl, dbRef));
                 }
             } catch (eStage2) { }
 
@@ -31623,15 +31588,7 @@ window.HY = window.HY || {};
                 var BS2 = window.HY && window.HY.BattleStage;
                 var host2 = document.getElementById('hy-atlas-stage-host');
                 if (BS2 && host2 && this.__stagePayload) {
-                    BS2.render(host2, {
-                        party: this.__stagePayload.party,
-                        enemies: this.__stagePayload.enemies,
-                        id: 'hy-atlas-stage',
-                        scene: (sys.activeMap && sys.activeMap.tier === 1) ? 'modern' : 'datang',
-                        /* ⭐ v594：整張地圖累計傷害 */
-                        cumulative: true,
-                        mapKey: (sys.activeMap && sys.activeMap.uid) || 'atlas-default'
-                    });
+                    BS2.render(host2, this._atlasStageRenderOpts(this.__stagePayload));
                 }
             } catch (eR3) { }
 
@@ -31639,176 +31596,58 @@ window.HY = window.HY || {};
             this._bindTeamHover();
         }
 
-        /** ⭐ v612：取角色附身武魂的三層路徑（合成 / 光圈 / 主體）
-            一次取得，避免重複呼叫 equippedWuhunOf 與重複計算。
-            沒有附身武魂時三項皆為空字串。 */
-        _wuhunOf(m) {
-            var out = { art: '', halo: '', body: '' };
-            try {
-                var ws = window.HY.game && window.HY.game.wuhunSys;
-                if (!ws || typeof ws.equippedWuhunOf !== 'function') return out;
-                var w = ws.equippedWuhunOf(m);
-                if (!w) return out;
-                var DD = window.HY.Data || {};
-                out.art = DD.wuhunArtOf ? DD.wuhunArtOf(w) : (w.art || '');
-                if (DD.wuhunHaloOf) out.halo = DD.wuhunHaloOf(w) || '';
-                if (DD.wuhunBodyOf) out.body = DD.wuhunBodyOf(w) || '';
-            } catch (e) { }
-            return out;
+        /** ⭐ v757：輿圖舞台場景（對齊主畫面規則：現代紀元／霸主戰／大唐） */
+        _atlasStageScene() {
+            var sys = this.sys;
+            if (!sys || !sys.activeMap) return 'datang';
+            var map = sys.activeMap;
+            if (map.tier === 1) return 'modern';
+            var pr = null;
+            try { pr = sys.progress && sys.progress(); } catch (ePr) { }
+            if (sys.bossPhase || (pr && pr.bossPhase)) return 'boss';
+            var nm = String(map.name || '');
+            if (/霸主|頭目|王/.test(nm)) return 'boss';
+            return 'datang';
         }
 
-        /** ⭐ v598：組出戰鬥舞台所需的 payload（我方 + 敵方）
-            _renderMid() 與 _renderStageOnly() 共用，確保欄位不會漏。
-            members / enemies 不傳時自行取最新資料（每回合輕量刷新用）。 */
+        /** ⭐ v757：與主畫面 renderBattleStage 相同的 BS.render 參數（含集火、battleSeq） */
+        _atlasStageRenderOpts(pl) {
+            var sys = this.sys;
+            var combat = this.app.combatSys || {};
+            pl = pl || {};
+            return {
+                party: pl.party,
+                enemies: pl.enemies,
+                id: 'hy-atlas-stage',
+                scene: pl.scene || this._atlasStageScene(),
+                cumulative: true,
+                mapKey: (sys && sys.activeMap && sys.activeMap.uid) || 'atlas-default',
+                battleSeq: Number(combat._battleSeq) || 0,
+                onTarget: function (side, idx, unit) {
+                    if (!unit || !window.HY.game || !window.HY.game.logger) return;
+                    window.HY.game.logger.add(
+                        '🎯 已將【' + (unit.name || '敵人') + '】設為集火目標。', 'system');
+                }
+            };
+        }
+
+        /** ⭐ v598 / v757：payload 委派 UIDexAtb._stagePayload（與主畫面同一套欄位） */
         _buildStagePayload(BS, members, enemies) {
-            var self = this;
-            var combat = this.app.combatSys;
             if (!BS) BS = window.HY && window.HY.BattleStage;
             if (!BS) return null;
-
+            var combat = this.app.combatSys;
             if (!members) {
                 var partySys = this.app.partySys;
                 members = partySys ? partySys.getPartyMembers() : [this.app.charSys.state];
             }
             if (!enemies) enemies = (combat && combat.enemies) || [];
-
-            var _p = [];
-            /* ⭐ v598：技能名稱 / 屬性 / 群攻標記
-               原本輿圖 payload 完全沒有這三個欄位 →
-               applySide 裡的 `u.skill && p.skill !== u.skill` 永遠不成立
-               → 舞台上永遠不會浮現技能名稱（使用者說的「沒有戰鬥效果」之一）。
-               這裡復用 UIDexAtb 的預測邏輯（地圖內會走 atlasTactics 的敵方預測）。 */
             var dex = window.HY && window.HY.uiDexAtb;
-            var skillNameOf = function (unit, isEnemy) {
-                try {
-                    if (dex && typeof dex._stageSkillName === 'function') {
-                        return dex._stageSkillName(unit, isEnemy);
-                    }
-                } catch (eSk) { }
-                return null;
-            };
-            var metaOf = function (unit, isEnemy) {
-                try {
-                    if (dex && typeof dex._stageSkillMeta === 'function') {
-                        return dex._stageSkillMeta(unit, isEnemy) || {};
-                    }
-                } catch (eMt) { }
-                return {};
-            };
-
-            members.forEach(function (m) {
-                if (!m) return;
-                var md = {};
-                try { md = self.app.charSys.getDerivedStatsForChar(m) || {}; } catch (e0) { md = {}; }
-                var mx = Number(md.maxHp) || Number(m.maxHp) || 0;
-                var cu = Number(m.currentHp);
-                if (!isFinite(cu)) cu = mx;
-                var mMeta = metaOf(m, false);
-                /* ⭐ v612：武魂三層路徑一次取齊 */
-                var _wu = self._wuhunOf(m);
-                /* ⭐ v672【修正：輿圖舞台九宮格沒有對應】
-                   ──────────────────────────────────────────────────────────
-                   輿圖（打圖）的舞台 payload 原本完全沒帶 `cell` 與 `title`，
-                   於是 battleStage.gridSlotOf() 只能退回「依人數自動排」，
-                   玩家在陣盤排好的位置在輿圖戰鬥裡就完全不生效。
-
-                   這裡直接讀 formationGrid 的實際格位，與一般戰鬥同源。 */
-                var _cell = null;
-                try {
-                    var _fg = self.app.formationGrid;
-                    if (_fg && typeof _fg.cellOfChar === 'function') {
-                        var _ci = _fg.cellOfChar(m.id);
-                        if (_ci >= 0) _cell = _ci;
-                    }
-                } catch (eCell) { }
-                _p.push({
-                    name: m.name || '隊員',
-                    cur: cu, max: mx,
-                    mp: Number(m.currentMp) || 0,
-                    mpMax: Number(md.maxMp) || 0,
-                    alive: cu > 0,
-                    ready: Number(m.atb || 0) >= 100,
-                    atb: Number(m.atb || 0),
-                    /* ⭐ v598：技能名稱 / 屬性 / 群攻（舞台特效與文字用） */
-                    skill: skillNameOf(m, false),
-                    element: mMeta.element,
-                    aoe: mMeta.aoe,
-                    /* ⭐ v672：陣盤格位（0~8）與角色稱號 */
-                    cell: _cell,
-                    title: String(m.title || '').slice(0, 16),
-                    sprite: BS.charSprite(m),
-                    color: BS.charColor(m),
-                    /* ⭐ v593：附身武魂（輿圖戰鬥舞台原本漏帶這個欄位，
-                       導致進地圖打怪時角色背後看不到武魂）
-                       ⭐ v612：補上分層圖，讓光圈能自轉、主體保持靜止 */
-                    wuhun: _wu.art,
-                    wuhunHalo: _wu.halo,
-                    wuhunBody: _wu.body,
-                    buffs: BS.buffIconsOf ? BS.buffIconsOf(m) : []
-                });
+            if (!dex || typeof dex._stagePayload !== 'function') return null;
+            return dex._stagePayload(BS, members, true, false, {
+                atlas: true,
+                enemies: enemies,
+                scene: this._atlasStageScene()
             });
-
-            var _f = [];
-            enemies.forEach(function (e) {
-                if (!e) return;
-                var mx2 = Number(e.maxHp) || 0;
-                var cu2 = Number(e.currentHp);
-                if (!isFinite(cu2)) cu2 = mx2;
-                var _em = (typeof e.maxMp === 'number' && e.maxMp > 0)
-                    ? e.maxMp
-                    : Math.floor(80 + (e.lv || 1) * 25 + (e.atk || 20) * 0.15);
-                var eMeta2 = metaOf(e, true);
-                _f.push({
-                    name: e.name || '敵人',
-                    cur: cu2, max: mx2,
-                    mp: (typeof e.currentMp === 'number') ? e.currentMp : _em,
-                    mpMax: _em,
-                    alive: cu2 > 0,
-                    ready: Number(e.atb || 0) >= 100,
-                    atb: Number(e.atb || 0),
-                    /* ⭐ v598：技能名稱 / 屬性 / 群攻（舞台特效與文字用） */
-                    skill: skillNameOf(e, true),
-                    element: (e.spiritRoot || eMeta2.element || null),
-                    aoe: eMeta2.aoe,
-                    /* ⭐ v595：立繪優先用敵人自帶的 sprite（地圖霸主 / 小怪
-                       在 atlasSystem 產生模板時就已寫入 base 的立繪路徑）。
-                       原本這裡只用 MonsterArt.byName(e.name) 反查，
-                       但霸主名稱是「【地圖霸主】枯草墓之主」這種自訂字串，
-                       永遠比對不到 → 退回小圓形頭像（使用者看到的紅面具）。 */
-                    sprite: (function () {
-                        if (e.sprite && /\.(png|webp|jpg)$/i.test(e.sprite)) return e.sprite;
-                        try {
-                            if (BS.monSprite) {
-                                var s1 = BS.monSprite(e);
-                                if (s1) return s1;
-                            }
-                        } catch (eMS) { }
-                        var MA = window.HY && window.HY.MonsterArt;
-                        if (!MA) return '';
-                        var mm = MA.byName(e.name);
-                        if (!mm) return '';
-                        var nn = (mm.index < 10 ? '0' : '') + mm.index;
-                        return 'assets/sprites/' + nn + '_stage.png';
-                    })(),
-                    avatar: (function () {
-                        if (e.avatar) return e.avatar;
-                        try {
-                            if (BS.monAvatar) {
-                                var a1 = BS.monAvatar(e);
-                                if (a1) return a1;
-                            }
-                        } catch (eAV) { }
-                        var MA = window.HY && window.HY.MonsterArt;
-                        if (!MA) return '';
-                        var mm2 = MA.byName(e.name);
-                        return mm2 ? mm2.avatar : '';
-                    })(),
-                    target: (combat && combat.currentEnemy === e),
-                    buffs: BS.buffIconsOf ? BS.buffIconsOf(e) : []
-                });
-            });
-
-            return { party: _p, enemies: _f };
         }
 
         /** ⭐ 綁定掉落面板的清空／篩選按鈕（空狀態也需要） */
@@ -32703,14 +32542,7 @@ window.HY = window.HY || {};
             var pl = this._buildStagePayload(BS);
             if (!pl) return;
             this.__stagePayload = pl;
-            BS.render(host, {
-                party: pl.party,
-                enemies: pl.enemies,
-                id: 'hy-atlas-stage',
-                scene: (sys.activeMap && sys.activeMap.tier === 1) ? 'modern' : 'datang',
-                cumulative: true,
-                mapKey: (sys.activeMap && sys.activeMap.uid) || 'atlas-default'
-            });
+            BS.render(host, this._atlasStageRenderOpts(pl));
         }
 
         /** ⭐ 戰鬥狀態變更時的輕量同步（不重建整個中間欄，避免 hover 中斷） */

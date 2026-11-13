@@ -44907,6 +44907,7 @@ window.HY = window.HY || {};
             this.enemies = [];
             this._enemySeq = 0;
             this._turnCounter = 0;
+            this._battleSeq = (this._battleSeq || 0) + 1;
             this.isActive = true;
             this.pendingNode = node || null;
             this._log = [];
@@ -117238,14 +117239,23 @@ window.HY = window.HY || {};
             return 4;
         }
 
-        _stagePayload(BS, partyMembers, inMap, skipFoe) {
+        _stagePayload(BS, partyMembers, inMap, skipFoe, opts) {
+            opts = opts || {};
+            var atlasMode = !!opts.atlas;
+            var delveMode = !!opts.delve;
+            var extMode = atlasMode || delveMode;
             var app = this.app;
             var combat = app.combatSys || {};
+            var combatRef = combat;
+            if (delveMode) {
+                combatRef = opts.combatRef || app.delveBattle
+                    || (window.HY.game && window.HY.game.delveBattle) || combat;
+            }
             var self = this;
 
             /* ── 我方 ── */
             var party = [];
-            if (!inMap) {
+            if (!inMap || extMode) {
                 /* ⭐ v678：開戰前先補齊陣盤，避免舞台先用預設格、幾秒後才對齊 */
                 self._ensureFormationBeforeStage(partyMembers);
                 /* ⭐ v632 / v680：讀取陣盤格位，讓戰鬥舞台站位與陣盤一致 */
@@ -117268,12 +117278,13 @@ window.HY = window.HY || {};
                     var layers = self._wuhunLayersOf(m);
                     party.push({
                         charId: m.id,
+                        id: m.id,
                         name: m.name || '隊員',
                         cur: cur, max: maxHp,
                         mp: Number(m.currentMp) || 0,
                         mpMax: Number(md.maxMp) || 0,
                         alive: cur > 0,
-                        ready: !!combat.currentEnemy && Number(m.atb || 0) >= 100,
+                        ready: !!combatRef.currentEnemy && Number(m.atb || 0) >= 100,
                         atb: Number(m.atb || 0),
                         /* v699：勿傳「預測招式」到舞台（會每 tick 閃爍）；實招由 combat → BS.fx.skill */
                         skill: null,
@@ -117298,14 +117309,15 @@ window.HY = window.HY || {};
             /* ── 敵方（打圖由輿圖面板自己管） ── */
             var foes = [];
             var atlasChk = window.HY.game && window.HY.game.atlasSys;
-            var blocked = skipFoe || this._chkAtlasInMap();
-            if (!inMap && !blocked && combat.enemies) {
+            var blocked = skipFoe || (this._chkAtlasInMap() && !atlasMode);
+            var foeSrc = extMode ? (opts.enemies || []) : combat.enemies;
+            if ((!inMap && !blocked && combat.enemies) || (extMode && foeSrc && foeSrc.length)) {
                 /* ⭐ v632：站位由 combatCore 在「敵人誕生」時決定並寫入 e.cell，
                    這裡只負責讀取，確保【戰鬥數值】與【舞台站位】完全一致。
                    若敵人沒有 cell（例如舊存檔殘留、渡劫 BOSS）→ 依序補位。 */
                 var _fallbackPool = [4, 1, 7, 3, 5, 0, 2, 6, 8];
 
-                combat.enemies.forEach(function (e, ei) {
+                foeSrc.forEach(function (e, ei) {
                     if (!e) return;
                     var maxHp = Number(e.maxHp) || 0;
                     var cur = Number(e.currentHp);
@@ -117322,6 +117334,8 @@ window.HY = window.HY || {};
                     if (isRbossMega) cellIdx = 4;
 
                     foes.push({
+                        uid: e.uid,
+                        id: e.id,
                         name: e.name || '敵人',
                         cur: cur, max: maxHp,
                         mp: (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp2,
@@ -117334,7 +117348,7 @@ window.HY = window.HY || {};
                         aoe: eMeta.aoe,
                         sprite: BS.monSprite(e),
                         avatar: BS.monAvatar(e),
-                        target: (combat.currentEnemy === e),
+                        target: (combatRef.currentEnemy === e),
                         /* ⭐ v632：沿用戰鬥實體上的格位，保證與數值一致 */
                         cell: cellIdx,
                         cellBonus: e.cellBonus || null,
@@ -117349,7 +117363,9 @@ window.HY = window.HY || {};
                ⭐ 先取地圖的 era（較穩定），再退回地圖 id；
                   遇到【頭目】/【宗師】等前綴時強制切到 boss 場景。 */
             var scene = 'default';
-            try {
+            if (extMode && opts.scene) {
+                scene = opts.scene;
+            } else try {
                 var curMapId = (app.charSys && app.charSys.state && app.charSys.state.currentMap) || null;
                 var MAPS = (window.HY.Data && window.HY.Data.MAPS) || {};
                 var mapDef = curMapId ? MAPS[curMapId] : null;
