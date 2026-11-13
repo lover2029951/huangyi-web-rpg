@@ -6,12 +6,21 @@
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
         newsVer: 'v759 · 2026-11-13',
-        gameVer: 762,
+        gameVer: 763,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '分包開機修復 v763',
+            date: '2026-11-13',
+            bullets: [
+                '修正 <code>hy-phase1.js</code> 開頭 <code>DOMContentLoaded</code> 引號錯誤致整頁無法初始化',
+                '重新建置 chunks；<code>game-chunked.html</code> 補上 <code>style.css</code> 部署'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '清理',
             title: '系統瘦身 v759',

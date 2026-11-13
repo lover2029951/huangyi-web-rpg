@@ -2,13 +2,13 @@
   var nativeAdd = window.addEventListener;
   var queue = [];
   window.addEventListener = function (t, fn, o) {
-    if (t === ''DOMContentLoaded'') { queue.push(fn); return; }
+    if (t === "DOMContentLoaded") { queue.push(fn); return; }
     return nativeAdd.call(window, t, fn, o);
   };
   window.__HY_FLUSH_READY__ = function () {
     window.addEventListener = nativeAdd;
     var q = queue.slice(); queue.length = 0;
-    q.forEach(function (fn) { try { fn(new Event(''DOMContentLoaded'')); } catch (e) { console.error(e); } });
+    q.forEach(function (fn) { try { fn(new Event("DOMContentLoaded")); } catch (e) { console.error(e); } });
     try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
   };
