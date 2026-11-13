@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 78 files */
+/* HY chunk phase2 — 79 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -52366,4 +52366,106 @@ window.HY = window.HY || {};
     window.addEventListener('load', function () { setTimeout(boot, 2100); });
 
 })(window.HY);
+
+/* --- ascendancySelfTest.js --- */
+// js/ascendancySelfTest.js — 昇華回歸檢測（?asc_test=1 或 localStorage hy_asc_test=1）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+    function on() {
+        try {
+            if (/[?&]asc_test=1/.test(location.search || '')) return true;
+            return localStorage.getItem('hy_asc_test') === '1';
+        } catch (e) { return false; }
+    }
+    if (!on()) return;
+
+    function run() {
+        var HY = window.HY;
+        var R = [];
+        function ok(t, m) { R.push((t ? '✓' : '✗') + ' ' + m); if (!t) console.warn('[ascTest]', m); }
+        try {
+            var D = HY.Data;
+            var branches = Object.keys(D.ASCENDANCY_BY_BRANCH || {});
+            ok(branches.length >= 41, '分支數 ≥41（實際 ' + branches.length + '）');
+            var N = D.ASCENDANCY_NODES || {};
+            var shapeBad = [];
+            branches.forEach(function (bid) {
+                var list = D.ASCENDANCY_BY_BRANCH[bid] || [];
+                var ks = 0, st = 0;
+                list.forEach(function (nid) {
+                    var n = N[nid];
+                    if (!n) return;
+                    if (n.type === 1) ks++;
+                    if (n.type === 3) st++;
+                });
+                if (list.length !== 30 || ks !== 1 || st !== 1) {
+                    shapeBad.push(bid + '(' + list.length + ')');
+                }
+            });
+            ok(shapeBad.length === 0, '每分支 30 節點 + 1 核心 + 1 起點');
+
+            var Cls = HY.AscendancySystem;
+            if (!Cls) { ok(false, 'AscendancySystem 未載入'); return R; }
+            var cs = { state: null };
+            var as = new Cls(cs, null);
+
+            var c = { id: 'asc_t1', name: 'T', lv: 160, sect: 'kunlun',
+                asc: { branch: null, allocated: {}, points: 0, spent: 0, subNotables: [] } };
+            cs.state = c;
+            ok(as.pickBranch(c, 'Ascendant').ok, '加入萬法');
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (n && n.asc === 'Ascendant' && (n.isAscStart || n.type === 1)) {
+                    c.asc.allocated[id] = 1;
+                }
+            });
+            as.syncPoints(c);
+            var g0 = as.getBonusFor(c);
+            var attr0 = (g0.attr && g0.attr.str) || 0;
+            ok(attr0 === 1, '萬法五屬不含免費起點（力=' + attr0 + ' 應為 1）');
+
+            var opts = as.subNotableOptions(c);
+            ok(opts.length > 0, '副修候選 ' + opts.length);
+            if (opts[0]) {
+                ok(as.pickSubNotable(opts[0].id, c).ok, '副修選取');
+                var g1 = as.getBonusFor(c);
+                ok(Object.keys(g1.more || {}).length > 0 || Object.keys(g1.flat || {}).length > 0,
+                    '副修進面板');
+            }
+
+            var c2 = { id: 'asc_t2', name: 'T2', lv: 160, sect: 'xiaoyao',
+                asc: { branch: null, allocated: {}, points: 0, spent: 0, subNotables: [] } };
+            cs.state = c2;
+            as.pickBranch(c2, 'BeastLord');
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (n && n.asc === 'BeastLord' && n.type === 1) c2.asc.allocated[id] = 1;
+            });
+            ok(HY.AscMechanics && HY.AscMechanics.active(c2) === 'beastRoar', '傳說核心掛鉤');
+
+            as.resetAll(c2);
+            ok((c2.asc.subNotables || []).length === 0, '重置清副修');
+
+            var c3 = { id: 'asc_t3', name: 'T3', lv: 160, sect: 'xiaoyao',
+                asc: { branch: 'Ascendant', allocated: {}, points: 8, spent: 0,
+                    subNotables: [opts[0] ? opts[0].id : 'x'] } };
+            cs.state = c3;
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (n && n.asc === 'Ascendant' && n.isAscStart) c3.asc.allocated[id] = 1;
+            });
+            var g3 = as.getBonusFor(c3);
+            var subMore = Object.keys(g3.more || {}).length + Object.keys(g3.flat || {}).length;
+            ok(subMore === 0, '未點萬法核心時副修不生效（mods=' + subMore + '）');
+        } catch (e) {
+            ok(false, '例外：' + (e.message || e));
+        }
+        console.log('[ascendancySelfTest]\n' + R.join('\n'));
+        return R;
+    }
+
+    if (document.readyState === 'complete') setTimeout(run, 800);
+    else window.addEventListener('load', function () { setTimeout(run, 800); });
+})();
 

@@ -5,13 +5,24 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v770 · 2026-11-13',
-        gameVer: 770,
+        newsVer: 'v771 · 2026-11-13',
+        gameVer: 771,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '昇華',
+            title: '昇華實測修復 v771',
+            date: '2026-11-13',
+            bullets: [
+                '萬法全屬加成<b>不再計入免費起點</b>；POE 聚合路徑也會套用副修／五屬',
+                '未點萬法核心時副修詞條<b>不會偷跑進面板</b>；重置昇華清空副修',
+                '承天代傷改綁 <code>id</code>；威壓攻擊不再重複疊加',
+                '新增 <code>?asc_test=1</code> 昇華回歸檢測（Console）'
+            ]
+        },
         {
             tag: 'add', tagLabel: '昇華',
             title: '傳說昇華 +20 v770',

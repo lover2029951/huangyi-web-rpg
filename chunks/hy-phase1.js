@@ -21197,8 +21197,6 @@ window.HY = window.HY || {};
                         if (b.doubleReady) out.atkMult *= 2;
                         break;
                     case 'intimidate': {
-                        var n = aliveFoes().length;
-                        out.atkMult *= (1 + n * num(p.atkPerEnemy, 0.05));
                         var allies = partyMembers().filter(function (x) {
                             return x && x.currentHp > 0;
                         }).length;
@@ -21322,9 +21320,10 @@ window.HY = window.HY || {};
                 }
                 if (m === 'damageShare') {
                     var share = num(p.sharePct, 0.30);
+                    var gid = String(c.id != null ? c.id : (c.uid != null ? c.uid : c.name || ''));
                     partyMembers().forEach(function (mm) {
                         if (!mm || mm === c || mm.currentHp <= 0) return;
-                        mm._ascGuardian = c.uid || c.id;
+                        mm._ascGuardian = gid;
                         mm._ascSharePct = share;
                     });
                 }
@@ -52095,6 +52094,7 @@ window.HY = window.HY || {};
             var n = Object.keys(a.allocated).length;
             a.branch = null;
             a.allocated = {};
+            a.subNotables = [];
             this.syncPoints(c);
             this._invalidate(c);
             this._log('🔄 昇華天賦已全部重洗（退還 ' + n + ' 點）', 'system');
@@ -52155,7 +52155,11 @@ window.HY = window.HY || {};
             if (AM && typeof AM.has === 'function' && AM.has(charObj, 'multiMastery')) {
                 var p = (typeof AM.paramsOf === 'function') ? AM.paramsOf(charObj) : {};
                 var per = Math.max(0, num(p.attrPerNode, 1));
-                var spent = Object.keys(a.allocated || {}).length;
+                var Nk = this.nodes();
+                var spent = Object.keys(a.allocated || {}).filter(function (id) {
+                    var nd = Nk[id];
+                    return nd && !nd.isAscStart;
+                }).length;
                 var add = per * spent;
                 if (add > 0) {
                     ['con', 'str', 'agi', 'int', 'spi'].forEach(function (k) {
@@ -52163,13 +52167,15 @@ window.HY = window.HY || {};
                     });
                 }
             }
-            var N = this.nodes();
-            (a.subNotables || []).forEach(function (sid) {
-                var sn = N[sid];
-                if (sn && sn.stats && sn.stats.length) {
-                    this._mergeStatBonus(out, sn.stats);
-                }
-            }, this);
+            if (AM && typeof AM.has === 'function' && AM.has(charObj, 'multiMastery')) {
+                var N = this.nodes();
+                (a.subNotables || []).forEach(function (sid) {
+                    var sn = N[sid];
+                    if (sn && sn.stats && sn.stats.length) {
+                        this._mergeStatBonus(out, sn.stats);
+                    }
+                }, this);
+            }
         }
 
         /** 可選副修顯著（他系 type 2） */
@@ -52261,13 +52267,15 @@ window.HY = window.HY || {};
                     if (list.length) {
                         var ctx = engine.buildContext(c, {});
                         var agg = engine.aggregate(list, ctx);
-                        return {
+                        var merged = {
                             attr: agg.attr || out.attr,
                             flat: agg.flat || {},
                             more: agg.more || {},
                             extra: {},
                             __poe: { flags: agg.flags, counts: agg.counts, conv: agg.conv, procs: agg.procs }
                         };
+                        this._applyKeystonePassives(merged, c);
+                        return merged;
                     }
                 } catch (e) { }
             }
@@ -82790,7 +82798,7 @@ window.HY = window.HY || {};
                     var _guard = null;
                     for (var _gi = 0; _gi < _pm.length; _gi++) {
                         var _mm = _pm[_gi];
-                        if (_mm && (String(_mm.uid || _mm.id) === String(target._ascGuardian))) {
+                        if (_mm && (String(_mm.id != null ? _mm.id : _mm.uid) === String(target._ascGuardian))) {
                             _guard = _mm;
                             break;
                         }
