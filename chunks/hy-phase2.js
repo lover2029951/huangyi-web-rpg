@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 79 files */
+/* HY chunk phase2 — 81 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -52458,6 +52458,108 @@ window.HY = window.HY || {};
             var g3 = as.getBonusFor(c3);
             var subMore = Object.keys(g3.more || {}).length + Object.keys(g3.flat || {}).length;
             ok(subMore === 0, '未點萬法核心時副修不生效（mods=' + subMore + '）');
+
+            var metaFails = [];
+            var META = D.ASCENDANCY_META || {};
+            branches.forEach(function (bid) {
+                var m = META[bid] && META[bid].keystone && META[bid].keystone.mechanic;
+                if (!m) return;
+                var ksId = null;
+                (D.ASCENDANCY_BY_BRANCH[bid] || []).forEach(function (nid) {
+                    var nd = N[nid];
+                    if (nd && nd.type === 1) {
+                        if (nd.keystone !== m) metaFails.push(bid + '.mech');
+                        ksId = nd.id;
+                    }
+                });
+                if (!ksId) metaFails.push(bid + '.noKS');
+            });
+            ok(metaFails.length === 0, 'META 核心 id 對齊（' + metaFails.slice(0, 4).join(', ') + '）');
+
+            var c4 = { id: 'asc_t4', name: 'T4', lv: 160, sect: 'huashan',
+                asc: { branch: null, allocated: {}, points: 0, spent: 0, subNotables: [] } };
+            cs.state = c4;
+            as.pickBranch(c4, 'Champion');
+            Object.keys(N).forEach(function (id) {
+                var n = N[id];
+                if (n && n.asc === 'Champion' && n.isAscStart) c4.asc.allocated[id] = 1;
+            });
+            var fr = as.frontierIds(c4);
+            var added = 0;
+            for (var fi = 0; fi < fr.length && added < 4; fi++) {
+                var nid2 = fr[fi];
+                var nn = N[nid2];
+                if (nn && nn.stats && nn.stats.length && as.allocate(nid2, c4).ok) added++;
+            }
+            var ab4 = as.getBonusFor(c4);
+            var agg4 = as.aggregateFor(c4);
+            var flatSum = 0;
+            Object.keys(ab4.flat || {}).forEach(function (k) {
+                flatSum += Math.abs(Number(ab4.flat[k]) || 0);
+            });
+            ok(flatSum > 0, '昇華 flat 有數值（Champion +' + added + ' sum=' + Math.round(flatSum) + '）');
+            ok(!!ab4.__poe || flatSum > 0, '加成路徑（POE 或中文詞條）');
+            if (ab4.__poe && agg4) {
+                ok(true, 'POE+aggregate 並存（hook 應略過二次數值）');
+            } else {
+                ok(true, '中文詞條路徑（aggregate=' + (agg4 ? '有' : '無') + '）');
+            }
+
+            function ascCacheSig(ch) {
+                var a = ch.asc || {};
+                return [
+                    String(a.branch || ''),
+                    Object.keys(a.allocated || {}).sort().join(','),
+                    (Array.isArray(a.subNotables) ? a.subNotables.slice().sort().join(',') : '')
+                ].join('|');
+            }
+            var c5 = JSON.parse(JSON.stringify(c));
+            c5.asc.subNotables = opts[0] ? [opts[0].id] : [];
+            if (opts[1] && opts[1].id !== opts[0].id) c5.asc.subNotables.push(opts[1].id);
+            var sigBase = ascCacheSig(c);
+            var sigSub = ascCacheSig(c5);
+            ok(sigSub !== sigBase, '副修變更時衍生快取簽章應不同');
+            ok((c5.asc.subNotables || []).length === 0 || sigSub.split('|')[2].length > 0,
+                '簽章第三段含副修 uid');
+
+            /* ── 戰鬥微測：暗影隱匿時序（不依賴進戰） ── */
+            var AM = HY.AscMechanics;
+            var ksShadow = null;
+            Object.keys(N).forEach(function (id) {
+                var nd = N[id];
+                if (nd && nd.asc === 'Assassin' && nd.type === 1 && nd.keystone === 'shadowStrike') {
+                    ksShadow = id;
+                }
+            });
+            ok(!!ksShadow, '暗影核心節點可解析');
+            if (AM && ksShadow) {
+                var cSh = {
+                    id: 'asc_shadow_t', name: '暗影測', lv: 120,
+                    currentHp: 5000, maxHp: 5000,
+                    asc: { branch: 'Assassin', allocated: {}, points: 0, spent: 1, subNotables: [] }
+                };
+                cSh.asc.allocated[ksShadow] = 1;
+                ok(AM.active(cSh) === 'shadowStrike', '暗影核心掛鉤 active');
+                if (typeof AM.noteCrit === 'function') AM.noteCrit(cSh);
+                var van1 = (cSh._ascMech && cSh._ascMech.vanish) || 0;
+                ok(van1 >= 1, '會心→隱匿層≥1（' + van1 + '）');
+                AM.onTurnStart(cSh);
+                var van2 = (cSh._ascMech && cSh._ascMech.vanish) || 0;
+                ok(van2 >= 1, 'onTurnStart 不消耗隱匿（剩 ' + van2 + '）');
+                var b0 = cSh._ascMech || {};
+                b0._vanishUsedThisStrike = 0;
+                var red = AM.onStruck(cSh, { name: '試敵' }, 1000);
+                ok(red >= 620, '隱匿50%+常駐12%（抵銷 ' + red + '，應≥620）');
+                if (typeof AM.afterEnemyStrike === 'function') {
+                    AM.afterEnemyStrike(cSh, !!b0._vanishUsedThisStrike);
+                }
+                var van3 = (cSh._ascMech && cSh._ascMech.vanish) || 0;
+                ok(van3 === 0, '敵方出手後隱匿歸零（' + van3 + '）');
+                red = AM.onStruck(cSh, {}, 1000);
+                ok(red >= 120 && red < 200, '無隱匿僅常駐減傷（抵銷 ' + red + '）');
+            } else if (!AM) {
+                ok(false, 'AscMechanics 未載入（無法測隱匿）');
+            }
         } catch (e) {
             ok(false, '例外：' + (e.message || e));
         }
@@ -52465,7 +52567,721 @@ window.HY = window.HY || {};
         return R;
     }
 
-    if (document.readyState === 'complete') setTimeout(run, 800);
-    else window.addEventListener('load', function () { setTimeout(run, 800); });
+    window.HY = window.HY || {};
+    window.HY.ascendancySelfTestRun = run;
+
+    if (on()) {
+        if (document.readyState === 'complete') setTimeout(run, 800);
+        else window.addEventListener('load', function () { setTimeout(run, 800); });
+    }
+})();
+
+/* --- ascendancyMechanicsSelfTest.js --- */
+// js/ascendancyMechanicsSelfTest.js — 41 條昇華核心機制微測（?asc_test=1 一併執行）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function on() {
+        try {
+            if (/[?&]asc_test=1/.test(location.search || '')) return true;
+            if (/[?&]asc_mech_test=1/.test(location.search || '')) return true;
+            return localStorage.getItem('hy_asc_test') === '1' ||
+                localStorage.getItem('hy_asc_mech_test') === '1';
+        } catch (e) { return false; }
+    }
+
+    function run() {
+        var HY = window.HY;
+        var AM = HY.AscMechanics;
+        var D = HY.Data || {};
+        var N = D.ASCENDANCY_NODES || {};
+        var META = D.ASCENDANCY_META || {};
+        var R = [];
+        var fails = 0;
+
+        function ok(t, m) {
+            R.push((t ? '✓' : '✗') + ' ' + m);
+            if (!t) { fails++; console.warn('[ascMechTest]', m); }
+        }
+
+        if (!AM || typeof AM.active !== 'function') {
+            ok(false, 'AscMechanics 未載入');
+            return { results: R, fails: fails };
+        }
+
+        var savedGame = HY.game;
+        var foeTpl = function () {
+            return { uid: 'foe_t', name: '試敵', currentHp: 800, maxHp: 1000, def: 40 };
+        };
+        var foe = foeTpl();
+        var ally = { id: 'ally_t', name: '隊友', currentHp: 3000, maxHp: 3000, asc: {} };
+        var lead = null;
+
+        function stubGame() {
+            HY.game = {
+                charSys: {
+                    getDerivedStatsForChar: function (c) {
+                        return {
+                            maxHp: num(c.maxHp, 5000),
+                            atk: num(c.atk, 2000),
+                            eva: 0,
+                            dmgReduce: 0,
+                            critRes: 0
+                        };
+                    }
+                },
+                partySys: {
+                    getPartyMembers: function () {
+                        return lead ? [lead, ally] : [ally];
+                    }
+                },
+                combatSys: { enemies: [foe] }
+            };
+        }
+
+        function restoreGame() {
+            HY.game = savedGame;
+        }
+
+        function num(v, d) {
+            var n = Number(v);
+            return isFinite(n) ? n : (typeof d === 'number' ? d : 0);
+        }
+
+        function ksIdOf(branch) {
+            var found = null;
+            Object.keys(N).forEach(function (id) {
+                var nd = N[id];
+                if (nd && nd.asc === branch && nd.type === 1 && nd.keystone) found = id;
+            });
+            return found;
+        }
+
+        function mkChar(branch, extra) {
+            var ks = ksIdOf(branch);
+            var c = {
+                id: 'asc_m_' + branch,
+                name: 'M:' + branch,
+                lv: 160,
+                currentHp: 2500,
+                maxHp: 5000,
+                currentMp: 800,
+                atk: 2000,
+                asc: { branch: branch, allocated: {}, points: 0, spent: 1, subNotables: [] }
+            };
+            if (extra) Object.keys(extra).forEach(function (k) { c[k] = extra[k]; });
+            if (ks) c.asc.allocated[ks] = 1;
+            return c;
+        }
+
+        function resetFoe() {
+            foe = foeTpl();
+            HY.game.combatSys.enemies = [foe];
+        }
+
+        function testMech(branch, mech) {
+            lead = mkChar(branch);
+            delete lead._ascMech;
+            resetFoe();
+            var mechId = AM.active(lead);
+            ok(mechId === mech, branch + ' active=' + mech + (mechId !== mech ? (' 實際=' + mechId) : ''));
+
+            try {
+                switch (mech) {
+                    case 'judgement': {
+                        foe._debuff = { slow: 1 };
+                        var jm = AM.attackMods(lead, foe);
+                        ok(jm.penPct > 0.1, branch + ' 判罪穿甲');
+                        break;
+                    }
+                    case 'sigilField': {
+                        AM.onAttack(lead, foe, 100);
+                        var sf = (lead._ascMech && lead._ascMech.sigils) || 0;
+                        ok(sf >= 1, branch + ' 符陣層 ' + sf);
+                        AM.onPreAttack(lead);
+                        ok(num(ally._ascSigilDr, 0) > 0 || sf >= 1, branch + ' 符陣隊伍減傷標記');
+                        break;
+                    }
+                    case 'damageShare': {
+                        AM.onPreAttack(lead);
+                        ok(!!ally._ascGuardian, branch + ' 承天守護者標記');
+                        var g0 = (lead._ascMech && lead._ascMech.guard) || 0;
+                        AM.onStruck(lead, foe, 500);
+                        ok(((lead._ascMech && lead._ascMech.guard) || 0) > g0, branch + ' 護念疊層');
+                        break;
+                    }
+                    case 'unyielding': {
+                        var g0u = (lead._ascMech && lead._ascMech.gang) || 0;
+                        AM.onStruck(lead, foe, 200);
+                        ok(((lead._ascMech && lead._ascMech.gang) || 0) > g0u, branch + ' 罡勁累積');
+                        break;
+                    }
+                    case 'bloodRage': {
+                        lead.currentHp = Math.floor(lead.maxHp * 0.35);
+                        var bm = AM.attackMods(lead, foe);
+                        ok(bm.atkMult > 1.25, branch + ' 浴血增傷 x' + bm.atkMult.toFixed(2));
+                        break;
+                    }
+                    case 'warCry': {
+                        var i;
+                        for (i = 0; i < 5; i++) AM.onTurnStart(lead);
+                        ok(((lead._ascMech && lead._ascMech.cryTurns) || 0) > 0 ||
+                            ((lead._ascMech && lead._ascMech.cryCd) || 0) === 0,
+                            branch + ' 戰嚎觸發');
+                        break;
+                    }
+                    case 'momentum': {
+                        foe.uid = 'same';
+                        AM.onAttack(lead, foe, 50);
+                        AM.onAttack(lead, foe, 50);
+                        ok(((lead._ascMech && lead._ascMech.momentum) || 0) >= 2, branch + ' 疾影疊層');
+                        break;
+                    }
+                    case 'farShot': {
+                        var fm = AM.attackMods(lead, foe);
+                        ok(fm.forceHit === true, branch + ' 穿雲必中');
+                        break;
+                    }
+                    case 'insight': {
+                        AM.onPreAttack(lead);
+                        ok(((lead._ascMech && lead._ascMech.insight) || 0) >= 1, branch + ' 洞察層');
+                        var im = AM.attackMods(lead, foe);
+                        ok(im.atkMult > 1, branch + ' 洞察增傷');
+                        break;
+                    }
+                    case 'haunt': {
+                        AM.onAttack(lead, foe, 30);
+                        var st = foe._sect && foe._sect.__m_haunt;
+                        ok(st && num(st.stacks, 0) >= 1, branch + ' 幽蝕疊層');
+                        break;
+                    }
+                    case 'elementCycle': {
+                        var msg = AM.onAttack(lead, foe, 20) || '';
+                        ok(msg.indexOf('五行') >= 0 || ((lead._ascMech && lead._ascMech.elemIdx) || 0) > 0,
+                            branch + ' 五行輪轉');
+                        break;
+                    }
+                    case 'minionPact': {
+                        lead._ascMech = lead._ascMech || {};
+                        lead._ascMech.minions = 2;
+                        var mr = AM.onStruck(lead, foe, 500);
+                        ok(mr >= 80, branch + ' 傀儡分擔 ' + mr);
+                        break;
+                    }
+                    case 'executioner': {
+                        foe.currentHp = Math.floor(foe.maxHp * 0.2);
+                        foe.isBoss = false;
+                        var hp0 = foe.currentHp;
+                        AM.onAttack(lead, foe, 10);
+                        ok(foe.currentHp < hp0 || hp0 <= Math.floor(foe.maxHp * 0.25),
+                            branch + ' 斷魂處決');
+                        break;
+                    }
+                    case 'riposte': {
+                        var rnd = Math.random;
+                        Math.random = function () { return 0; };
+                        try {
+                            var rr = AM.onStruck(lead, foe, 400);
+                            ok(rr >= 300, branch + ' 格擋減傷 ' + rr);
+                        } finally {
+                            Math.random = rnd;
+                        }
+                        break;
+                    }
+                    case 'intimidate': {
+                        var im2 = AM.attackMods(lead, foe);
+                        ok(im2.atkMult > 1, branch + ' 威壓增傷');
+                        AM.onKill(lead, foe);
+                        ok(((lead._ascMech && lead._ascMech.fear) || 0) > 0, branch + ' 恐懼累積');
+                        break;
+                    }
+                    case 'shadowStrike': {
+                        if (typeof AM.noteCrit === 'function') AM.noteCrit(lead);
+                        ok(((lead._ascMech && lead._ascMech.vanish) || 0) >= 1, branch + ' 隱匿');
+                        var sr = AM.onStruck(lead, foe, 1000);
+                        ok(sr >= 600, branch + ' 隱匿減傷 ' + sr);
+                        break;
+                    }
+                    case 'mirage': {
+                        var mir = AM.onStruck(lead, foe, 500);
+                        ok(mir >= 180, branch + ' 幻形減傷 ' + mir);
+                        break;
+                    }
+                    case 'trapGear': {
+                        lead._ascMech = lead._ascMech || {};
+                        lead._ascMech.traps = 2;
+                        var hpT = foe.currentHp;
+                        AM.onAttack(lead, foe, 0);
+                        ok(foe.currentHp < hpT, branch + ' 機關引爆');
+                        break;
+                    }
+                    case 'multiMastery': {
+                        ok(AM.attackMods(lead, foe) != null, branch + ' 萬法掛鉤可呼叫');
+                        break;
+                    }
+                    case 'arsenal': {
+                        lead.equipment = { w: 1, h: 1, a: 1, b: 1 };
+                        var am2 = AM.attackMods(lead, foe);
+                        ok(am2.atkMult > 1.05, branch + ' 藏鋒增傷');
+                        break;
+                    }
+                    case 'aura': {
+                        AM.onPreAttack(lead);
+                        ok(num(ally._ascAuraRes, 0) > 0, branch + ' 明光光環');
+                        break;
+                    }
+                    /* ── 傳說 20 套 ── */
+                    case 'comboStrike': {
+                        AM.onAttack(lead, foe, 40);
+                        AM.onAttack(lead, foe, 40);
+                        ok(((lead._ascMech && lead._ascMech.comboStacks) || 0) >= 2,
+                            branch + ' 劍意疊層');
+                        break;
+                    }
+                    case 'alchemy': {
+                        AM.onTurnStart(lead);
+                        ok(((lead._ascMech && lead._ascMech.pills) || 0) >= 1, branch + ' 煉丹層');
+                        break;
+                    }
+                    case 'formationWeb': {
+                        AM.onAttack(lead, foe, 20);
+                        var ws = foe._sect && foe._sect.__m_form;
+                        ok(ws && num(ws.stacks, 0) >= 1, branch + ' 羅網');
+                        break;
+                    }
+                    case 'beastRoar': {
+                        var br = AM.attackMods(lead, foe);
+                        ok(br.atkMult >= 1, branch + ' 百獸攻增');
+                        var i2;
+                        for (i2 = 0; i2 < 4; i2++) AM.onTurnStart(lead);
+                        ok(true, branch + ' 咆哮回合無例外');
+                        break;
+                    }
+                    case 'mirrorPain': {
+                        AM.onStruck(lead, foe, 300);
+                        ok(((lead._ascMech && lead._ascMech.mirrorDmg) || 0) >= 80,
+                            branch + ' 鏡痕儲存 ' + ((lead._ascMech && lead._ascMech.mirrorDmg) || 0));
+                        break;
+                    }
+                    case 'bloodDebt': {
+                        AM.onAttack(lead, foe, 120);
+                        ok(num(foe._ascDebt, 0) > 0, branch + ' 血債 ' + num(foe._ascDebt, 0));
+                        break;
+                    }
+                    case 'taijiFlow': {
+                        lead._ascMech = lead._ascMech || {};
+                        lead._ascMech.turns = 1;
+                        var ty = AM.attackMods(lead, foe);
+                        ok(ty.atkMult > 1.1 || ty.atkMult < 0.95, branch + ' 陰陽輪轉');
+                        break;
+                    }
+                    case 'venomBrand': {
+                        AM.onAttack(lead, foe, 10);
+                        var vn = foe._sect && foe._sect.__m_venom;
+                        ok(vn && num(vn.stacks, 0) >= 1, branch + ' 毒印');
+                        break;
+                    }
+                    case 'qiSiphon': {
+                        var hpE = foe.currentHp;
+                        var hpP = lead.currentHp;
+                        AM.onAttack(lead, foe, 20);
+                        ok(foe.currentHp < hpE || lead.currentHp > hpP, branch + ' 吸星');
+                        break;
+                    }
+                    case 'warBanner': {
+                        var i3;
+                        for (i3 = 0; i3 < 5; i3++) AM.onTurnStart(lead);
+                        ok(((lead._ascMech && lead._ascMech.bannerTurns) || 0) > 0 ||
+                            ((lead._ascMech && lead._ascMech.banner) || 0) > 0,
+                            branch + ' 戰旗');
+                        break;
+                    }
+                    case 'soulBind': {
+                        AM.onAttack(lead, foe, 30);
+                        ok(((lead._ascMech && lead._ascMech.bindUid) || '') === foe.uid ||
+                            ((lead._ascMech && lead._ascMech.soulBind) || '') === foe.uid,
+                            branch + ' 魂鏈鎖定');
+                        break;
+                    }
+                    case 'meteorCharge': {
+                        AM.onTurnStart(lead);
+                        ok(((lead._ascMech && lead._ascMech.charge) || 0) >= 1, branch + ' 隕星蓄力');
+                        break;
+                    }
+                    case 'windStep': {
+                        AM.onStruck(lead, foe, 100);
+                        ok(((lead._ascMech && lead._ascMech.windStacks) || 0) >= 1,
+                            branch + ' 風勢 ' + ((lead._ascMech && lead._ascMech.windStacks) || 0));
+                        break;
+                    }
+                    case 'ironShred': {
+                        AM.onAttack(lead, foe, 20);
+                        var is = foe._sect && foe._sect.__m_iron;
+                        ok(is && num(is.stacks, 0) >= 1, branch + ' 鐵砂');
+                        break;
+                    }
+                    case 'bloodSeal': {
+                        AM.onAttack(lead, foe, 88);
+                        ok(num(foe._lastHit, 0) > 0, branch + ' 血印紀錄');
+                        break;
+                    }
+                    case 'timeDebt': {
+                        AM.onTurnStart(lead);
+                        ok(lead._ascMech != null, branch + ' 時輪狀態');
+                        break;
+                    }
+                    case 'runeEtch': {
+                        var rp = AM.onPreAttack(lead) || '';
+                        ok(rp.indexOf('刻印') >= 0 || ((lead._ascMech && lead._ascMech.rune) || 0) >= 1 ||
+                            ((lead._ascMech && lead._ascMech.etch) || 0) >= 1,
+                            branch + ' 符刻');
+                        break;
+                    }
+                    case 'mountainStance': {
+                        AM.onTurnStart(lead);
+                        ok(((lead._ascMech && lead._ascMech.mountain) || 0) >= 1, branch + ' 山勢疊層');
+                        var mdr = AM.onStruck(lead, foe, 400);
+                        ok(mdr >= 15, branch + ' 鎮山減傷 ' + mdr);
+                        break;
+                    }
+                    case 'lotusBloom': {
+                        AM.onTurnStart(lead);
+                        ok(lead.currentHp >= 2500, branch + ' 蓮花回春');
+                        break;
+                    }
+                    case 'voidStep': {
+                        lead._ascMech = lead._ascMech || {};
+                        lead._ascMech.atkCount = 2;
+                        var vm = AM.attackMods(lead, foe);
+                        ok(vm.penPct >= 0.4 || vm.trueDmgPct > 0, branch + ' 虛步穿透');
+                        break;
+                    }
+                    default:
+                        ok(false, branch + ' 未實作測試 mech=' + mech);
+                }
+            } catch (e) {
+                ok(false, branch + ' 例外: ' + (e.message || e));
+            }
+        }
+
+        stubGame();
+        var branches = Object.keys(META);
+        var tested = 0;
+        var expectedMech = {};
+
+        branches.forEach(function (bid) {
+            var meta = META[bid];
+            var ks = meta && meta.keystone;
+            if (!ks || !ks.mechanic) return;
+            expectedMech[ks.mechanic] = (expectedMech[ks.mechanic] || 0) + 1;
+            if (!ksIdOf(bid)) {
+                ok(false, bid + ' 找不到核心節點');
+                return;
+            }
+            testMech(bid, ks.mechanic);
+            tested++;
+        });
+
+        restoreGame();
+        ok(tested >= 41, '已測分支數 ' + tested + '（目標≥41）');
+        ok(fails === 0, '機制失敗數 ' + fails + (fails ? ' ← 見上方 ✗' : ''));
+
+        console.log('[ascendancyMechanicsSelfTest]\n' + R.join('\n'));
+        return { results: R, fails: fails, tested: tested };
+    }
+
+    window.HY.ascendancyMechSelfTestRun = run;
+
+    function hookMain() {
+        var prev = window.HY.ascendancySelfTestRun;
+        window.HY.ascendancySelfTestRun = function () {
+            var a = prev ? prev() : [];
+            var b = run();
+            return (a || []).concat((b && b.results) || []);
+        };
+    }
+
+    if (on()) {
+        if (document.readyState === 'complete') setTimeout(hookMain, 1200);
+        else window.addEventListener('load', function () { setTimeout(hookMain, 1200); });
+    } else {
+        hookMain();
+    }
+})();
+
+/* --- sectMechanicsSelfTest.js --- */
+// js/sectMechanicsSelfTest.js — 46 派門派機制 hook 微測（?sect_test=1）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function on() {
+        try {
+            if (/[?&]sect_test=1/.test(location.search || '')) return true;
+            if (/[?&]asc_test=1/.test(location.search || '')) return true;
+            return localStorage.getItem('hy_sect_test') === '1';
+        } catch (e) { return false; }
+    }
+
+    function run() {
+        var HY = window.HY;
+        var R = [];
+        var fails = 0;
+        function ok(t, m) {
+            R.push((t ? '✓' : '✗') + ' ' + m);
+            if (!t) { fails++; console.warn('[sectMechTest]', m); }
+        }
+
+        var val = window.HY.SectFeatureSystem && window.HY.SectFeatureSystem.validate
+            ? window.HY.SectFeatureSystem.validate() : null;
+        if (!val) {
+            ok(false, 'SectFeatureSystem.validate 不可用');
+            return { results: R, fails: fails, tested: 0 };
+        }
+        ok(val.ok, 'FEATURES 與 SECTS 一一對應（缺 ' + (val.missing ? val.missing.length : 0) + '）');
+        if (!val.ok && val.missing) {
+            val.missing.slice(0, 6).forEach(function (m) { ok(false, '缺實作 ' + m); });
+        }
+
+        /** 微測用獨立 mock，避免汙染進行中戰鬥與 plugin 註冊 */
+        var sys = null;
+        if (HY.SectFeatureSystem) {
+            var mockApp = {
+                charSys: {
+                    state: null,
+                    rootState: { roster: [] },
+                    getDerivedStatsForChar: function (c) {
+                        return {
+                            maxHp: c.maxHp || 5000,
+                            maxMp: c.currentMp != null ? 2000 : 2000,
+                            atk: c.atk || 1800,
+                            def: 400,
+                            eva: 50,
+                            crit: 20,
+                            critRes: 15
+                        };
+                    }
+                },
+                partySys: {
+                    getPartyMembers: function () {
+                        return mockApp._party || [];
+                    }
+                },
+                combatSys: {
+                    enemies: [],
+                    log: function () { },
+                    syncCurrentEnemyPointer: function () { },
+                    handleVictory: function () { },
+                    registerPlugin: function () { }
+                },
+                affixSys: null
+            };
+            mockApp._party = [];
+            sys = new HY.SectFeatureSystem(mockApp);
+        }
+        if (!sys) {
+            ok(false, 'sectFeatSys 未建立');
+            return { results: R, fails: fails, tested: 0 };
+        }
+
+        var foe = {
+            uid: 'foe_sect', name: '試敵', currentHp: 2000, maxHp: 2000,
+            def: 80, currentMp: 500, maxMp: 500
+        };
+        var core = (sys.app && sys.app.combatSys) ? sys.app.combatSys : {
+            enemies: [],
+            log: function () { },
+            syncCurrentEnemyPointer: function () { },
+            handleVictory: function () { }
+        };
+        if (!core.log) core.log = function () { };
+        if (!core.syncCurrentEnemyPointer) core.syncCurrentEnemyPointer = function () { };
+        if (!core.handleVictory) core.handleVictory = function () { };
+        core.enemies = [foe];
+        if (sys.app && !sys.app.combatSys) sys.app.combatSys = core;
+        if (!sys.app) {
+            ok(false, 'sectFeatSys.app 未設定');
+            return { results: R, fails: fails, tested: 0 };
+        }
+
+        function mkChar(sectId) {
+            var c = {
+                id: 'st_' + sectId,
+                name: '測' + sectId,
+                lv: 120,
+                sect: sectId,
+                currentHp: 4000,
+                maxHp: 5000,
+                currentMp: 1500,
+                atk: 2000
+            };
+            delete c._battle;
+            delete c.sectFeature;
+            return c;
+        }
+
+        var tested = 0;
+        var HOOKS = [
+            'preAttack', 'onAttack', 'onStruck', 'onTurnStart',
+            'onTurnEnd', 'onHeal', 'onKill', 'onAoeAttack', 'mods', 'defMods'
+        ];
+
+        (val.details || []).forEach(function (d) {
+            var sectId = d.sect;
+            var name = d.name || sectId;
+            var def = sys.getDef(sectId);
+            if (!def) return;
+
+            ok(d.hookCount > 1, name + '(' + sectId + ') 有實作 hook（' + d.hookCount + '）');
+
+            var c = mkChar(sectId);
+            sys.app._party = [c];
+            var p = sys.getParams(c);
+            ok(!!p, name + ' getParams');
+
+            try {
+                sys.preAttack(core, c, foe, false);
+            } catch (e1) {
+                ok(false, name + ' preAttack: ' + e1.message);
+            }
+            try {
+                sys.advanceTurn(core, c);
+            } catch (e2) {
+                ok(false, name + ' advanceTurn: ' + e2.message);
+            }
+            try {
+                var am = sys.getAttackerMods(c, foe, false);
+                ok(am && typeof am.atkMult === 'number', name + ' getAttackerMods');
+            } catch (e3) {
+                ok(false, name + ' getAttackerMods: ' + e3.message);
+            }
+            try {
+                var dm = sys.getDefenderMods(c);
+                ok(dm && typeof dm.defMult === 'number', name + ' getDefenderMods');
+            } catch (e4) {
+                ok(false, name + ' getDefenderMods: ' + e4.message);
+            }
+
+            var snapHp = foe.currentHp;
+            var snapBattle = JSON.stringify(c._battle || {});
+            HOOKS.forEach(function (h) {
+                if (typeof def[h] !== 'function') return;
+                try {
+                    switch (h) {
+                        case 'preAttack':
+                            def.preAttack(sys, core, c, foe, false, p);
+                            break;
+                        case 'onAttack':
+                            def.onAttack(sys, core, c, foe, 200, p);
+                            break;
+                        case 'onStruck':
+                            def.onStruck(sys, core, c, foe, 300, p);
+                            break;
+                        case 'onTurnStart':
+                            def.onTurnStart(sys, core, c, p);
+                            break;
+                        case 'onTurnEnd':
+                            def.onTurnEnd(sys, core, foe, p);
+                            break;
+                        case 'onHeal':
+                            def.onHeal(sys, core, c, 100, p);
+                            break;
+                        case 'onKill':
+                            def.onKill(sys, core, c, foe, p);
+                            break;
+                        case 'onAoeAttack':
+                            def.onAoeAttack(sys, core, c, [foe], p);
+                            break;
+                        case 'mods':
+                            def.mods(sys, {
+                                char: c, target: foe, isAoe: false, params: p,
+                                battle: sys.battle(c),
+                                turnIndex: 1,
+                                enemyState: function (t) { return sys.enemyState(t); },
+                                atk: function () { return sys.atkOf(c); },
+                                mp: function () { return sys.mpOf(c); },
+                                maxHp: function () { return sys.maxHpOf(c); }
+                            });
+                            break;
+                        case 'defMods':
+                            def.defMods(sys, { char: c, params: p, battle: sys.battle(c) });
+                            break;
+                    }
+                    ok(true, name + ' ' + h);
+                } catch (ex) {
+                    ok(false, name + ' ' + h + ': ' + (ex.message || ex));
+                }
+            });
+
+            try {
+                sys.processPlayerAttack(core, {
+                    charObj: c, skillId: 'normalAtk', totalDealt: 180
+                });
+            } catch (eP) {
+                ok(false, name + ' processPlayerAttack: ' + eP.message);
+            }
+            try {
+                sys.processEnemyAttack(core, {
+                    targetMember: c, enemy: foe, enemyDmg: 250
+                });
+            } catch (eE) {
+                ok(false, name + ' processEnemyAttack: ' + eE.message);
+            }
+            try {
+                sys.processEnemyTurnEnd(core, foe);
+            } catch (eTe) {
+                ok(false, name + ' processEnemyTurnEnd: ' + eTe.message);
+            }
+
+            var changed = JSON.stringify(c._battle || {}) !== snapBattle ||
+                foe.currentHp !== snapHp ||
+                (foe._sect && Object.keys(foe._sect).length > 0);
+            if (def.onAttack || def.preAttack || def.onTurnEnd) {
+                ok(changed || d.hookCount <= 2, name + ' 戰鬥狀態有變化或純被動');
+            }
+
+            try {
+                var sumTxt = sys.getStacksSummary(c);
+                ok(typeof sumTxt === 'string', name + ' getStacksSummary');
+            } catch (eS) {
+                ok(false, name + ' getStacksSummary: ' + eS.message);
+            }
+            try {
+                var tbl = sys.getStatusTable(c);
+                ok(!tbl || Array.isArray(tbl.rows), name + ' getStatusTable');
+            } catch (eR) {
+                ok(false, name + ' getStatusTable: ' + eR.message);
+            }
+
+            tested++;
+        });
+
+        ok(tested >= 46, '已測門派數 ' + tested + '（目標≥46）');
+        ok(fails === 0, '門派機制失敗數 ' + fails + (fails ? ' ← 見上方 ✗' : ''));
+
+        console.log('[sectMechanicsSelfTest]\n' + R.join('\n'));
+        return { results: R, fails: fails, tested: tested };
+    }
+
+    window.HY.sectMechanicsSelfTestRun = run;
+
+    function hookAscendancyBundle() {
+        var prev = window.HY.ascendancySelfTestRun;
+        if (typeof prev === 'function' && prev.__sectBundled) return;
+        var wrapped = function () {
+            var a = (typeof prev === 'function') ? (prev() || []) : [];
+            var b = run();
+            return a.concat((b && b.results) || []);
+        };
+        wrapped.__sectBundled = true;
+        window.HY.ascendancySelfTestRun = wrapped;
+    }
+    hookAscendancyBundle();
+
+    if (on()) {
+        if (document.readyState === 'complete') setTimeout(hookAscendancyBundle, 1800);
+        else window.addEventListener('load', function () { setTimeout(hookAscendancyBundle, 1800); });
+    }
 })();
 

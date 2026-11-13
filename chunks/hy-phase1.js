@@ -18664,7 +18664,7 @@ window.HY.Data = window.HY.Data || {};
             desc: '隊友受到傷害時，你代替承受其中 30%；' +
                   '你每承受一次代傷，獲得 1 層「護念」（每層 +6% 減傷，上限 8 層）。',
             mechanic: 'damageShare',
-            params: { sharePct: 0.30, maxStacks: 8, drPerStack: 0.06 }
+            params: { sharePct: 0.18, maxStacks: 8, drPerStack: 0.06, guardMinHpPct: 0.28 }
         },
         Juggernaut: {
             name: '不壞', icon: '🗿',
@@ -18768,7 +18768,7 @@ window.HY.Data = window.HY.Data || {};
             desc: '戰鬥第一擊必定會心且傷害 +200%；' +
                   '每次會心後進入 1 回合「隱匿」，期間受到的傷害降低 50%。',
             mechanic: 'shadowStrike',
-            params: { openingMult: 3.0, vanishTurns: 1, vanishDr: 0.50 }
+            params: { openingMult: 3.0, vanishTurns: 1, vanishDr: 0.50, passiveDr: 0.12 }
         },
         Trickster: {
             name: '幻形', icon: '🎭',
@@ -19908,6 +19908,83 @@ window.HY = window.HY || {};
         return c._ascMech;
     }
 
+    /** 暗影：取得／刷新隱匿（會心或首擊） */
+    function grantShadowVanish(c) {
+        if (active(c) !== 'shadowStrike') return false;
+        var p = paramsOf(c);
+        var b = battleState(c);
+        b.vanish = Math.max(num(b.vanish, 0), Math.round(num(p.vanishTurns, 1)));
+        b._vanishFresh = 1;
+        return true;
+    }
+
+    /** 敵方單次出手結束後：消耗隱匿層（不在玩家 onTurnStart 扣） */
+    function afterEnemyStrike(c, hadVanishMitigation) {
+        if (active(c) !== 'shadowStrike') return;
+        var b = battleState(c);
+        if (hadVanishMitigation && num(b.vanish, 0) > 0) {
+            b.vanish = Math.max(0, num(b.vanish, 0) - 1);
+        }
+        b._vanishFresh = 0;
+    }
+    function memberId(c) {
+        if (!c) return '';
+        return String(c.id != null ? c.id : (c.uid != null ? c.uid : (c.name || '')));
+    }
+
+    /** 隊伍型核心：承天／明光／符陣護佑（出手前生效） */
+    function clearPartyAscCombatFlags(party) {
+        (party || partyMembers()).forEach(function (mm) {
+            if (!mm) return;
+            delete mm._ascGuardian;
+            delete mm._ascSharePct;
+            delete mm._ascAuraRes;
+            delete mm._ascSigilDr;
+            delete mm._ascAuraHpPct;
+        });
+    }
+
+    function syncPartyAscBuffs(c) {
+        if (!c) return;
+        var m = active(c);
+        if (!m) return;
+        var p = paramsOf(c);
+        var b = battleState(c);
+        var party = partyMembers();
+        try {
+            if (m === 'damageShare') {
+                var gid = memberId(c);
+                var gMx = maxHpOf(c);
+                var gRatio = gMx > 0 ? (c.currentHp / gMx) : 1;
+                var minPct = num(p.guardMinHpPct, 0.28);
+                if (gRatio < minPct) return;
+                var share = Math.min(0.22, num(p.sharePct, 0.18));
+                party.forEach(function (mm) {
+                    if (!mm || mm === c || mm.currentHp <= 0) return;
+                    mm._ascGuardian = gid;
+                    mm._ascSharePct = share;
+                });
+            }
+            if (m === 'aura') {
+                var ramp = Math.min(num(p.rampCap, 0.20), num(b.turns, 0) * num(p.rampPerTurn, 0.02));
+                var res = num(p.resPct, 0.12) + ramp;
+                var hpPct = num(p.hpPct, 0.10) + ramp * 0.5;
+                party.forEach(function (mm) {
+                    if (!mm || mm.currentHp <= 0) return;
+                    mm._ascAuraRes = res;
+                    mm._ascAuraHpPct = hpPct;
+                });
+            }
+            if (m === 'sigilField' && num(b.sigils, 0) > 0) {
+                var dr = num(p.drPct, 0.12);
+                party.forEach(function (mm) {
+                    if (!mm || mm.currentHp <= 0) return;
+                    mm._ascSigilDr = dr;
+                });
+            }
+        } catch (eSync) { }
+    }
+
     /* ══════════════════════════════════════════════════════════════
        查詢：該角色是否點了自己的核心機制
        ══════════════════════════════════════════════════════════════ */
@@ -19993,8 +20070,9 @@ window.HY = window.HY || {};
                 /* 影殺門・暗影：開場必爆 */
                 case 'shadowStrike': {
                     if (num(b.hits, 0) === 0) {
-                        out.critFlat += 100;
+                        out.critFlat += 120;
                         out.atkMult *= num(p.openingMult, 3.0);
+                        out.forceCrit = true;
                     }
                     break;
                 }
@@ -20084,6 +20162,35 @@ window.HY = window.HY || {};
         return out;
     }
 
+    /** 出手前（須在傷害計算前呼叫）：洞察、光環、承天、刻印回合等 */
+    function onPreAttack(c) {
+        var m = active(c);
+        if (!m) return '';
+        var p = paramsOf(c);
+        var b = battleState(c);
+        var msg = '';
+        b.turns = num(b.turns, 0) + 1;
+        try {
+            switch (m) {
+                case 'insight': {
+                    var capI = Math.round(num(p.maxStacks, 3));
+                    if (num(b.insight, 0) < capI) b.insight = num(b.insight, 0) + 1;
+                    msg += ' [🧭洞察 ' + b.insight + '/' + capI + ']';
+                    break;
+                }
+            }
+            syncPartyAscBuffs(c);
+        } catch (ePre) { }
+        return msg;
+    }
+
+    function onBattleStartParty(members) {
+        (members || []).forEach(function (c) {
+            if (!c) return;
+            syncPartyAscBuffs(c);
+        });
+    }
+
     /* ══════════════════════════════════════════════════════════════
        攻擊命中後
        ══════════════════════════════════════════════════════════════ */
@@ -20123,12 +20230,23 @@ window.HY = window.HY || {};
                     msg += ' [🌈五行輪轉→' + CYCLE[b.elemIdx] + ']';
                     break;
                 }
-                /* 影殺門：會心後進入隱匿 */
                 case 'shadowStrike': {
-                    if (num(b.hits, 0) === 1) {
-                        b.vanish = num(p.vanishTurns, 1);
-                        msg += ' [🗡️暗影隱匿]';
+                    if (num(b._lastCrit, 0) > 0 || num(b._vanishFresh, 0) > 0) {
+                        grantShadowVanish(c);
+                        b._lastCrit = 0;
+                        msg += ' [🗡️隱匿]';
+                    } else if (num(b.hits, 0) === 1) {
+                        grantShadowVanish(c);
+                        msg += ' [🗡️首擊隱匿]';
                     }
+                    break;
+                }
+                /* 符籙師：每次出手鋪設一道符陣 */
+                case 'sigilField': {
+                    var capSf = Math.round(num(p.max, 5));
+                    if (num(b.sigils, 0) < capSf) b.sigils = num(b.sigils, 0) + 1;
+                    syncPartyAscBuffs(c);
+                    msg += ' [📜符陣 ' + b.sigils + '/' + capSf + ']';
                     break;
                 }
                 /* 狂戰堂：擊殺回血（由 onKill 處理，這裡只記流血免疫） */
@@ -20248,13 +20366,22 @@ window.HY = window.HY || {};
        受擊（回傳「實際抵銷的傷害量」）
        ══════════════════════════════════════════════════════════════ */
     function onStruck(c, enemy, dmg) {
-        var m = active(c);
-        if (!m || dmg <= 0) return 0;
+        if (!c || dmg <= 0) return 0;
         var p = paramsOf(c);
         var b = battleState(c);
+        var m = active(c);
         var reduce = 0;
 
         try {
+            var auraDr = num(c._ascAuraRes, 0) * 0.35;
+            var sigDr = num(c._ascSigilDr, 0);
+            var partyMit = auraDr + sigDr;
+            if (partyMit > 0.32) partyMit = 0.32;
+            if (partyMit > 0) reduce += Math.floor(dmg * partyMit);
+        } catch (ePd) { }
+
+        try {
+            if (!m) return Math.max(0, Math.min(dmg, reduce));
             switch (m) {
                 /* 不動尊・不壞：累積罡勁 */
                 case 'unyielding': {
@@ -20265,8 +20392,12 @@ window.HY = window.HY || {};
                 /* 影殺門：隱匿期間減傷 */
                 case 'shadowStrike': {
                     if (num(b.vanish, 0) > 0) {
-                        reduce = Math.floor(dmg * num(p.vanishDr, 0.50));
+                        var vDr = Math.floor(dmg * num(p.vanishDr, 0.50));
+                        reduce += vDr;
+                        if (vDr > 0) b._vanishUsedThisStrike = 1;
                     }
+                    var passiveDr = num(p.passiveDr, 0.12);
+                    if (passiveDr > 0) reduce += Math.floor(dmg * passiveDr);
                     break;
                 }
                 /* 千面閣・幻形：幻影分擔
@@ -20277,7 +20408,7 @@ window.HY = window.HY || {};
                 case 'mirage': {
                     var capM0 = Math.round(num(p.max, 3));
                     if (num(b.mirage, 0) <= 0) b.mirage = capM0;   /* 自動補滿 */
-                    reduce = Math.floor(dmg * 0.40);
+                    reduce += Math.floor(dmg * 0.40);
                     b.mirage = Math.max(0, num(b.mirage, 0) - 1);
                     break;
                 }
@@ -20285,13 +20416,14 @@ window.HY = window.HY || {};
                 case 'damageShare': {
                     b.guard = Math.min(Math.round(num(p.maxStacks, 8)),
                         num(b.guard, 0) + 1);
-                    reduce = Math.floor(dmg * num(b.guard, 0) * num(p.drPerStack, 0.06));
+                    var drCap = Math.min(0.42, num(b.guard, 0) * num(p.drPerStack, 0.06));
+                    reduce += Math.floor(dmg * drCap);
                     break;
                 }
                 /* 傀儡術：受傷轉移給傀儡 */
                 case 'minionPact': {
                     if (num(b.minions, 0) > 0) {
-                        reduce = Math.floor(dmg * num(p.sharePct, 0.20));
+                        reduce += Math.floor(dmg * num(p.sharePct, 0.20));
                     }
                     break;
                 }
@@ -20302,7 +20434,7 @@ window.HY = window.HY || {};
                     var blockChance = num(p.blockChance, 0.35);
                     if (Math.random() < blockChance) {
                         /* 格擋成功：免傷 85% */
-                        reduce = Math.floor(dmg * 0.85);
+                        reduce += Math.floor(dmg * 0.85);
                         b.blockStacks = Math.min(Math.round(num(p.maxStacks, 5)),
                             num(b.blockStacks, 0) + 1);
                         /* 反擊 */
@@ -20328,12 +20460,11 @@ window.HY = window.HY || {};
         if (!m) return '';
         var p = paramsOf(c);
         var b = battleState(c);
-        b.turns = num(b.turns, 0) + 1;
+        /* turns 改在 onPreAttack 累加（出手前），避免刻印／洞察／光環晚一拍 */
         var msg = '';
 
         try {
-            /* 隱匿倒數 */
-            if (num(b.vanish, 0) > 0) b.vanish -= 1;
+            /* 隱匿層改在敵方出手後消耗（afterEnemyStrike），此處不扣 */
             if (num(b.execWindow, 0) > 0) b.execWindow -= 1;
             if (num(b.bleedImmune, 0) > 0) b.bleedImmune -= 1;
 
@@ -20355,28 +20486,27 @@ window.HY = window.HY || {};
                 }
                 /* 符陣：每回合鋪符 */
                 case 'sigilField': {
-                    var capS = Math.round(num(p.max, 5));
-                    if (num(b.sigils, 0) < capS) b.sigils = num(b.sigils, 0) + 1;
-                    /* 隊友回血 */
-                    var heal = Math.floor(maxHpOf(c) * num(p.healPct, 0.04));
-                    partyMembers().forEach(function (mm) {
-                        if (!mm || mm.currentHp <= 0) return;
-                        var mx2 = maxHpOf(mm);
-                        mm.currentHp = Math.min(mx2, mm.currentHp + heal);
-                    });
+                    if (num(b.sigils, 0) > 0) {
+                        var heal = Math.floor(maxHpOf(c) * num(p.healPct, 0.04));
+                        partyMembers().forEach(function (mm) {
+                            if (!mm || mm.currentHp <= 0) return;
+                            var mx2 = maxHpOf(mm);
+                            mm.currentHp = Math.min(mx2, mm.currentHp + heal);
+                        });
+                        msg += ' [📜符陣溫養 +' + heal + ']';
+                    }
                     break;
                 }
-                /* 明光台：光環回血 */
+                /* 明光台：光環溫養 + 刷新隊伍加成 */
                 case 'aura': {
-                    var h2 = Math.floor(maxHpOf(c) * 0.03);
+                    syncPartyAscBuffs(c);
+                    var h2 = Math.floor(maxHpOf(c) * (0.03 + num(c._ascAuraHpPct, 0) * 0.15));
                     c.currentHp = Math.min(maxHpOf(c), c.currentHp + h2);
-                    break;
-                }
-                /* 尋徑者・洞察：每回合累積層數 */
-                case 'insight': {
-                    var capI = Math.round(num(p.maxStacks, 3));
-                    if (num(b.insight, 0) < capI) b.insight = num(b.insight, 0) + 1;
-                    msg += ' [🧭洞察 ' + b.insight + '/' + capI + ']';
+                    partyMembers().forEach(function (mm) {
+                        if (!mm || mm.currentHp <= 0 || mm === c) return;
+                        var hx = Math.floor(maxHpOf(mm) * (0.02 + num(mm._ascAuraHpPct, 0) * 0.12));
+                        if (hx > 0) mm.currentHp = Math.min(maxHpOf(mm), mm.currentHp + hx);
+                    });
                     break;
                 }
                 /* 玄陰師：引爆後的攻擊加成倒數 */
@@ -20544,12 +20674,24 @@ window.HY = window.HY || {};
         active: active,
         has: has,
         paramsOf: paramsOf,
+        syncPartyAscBuffs: syncPartyAscBuffs,
+        clearPartyAscCombatFlags: clearPartyAscCombatFlags,
+        onPreAttack: onPreAttack,
+        onBattleStartParty: onBattleStartParty,
         attackMods: attackMods,
         onAttack: onAttack,
         onStruck: onStruck,
         onTurnStart: onTurnStart,
         onKill: onKill,
         statusRows: statusRows,
+        grantShadowVanish: grantShadowVanish,
+        afterEnemyStrike: afterEnemyStrike,
+        noteCrit: function (c) {
+            if (!c || active(c) !== 'shadowStrike') return;
+            var b = battleState(c);
+            b._lastCrit = 1;
+            grantShadowVanish(c);
+        },
         count: function () {
             var D = HY.Data || {};
             return Object.keys(D.ASCENDANCY_KEYSTONES || {}).length;
@@ -20619,6 +20761,19 @@ window.HY = window.HY || {};
         var origStatus = AM.statusRows;
         var origActive = AM.active;
         var origParams = AM.paramsOf;
+        var origPre = AM.onPreAttack;
+
+        AM.onPreAttack = function (c) {
+            var msg = (typeof origPre === 'function') ? (origPre(c) || '') : '';
+            var m = origActive(c);
+            if (m === 'runeEtch') {
+                var b = bs(c);
+                var names = ['烈', '護', '疾', '準', '混'];
+                b.rune = Math.floor(Math.random() * 5);
+                msg += ' [🔣刻印·' + names[b.rune] + ']';
+            }
+            return msg;
+        };
 
         AM.attackMods = function (c, target) {
             var out = origMods(c, target);
@@ -20850,10 +21005,19 @@ window.HY = window.HY || {};
         AM.onStruck = function (c, enemy, dmg) {
             var base = origStruck(c, enemy, dmg);
             var m = origActive(c);
-            if (!isLegend(m) || dmg <= 0) return base;
             var p = origParams(c);
             var b = bs(c);
             var reduce = base;
+
+            /* 受擊疊層須先於 isLegend 提早返回（與 active 判定同幀） */
+            try {
+                if (dmg > 0 && m === 'windStep') {
+                    var capW = Math.round(num(p.maxStacks, 4));
+                    b.windStacks = Math.min(capW, num(b.windStacks, 0) + 1);
+                }
+            } catch (eWind) { }
+
+            if (!isLegend(m) || dmg <= 0) return reduce;
 
             try {
                 switch (m) {
@@ -20867,11 +21031,8 @@ window.HY = window.HY || {};
                         }
                         break;
                     }
-                    case 'windStep': {
-                        var cap = Math.round(num(p.maxStacks, 4));
-                        b.windStacks = Math.min(cap, num(b.windStacks, 0) + 1);
+                    case 'windStep':
                         break;
-                    }
                     case 'timeDebt': {
                         var delayed = Math.floor(dmg * num(p.delayPct, 0.35));
                         b.timeDebt = num(b.timeDebt, 0) + delayed;
@@ -20950,12 +21111,8 @@ window.HY = window.HY || {};
                         }
                         break;
                     }
-                    case 'runeEtch': {
-                        b.rune = Math.floor(Math.random() * 5);
-                        var names = ['烈', '護', '疾', '準', '混'];
-                        msg += ' [🔣刻印·' + names[b.rune] + ']';
+                    case 'runeEtch':
                         break;
-                    }
                     case 'mountainStance': {
                         if (!num(b.acted, 0)) {
                             b.mountain = Math.min(Math.round(num(p.maxStacks, 6)), num(b.mountain, 0) + 1);
@@ -21072,6 +21229,12 @@ window.HY = window.HY || {};
                         rows.push({ k: '鏡痕', v: Math.floor(num(b.mirrorDmg, 0)) }); break;
                     case 'timeDebt':
                         rows.push({ k: '時債', v: Math.floor(num(b.timeDebt, 0)) }); break;
+                    case 'runeEtch': {
+                        var names = ['烈', '護', '疾', '準', '混'];
+                        var ri = num(b.rune, 0);
+                        rows.push({ k: '刻印', v: names[ri] || '—' });
+                        break;
+                    }
                     case 'warBanner':
                         rows.push({ k: '旌旗', v: num(b.bannerTurns, 0) > 0 ? (b.bannerTurns + ' 回合') : '待命' }); break;
                     case 'soulBind':
@@ -21255,9 +21418,14 @@ window.HY = window.HY || {};
                         break;
                     case 'shadowStrike':
                         if (num(b._lastCrit, 0) > 0) {
-                            b.vanish = num(p.vanishTurns, 1);
+                            b.vanish = Math.max(num(b.vanish, 0), num(p.vanishTurns, 1));
+                            b._vanishSkipTick = 1;
                             b._lastCrit = 0;
                             msg += ' [🗡️會心隱匿]';
+                        } else if (num(b.hits, 0) === 1) {
+                            b.vanish = Math.max(num(b.vanish, 0), num(p.vanishTurns, 1));
+                            b._vanishSkipTick = 1;
+                            msg += ' [🗡️首擊隱匿]';
                         }
                         break;
                 }
@@ -21315,26 +21483,7 @@ window.HY = window.HY || {};
             var b = c._ascMech || {};
 
             try {
-                if (m === 'sigilField' && num(b.sigils, 0) > 0) {
-                    msg += ' [📜符陣護佑 ' + b.sigils + ' 道]';
-                }
-                if (m === 'damageShare') {
-                    var share = num(p.sharePct, 0.30);
-                    var gid = String(c.id != null ? c.id : (c.uid != null ? c.uid : c.name || ''));
-                    partyMembers().forEach(function (mm) {
-                        if (!mm || mm === c || mm.currentHp <= 0) return;
-                        mm._ascGuardian = gid;
-                        mm._ascSharePct = share;
-                    });
-                }
-                if (m === 'aura') {
-                    var ramp = Math.min(num(p.rampCap, 0.20), num(b.turns, 0) * num(p.rampPerTurn, 0.02));
-                    partyMembers().forEach(function (mm) {
-                        if (!mm || mm.currentHp <= 0) return;
-                        var bonus = num(p.resPct, 0.12) + ramp;
-                        if (!mm._ascAuraRes) mm._ascAuraRes = bonus;
-                    });
-                }
+                if (typeof AM.syncPartyAscBuffs === 'function') AM.syncPartyAscBuffs(c);
             } catch (e) { }
 
             return msg;
@@ -21378,14 +21527,16 @@ window.HY = window.HY || {};
             return rows;
         };
 
-        /** 戰鬥端：會心後供暗影核心讀取 */
-        AM.noteCrit = function (c) {
-            if (!c) return;
-            if (AM.active(c) === 'shadowStrike') {
-                var b = c._ascMech || (c._ascMech = {});
-                b._lastCrit = 1;
-            }
-        };
+        /** 已由 ascendancyMechanics.noteCrit 實作；保留呼叫相容 */
+        if (typeof AM.noteCrit !== 'function') {
+            AM.noteCrit = function (c) {
+                if (!c) return;
+                if (AM.active(c) === 'shadowStrike') {
+                    var b = c._ascMech || (c._ascMech = {});
+                    b._lastCrit = 1;
+                }
+            };
+        }
 
         /** 疾影雙擊：攻擊前也可讀（戰嚎加成等已由 attackMods 處理） */
         AM.classicVersion = 770;
@@ -38085,6 +38236,11 @@ window.HY = window.HY || {};
             defFlat: 22,
             defPerLv: 5.2,
             rewardMul: 1.15,
+            /* 擊敗異獸掉落靈石：約 hp × stoneHpCoef × 稀有倍率 × rewardMul */
+            stoneHpCoef: 0.052,
+            stoneMin: 18,
+            stoneMax: 480,
+            stoneRarity: { common: 0.55, rare: 0.92, epic: 1.38, legend: 2.35 },
             partyMulBase: 0.52,
             partyMulPerMember: 0.19,
             /* 全體異獸遭遇戰強度倍率（1.3 = 加強 0.3 倍） */
@@ -39532,8 +39688,48 @@ window.HY = window.HY || {};
         return { total: total, seen: seen, kills: kills };
     };
 
+    Data.shjSpiritStoneDrop = function (enemy) {
+        if (!enemy) return 0;
+        var beast = null;
+        if (enemy.shjBeastId && Data.shjBeastOf) beast = Data.shjBeastOf(enemy.shjBeastId);
+        var rarity = (beast && beast.rarity) || 'common';
+        var cCfg = (Data.SHJ_CONFIG && Data.SHJ_CONFIG.combat) || {};
+        var rewMul = Number(cCfg.rewardMul) || 1.15;
+        var hp = Math.max(1, Number(enemy.maxHp || enemy.hp) || 400);
+        var rTab = cCfg.stoneRarity || {};
+        var rMul = Number(rTab[rarity]) || 1;
+        var coef = Number(cCfg.stoneHpCoef);
+        if (!isFinite(coef) || coef <= 0) coef = 0.052;
+        var raw = Math.floor(hp * coef * rMul * rewMul);
+        var min = Number(cCfg.stoneMin) || 18;
+        var max = Number(cCfg.stoneMax) || 480;
+        if (!isFinite(min) || min < 1) min = 18;
+        if (!isFinite(max) || max < min) max = Math.max(min, 480);
+        return Math.min(max, Math.max(min, raw));
+    };
+
+    Data.shjGrantSpiritStones = function (enemy) {
+        var amt = Data.shjSpiritStoneDrop(enemy);
+        if (amt <= 0) return 0;
+        var root = Data.shjRoot();
+        if (!root) return 0;
+        root.spiritStones = (Number(root.spiritStones) || 0) + amt;
+        var app = HY.game;
+        if (app && app.logger) {
+            app.logger.add('💎 鎮壓異獸，元魄淬為【下品靈石】+' + amt.toLocaleString() +
+                '（持有 ' + (root.spiritStones || 0).toLocaleString() + ' 顆）', 'wealth');
+        }
+        if (app && typeof app.throttledRenderAll === 'function') {
+            try { app.throttledRenderAll(); } catch (eTr) { }
+        } else if (app && typeof app.renderAll === 'function') {
+            try { app.renderAll(); } catch (eRa) { }
+        }
+        return amt;
+    };
+
     Data.shjOnVictory = function (enemy) {
-        if (!enemy || !enemy.isShjBeast) return;
+        if (!enemy || !enemy.isShjBeast) return null;
+        var spiritStones = Data.shjGrantSpiritStones(enemy);
         var gid = enemy.shjGlobalId;
         var key = enemy.shjSpawnKey;
         var cs = HY.cloudSync;
@@ -39566,7 +39762,7 @@ window.HY = window.HY || {};
                 app.logger.add('🤝 共同鎮壓進度 ' + p.count + '/' + p.need +
                     '，異獸元魄未散，仍需各路俠士協助！', 'system');
             }
-            return setDrop;
+            return { set: setDrop, stones: spiritStones };
         }
         if (key) Data.shjMarkDefeated(key);
         if (typeof region === 'number') {
@@ -39579,7 +39775,7 @@ window.HY = window.HY || {};
         if (HY.ShanHaiJing && HY.ShanHaiJing.refreshMapUi) {
             try { HY.ShanHaiJing.refreshMapUi(); } catch (eUi) { }
         }
-        return setDrop;
+        return { set: setDrop, stones: spiritStones };
     };
 
     Data.shjRulesText = function () {
@@ -39597,7 +39793,7 @@ window.HY = window.HY || {};
         var chain = Data.shjChainStatus();
         var chainTxt = '連鎮 ' + chain.done + '/9';
         return skyTxt + '　' + eraTxt + '　' + tideTxt + '　' + chainTxt +
-            '　靈脈影響稀有率　' + coopLine + '　擊敗消失 · ' + h + ' 小時重生';
+            '　靈脈影響稀有率　' + coopLine + '　擊敗掉落靈石 · ' + h + ' 小時重生';
     };
 
     /* 覆寫生成：加權 + 詞綴 */
@@ -41001,9 +41197,22 @@ window.HY = window.HY || {};
                 var BS = window.HY && window.HY.BattleStage;
                 list.forEach(function (e) {
                     if (e && (e.isShjBeast || e.shjSpawnKey)) {
-                        var dropped = null;
-                        if (Data.shjOnVictory) dropped = Data.shjOnVictory(e);
+                        var result = null;
+                        if (Data.shjOnVictory) result = Data.shjOnVictory(e);
                         else if (Data.shjMarkDefeated) Data.shjMarkDefeated(e.shjSpawnKey);
+                        var dropped = result && (result.set != null ? result.set : (result.name ? result : null));
+                        var stoneGain = result && Number(result.stones);
+                        if (!isFinite(stoneGain)) stoneGain = 0;
+                        if (stoneGain > 0) {
+                            lootShow.push({
+                                icon: '💎',
+                                name: '下品靈石',
+                                color: '#38bdf8',
+                                rarity: 'wealth',
+                                kind: 'resource',
+                                count: stoneGain
+                            });
+                        }
                         if (dropped && dropped.name) {
                             var meta = (BS && BS.lootMeta) ? BS.lootMeta('set') : { color: '#a78bfa' };
                             lootShow.push({
@@ -41360,7 +41569,14 @@ window.HY = window.HY || {};
                 /* ⭐⭐ 昇華天賦必須納入簽章！
                    原本只檢查主天賦，昇華節點配置變動時快取不會失效
                    → 玩家點了昇華，屬性卻停在舊值（實測攻速永遠 100）。 */
-                var _ascSig = (c.asc && c.asc.allocated) ? Object.keys(c.asc.allocated).join(',') : '';
+                var _ascSig = '';
+                if (c.asc && typeof c.asc === 'object') {
+                    _ascSig = [
+                        String(c.asc.branch || ''),
+                        Object.keys(c.asc.allocated || {}).sort().join(','),
+                        (Array.isArray(c.asc.subNotables) ? c.asc.subNotables.slice().sort().join(',') : '')
+                    ].join('|');
+                }
                 /* ⭐⭐ v476：罡氣（c.mx）必須納入簽章！
                    ──────────────────────────────────────────────────────────
                    這是「罡氣條沒有同步」的真正根因：
@@ -51880,7 +52096,15 @@ window.HY = window.HY || {};
             if (!a) return { ok: false, why: '角色不存在' };
             if (a.branch) {
                 if (a.branch === ascId) return { ok: false, why: '已是此分支' };
-                return { ok: false, why: '已選定「' + a.branch + '」，需先重置全部昇華天賦' };
+                var curNm = a.branch;
+                try {
+                    var m0 = (HY.Data && HY.Data.ASCENDANCY_META) ? HY.Data.ASCENDANCY_META[a.branch] : null;
+                    if (m0 && m0.name) curNm = m0.name;
+                    else if (HY.AscendancyZhNames && HY.AscendancyZhNames.branchName) {
+                        curNm = HY.AscendancyZhNames.branchName(a.branch);
+                    }
+                } catch (eBn) { }
+                return { ok: false, why: '已選定「' + curNm + '」，需先重置全部昇華天賦' };
             }
             var avail = this.branchesFor(charObj).map(function (b) { return b.id; });
             if (avail.indexOf(ascId) === -1) {
@@ -51898,7 +52122,15 @@ window.HY = window.HY || {};
             if (startId) a.allocated[startId] = 1;
             this.syncPoints(charObj);
             this._invalidate(charObj);
-            this._log('✨ 開啟昇華之路：【' + ascId + '】', 'system');
+            var brNm = ascId;
+            try {
+                var meta = (HY.Data && HY.Data.ASCENDANCY_META) ? HY.Data.ASCENDANCY_META[ascId] : null;
+                if (meta && meta.name) brNm = meta.name;
+                else if (HY.AscendancyZhNames && HY.AscendancyZhNames.branchName) {
+                    brNm = HY.AscendancyZhNames.branchName(ascId);
+                }
+            } catch (eNm) { }
+            this._log('✨ 開啟昇華之路：【' + brNm + '】', 'system');
             return { ok: true, branch: ascId, start: startId };
         }
 
@@ -52147,6 +52379,19 @@ window.HY = window.HY || {};
         }
 
         /** 萬法核心：每點昇華節點 +N 五屬；副修顯著詞條併入 */
+        /** 已投入昇華點時保底生存（避免只點輸出節點反而比未點更脆） */
+        _applySurvivalFloor(out, charObj) {
+            if (!out) return;
+            var a = this.ensureState(charObj);
+            if (!a || !a.branch) return;
+            var sp = Math.min(8, num(a.spent, 0));
+            if (sp <= 0) return;
+            out.more = out.more || {};
+            out.extra = out.extra || {};
+            out.more.maxHp = num(out.more.maxHp, 0) + Math.min(0.24, sp * 0.032);
+            out.extra.dmgReduce = num(out.extra.dmgReduce, 0) + Math.min(0.10, sp * 0.012);
+        }
+
         _applyKeystonePassives(out, charObj) {
             if (!out || !charObj) return;
             var a = this.ensureState(charObj);
@@ -52275,6 +52520,7 @@ window.HY = window.HY || {};
                             __poe: { flags: agg.flags, counts: agg.counts, conv: agg.conv, procs: agg.procs }
                         };
                         this._applyKeystonePassives(merged, c);
+                        this._applySurvivalFloor(merged, c);
                         return merged;
                     }
                 } catch (e) { }
@@ -52286,6 +52532,7 @@ window.HY = window.HY || {};
                 this._mergeStatBonus(out, n.stats);
             }, this);
             this._applyKeystonePassives(out, c);
+            this._applySurvivalFloor(out, c);
             return out;
         }
 
@@ -52366,7 +52613,16 @@ window.HY = window.HY || {};
             this.syncPoints(c);
             return {
                 branch: a.branch,
-                branchZh: a.branch ? ((HY.AscendancyZh && HY.AscendancyZh.branch) ? HY.AscendancyZh.branch(a.branch) : a.branch) : null,
+                branchZh: (function () {
+                    if (!a.branch) return null;
+                    var meta = (HY.Data && HY.Data.ASCENDANCY_META)
+                        ? HY.Data.ASCENDANCY_META[a.branch] : null;
+                    if (meta && meta.name) return meta.name;
+                    var ZN = HY.AscendancyZhNames;
+                    if (ZN && ZN.branchName) return ZN.branchName(a.branch);
+                    if (HY.AscendancyZh && HY.AscendancyZh.branch) return HY.AscendancyZh.branch(a.branch);
+                    return a.branch;
+                })(),
                 class: this.poeClassOf(c),
                 total: this.totalPoints(c),
                 spent: a.spent,
@@ -52530,25 +52786,33 @@ window.HY = window.HY || {};
                             };
                         }
                     }
-                    /* 英文條件 mod 仍走 aggregate（與數值加成可並存） */
+                    /* 英文條件 mod：僅在 getBonusFor 未走 PoeStatEngine 聚合時補數值；
+                       若已有 ab.__poe，表示節點詞綴已 aggregate 過，再合併會雙倍加成。 */
                     if (typeof asys.aggregateFor === 'function') {
                         var agg = asys.aggregateFor(charObj);
-                        if (agg && (!base.__asc || !(base.__asc.flags && Object.keys(base.__asc.flags).length))) {
-                            var extra = toLegacyBonus(agg);
-                            Object.keys(extra.attr || {}).forEach(function (k) {
-                                if (base.attr[k] !== undefined) {
-                                    base.attr[k] = num(base.attr[k], 0) + num(extra.attr[k], 0);
-                                }
-                            });
-                            ['flat', 'more', 'extra'].forEach(function (pool) {
-                                Object.keys(extra[pool] || {}).forEach(function (k) {
-                                    base[pool][k] = num(base[pool][k], 0) + num(extra[pool][k], 0);
+                        if (agg) {
+                            var needFlags = !base.__asc ||
+                                !(base.__asc.flags && Object.keys(base.__asc.flags).length);
+                            if (needFlags) {
+                                base.__asc = base.__asc || {};
+                                base.__asc.flags = agg.flags;
+                                base.__asc.counts = agg.counts;
+                                base.__asc.conv = agg.conv;
+                                base.__asc.procs = agg.procs;
+                            }
+                            if (!ab || !ab.__poe) {
+                                var extra = toLegacyBonus(agg);
+                                Object.keys(extra.attr || {}).forEach(function (k) {
+                                    if (base.attr[k] !== undefined) {
+                                        base.attr[k] = num(base.attr[k], 0) + num(extra.attr[k], 0);
+                                    }
                                 });
-                            });
-                            base.__asc = {
-                                flags: agg.flags, counts: agg.counts,
-                                conv: agg.conv, procs: agg.procs
-                            };
+                                ['flat', 'more', 'extra'].forEach(function (pool) {
+                                    Object.keys(extra[pool] || {}).forEach(function (k) {
+                                        base[pool][k] = num(base[pool][k], 0) + num(extra[pool][k], 0);
+                                    });
+                                });
+                            }
                         }
                     }
                 }
@@ -55051,16 +55315,22 @@ window.HY = window.HY || {};
                     if (!c) return;
                     var on = activeId && String(c.id) === activeId;
                     var sum = self.sys && typeof self.sys.summary === 'function'
-                        ? self.sys.summary(c) : { spent: 0 };
-                    var br = (c.asc && c.asc.branch) ? String(c.asc.branch) : '未入門';
-                    if (br.length > 10) br = br.slice(0, 9) + '…';
+                        ? self.sys.summary(c) : { spent: 0, total: 0, remaining: 0 };
+                    var bid = c.asc && c.asc.branch;
+                    var br = bid ? self._ascBranchLabel(bid) : '未入門';
+                    if (br.length > 12) br = br.slice(0, 11) + '…';
+                    var spent = num(sum.spent, 0);
+                    var total = num(sum.total, 0);
                     var nm = String(c.name || '無名');
                     if (nm.length > 8) nm = nm.slice(0, 7) + '…';
+                    var metaLine = bid
+                        ? ('已點 ' + spent + '/' + total + '　' + br)
+                        : ('Lv.' + num(c.lv, 1) + '　未入門');
                     h += '<button type="button" class="hycs-btn' + (on ? ' on' : '') +
                         '" data-hycs-char="' + self._escBar(String(c.id || '')) + '">' +
                         '<span class="hycs-nm">' + self._escBar(nm) + '</span>' +
                         '<span class="hycs-mt">Lv.' + num(c.lv, 1) +
-                        '　昇華 ' + num(sum.spent, 0) + '　' + self._escBar(br) + '</span>' +
+                        '　' + self._escBar(metaLine) + '</span>' +
                         '</button>';
                 });
             }
@@ -55166,7 +55436,9 @@ window.HY = window.HY || {};
                     if (cur.branch) {
                         /* 已加入某分支 → 點其他分支只提示，不切換 */
                         if (cur.branch !== id) {
-                            self._toast('已加入「' + cur.branch + '」，需先重置才能更換');                        }
+                            self._toast('已加入「' + self._ascBranchLabel(cur.branch) +
+                                '」，需先重置才能更換');
+                        }
                         return;
                     }
                     self.sys.previewBranch(id);
@@ -55184,7 +55456,7 @@ window.HY = window.HY || {};
             var a = sys.ensureState(c);
             var sum = sys.summary(c);
             if (this.el.charLabel) {
-                var br = (a && a.branch) ? ('　·　' + a.branch) : '';
+                var br = (a && a.branch) ? ('　·　' + this._ascBranchLabel(a.branch)) : '';
                 this.el.charLabel.textContent = '👤 ' + (c && c.name ? c.name : '無名') + br;
                 this.el.charLabel.title = c && c.id ? ('角色 id：' + c.id) : '';
             }
@@ -55368,7 +55640,12 @@ window.HY = window.HY || {};
             if (!AM || typeof AM.active !== 'function' || typeof AM.keystoneOf !== 'function') return '';
             if (!this.sys.isJoined(c)) return '';
             var kn = AM.keystoneOf(c);
-            if (!kn || !kn.kdesc) return '';
+            if (!kn || !kn.kdesc) {
+                return '<div class="asc-sub-box" style="border-color:#f87171;">' +
+                    '<div class="asc-sub-warn" style="margin:0;">' +
+                    '⚠ <b>核心未點亮</b>：請在樹上點選金色菱形「核心」節點，' +
+                    '否則符陣／承天／暗影／刻印等<b>戰鬥機制不會生效</b>（目前只有數值詞條）。</div></div>';
+            }
 
             var rows = (typeof AM.statusRows === 'function') ? AM.statusRows(c) : [];
             var html = '<div class="asc-core-box" id="asc-core-panel">' +
@@ -80424,6 +80701,15 @@ window.HY = window.HY || {};
                     }
                 } catch (eFXa) { }
             }
+            if (!isSupportMode) {
+                try {
+                    var _AMpre = window.HY && window.HY.AscMechanics;
+                    if (_AMpre && typeof _AMpre.onPreAttack === 'function') {
+                        var _preMsg = _AMpre.onPreAttack(charObj);
+                        if (_preMsg) core.log('【' + charObj.name + '】' + _preMsg, 'combat');
+                    }
+                } catch (eAscPre) { }
+            }
             targetList.forEach(function (target) {
                 // ⭐ v51：逐目標查詢門派特色修正
                 var mods = (setFeatSys && typeof setFeatSys.getAttackerMods === 'function' && !isSupportMode)
@@ -80515,7 +80801,7 @@ window.HY = window.HY || {};
                             if (_am.critDmgPct > 0) {
                                 rawDmg *= (1 + _am.critDmgPct);
                             }
-                            if (_am.critFlat > 0 && !isCrit) {
+                            if ((_am.forceCrit || _am.critFlat > 0) && !isCrit) {
                                 isCrit = true;
                                 critCount += 1;
                             }
@@ -81486,6 +81772,24 @@ window.HY = window.HY || {};
             if (_suppressed) {
                 enemyDmg = Math.floor(enemyDmg * 0.5);
             }
+            /* ⭐ 昇華受擊減免（須在扣血前結算，否則日誌顯示滿傷但事後才補回） */
+            var _ascMit = 0;
+            try {
+                var _AMhit = window.HY && window.HY.AscMechanics;
+                if (_AMhit && typeof _AMhit.onStruck === 'function' && enemyDmg > 0) {
+                    var _bs = targetMember._ascMech;
+                    if (_bs && typeof _bs === 'object') _bs._vanishUsedThisStrike = 0;
+                    _ascMit = Math.max(0, _AMhit.onStruck(targetMember, enemy, enemyDmg));
+                    if (_ascMit > 0) {
+                        enemyDmg = Math.max(1, enemyDmg - _ascMit);
+                        core.log('【' + targetMember.name + '】昇華機制抵銷 ' + _ascMit + ' 傷害', 'combat');
+                    }
+                    if (_AMhit.afterEnemyStrike && _bs && _bs._vanishUsedThisStrike) {
+                        _AMhit.afterEnemyStrike(targetMember, true);
+                        _bs._vanishUsedThisStrike = 0;
+                    }
+                }
+            } catch (eAscHit) { }
             var momTag = '';
             /* ⭐⭐ POE「N% of Damage is taken from Mana before Life」天賦（與幫會祝福 MOM 並存） */
             var _poeMomPct = Math.min(60, nz(targetStats.momPercent, 0));
@@ -82651,6 +82955,12 @@ window.HY = window.HY || {};
             if (st && members.indexOf(st) < 0) members.push(st);
 
             var EX = window.HY.CombatMechanicsExtra;
+            try {
+                var AMclr = window.HY.AscMechanics;
+                if (AMclr && typeof AMclr.clearPartyAscCombatFlags === 'function') {
+                    AMclr.clearPartyAscCombatFlags(members);
+                }
+            } catch (eClr) { }
             members.forEach(function (c) {
                 if (!c) return;
                 /* ⭐ v478：清空昇華機制狀態（每場戰鬥重新累積） */
@@ -82662,6 +82972,12 @@ window.HY = window.HY || {};
                 } catch (e) { }
                 /* ⭐ v482：罡氣機制已完整移除，開場不再初始化護盾 */
             });
+            try {
+                var AM0 = window.HY.AscMechanics;
+                if (AM0 && typeof AM0.onBattleStartParty === 'function') {
+                    AM0.onBattleStartParty(members);
+                }
+            } catch (eAsc0) { }
         },
 
         /* ── 玩家出手後：命中 → 出手 → 回合結算，全部走武學心法 ── */
@@ -82804,27 +83120,40 @@ window.HY = window.HY || {};
                         }
                     }
                     if (_guard && _guard !== target && _guard.currentHp > 0) {
-                        var _sh = Math.floor(dmg * Math.min(0.85, num(target._ascSharePct, 0.3)));
+                        var _gMx = num(_guard.maxHp, 0);
+                        if (_gMx <= 0) {
+                            try {
+                                var _csG = window.HY.game && window.HY.game.charSys;
+                                if (_csG && typeof _csG.getDerivedStatsForChar === 'function') {
+                                    _gMx = num(_csG.getDerivedStatsForChar(_guard).maxHp, 1);
+                                }
+                            } catch (eGmx) { _gMx = 1; }
+                        }
+                        var _gR = _gMx > 0 ? ((_guard.currentHp || 0) / _gMx) : 0;
+                        if (_gR < 0.28) {
+                            /* 守護者過殘時暫停代傷，避免承天核心拖垮全隊 */
+                        } else {
+                        var _rawShare = dmg * Math.min(0.22, num(target._ascSharePct, 0.18));
+                        var _sh = Math.floor(_rawShare * 0.72);
                         if (_sh > 0) {
                             target.currentHp = Math.min(target.maxHp || _sh, (target.currentHp || 0) + _sh);
                             _guard.currentHp = Math.max(0, (_guard.currentHp || 0) - _sh);
                             _core.log('【' + _guard.name + '】承天代傷 ' + _sh, 'combat');
+                            var AMg = window.HY.AscMechanics;
+                            if (AMg && typeof AMg.onStruck === 'function') {
+                                var _enG = payload && (payload.enemy || payload.attacker) || null;
+                                var _redG = AMg.onStruck(_guard, _enG, _sh);
+                                if (_redG > 0) {
+                                    _guard.currentHp = Math.min(_guard.maxHp || 0,
+                                        (_guard.currentHp || 0) + _redG);
+                                }
+                            }
+                        }
                         }
                     }
                 }
             } catch (eSh) { }
-            try {
-                var AMs = window.HY.AscMechanics;
-                if (AMs && typeof AMs.onStruck === 'function') {
-                    var _en = payload && (payload.enemy || payload.attacker) || null;
-                    var _red = AMs.onStruck(target, _en, dmg);
-                    if (_red > 0) {
-                        var _mx = target.maxHp || 0;
-                        target.currentHp = Math.min(_mx, (target.currentHp || 0) + _red);
-                        _core.log('【' + target.name + '】昇華機制抵銷 ' + _red + ' 傷害', 'combat');
-                    }
-                }
-            } catch (eAM2) { }
+            /* onStruck 改在 combatEnemyTurn 扣血前結算（v772），此處不再回補避免雙重減傷 */
 
             var WA = window.HY.WuxiaArts;
             if (!WA) return;
