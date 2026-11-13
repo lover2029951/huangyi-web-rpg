@@ -5,13 +5,42 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v768 · 2026-11-13',
-        gameVer: 768,
+        newsVer: 'v770 · 2026-11-13',
+        gameVer: 770,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'add', tagLabel: '昇華',
+            title: '傳說昇華 +20 v770',
+            date: '2026-11-13',
+            bullets: [
+                '新增 <b>Legends</b> 職業類 20 條昇華（劍聖、丹聖、陣主…虛行者），各 30 節點 + 專屬核心',
+                '戰鬥掛鉤 <code>ascendancyMechanicsLegends.js</code>；與原 21 條並列可選',
+                '昇華列表共 <b>41</b> 條分支'
+            ]
+        },
+        {
+            tag: 'tune', tagLabel: '昇華',
+            title: '全核心機制重載 v770',
+            date: '2026-11-13',
+            bullets: [
+                '原 21 條核心戰鬥補全：戰嚎、疾影雙擊、幻形仿擊、承天分傷、鐵壁破甲、穿雲殘血等',
+                '<code>ascendancyMechanicsClassicV770.js</code>；核心文案載入時自動同步',
+                '右欄「核心機制」區塊：說明 + 戰鬥疊層狀態（全分支通用）'
+            ]
+        },
+        {
+            tag: 'ui', tagLabel: '萬法',
+            title: '副修面板強化 v770',
+            date: '2026-11-13',
+            bullets: [
+                '萬法副修改金色置頂區：名額槽、規則說明、詞條預覽列表',
+                '頂部 pill「副修顯著 0／2」；未點核心有警示'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '昇華',
             title: '昇華加成掛鉤 v768',
