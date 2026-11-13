@@ -57722,6 +57722,9 @@ window.HY = window.HY || {};
             if (!success) {
                 this._log('💔 挑戰【' + boss.name + '】失敗，暫且退避。', 'loss');
                 if (g.renderAll) g.renderAll(true);
+                if (g.uiCombatExplore && typeof g.uiCombatExplore._syncRegionBossBadges === 'function') {
+                    try { g.uiCombatExplore._syncRegionBossBadges(); } catch (eBdF) { }
+                }
                 return;
             }
 
@@ -57832,7 +57835,13 @@ window.HY = window.HY || {};
                 }
             } catch (eL) { }
 
+            if (g.uiCombatExplore) {
+                try { g.uiCombatExplore._mapListSigCache = null; } catch (eSig) { }
+            }
             if (g.renderAll) g.renderAll(true);
+            if (g.uiCombatExplore && typeof g.uiCombatExplore._syncRegionBossBadges === 'function') {
+                try { g.uiCombatExplore._syncRegionBossBadges(); } catch (eBd) { }
+            }
             if (window.HY.uiRegionBoss && window.HY.uiRegionBoss.refresh) {
                 try { window.HY.uiRegionBoss.refresh(); } catch (e2) { }
             }
@@ -87432,10 +87441,16 @@ window.HY = window.HY || {};
                 '.hy-era-timeline-era span{flex:1;text-align:center;font-size:.58rem;color:#64748b;' +
                     'line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
 
-                '.hy-era-rail{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 14px;' +
-                    'scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}',
-                '.hy-era-rail::-webkit-scrollbar{height:8px;}',
-                '.hy-era-rail::-webkit-scrollbar-thumb{background:#334155;border-radius:99px;}',
+                '.hy-era-rail{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 6px;' +
+                    'scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;' +
+                    'scrollbar-width:thick;scrollbar-color:#00e5ff #1a2434;}',
+                '.hy-era-rail::-webkit-scrollbar{height:16px;}',
+                '.hy-era-rail::-webkit-scrollbar-track{background:#1a2434;border-radius:99px;' +
+                    'margin:0 8px;border:1px solid #334155;}',
+                '.hy-era-rail::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#0891b2,#00e5ff);' +
+                    'border-radius:99px;border:2px solid #0f172a;min-width:72px;}',
+                '.hy-era-rail::-webkit-scrollbar-thumb:hover{background:#22d3ee;}' +
+                '.hy-era-rail::-webkit-scrollbar-thumb:active{background:#67e8f9;}',
 
                 '.hy-era-platform{flex:0 0 min(268px,78vw);scroll-snap-align:start;display:flex;' +
                     'flex-direction:column;gap:8px;padding:10px 11px 12px;background:#101820;' +
@@ -88306,8 +88321,35 @@ window.HY = window.HY || {};
                     rec + '</b>　｜　當前駐留：<b>' + curName + '</b>';
             }
         }
+        /** 區域 BOSS 可否挑戰／冷卻（殺死後須納入簽章才會重繪地圖卡） */
+        _regionBossUiSignature() {
+            var rb = this.app && this.app.regionBossSys;
+            if (!rb || typeof rb.bossOf !== 'function') return '';
+            var maps = window.HY.Data && window.HY.Data.MAPS;
+            if (!maps) return '';
+            var parts = [];
+            Object.values(maps).forEach(function (m) {
+                if (!m || !m.id || !rb.bossOf(m.id)) return;
+                var cd = typeof rb.cooldownLeft === 'function' ? rb.cooldownLeft(m.id) : 0;
+                var fight = rb._inFight && rb._mapId === m.id ? '1' : '0';
+                var chk = typeof rb.canChallenge === 'function' ? rb.canChallenge(m.id) : null;
+                var ok = chk && chk.ok ? '1' : '0';
+                parts.push(m.id + ':' + (cd > 0 ? 'cd' : 'rd') + ok + fight);
+            });
+            return parts.join(';');
+        }
         _mapListSignature(curMap, maxLv) {
-            return String(curMap.id) + '|' + maxLv;
+            return String(curMap.id) + '|' + maxLv + '|' + this._regionBossUiSignature();
+        }
+        /** 只刷新 BOSS 角標（冷卻秒數倒數），不必整表重掛 */
+        _syncRegionBossBadges() {
+            var self = this;
+            document.querySelectorAll('.hy-era-map-card[data-map-id]').forEach(function (btn) {
+                var slot = btn.querySelector('.hy-era-boss-slot');
+                if (!slot) return;
+                var mid = btn.getAttribute('data-map-id');
+                slot.innerHTML = self._regionBossBadgeHtml(mid) || '';
+            });
         }
         /** 僅重繪「當前地圖」高亮，不重掛地圖卡片 */
         _syncMapListCurrentHighlight(curMapId) {
@@ -88374,7 +88416,8 @@ window.HY = window.HY || {};
                     btn.setAttribute('data-map-id', m.id);
                     if (m.desc) btn.setAttribute('title', m.desc);
                     if (!isLocked) btn.setAttribute('tabindex', '0');
-                    var badges = self._regionBossBadgeHtml(m.id);
+                    var badges = '<span class="hy-era-boss-slot">' +
+                        (self._regionBossBadgeHtml(m.id) || '') + '</span>';
                     if (m.hasMedicalPod) {
                         badges += '<span class="hy-era-map-badge" title="奈米時空醫療艙">🏥 醫療艙</span>';
                     }
@@ -88462,6 +88505,7 @@ window.HY = window.HY || {};
                 this._syncMapListCurrentHighlight(curMap.id);
                 this._updateEraNavChrome(curMap, maxLv);
             }
+            this._syncRegionBossBadges();
             const enemyListEl = document.getElementById('enemy-list');
             const arenaEl = document.getElementById('battle-arena');
             if (!enemyListEl || !arenaEl) return;
@@ -172710,7 +172754,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=761').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=762').catch(function () {});
     } catch (eSw) {}
   });
 }
