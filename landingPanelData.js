@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v749 · 2026-11-13',
-        gameVer: 749,
+        newsVer: 'v750 · 2026-11-13',
+        gameVer: 750,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '效能',
+            title: '全系統效能包 v750',
+            date: '2026-11-13',
+            bullets: [
+                '一般 <code>renderAll()</code> 自動節流合併；分頁切換仍強制全繪',
+                '背景分頁：戰鬥 UI 降頻、內掛戰術只同步數值、靜默存檔間隔 ×3',
+                '登入預設 <b>game-chunked.html</b>；簽章用 <code>compactKV</code>；行囊／武魂虛擬捲動門檻下調'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '內掛戰術白屏 v749',
@@ -881,7 +891,8 @@
         renderGuide: renderGuide,
         applyMeta: applyMeta,
         boot: bootLanding,
-        gameHref: function () { return 'game.html?v=' + META.gameVer; },
+        gameHref: function () { return 'game-chunked.html?v=' + META.gameVer; },
+        gameHrefMonolith: function () { return 'game.html?v=' + META.gameVer; },
         gameHrefChunked: function () { return 'game-chunked.html?v=' + META.gameVer; }
     };
 

@@ -453,7 +453,7 @@
         <p class="sub" id="hero-sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
     </div>
 
-    <a class="btn" href="game.html" data-game-href>▶ 進入遊戲</a>
+    <a class="btn" href="game-chunked.html" data-game-href>▶ 進入遊戲</a>
 
     <script src="landingPanelData.js"></script>
 
@@ -490,7 +490,7 @@
     <script>
     function hyGameLink() {
         return (window.HY_LANDING && typeof HY_LANDING.gameHref === 'function')
-            ? HY_LANDING.gameHref() : 'game.html';
+            ? HY_LANDING.gameHref() : 'game-chunked.html';
     }
     /* ══════════════════════════════════════════════════════════════
        👥 我的隊伍 —— 從本機存檔讀取角色資料
@@ -864,7 +864,7 @@
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-            try { navigator.serviceWorker.register('sw.js?v=749').catch(function () {}); } catch (e) {}
+            try { navigator.serviceWorker.register('sw.js?v=750').catch(function () {}); } catch (e) {}
         });
     }
     </script>

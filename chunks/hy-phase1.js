@@ -13,7 +13,7 @@
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
   };
 })();
-/* HY chunk phase1 — 201 files */
+/* HY chunk phase1 — 202 files */
 /* --- gameConfig.js --- */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -32785,6 +32785,27 @@ window.HY = window.HY || {};
     window.HY.VirtualScroll = VirtualScroll;
 })();
 
+/* --- hyCompactSig.js --- */
+// js/hyCompactSig.js — 狀態簽章用輕量序列化（避免 JSON.stringify 大物件）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function compactKV(obj) {
+        if (obj == null) return '';
+        if (typeof obj !== 'object') return String(obj);
+        var keys = Object.keys(obj).sort();
+        var out = [];
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            out.push(k + ':' + obj[k]);
+        }
+        return out.join(',');
+    }
+
+    window.HY.compactKV = compactKV;
+})();
+
 /* --- saveSystem.js --- */
 // js/saveSystem.js  (v50)
 // Logger（三通道分診）+ SaveSystem
@@ -32944,11 +32965,19 @@ window.HY = window.HY || {};
             this.logger = logger;
             this._saveCoalesce = null;
             this._savePendingSilent = true;
+            this._dirty = true;
+        }
+        markDirty() {
+            this._dirty = true;
+        }
+        isDirty() {
+            return !!this._dirty;
         }
         save(silent) {
             var self = this;
             silent = !!silent;
             if (!silent) {
+                this.markDirty();
                 return this._saveSync(false);
             }
             this._savePendingSilent = true;
@@ -33066,6 +33095,7 @@ window.HY = window.HY || {};
                        這裡額外加一個短暫的浮動提示（不依賴任何面板）。 */
                     this._toast('💾 存檔成功　' + this.lastSaveText(), '#10b981');
                 }
+                this._dirty = false;
                 return true;
             } catch (err) {
                 this.logger.add('❌ 存檔失敗：' + (err && err.name === 'QuotaExceededError'
@@ -85816,6 +85846,15 @@ window.HY = window.HY || {};
             const Data = window.HY.Data;
             const app = this.app;
             const st = app.charSys.state;
+            const at0Early = app.combatSys && app.combatSys.autoTactics;
+            const cfgEarly = (at0Early && typeof at0Early.cfgFor === 'function')
+                ? at0Early.cfgFor(at0Early.editingCharId())
+                : app.combatSys.autoConfig;
+            if (!opts.force && typeof document !== 'undefined' && document.hidden &&
+                document.getElementById('cfg-primary-skill')) {
+                this._syncAutoTacticsValues(cfgEarly);
+                return;
+            }
             /* ⭐ 讀取「目前編輯角色」的設定（每角色獨立） */
             const at0 = app.combatSys && app.combatSys.autoTactics;
             const cfg = (at0 && typeof at0.cfgFor === 'function')
@@ -86752,11 +86791,14 @@ window.HY = window.HY || {};
                  現在把 qinggong / xinfa / activeQinggong / activeXinfa
                   全部納入，任何修習或常駐變動都會強制重繪。 */
             var _mState = app.charSys.state;
+            var ckv = (window.HY && window.HY.compactKV) ? window.HY.compactKV : function (o) {
+                try { return JSON.stringify(o || {}); } catch (e) { return ''; }
+            };
             var _sig = [
                 charLv, charSect, artFilter, xfFilter, qgFilter,
-                JSON.stringify(_mState.skills || {}),
-                JSON.stringify(_mState.qinggong || {}),
-                JSON.stringify(_mState.xinfa || {}),
+                ckv(_mState.skills || {}),
+                ckv(_mState.qinggong || {}),
+                ckv(_mState.xinfa || {}),
                 _mState.activeQinggong || '',
                 _mState.activeXinfa || '',
                 JSON.stringify(app.charSys.rootState.sp || 0),
@@ -87123,7 +87165,10 @@ window.HY = window.HY || {};
             const curSectName = curSectObj ? curSectObj.name : (charSect || '其他門派');
 
             /* ⭐ 效能：狀態沒變就不重建（同 renderMartialTab 的理由） */
-            var _sig = [charLv, charSect, JSON.stringify(app.charSys.state.skills || {})].join('|');
+            var ckvSect = (window.HY && window.HY.compactKV) ? window.HY.compactKV : function (o) {
+                try { return JSON.stringify(o || {}); } catch (e) { return ''; }
+            };
+            var _sig = [charLv, charSect, ckvSect(app.charSys.state.skills || {})].join('|');
             if (this._sectSig === _sig) return;
             this._sectSig = _sig;
 
@@ -90957,7 +91002,7 @@ window.HY = window.HY || {};
   }
   var _bagRenderSig = null;
   var _bagVirt = null;
-  var BAG_VIRTUAL_MIN = 64;
+  var BAG_VIRTUAL_MIN = 48;
   function computeBagRenderSig() {
     var all = bagAll();
     var eq = ACC.equipped() || {};
@@ -94496,8 +94541,11 @@ window.HY = window.HY || {};
                 if (!tabEl || !tabEl.classList.contains('active')) return;
             }
             const g0 = app.guildCore.getGuild();
+            var ckv = (window.HY && window.HY.compactKV) ? window.HY.compactKV : function (o) {
+                try { return JSON.stringify(o || {}); } catch (e) { return ''; }
+            };
             var guildSig = this.currentSubTab + '|' + g0.lv + '|' + g0.funds + '|' + g0.contrib + '|' +
-                (g0.members ? g0.members.length : 0) + '|' + JSON.stringify(g0.buildings || {}) + '|' +
+                (g0.members ? g0.members.length : 0) + '|' + ckv(g0.buildings || {}) + '|' +
                 (g0.towerFloor || 0) + '|' + (this.__selCharId || '');
             if (!force && this._guildTabSig === guildSig) return;
             this._guildTabSig = guildSig;
@@ -114775,16 +114823,16 @@ window.HY = window.HY || {};
       this.affixSys = new window.HY.AffixSystem(this.charSys, this.logger);
       /* ⭐ 金司馬區（獨立新城）：工人 / 礦錠 / 航運 / 符文 / 工藝 */
       this.kmSys = new window.HY.KingsmarchSystem(
-        this.charSys, this.inventorySys, this.logger, () => this.renderAll()
+        this.charSys, this.inventorySys, this.logger, () => this.renderAllThrottled()
       );
       this.kmShip = new window.HY.KingsmarchShip(
-        this.kmSys, this.charSys, this.logger, () => this.renderAll()
+        this.kmSys, this.charSys, this.logger, () => this.renderAllThrottled()
       );
       this.kmRune = new window.HY.KingsmarchRune(
-        this.kmSys, this.charSys, this.logger, () => this.renderAll()
+        this.kmSys, this.charSys, this.logger, () => this.renderAllThrottled()
       );
       this.kmRecon = new window.HY.KingsmarchRecombine(
-        this.kmSys, this.charSys, this.logger, () => this.renderAll()
+        this.kmSys, this.charSys, this.logger, () => this.renderAllThrottled()
       );
       /* ⭐ 金司馬區：雇工人自動刷圖（POE Map Runners） */
       this.kmRunners = new window.HY.KingsmarchMapRunners(this);
@@ -114803,7 +114851,7 @@ window.HY = window.HY || {};
         this.charSys,
         this.inventorySys,
         this.logger,
-        () => this.renderAll()
+        () => this.renderAllThrottled()
       );
       this.uiTown = new window.HY.UITown(this);
       /* ⭐ 金司馬區面板（UI 檔晚載入，boot 時才抓得到 HY.game） */
@@ -114896,6 +114944,12 @@ window.HY = window.HY || {};
       var acc = this._clockAcc;
       this._timers.master = setInterval(function () {
         var dt = TICK;
+        try {
+          var at = self.combatSys && self.combatSys.autoTactics;
+          if (at && at.isAutoBattle && self.saveSys && self.saveSys.markDirty) {
+            self.saveSys.markDirty();
+          }
+        } catch (eMd) { }
         acc.guild += dt;
         acc.save += dt;
         acc.km += dt;
@@ -114920,9 +114974,14 @@ window.HY = window.HY || {};
             }
           }
         }
-        if (acc.save >= autoSaveMs) {
+        var saveNeed = autoSaveMs * ((typeof document !== 'undefined' && document.hidden) ? 3 : 1);
+        if (acc.save >= saveNeed) {
           acc.save = 0;
-          self.saveSys.save(true);
+          if (document.hidden && self.saveSys && self.saveSys.isDirty && !self.saveSys.isDirty()) {
+            /* 背景分頁且無變更：略過本次靜默存檔 */
+          } else {
+            self.saveSys.save(true);
+          }
         }
         if (acc.km >= 60000) {
           acc.km = 0;
@@ -115079,7 +115138,15 @@ window.HY = window.HY || {};
 
       setTimeout(() => { input.focus(); input.select(); }, 120);
     }
-    renderAll() {
+    /** 強制全繪；一般請求請用 renderAllThrottled（此處自動轉節流） */
+    renderAll(force) {
+      if (force !== true) {
+        this.renderAllThrottled();
+        return;
+      }
+      this._renderAllBody(true);
+    }
+    _renderAllBody(forceAll) {
       var perf = window.HY && window.HY.Perf;
       var endAll = perf && perf.enabled && perf.begin('renderAll.total');
       var run = function (label, fn) {
@@ -115088,7 +115155,6 @@ window.HY = window.HY || {};
       };
       try {
       run('sync.activePointer', () => { this.charSys.syncActivePointer(); });
-      var forceAll = (arguments.length > 0 && arguments[0] === true);
       var visible = this._visibleTabs();
       var need = function (tabId) { return forceAll || visible[tabId]; };
       var needInv = need('tab-inventory') || need('tab-blackmarket');
@@ -115221,6 +115287,19 @@ window.HY = window.HY || {};
         self._combatRenderPending = false;
         try { self.renderCombatLite(); } catch (e) { if (window.console) console.warn('[renderCombatLite] ', e); }
       };
+      var hidden = (typeof document !== 'undefined' && document.hidden);
+      if (hidden) {
+        if (this._combatHiddenPending) {
+          if (perf && perf.enabled) perf.count('renderCombatLiteThrottled.coalescedHidden');
+          return;
+        }
+        this._combatHiddenPending = true;
+        setTimeout(function () {
+          self._combatHiddenPending = false;
+          run();
+        }, 900);
+        return;
+      }
       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
       else setTimeout(run, 16);
     }
@@ -115236,7 +115315,7 @@ window.HY = window.HY || {};
       this._renderPending = true;
       var run = function () {
         self._renderPending = false;
-        try { self.renderAll(); } catch (e) { if (window.console) console.warn('[renderAll] ', e); }
+        try { self._renderAllBody(false); } catch (e) { if (window.console) console.warn('[renderAll] ', e); }
       };
       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
       else setTimeout(run, 16);
@@ -115258,7 +115337,7 @@ window.HY = window.HY || {};
              但這裡原本只切 class 不重繪 →
              新分頁的內容還是上次繪製時的舊狀態，看起來像「延遲出現」。
              （實際上是根本沒畫，直到某個別的動作觸發 renderAll 才補上。） */
-          try { this.renderAll(); } catch (e) { }
+          try { this.renderAll(true); } catch (e) { }
         });
       });
       document.querySelectorAll('.sub-martial-btn').forEach(btn => {
@@ -115269,7 +115348,7 @@ window.HY = window.HY || {};
           const targetSub = document.getElementById(btn.dataset.sub);
           if (targetSub) targetSub.classList.remove('hidden');
           /* ⭐ 子分頁切換也要重繪（同樣理由：renderAll 只畫可見區塊） */
-          try { this.renderAll(); } catch (e) { }
+          try { this.renderAll(true); } catch (e) { }
         });
       });
       // 外功門派分類（fallback；levelExpSystem 會把它換成動態版本）

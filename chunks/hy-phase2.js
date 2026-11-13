@@ -5254,7 +5254,7 @@ window.HY = window.HY || {};
     class UIWuhun {
         constructor(app) {
             this._whVirt = null;
-            this._whVirtMin = 40;
+            this._whVirtMin = 32;
             this.app = app;
             this.el = {};
             this._sel = null;       /* 目前選取的武魂 uid */
