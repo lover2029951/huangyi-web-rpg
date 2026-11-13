@@ -13,7 +13,7 @@
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
   };
 })();
-/* HY chunk phase1 — 202 files */
+/* HY chunk phase1 — 203 files */
 /* --- gameConfig.js --- */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -289,6 +289,8 @@ window.HY = window.HY || {};
         ui: {
             maxLogEntries: 50,               // ✖ 日誌最多保留筆數
             autoSaveIntervalMs: 30000,       // ⚡ 自動存檔間隔（ms）
+            hiddenTimerMul: 4,                 // ⚡ 背景分頁：非關鍵計時器間隔倍率
+            hiddenSaveMul: 3,                  // ⚡ 背景分頁：自動存檔間隔倍率（與 main 一致）
             guildHarvestIntervalMs: 15000,   // ⚡ 幫會徵收間隔（ms）
             expeditionDurationSec: 180,      // ✖ 探險週期（秒）
             autoRepeatDelayMs: 1000,         // ✖ 自動連刷等待（ms）
@@ -114382,36 +114384,73 @@ window.HY = window.HY || {};
         this.atbSys.refreshFromConfig();
       }
     }
-    ensureAllSharedState() {
+    /** 開局／讀檔必須就緒的核心狀態（戰鬥與角色欄） */
+    ensureCoreState() {
       this.rosterSys.ensureState();
       this.partySys.ensureState();
       this.equipSys.ensureState();
-      this.poeSys.ensureState();
-      this.essenceSys.ensureState();
-      this.fossilSys.ensureState();
-      this.talentSys.ensureState();
-      this.jewelSys.ensureState();
-      /* 礦坑系統在 uiDelve.js 晚載入時才建立，這裡做防護 */
-      if (this.delveSys && typeof this.delveSys.ensureState === 'function') {
-        this.delveSys.ensureState();
-      }
-      this.marketSys.ensureState();
+      this.martialSys.ensureState();
+      this.companionSys.ensureState();
       if (this.wuhunSys) this.wuhunSys.ensureState();
       if (this.regionBossSys) this.regionBossSys.ensureState();
-      this.companionSys.ensureState();
-      this.martialSys.ensureState();
-      this.guildCore.ensureState();
-      this.townSys.ensureState();
-      /* 金司馬區 */
-      if (this.kmSys && typeof this.kmSys.ensureState === 'function') {
-        this.kmSys.ensureState();
-      }
+      this._ensureRootBagShape();
+    }
+    _ensureRootBagShape() {
       var root = this.charSys.rootState;
       if (root.spiritStones === undefined) root.spiritStones = 20;
       if (!Array.isArray(root.equipBag)) root.equipBag = [];
       (root.roster || []).forEach(function (c) {
         if (!c.activeBuffs) c.activeBuffs = {};
       });
+    }
+    /** 分頁首次開啟才跑的 ensure（減少開局與背景 tick 成本） */
+    ensureTabState(tabId, force) {
+      if (!tabId) return;
+      this._tabEnsured = this._tabEnsured || {};
+      if (!force && this._tabEnsured[tabId]) return;
+      this._tabEnsured[tabId] = 1;
+      switch (tabId) {
+        case 'tab-inventory':
+        case 'tab-blackmarket':
+          this.poeSys.ensureState();
+          this.essenceSys.ensureState();
+          this.fossilSys.ensureState();
+          this.jewelSys.ensureState();
+          this.marketSys.ensureState();
+          break;
+        case 'tab-martial':
+        case 'tab-sect':
+          this.talentSys.ensureState();
+          break;
+        case 'tab-guild':
+          this.guildCore.ensureState();
+          break;
+        case 'tab-town':
+          this.townSys.ensureState();
+          break;
+        case 'tab-companion':
+          break;
+        case 'tab-explore':
+          break;
+        default:
+          break;
+      }
+      if (tabId === 'tab-inventory' || tabId === 'tab-explore' || force) {
+        if (this.delveSys && typeof this.delveSys.ensureState === 'function') {
+          this.delveSys.ensureState();
+        }
+        if (this.kmSys && typeof this.kmSys.ensureState === 'function') {
+          this.kmSys.ensureState();
+        }
+      }
+    }
+    ensureAllSharedState() {
+      this._tabEnsured = {};
+      this.ensureCoreState();
+      var tabs = ['tab-inventory', 'tab-blackmarket', 'tab-martial', 'tab-sect',
+        'tab-guild', 'tab-town', 'tab-companion', 'tab-explore'];
+      var self = this;
+      tabs.forEach(function (t) { self.ensureTabState(t, true); });
     }
     // ⭐ v31：可重複呼叫的計時器啟動
     startTimers() {
@@ -114423,6 +114462,10 @@ window.HY = window.HY || {};
       var autoSaveMs = (G && G.ui && typeof G.ui.autoSaveIntervalMs === 'number')
         ? G.ui.autoSaveIntervalMs
         : (cfgData.AUTO_SAVE_INTERVAL || 30000);
+      var hiddenMul = (G && G.ui && typeof G.ui.hiddenTimerMul === 'number')
+        ? Math.max(1, G.ui.hiddenTimerMul) : 4;
+      var hiddenSaveMul = (G && G.ui && typeof G.ui.hiddenSaveMul === 'number')
+        ? Math.max(1, G.ui.hiddenSaveMul) : 3;
       var TICK = 1000;
       ['guild', 'save', 'km', 'kmShip', 'disciples', 'meridian', 'escort', 'codex', 'master'].forEach(function (k) {
         if (self._timers[k]) clearInterval(self._timers[k]);
@@ -114450,7 +114493,9 @@ window.HY = window.HY || {};
         acc.escort += dt;
         acc.codex += dt;
 
-          if (acc.guild >= harvestMs) {
+        var pageHidden = (typeof document !== 'undefined' && document.hidden);
+        var tickMul = pageHidden ? hiddenMul : 1;
+        if (acc.guild >= harvestMs * (pageHidden && !self._visibleTabs()['tab-guild'] ? hiddenMul : 1)) {
           acc.guild = 0;
           if (self.guildBuilding.harvestAllBuildings(false)) {
             try {
@@ -114468,7 +114513,7 @@ window.HY = window.HY || {};
             }
           }
         }
-        var saveNeed = autoSaveMs * ((typeof document !== 'undefined' && document.hidden) ? 3 : 1);
+        var saveNeed = autoSaveMs * (pageHidden ? hiddenSaveMul : 1);
         if (acc.save >= saveNeed) {
           acc.save = 0;
           if (document.hidden && self.saveSys && self.saveSys.isDirty && !self.saveSys.isDirty()) {
@@ -114477,15 +114522,15 @@ window.HY = window.HY || {};
             self.saveSys.save(true);
           }
         }
-        if (acc.km >= 60000) {
+        if (acc.km >= 60000 * tickMul) {
           acc.km = 0;
           try { if (self.kmSys) self.kmSys.tick(); } catch (e) { }
         }
-        if (acc.kmShip >= 10000) {
+        if (acc.kmShip >= 10000 * tickMul) {
           acc.kmShip = 0;
           try { if (self.kmShip) self.kmShip.settle(); } catch (e) { }
         }
-        if (acc.disciples >= 30000) {
+        if (acc.disciples >= 30000 * tickMul) {
           acc.disciples = 0;
           try {
             if (self.disciplesSys && self.disciplesSys.isFounded()) {
@@ -114497,11 +114542,11 @@ window.HY = window.HY || {};
             }
           } catch (e) { }
         }
-        if (acc.meridian >= 20000) {
+        if (acc.meridian >= 20000 * tickMul) {
           acc.meridian = 0;
           try { if (self.meridianMap) self.meridianMap.tickQi(); } catch (e) { }
         }
-        if (acc.escort >= 10000) {
+        if (acc.escort >= 10000 * tickMul) {
           acc.escort = 0;
           try {
             if (self.escortSys) {
@@ -114513,24 +114558,35 @@ window.HY = window.HY || {};
             }
           } catch (e) { }
         }
-        if (acc.codex >= 60000) {
+        if (acc.codex >= 60000 * tickMul) {
           acc.codex = 0;
-          try {
-            var cx = self.codexSys;
-            if (!cx) return;
-            if (window.HY.PerChar) {
-              window.HY.PerChar.eachChar(function (c) {
-                try { cx.checkAchievements(c); } catch (e1) { }
-              });
-            } else cx.checkAchievements();
-          } catch (e) { }
+          var runCodex = function () {
+            try {
+              var cx = self.codexSys;
+              if (!cx) return;
+              if (window.HY.PerChar) {
+                window.HY.PerChar.eachChar(function (c) {
+                  try { cx.checkAchievements(c); } catch (e1) { }
+                });
+              } else cx.checkAchievements();
+            } catch (e) { }
+          };
+          if (window.HY.PerfTuning && typeof window.HY.PerfTuning.runIdle === 'function') {
+            window.HY.PerfTuning.runIdle(runCodex, 2500);
+          } else {
+            runCodex();
+          }
         }
       }, TICK);
     }
     init() {
       const cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
       const hasSave = this.saveSys.load();
-      this.ensureAllSharedState();
+      this.ensureCoreState();
+      try {
+        var visTab = document.querySelector('.tab-content.active');
+        if (visTab && visTab.id) this.ensureTabState(visTab.id);
+      } catch (eVis) { }
       /* ⭐ v687：讀檔後立刻掛陣盤，避免戰鬥舞台先用預設九宮格 */
       try {
         if (window.HY.FormationGridBoot) window.HY.FormationGridBoot();
@@ -114653,19 +114709,24 @@ window.HY = window.HY || {};
       var need = function (tabId) { return forceAll || visible[tabId]; };
       var needInv = need('tab-inventory') || need('tab-blackmarket');
       var needMartial = need('tab-martial') || need('tab-sect');
+      if (forceAll) run('ensure.core', () => { this.ensureCoreState(); });
       if (forceAll || needInv) {
-        run('ensure.equip', () => { this.equipSys.ensureState(); });
-        run('ensure.poe', () => { this.poeSys.ensureState(); });
-        run('ensure.essence', () => { this.essenceSys.ensureState(); });
-        run('ensure.fossil', () => { this.fossilSys.ensureState(); });
-        run('ensure.jewel', () => { this.jewelSys.ensureState(); });
+        run('ensure.tabInv', () => {
+          this.ensureTabState('tab-inventory', forceAll);
+          if (need('tab-blackmarket')) this.ensureTabState('tab-blackmarket', forceAll);
+        });
       }
       if (forceAll || needMartial) {
-        run('ensure.talent', () => { this.talentSys.ensureState(); });
-        run('ensure.martial', () => { this.martialSys.ensureState(); });
+        run('ensure.tabMartial', () => {
+          this.ensureTabState('tab-martial', forceAll);
+          this.ensureTabState('tab-sect', forceAll);
+        });
       }
       if (forceAll || need('tab-guild')) {
-        run('ensure.guild', () => { this.guildCore.ensureState(); });
+        run('ensure.tabGuild', () => { this.ensureTabState('tab-guild', forceAll); });
+      }
+      if (forceAll || need('tab-town')) {
+        run('ensure.tabTown', () => { this.ensureTabState('tab-town', forceAll); });
       }
 
       /* ⭐⭐ 效能：只重繪「目前可見」的分頁
@@ -114824,6 +114885,7 @@ window.HY = window.HY || {};
           btn.classList.add('active');
           const targetTab = document.getElementById(btn.dataset.tab);
           if (targetTab) targetTab.classList.add('active');
+          try { this.ensureTabState(btn.dataset.tab); } catch (eTab) { }
           if (btn.dataset.tab === 'tab-guild' && this.uiGuild) {
             this.uiGuild.renderGuildTab(true);
           }
@@ -115116,6 +115178,102 @@ window.HY = window.HY || {};
     game.init();
   });
 })();
+/* --- hyPerfTuning.js --- */
+// js/hyPerfTuning.js — 第二階段效能補強（懶載圖、idle 回呼、啟動後掛鉤）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    var OBS = null;
+  function boostImg(img) {
+        if (!img || img.nodeType !== 1 || img.tagName !== 'IMG') return;
+        if (img.getAttribute('data-hy-lazy') === '1') return;
+        img.setAttribute('data-hy-lazy', '1');
+        if (!img.getAttribute('loading')) img.loading = 'lazy';
+        if (!img.getAttribute('decoding')) img.decoding = 'async';
+        if (!img.getAttribute('fetchpriority') && img.width > 120) img.fetchPriority = 'low';
+    }
+
+    function scanLazyImages(root) {
+        var base = root && root.querySelectorAll ? root : document;
+        try {
+            base.querySelectorAll('img:not([data-hy-lazy])').forEach(boostImg);
+        } catch (e) { }
+    }
+
+    function installLazyImages() {
+        if (!window.MutationObserver || !document.body) {
+            scanLazyImages(document);
+            return;
+        }
+        scanLazyImages(document);
+        if (OBS) return;
+        var pending = false;
+        OBS = new MutationObserver(function (muts) {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(function () {
+                pending = false;
+                for (var i = 0; i < muts.length; i++) {
+                    var m = muts[i];
+                    if (m.type === 'childList') {
+                        for (var j = 0; j < m.addedNodes.length; j++) {
+                            var n = m.addedNodes[j];
+                            if (!n || n.nodeType !== 1) continue;
+                            if (n.tagName === 'IMG') boostImg(n);
+                            else scanLazyImages(n);
+                        }
+                    }
+                }
+            });
+        });
+        OBS.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function rIC(fn, timeout) {
+        if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(fn, { timeout: timeout || 1200 });
+        } else {
+            setTimeout(fn, timeout || 48);
+        }
+    }
+
+    /** 將仍直接呼叫 renderAll() 的 UI 統一導向節流版（僅 HY.game） */
+    function patchGameRenderAlias() {
+        var g = window.HY && window.HY.game;
+        if (!g || g.__hyRenderPatched) return;
+        var raw = g.renderAll.bind(g);
+        g.renderAll = function (force) {
+            if (force === true) return raw(true);
+            if (typeof g.renderAllThrottled === 'function') g.renderAllThrottled();
+            else raw(false);
+        };
+        g.__hyRenderPatched = true;
+    }
+
+    function boot() {
+        installLazyImages();
+        patchGameRenderAlias();
+        var tries = 0;
+        var t = setInterval(function () {
+            patchGameRenderAlias();
+            tries++;
+            if ((window.HY && window.HY.game) || tries > 120) clearInterval(t);
+        }, 250);
+    }
+
+    window.HY.PerfTuning = {
+        rescanImages: function () { scanLazyImages(document); },
+        runIdle: rIC
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();
+
 /* --- dexteritySpeedSystem.js --- */
 // js/dexteritySpeedSystem.js  (v34)
 // 出手攻速：各系統加成，統一套用 ÷3

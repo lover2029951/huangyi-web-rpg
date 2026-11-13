@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v755 · 2026-11-13',
-        gameVer: 755,
+        newsVer: 'v756 · 2026-11-13',
+        gameVer: 756,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'tune', tagLabel: '效能',
+            title: '效能第二階段 v756',
+            date: '2026-11-13',
+            bullets: [
+                '開局僅 <b>ensureCore</b>；工藝／天賦／幫會／小鎮等改為<b>首次開分頁</b>才初始化',
+                '背景分頁：金司馬／弟子／經脈／護送／圖鑑計時 ×4；圖鑑成就改 <code>requestIdleCallback</code>',
+                '全站圖片懶載入、<code>renderAll()</code> 自動導向節流版；可玩後預取 phase2 chunk'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '山海',
             title: '山海異獸加強 v755',
