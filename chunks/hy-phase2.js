@@ -1074,7 +1074,7 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.onHitVital .fx-src{color:#bbf7d0;}',
         '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
             'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
-        /* ⭐ v741→v751：技能恢復→名字牌；自然恢復→左上；偷取／擊中恢復→右上 */
+        /* ⭐ v741→v751：技能恢復→名字牌；我方：自然恢復左上、偷取／擊中右上；敵方左右互換 */
         '.hy-stage-tag{overflow:visible;}',
         '.hy-stage-tag-fx{position:absolute;left:0;right:0;z-index:8;pointer-events:none;' +
             'overflow:visible;height:0;}',
@@ -2916,14 +2916,33 @@ window.HY = window.HY || {};
 
        改成 `gridRow = row + 1`：idx 0 → gridRow 1（舞台最上排），
        陣盤的每一格位置在舞台上完全一致。
-       （depth 仍保留 row，只影響 z-index，前排恆為最高層級。） */
-    function slotFromCellIdx(idx) {
+       （depth 仍保留 row，只影響 z-index，前排恆為最高層級。）
+
+       ⭐ 敵方橫向鏡像：兩軍對峙時，敵方舞台格位與我方語意左右相反
+       （邏輯 cell／加成仍讀原始 idx；僅 grid-column 用鏡像後的視覺格）。 */
+    function mirrorFoeCellIdx(idx) {
+        var n = Number(idx);
+        if (!isFinite(n) || n < 0 || n > 8) return 4;
+        var row = Math.floor(n / 3);
+        var col = n % 3;
+        return row * 3 + (2 - col);
+    }
+    function slotFromCellIdx(idx, side) {
         var n = Number(idx);
         if (!isFinite(n) || n < 0 || n > 8) return null;
+        if (side === 'foe') n = mirrorFoeCellIdx(n);
         var row = Math.floor(n / 3);      /* 0=最上排（前排）… 2=最下排（後排） */
         var col = n % 3;
         var gridRow = row + 1;            /* ⭐ v661：與陣盤 UI 同向，不再鏡像 */
         return [col + 1, gridRow, row];
+    }
+    function mirrorGridSlot(slot, side) {
+        if (side !== 'foe' || !slot || slot.length < 2) return slot;
+        var col1 = Number(slot[0]);
+        if (!isFinite(col1) || col1 < 1 || col1 > 3) return slot;
+        var out = slot.slice();
+        out[0] = 4 - col1;
+        return out;
     }
     /** 取得單位在九宮格的 idx（0~8），優先陣盤／payload */
     function resolveStageCell(u, side, i, total, cellList) {
@@ -2955,20 +2974,21 @@ window.HY = window.HY || {};
         return 4;
     }
 
-    function gridSlotOf(count, i, cells, cellDirect) {
+    function gridSlotOf(count, i, cells, cellDirect, side) {
         /* ① 單位自身的格位（最可靠，不依賴 list 索引） */
         if (cellDirect != null && cellDirect !== '' && isFinite(Number(cellDirect))) {
-            var s0 = slotFromCellIdx(cellDirect);
+            var s0 = slotFromCellIdx(cellDirect, side);
             if (s0) return s0;
         }
         /* ② 陣盤資料陣列（相容舊路徑） */
         if (cells && cells.length && cells[i] != null) {
-            var s = slotFromCellIdx(cells[i]);
+            var s = slotFromCellIdx(cells[i], side);
             if (s) return s;
         }
         /* ③ 退回人數預設 */
         var set = GRID_SLOTS[Math.max(1, Math.min(5, count))] || GRID_SLOTS[5];
-        return set[i] || set[set.length - 1];
+        var slot = set[i] || set[set.length - 1];
+        return mirrorGridSlot(slot, side);
     }
 
     /** 同步九宮格格位（半重建時也校正，避免開戰初幾秒錯位） */
@@ -2986,8 +3006,8 @@ window.HY = window.HY || {};
         var di = Number(node.getAttribute('data-i'));
         if (!isFinite(di)) di = 0;
         var cellIdx = resolveStageCell(u, side, di, total, cellList);
-        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx) ||
-            gridSlotOf(total || 1, di, cellList, cellIdx));
+        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx, side) ||
+            gridSlotOf(total || 1, di, cellList, cellIdx, side));
         if (mega === 'shj') {
             node.style.gridColumn = '1 / -1';
             node.style.gridRow = '1 / -1';
@@ -3049,8 +3069,8 @@ window.HY = window.HY || {};
         /* ⭐ v628：把九宮格格位寫成 inline style（grid-column / grid-row / --u-scale）
            由 sideHtml 傳入 total，才知道要站哪一格。 */
         var cellIdx = resolveStageCell(u, side, i, total, cellList);
-        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx) ||
-            gridSlotOf(total || 1, i, cellList, cellIdx));
+        var slot = mega ? [2, 2, 1] : (slotFromCellIdx(cellIdx, side) ||
+            gridSlotOf(total || 1, i, cellList, cellIdx, side));
         /* ⭐ v633：使用者要求「角色不要有遠近縮放」
            ──────────────────────────────────────────────────────────
            原本依 depth 給 --u-scale .74 / .87 / 1，後排角色明顯變小，
@@ -3524,12 +3544,24 @@ window.HY = window.HY || {};
         numEl.textContent = text;
     }
 
-    /** 技能恢復→名字牌；自然恢復→左上；偷取／擊中恢復→右上；其餘維持頭頂中央 */
-    function floatCornerForKind(kind) {
+    function stageSideOfUnit(node) {
+        if (!node) return '';
+        var s = node.getAttribute && node.getAttribute('data-side');
+        if (s === 'foe' || s === 'ally') return s;
+        if (node.classList && node.classList.contains('foe')) return 'foe';
+        if (node.classList && node.classList.contains('ally')) return 'ally';
+        return '';
+    }
+
+    /** 技能恢復→名字牌；自然／偷取／擊中→格內左上或右上（敵我左右相反）；其餘頭頂中央 */
+    function floatCornerForKind(kind, side) {
         if (!kind) return '';
-        if (kind === 'stealVital' || kind === 'onHitVital') return 'fx-tr';
-        if (kind.indexOf('steal') === 0 || kind.indexOf('onHit') === 0) return 'fx-tr';
-        if (kind === 'regenVital' || kind === 'regenHp' || kind === 'regenMp') return 'fx-tl';
+        var foe = side === 'foe';
+        var regenCorner = foe ? 'fx-tr' : 'fx-tl';
+        var stealCorner = foe ? 'fx-tl' : 'fx-tr';
+        if (kind === 'stealVital' || kind === 'onHitVital') return stealCorner;
+        if (kind.indexOf('steal') === 0 || kind.indexOf('onHit') === 0) return stealCorner;
+        if (kind === 'regenVital' || kind === 'regenHp' || kind === 'regenMp') return regenCorner;
         if (kind === 'heal' || kind === 'healMp') return 'fx-nm';
         return '';
     }
@@ -3574,7 +3606,8 @@ window.HY = window.HY || {};
     function floatText(node, text, kind, meta) {
         if (!node) return;
         meta = meta || null;
-        var cornerPre = floatCornerForKind(kind);
+        var unitSide = stageSideOfUnit(node);
+        var cornerPre = floatCornerForKind(kind, unitSide);
         var host = node;
         if (cornerPre === 'fx-nm') host = fxNameHost(node) || node;
         else if (cornerPre === 'fx-tr' || cornerPre === 'fx-tl') host = fxGridHost(node) || node;
@@ -3613,7 +3646,7 @@ window.HY = window.HY || {};
             }
         }
 
-        var corner = floatCornerForKind(kind);
+        var corner = floatCornerForKind(kind, unitSide);
         var d = takeNode('hy-fx-dmg ' + kind + (corner ? (' ' + corner) : ''));
         setFloatMain(d, text);
         if (meta) applyFloatSrc(d, meta, kind);
@@ -27888,31 +27921,25 @@ window.HY = window.HY || {};
             this.syncToActiveChar();
             var core = this.app.combatSys;
             var cfg = this.cfg;
-            /* ⚠️ 只從「還活著」的敵人中挑，避免預告指向已死亡的目標 */
-            var alive = (core.enemies || []).filter(function (e) {
+            var CT = window.HY && window.HY.CombatTargeting;
+            if (CT && typeof CT.pickFoe === 'function' && core) {
+                if (cfg.focusBoss) {
+                    var alive = (core.enemies || []).filter(function (e) {
+                        return e && num(e.currentHp, 0) > 0;
+                    });
+                    var boss = alive.filter(function (e) { return e._atlas && e._atlas.isBoss; })[0];
+                    if (boss) return boss;
+                }
+                return CT.pickFoe(core, {
+                    rule: cfg.targetRule,
+                    respectManual: false,
+                    focusRare: cfg.focusBoss
+                });
+            }
+            var alive2 = (core.enemies || []).filter(function (e) {
                 return e && num(e.currentHp, 0) > 0;
             });
-            if (!alive.length) return null;
-
-            if (cfg.focusBoss) {
-                var boss = alive.filter(function (e) { return e._atlas && e._atlas.isBoss; })[0];
-                if (boss) return boss;
-            }
-            if (cfg.targetRule === 'boss_first') {
-                var b2 = alive.filter(function (e) { return e._atlas && e._atlas.isBoss; })[0];
-                if (b2) return b2;
-            }
-            if (cfg.targetRule === 'lowest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return num(a.currentHp, 0) - num(b.currentHp, 0);
-                })[0];
-            }
-            if (cfg.targetRule === 'highest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return num(b.currentHp, 0) - num(a.currentHp, 0);
-                })[0];
-            }
-            return alive[0];
+            return alive2.length ? alive2[0] : null;
         }
 
         /* ══════════════════════════════════════

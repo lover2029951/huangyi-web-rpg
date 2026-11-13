@@ -13,7 +13,7 @@
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
   };
 })();
-/* HY chunk phase1 — 203 files */
+/* HY chunk phase1 — 204 files */
 /* --- gameConfig.js --- */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -44482,29 +44482,28 @@ window.HY = window.HY || {};
             var db = this.app.delveBattle;
             if (!db) return null;
             var c = this.cfgFor(this.currentCharId());
-            var alive = (db.enemies || []).filter(function (e) {
+            var CT = window.HY && window.HY.CombatTargeting;
+            if (CT && typeof CT.pickFoe === 'function') {
+                if (c.focusBoss) {
+                    var alive = (db.enemies || []).filter(function (e) {
+                        return e && num(e.currentHp, 0) > 0;
+                    });
+                    var elite = alive.filter(function (e) {
+                        return e._delve && e._delve.isBoss;
+                    })[0];
+                    if (elite) return elite;
+                }
+                var proxy = {
+                    enemies: db.enemies,
+                    currentEnemy: db.currentEnemy,
+                    autoConfig: { targetRule: c.targetRule || 'front_then_lowest_hp', focusRare: false }
+                };
+                return CT.pickFoe(proxy, { rule: c.targetRule, respectManual: true });
+            }
+            var alive2 = (db.enemies || []).filter(function (e) {
                 return e && num(e.currentHp, 0) > 0;
             });
-            if (!alive.length) return null;
-
-            /* 菁英優先 */
-            if (c.focusBoss) {
-                var elite = alive.filter(function (e) {
-                    return e._delve && e._delve.isBoss;
-                })[0];
-                if (elite) return elite;
-            }
-            if (c.targetRule === 'lowest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return num(a.currentHp, 0) - num(b.currentHp, 0);
-                })[0];
-            }
-            if (c.targetRule === 'highest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return num(b.currentHp, 0) - num(a.currentHp, 0);
-                })[0];
-            }
-            return db.currentEnemy || alive[0];
+            return alive2.length ? (db.currentEnemy || alive2[0]) : null;
         }
 
         /* ══════════════════════════════════════
@@ -44952,6 +44951,25 @@ window.HY = window.HY || {};
         }
 
         syncCurrent() {
+            if (this.currentEnemy && num(this.currentEnemy.currentHp, 0) > 0) {
+                return this.currentEnemy;
+            }
+            var CT = window.HY && window.HY.CombatTargeting;
+            var tac = this.app && this.app.delveTactics;
+            if (CT && typeof CT.pickFoe === 'function') {
+                var c = tac && typeof tac.cfgFor === 'function'
+                    ? tac.cfgFor(tac.currentCharId()) : {};
+                var proxy = {
+                    enemies: this.enemies,
+                    currentEnemy: this.currentEnemy,
+                    autoConfig: {
+                        targetRule: (c && c.targetRule) || 'front_then_lowest_hp',
+                        focusRare: false
+                    }
+                };
+                this.currentEnemy = CT.pickFoe(proxy, { respectManual: false }) || null;
+                return this.currentEnemy;
+            }
             var alive = (this.enemies || []).filter(function (e) {
                 return e && num(e.currentHp, 0) > 0;
             });
@@ -77350,7 +77368,7 @@ window.HY = window.HY || {};
                 supportTargetRule: 'most_wounded',
 
                 /* ⭐ 新增：集火規則（決定自動打哪一隻） */
-                targetRule: 'current',          // current / lowest_hp / highest_hp / nearest
+                targetRule: 'front_then_lowest_hp',  // 站位＋集火規則
                 focusRare: false,               // 優先打稀有怪
 
                 /* ⭐ 新增：增益丹藥（一般戰鬥專用開關） */
@@ -77681,34 +77699,14 @@ window.HY = window.HY || {};
         //  🎯 集火目標（v2 新增）
         // ══════════════════════════════════════════════════════════════
         pickTarget() {
-            var cfg = this.autoConfig;
-            /* ⚠️ 只挑「還活著」的敵人，避免預告指向已死亡的目標 */
+            var CT = window.HY && window.HY.CombatTargeting;
+            if (CT && typeof CT.pickFoe === 'function') {
+                return CT.pickFoe(this.core, { respectManual: true });
+            }
             var alive = (this.core.enemies || []).filter(function (e) {
                 return e && e.currentHp > 0;
             });
-            if (!alive.length) return null;
-
-            /* 優先打稀有怪 */
-            if (cfg.focusRare) {
-                var rare = alive.filter(function (e) {
-                    return e.rarity === 'rare' || (e._atlas && e._atlas.isBoss);
-                });
-                if (rare.length) return rare[0];
-            }
-
-            var rule = cfg.targetRule || 'current';
-            if (rule === 'lowest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return (a.currentHp || 0) - (b.currentHp || 0);
-                })[0];
-            }
-            if (rule === 'highest_hp') {
-                return alive.slice().sort(function (a, b) {
-                    return (b.currentHp || 0) - (a.currentHp || 0);
-                })[0];
-            }
-            /* current / nearest：維持當前指標 */
-            return this.core.currentEnemy || alive[0];
+            return alive.length ? (this.core.currentEnemy || alive[0]) : null;
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -78450,6 +78448,10 @@ window.HY = window.HY || {};
             }
             var artHitBonus = (art.hitBonus || 0) / MARTIAL_DIV;
 
+            if (!isSupportMode && !isReviveMode && typeof core.ensureAttackTarget === 'function') {
+                core.ensureAttackTarget();
+            }
+
             /* ⭐ v45：劍意推進（用不同招式才累積，重複同招斷鏈） */
             var _PRO = window.HY && window.HY.CombatMechanicsPro;
             /* ⭐ v51 修正：_TURN 原本宣告在 targetList.forEach 的回呼內，
@@ -78742,6 +78744,13 @@ window.HY = window.HY || {};
                     core.markStageFx('foe', core.foeStageIndex(target), 'dmg', { skill: art.name });
                 } catch (eMk) { }
                 totalDealt += finalDmg;
+                try {
+                    var _CTth = window.HY && window.HY.CombatTargeting;
+                    if (_CTth && finalDmg > 0) {
+                        _CTth.addThreat(target, finalDmg * 0.08);
+                        _CTth.addThreat(charObj, finalDmg * 0.04);
+                    }
+                } catch (eThrHit) { }
                 if (elemSys && target.currentHp > 0) {
                     var eRes = elemSys.calcElementDamage(charObj, target);
                     if (eRes && eRes.total > 0) {
@@ -82437,6 +82446,235 @@ window.HY = window.HY || {};
     }
 })();
 
+/* --- combatTargeting.js --- */
+// js/combatTargeting.js (v1)
+// 站位（logic / visual）＋仇恨評分 → 統一選敵／選我方目標
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    var LANES = ['bal', 'atk', 'def'];
+
+    function num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : (d || 0); }
+
+    function mirrorFoeCellIdx(idx) {
+        var n = num(idx, 4);
+        if (n < 0 || n > 8) return 4;
+        var row = Math.floor(n / 3);
+        var col = n % 3;
+        return row * 3 + (2 - col);
+    }
+
+    function logicCellOf(unit, side) {
+        if (!unit) return 4;
+        var n = unit.cell;
+        if (n != null && n !== '' && isFinite(Number(n))) {
+            n = Number(n);
+            if (n >= 0 && n <= 8) return n;
+        }
+        if (side === 'ally') {
+            var cid = unit.charId != null ? unit.charId : unit.id;
+            if (cid != null) {
+                try {
+                    var fg = window.HY.game && window.HY.game.formationGrid;
+                    if (fg && typeof fg.cellOfChar === 'function') {
+                        var c = fg.cellOfChar(cid);
+                        if (c >= 0 && c <= 8) return c;
+                    }
+                } catch (eFg) { /* ignore */ }
+            }
+        }
+        return 4;
+    }
+
+    function resolveStance(unit, side) {
+        var logicCell = logicCellOf(unit, side);
+        var row = Math.floor(logicCell / 3);
+        var col = logicCell % 3;
+        var visualCell = side === 'foe' ? mirrorFoeCellIdx(logicCell) : logicCell;
+        var vcol = visualCell % 3;
+        var line = row === 0 ? 'front' : (row === 2 ? 'back' : 'mid');
+        var towardBattle;
+        if (side === 'ally') {
+            towardBattle = col === 2 ? 'near' : (col === 0 ? 'far' : 'mid');
+        } else {
+            towardBattle = vcol === 0 ? 'near' : (vcol === 2 ? 'far' : 'mid');
+        }
+        return {
+            logicCell: logicCell,
+            visualCell: visualCell,
+            row: row,
+            col: col,
+            lane: LANES[col] || 'bal',
+            line: line,
+            towardBattle: towardBattle
+        };
+    }
+
+    function lineWeight(line) {
+        if (line === 'front') return 1.35;
+        if (line === 'mid') return 1.08;
+        return 0.78;
+    }
+
+    function scoreFoe(foe, rule, core) {
+        var st = resolveStance(foe, 'foe');
+        var s = 100 * lineWeight(st.line);
+        if (st.lane === 'def') s *= 1.12;
+        else if (st.lane === 'atk') s *= 0.95;
+        if (st.towardBattle === 'near') s *= 1.18;
+        else if (st.towardBattle === 'far') s *= 0.88;
+        s += num(foe._threat, 0);
+
+        if (foe.rarity === 'rare' || (foe._atlas && foe._atlas.isBoss)) s += 40;
+
+        var maxHp = num(foe.maxHp, 1);
+        var hpRatio = maxHp > 0 ? num(foe.currentHp, 0) / maxHp : 1;
+        if (rule === 'lowest_hp' || rule === 'front_then_lowest_hp') {
+            s += (1 - hpRatio) * 55;
+        } else if (rule === 'highest_hp') {
+            s += hpRatio * 40;
+        }
+
+        return s + Math.random() * 2.5;
+    }
+
+    function scoreAlly(member, core) {
+        var st = resolveStance(member, 'ally');
+        var s = 100 * lineWeight(st.line);
+        if (st.lane === 'def') s *= 1.15;
+        if (st.towardBattle === 'near') s *= 1.2;
+        s += num(member._threat, 0);
+        var cs = core.charSys;
+        var md = cs && typeof cs.getDerivedStatsForChar === 'function'
+            ? cs.getDerivedStatsForChar(member) : null;
+        var maxHp = md && md.maxHp > 0 ? md.maxHp : num(member.maxHp, 1);
+        var hpRatio = maxHp > 0 ? num(member.currentHp, 0) / maxHp : 1;
+        s += (1 - hpRatio) * 12;
+        return s + Math.random() * 2;
+    }
+
+    function aliveFoes(core) {
+        return (core.enemies || []).filter(function (e) { return e && num(e.currentHp, 0) > 0; });
+    }
+
+    function pickRareFirst(alive) {
+        var rare = alive.filter(function (e) {
+            return e.rarity === 'rare' || (e._atlas && e._atlas.isBoss);
+        });
+        return rare.length ? rare : null;
+    }
+
+    function filterPoolByRule(alive, rule) {
+        if (!alive.length) return alive;
+        if (rule === 'front_row' || rule === 'front_then_lowest_hp') {
+            var front = alive.filter(function (e) { return resolveStance(e, 'foe').line === 'front'; });
+            if (front.length) return front;
+        }
+        if (rule === 'front_visual') {
+            var near = alive.filter(function (e) { return resolveStance(e, 'foe').towardBattle === 'near'; });
+            if (near.length) return near;
+        }
+        return alive;
+    }
+
+    function pickBest(pool, rule, core) {
+        var best = null;
+        var bestS = -1e15;
+        pool.forEach(function (e) {
+            var sc = scoreFoe(e, rule, core);
+            if (sc > bestS) { bestS = sc; best = e; }
+        });
+        return best;
+    }
+
+    function pickFoe(core, opts) {
+        opts = opts || {};
+        var cfg = core.autoConfig || {};
+        var rule = opts.rule || cfg.targetRule || 'front_then_lowest_hp';
+        var respectManual = opts.respectManual !== false;
+
+        if (respectManual && core.currentEnemy && num(core.currentEnemy.currentHp, 0) > 0) {
+            if (rule === 'current' || opts.keepManual) return core.currentEnemy;
+        }
+
+        var alive = aliveFoes(core);
+        if (!alive.length) return null;
+
+        var focusRare = opts.focusRare != null ? opts.focusRare : cfg.focusRare;
+        if (focusRare) {
+            var rarePool = pickRareFirst(alive);
+            if (rarePool) return pickBest(rarePool, rule, core);
+        }
+
+        if (rule === 'boss_first') {
+            var boss = alive.filter(function (e) { return e._atlas && e._atlas.isBoss; })[0];
+            if (boss) return boss;
+        }
+
+        var pool = filterPoolByRule(alive, rule);
+        return pickBest(pool, rule, core) || alive[0];
+    }
+
+    function pickAllyTarget(core, enemy, aliveParty) {
+        if (!enemy) return null;
+        var list = (aliveParty || []).filter(function (m) { return m && num(m.currentHp, 0) > 0; });
+        if (!list.length) return null;
+
+        var lockedId = enemy._lockedTargetId;
+        if (lockedId) {
+            for (var i = 0; i < list.length; i++) {
+                if (list[i] && String(list[i].id) === String(lockedId)) return list[i];
+            }
+            enemy._lockedTargetId = null;
+        }
+
+        var taken = {};
+        (core.enemies || []).forEach(function (other) {
+            if (!other || other === enemy || num(other.currentHp, 0) <= 0) return;
+            var oid = other._lockedTargetId;
+            if (oid) taken[String(oid)] = true;
+        });
+
+        var free = list.filter(function (m) {
+            return m && m.id && !taken[String(m.id)];
+        });
+        var pool = free.length ? free : list;
+
+        var best = null;
+        var bestS = -1e15;
+        pool.forEach(function (m) {
+            var sc = scoreAlly(m, core);
+            if (sc > bestS) { bestS = sc; best = m; }
+        });
+        if (best && best.id) enemy._lockedTargetId = String(best.id);
+        return best || pool[0];
+    }
+
+    function addThreat(unit, delta) {
+        if (!unit || !delta) return;
+        unit._threat = num(unit._threat, 0) + num(delta, 0);
+    }
+
+    function resetThreatBattle(core, partyMembers) {
+        (partyMembers || []).forEach(function (m) {
+            if (m) m._threat = 0;
+        });
+        (core.enemies || []).forEach(function (e) {
+            if (e) e._threat = 0;
+        });
+    }
+
+    window.HY.CombatTargeting = {
+        mirrorFoeCellIdx: mirrorFoeCellIdx,
+        resolveStance: resolveStance,
+        pickFoe: pickFoe,
+        pickAllyTarget: pickAllyTarget,
+        addThreat: addThreat,
+        resetThreatBattle: resetThreatBattle
+    };
+})();
+
 /* --- combatCore.js --- */
 // js/combatCore.js  (v44)
 // 戰鬥主控：開戰、出招調度、勝敗結算
@@ -82886,9 +83124,23 @@ window.HY = window.HY || {};
         toggleAutoBattle(forceState) { this.autoTactics.toggleAutoBattle(forceState); }
         stopAutoLoop() { this.autoTactics.stopAutoLoop(); }
         clearRepeatTimeout() { this.autoTactics.clearRepeatTimeout(); }
-        syncCurrentEnemyPointer() {
+        resolveFoeTarget(opts) {
+            opts = opts || {};
+            var CT = window.HY && window.HY.CombatTargeting;
+            if (CT && typeof CT.pickFoe === 'function') {
+                return CT.pickFoe(this, opts);
+            }
             var alive = (this.enemies || []).filter(function (e) { return e && e.currentHp > 0; });
-            this.currentEnemy = alive.length > 0 ? alive[0] : null;
+            return alive.length > 0 ? alive[0] : null;
+        }
+        syncCurrentEnemyPointer() {
+            if (this.currentEnemy && this.currentEnemy.currentHp > 0) return;
+            this.currentEnemy = this.resolveFoeTarget({ respectManual: false });
+        }
+        ensureAttackTarget() {
+            var picked = this.resolveFoeTarget({ respectManual: true });
+            if (picked) this.currentEnemy = picked;
+            else this.syncCurrentEnemyPointer();
         }
         /** ⭐ 敵方攻擊目標的「唯一真相來源」
             —— 預告與實際攻擊都呼叫這個方法，保證顯示什麼就打什麼。
@@ -82898,38 +83150,14 @@ window.HY = window.HY || {};
               3. 若所有人都已被鎖定，才允許重複
             @returns 隊員物件 或 null */
         pickEnemyTarget(enemy, aliveParty) {
+            var CT = window.HY && window.HY.CombatTargeting;
+            if (CT && typeof CT.pickAllyTarget === 'function') {
+                return CT.pickAllyTarget(this, enemy, aliveParty);
+            }
             if (!enemy) return null;
             var list = (aliveParty || []).filter(function (m) { return m && m.currentHp > 0; });
             if (!list.length) return null;
-
-            /* ① 已鎖定且目標仍存活 → 沿用（確保預告與實際一致） */
-            var lockedId = enemy._lockedTargetId;
-            if (lockedId) {
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i] && String(list[i].id) === String(lockedId)) return list[i];
-                }
-                /* 鎖定目標已死亡 → 重新挑 */
-                enemy._lockedTargetId = null;
-            }
-
-            /* ② 收集「其他敵人已鎖定」的目標 id */
-            var taken = {};
-            (this.enemies || []).forEach(function (other) {
-                if (!other || other === enemy) return;
-                if (other.currentHp <= 0) return;
-                var oid = other._lockedTargetId;
-                if (oid) taken[String(oid)] = true;
-            });
-
-            /* ③ 優先挑「還沒被鎖定」的人 */
-            var free = list.filter(function (m) {
-                return m && m.id && !taken[String(m.id)];
-            });
-            var pool = free.length ? free : list;
-
-            var picked = pool[Math.floor(Math.random() * pool.length)];
-            enemy._lockedTargetId = picked && picked.id ? String(picked.id) : null;
-            return picked;
+            return list[Math.floor(Math.random() * list.length)];
         }
         /** 敵人出手後清除目標鎖定 */
         clearEnemyTarget(enemy) {
@@ -83184,7 +83412,13 @@ window.HY = window.HY || {};
 
                 this.enemies.push(rawEnemy);
             }
-            this.syncCurrentEnemyPointer();
+            try {
+                var _CT = window.HY && window.HY.CombatTargeting;
+                if (_CT && typeof _CT.resetThreatBattle === 'function') {
+                    _CT.resetThreatBattle(this, partyMembers);
+                }
+            } catch (eThr0) { }
+            this.ensureAttackTarget();
             var factionTag = enemyTemplate.faction ? '【' + enemyTemplate.faction + '】' : '';
             /* ⭐ v599：渡劫用專屬文案，不要顯示「NvN 遭遇戰」 */
             if (isTrib) {
@@ -83221,7 +83455,7 @@ window.HY = window.HY || {};
             this.onUpdateUI();
         }
         useSkill(leaderSkillId) {
-            this.syncCurrentEnemyPointer();
+            this.ensureAttackTarget();
             if (!this.currentEnemy) return;
             var partySys = window.HY.game && window.HY.game.partySys;
             var partyMembers = partySys ? partySys.getPartyMembers() : [this.charSys.state];
@@ -85634,7 +85868,7 @@ window.HY = window.HY || {};
             setVal('cfg-ally-mp-item', cfg.allyMpItemId || 'pill_major');
             setChk('cfg-ally-use-pills', cfg.allyUsePills);
             setChk('cfg-ally-support', cfg.allySupportEnabled);
-            setVal('cfg-target-rule', cfg.targetRule || 'current');
+            setVal('cfg-target-rule', cfg.targetRule || 'front_then_lowest_hp');
             setChk('cfg-focus-rare', cfg.focusRare);
             setChk('cfg-buff-enabled', cfg.buffEnabled);
             setChk('cfg-buff-auto', cfg.buffAutoRefresh);

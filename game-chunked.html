@@ -285,8 +285,10 @@
                                     <h4 style="color:#f472b6; margin-bottom:8px;">🎯 集火規則（自動打哪一隻）</h4>
                                     <div style="margin-bottom:8px;">
                                         <select id="cfg-target-rule" style="background:#0f141c; color:#f472b6; border:1px solid #475569; padding:3px; width:100%;">
-                                            <option value="current">🎯 當前目標（預設）</option>
-                                            <option value="lowest_hp">🩸 殘血優先（快速清場）</option>
+                                            <option value="front_then_lowest_hp">⚔️ 前排優先＋殘血（推薦）</option>
+                                            <option value="front_row">🛡️ 僅打前排</option>
+                                            <option value="current">🎯 鎖定當前目標</option>
+                                            <option value="lowest_hp">🩸 殘血優先</option>
                                             <option value="highest_hp">💪 高血優先</option>
                                         </select>
                                     </div>
@@ -549,7 +551,7 @@
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=759"></script>
+<script src="chunks/hy-phase1.js?v=760"></script>
 <script>
 (function () {
   function shouldLoadPerfProbe() {
@@ -563,7 +565,7 @@
   function loadPerfProbeOptional() {
     if (!shouldLoadPerfProbe()) return;
     var sp = document.createElement('script');
-    sp.src = 'chunks/hy-perf.js?v=759';
+    sp.src = 'chunks/hy-perf.js?v=760';
     sp.async = true;
     document.head.appendChild(sp);
   }
@@ -581,7 +583,7 @@
     if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
   }
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=759';
+  s.src = 'chunks/hy-phase2.js?v=760';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };
