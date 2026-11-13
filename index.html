@@ -3,573 +3,864 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>黃易群俠傳 Web：時空浪人 (Lv.300 破碎虛空版)</title>
+    <title>黃易群俠傳 Web：時空浪人</title>
+    <meta name="description" content="Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂、山海套裝、九宮格陣盤、PoE 工藝。">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%23c89d54' stroke-width='1.5' opacity='.6'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%230f141c'/%3E%3Ccircle cx='32' cy='32' r='23' fill='none' stroke='%23c89d54' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='5.5' fill='%23c89d54'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="style.css?v=301">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background: radial-gradient(ellipse at 50% 20%, #1a2433 0%, #0a0f16 70%);
+            color: #cbd5e1; font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 22px; padding: 28px 16px;
+        }
+
+        /* ── 標題區 ── */
+        .hero { text-align: center; }
+        h1 {
+            color: #f0c674; font-size: 1.9rem; margin: 0 0 8px;
+            text-shadow: 0 0 24px rgba(240,198,116,.55);
+            letter-spacing: 1px;
+        }
+        .sub { color: #94a3b8; font-size: .92rem; margin: 0; }
+
+        /* ── 進入按鈕 ── */
+        a.btn {
+            display: inline-block; padding: 15px 48px;
+            background: linear-gradient(135deg, #1e3a5f, #0f2438);
+            border: 2px solid #38bdf8; border-radius: 9px;
+            color: #7dd3fc; font-size: 1.08rem; font-weight: bold;
+            text-decoration: none; transition: all .2s;
+            box-shadow: 0 0 26px rgba(56,189,248,.35);
+            white-space: nowrap;
+        }
+        a.btn:hover {
+            background: linear-gradient(135deg, #2a4d7a, #16344d);
+            border-color: #7dd3fc;
+            box-shadow: 0 0 42px rgba(56,189,248,.65);
+            transform: translateY(-2px);
+        }
+
+        /* ── 更新公告 ── */
+        .news {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #f0c674;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .news-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(240,198,116,.13), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #f0c674;
+        }
+        .news-hd .ver {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .news-bd {
+            max-height: 320px; overflow-y: auto;
+            padding: 6px 16px 14px;
+        }
+        .news-bd::-webkit-scrollbar { width: 6px; }
+        .news-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        /* 單筆公告 */
+        .entry {
+            padding: 11px 0;
+            border-bottom: 1px dashed #1a2532;
+        }
+        .entry:last-child { border-bottom: none; }
+        .entry-hd {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 5px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 1px 7px; border-radius: 9px;
+            font-size: .64rem; font-weight: bold;
+            border: 1px solid;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .tag.new { color: #6ee7b7; border-color: #10b981; background: rgba(16,185,129,.14); }
+        .tag.fix { color: #fca5a5; border-color: #ef4444; background: rgba(239,68,68,.13); }
+        .tag.bal { color: #7dd3fc; border-color: #38bdf8; background: rgba(56,189,248,.13); }
+        .tag.add { color: #fbbf24; border-color: #f59e0b; background: rgba(245,158,11,.14); }
+
+        .entry-title {
+            font-size: .85rem; font-weight: bold; color: #e2e8f0;
+            flex: 1 1 auto; min-width: 0;
+        }
+        .entry-date {
+            font-size: .68rem; color: #475569;
+            flex: 0 0 auto; white-space: nowrap;
+        }
+        .entry ul {
+            margin: 0; padding-left: 18px;
+            font-size: .78rem; line-height: 1.85; color: #94a3b8;
+        }
+        .entry ul li { margin: 1px 0; }
+        .entry ul li b { color: #cbd5e1; }
+        .entry ul li code {
+            background: rgba(56,189,248,.10);
+            border: 1px solid #1e3a52;
+            border-radius: 3px;
+            padding: 0 4px;
+            font-size: .74rem;
+            color: #7dd3fc;
+            font-family: Consolas, monospace;
+        }
+
+        /* ── 底部提示 ── */
+        .note {
+            font-size: .76rem; color: #475569;
+            text-align: center; line-height: 1.9;
+        }
+        .note a { color: #475569; text-decoration: none; border-bottom: 1px dotted #334155; }
+        .note a:hover { color: #64748b; }
+
+        @media (max-width: 620px) {
+            h1 { font-size: 1.5rem; }
+            a.btn { padding: 13px 34px; font-size: 1rem; }
+            .news-bd { max-height: 260px; }
+            .entry-hd { flex-wrap: wrap; }
+            .entry-date { margin-left: auto; }
+        }
+        /* ── 玩法公告（卡片式） ── */
+        .guide {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #38bdf8;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .guide-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(56,189,248,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #7dd3fc;
+        }
+        .guide-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .guide-bd {
+            max-height: 560px; overflow-y: auto;
+            padding: 12px 16px 14px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+        }
+        .guide-bd::-webkit-scrollbar { width: 6px; }
+        .guide-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .card {
+            background: rgba(17, 24, 34, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            padding: 10px 12px;
+            transition: border-color .15s, background .15s;
+        }
+        .card:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .card-hd {
+            display: flex; align-items: center; gap: 7px;
+            font-size: .82rem; font-weight: bold; color: #e2e8f0;
+            margin-bottom: 6px;
+        }
+        .card-hd .ico { font-size: 1rem; flex: 0 0 auto; }
+        .card-bd {
+            font-size: .74rem; line-height: 1.8; color: #94a3b8;
+        }
+        .card-bd b { color: #cbd5e1; }
+        .card-bd code {
+            background: rgba(56,189,248,.10);
+            border: 1px solid #1e3a52;
+            border-radius: 3px;
+            padding: 0 4px;
+            font-size: .72rem;
+            color: #7dd3fc;
+            font-family: Consolas, monospace;
+        }
+        .card.span2 { grid-column: 1 / -1; }
+
+        /* 進階提示 */
+        .tip {
+            grid-column: 1 / -1;
+            background: rgba(245,158,11,.09);
+            border: 1px solid #f59e0b;
+            border-left: 3px solid #fbbf24;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: .74rem; line-height: 1.85; color: #fcd34d;
+        }
+        .tip b { color: #fde68a; }
+
+        @media (max-width: 620px) {
+            .guide-bd { grid-template-columns: 1fr; max-height: 380px; }
+        }
+
+        /* ── 我的隊伍 ── */
+        .team {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #10b981;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .team-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(16,185,129,.14), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #6ee7b7;
+        }
+        .team-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .team-bd { padding: 12px 16px 14px; }
+
+        /* 隊伍成員格 */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .member {
+            position: relative;
+            background: rgba(15, 22, 30, .95);
+            border: 2px solid #1e2a36;
+            border-radius: 8px;
+            padding: 10px 8px 9px;
+            text-align: center;
+            transition: border-color .15s, background .15s, transform .15s;
+        }
+        .member.main {
+            border-color: #00e5ff;
+            background: rgba(0, 229, 255, .07);
+            box-shadow: 0 0 16px rgba(0,229,255,.25);
+        }
+        .member.empty {
+            border-style: dashed;
+            opacity: .45;
+        }
+        .member .slot-no {
+            position: absolute; left: 5px; top: 4px;
+            font-size: .6rem; color: #475569; font-weight: bold;
+        }
+        .member .crown {
+            position: absolute; right: 5px; top: 3px;
+            font-size: .66rem;
+        }
+        .member .avatar {
+            font-size: 1.6rem; line-height: 1;
+            margin: 4px 0 6px;
+        }
+        .member .m-name {
+            font-size: .74rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+        .member.main .m-name { color: #7dd3fc; }
+        .member .m-lv {
+            font-size: .66rem; color: #fbbf24; font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .member .m-sect {
+            font-size: .62rem; color: #94a3b8;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 6px;
+            min-height: 15px;
+        }
+        .member .m-bar {
+            height: 5px; border-radius: 3px; background: #0a0f16;
+            overflow: hidden; border: 1px solid #1e2a36;
+        }
+        .member .m-bar i {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, #10b981, #6ee7b7);
+            transition: width .3s;
+        }
+        .member .m-exp {
+            font-size: .58rem; color: #64748b; margin-top: 3px;
+        }
+        .member.empty .m-name { color: #475569; font-weight: normal; }
+
+        /* 隊伍統計列 */
+        .team-stat {
+            display: flex; flex-wrap: wrap; gap: 8px 18px;
+            margin-top: 12px; padding-top: 11px;
+            border-top: 1px dashed #1a2532;
+            font-size: .74rem; color: #94a3b8;
+        }
+        .team-stat span b { color: #6ee7b7; }
+
+        /* 空狀態 */
+        .team-empty {
+            text-align: center; padding: 20px 12px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .team-empty a {
+            color: #7dd3fc; text-decoration: none;
+            border-bottom: 1px dotted #38bdf8;
+        }
+
+        @media (max-width: 620px) {
+            .team-grid { grid-template-columns: repeat(3, 1fr); }
+            .team-grid .member:nth-child(n+4) { display: none; }
+        }
+
+        /* ── 全服排行 ── */
+        .rank {
+            width: min(92vw, 720px);
+            background: rgba(9, 14, 22, .82);
+            border: 1px solid #253244;
+            border-left: 4px solid #f0c674;
+            border-radius: 9px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.55);
+        }
+        .rank-hd {
+            display: flex; align-items: center; gap: 9px;
+            padding: 11px 16px;
+            background: linear-gradient(90deg, rgba(240,198,116,.15), transparent);
+            border-bottom: 1px solid #1e2a36;
+            font-size: .95rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-hd .cnt {
+            margin-left: auto;
+            font-size: .72rem; font-weight: normal; color: #64748b;
+        }
+        .rank-tabs {
+            display: flex; gap: 5px; padding: 9px 16px 0;
+            flex-wrap: wrap;
+        }
+        .rank-tab {
+            padding: 4px 11px; border-radius: 11px;
+            font-size: .72rem; cursor: pointer;
+            background: #16202c; color: #94a3b8;
+            border: 1px solid #253244;
+            transition: all .14s;
+        }
+        .rank-tab:hover { border-color: #38bdf8; color: #7dd3fc; }
+        .rank-tab.on {
+            background: rgba(240,198,116,.16); color: #f0c674;
+            border-color: #f0c674; font-weight: bold;
+        }
+        .rank-bd {
+            padding: 8px 16px 14px;
+            max-height: 380px; overflow-y: auto;
+        }
+        .rank-bd::-webkit-scrollbar { width: 6px; }
+        .rank-bd::-webkit-scrollbar-thumb { background: #2e3b4e; border-radius: 3px; }
+
+        .rank-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; margin-bottom: 5px;
+            background: rgba(15, 22, 30, .9);
+            border: 1px solid #1e2a36;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: border-color .14s, background .14s;
+        }
+        .rank-row:hover { border-color: #38bdf8; background: rgba(22, 32, 44, .95); }
+        .rank-row.me { border-color: #00e5ff; background: rgba(0,229,255,.07); }
+
+        .rank-no {
+            flex: 0 0 30px; text-align: center;
+            font-size: .82rem; font-weight: bold; color: #64748b;
+        }
+        .rank-no.g1 { color: #fbbf24; font-size: 1rem; }
+        .rank-no.g2 { color: #cbd5e1; font-size: .92rem; }
+        .rank-no.g3 { color: #d97706; font-size: .88rem; }
+
+        .rank-info { flex: 1 1 auto; min-width: 0; }
+        .rank-name {
+            font-size: .84rem; font-weight: bold; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-sub {
+            font-size: .68rem; color: #64748b; margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rank-val {
+            flex: 0 0 auto; text-align: right;
+        }
+        .rank-val .v {
+            font-size: .88rem; font-weight: bold; color: #f0c674;
+        }
+        .rank-val .k {
+            font-size: .62rem; color: #475569; margin-top: 1px;
+        }
+
+        /* 展開的隊伍詳情 */
+        .rank-detail {
+            display: none;
+            padding: 8px 10px 10px 40px;
+            background: rgba(6, 10, 16, .7);
+            border-radius: 0 0 7px 7px;
+            margin: -3px 0 5px;
+            border: 1px solid #1e2a36;
+            border-top: none;
+        }
+        .rank-detail.open { display: block; }
+        .rd-char {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .74rem; padding: 3px 0;
+            color: #94a3b8;
+        }
+        .rd-char .rd-ico { flex: 0 0 16px; }
+        .rd-char .rd-nm {
+            flex: 1 1 auto; min-width: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            color: #cbd5e1;
+        }
+        .rd-char .rd-lv { flex: 0 0 auto; color: #fbbf24; font-weight: bold; }
+        .rd-char .rd-sect { flex: 0 0 auto; color: #64748b; font-size: .68rem; }
+
+        .rank-empty {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #64748b; line-height: 1.9;
+        }
+        .rank-loading {
+            text-align: center; padding: 26px 14px;
+            font-size: .8rem; color: #475569;
+        }
+        .rank-spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #253244; border-top-color: #38bdf8;
+            border-radius: 50%; animation: rspin .8s linear infinite;
+            vertical-align: -2px; margin-right: 6px;
+        }
+        @keyframes rspin { to { transform: rotate(360deg); } }
+
+    </style>
 </head>
 <body>
-    <!-- ⭐ 開機遮罩（半透明）
-         ──────────────────────────────────────────────────────────────
-         原本 background:#0f141c 完全不透明 → 所有 JS 載完前全黑一片。
-         改成 rgba(15,20,28,.88) + 模糊 → 玩家看得到底下的 UI 已經在那裡，
-         心理上不會覺得「等很久」。
 
-         ⚠️ 這裡【刻意不】抬高 #top-bar 的 z-index。
-         曾有版本為了讓標籤早點露臉而把 #top-bar 設成 z-index:100000，
-         結果它會壓在所有全螢幕子頁面（昇華 9350、礦坑 9200、藏書閣 9365…）
-         之上 → 進入子頁面後頂部面板還留著。
+    <div class="hero">
+        <h1>🗡️ 黃易群俠傳 Web</h1>
+        <p class="sub" id="hero-sub">時空浪人 · Lv.300 破碎虛空傳奇</p>
+    </div>
 
-         現在的做法：遮罩照樣蓋住畫面，加速只靠
-         ① 遮罩淡出的時機提前（bootLoader.js 的 finish）
-         ② 各 UI 模組「立即注入按鈕」而不是先等 300~500ms
-         完全不動任何元素的層級關係。 -->
-    <div id="hy-boot-overlay" style="position:fixed;inset:0;background:rgba(15,20,28,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);">
-        <div style="font-size:1.3rem;color:#c89d54;font-weight:bold;margin-bottom:16px;">⚡ 黃易群俠傳 Web</div>
-        <div style="width:340px;height:10px;background:#121822;border:1px solid #2e3b4e;border-radius:6px;overflow:hidden;">
-            <div id="hy-boot-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0284c7,#00e5ff);transition:width 0.12s linear;"></div>
+    <a class="btn" href="game-chunked.html" data-game-href>▶ 進入遊戲</a>
+
+    <script src="landingPanelData.js"></script>
+
+    <!-- ══════════════ 更新公告 ══════════════ -->
+    <div class="news">
+        <div class="news-hd">
+            <span>📢 更新公告</span>
+            <span class="ver" id="news-ver">讀取中…</span>
         </div>
-        <div id="hy-boot-text" style="margin-top:12px;font-size:0.82rem;color:#94a3b8;">正在初始化時空引擎…</div>
+        <div class="news-bd" id="news-body"></div>
+    </div>
+    <!-- ══════════════ 更新公告結束 ══════════════ -->
+    <!-- ══════════════ 玩法指南 ══════════════ -->
+    <div class="guide">
+        <div class="guide-hd">
+            <span>🎮 玩法指南</span>
+            <span class="cnt" id="guide-cnt">載入中…</span>
+        </div>
+        <div class="guide-bd" id="guide-bd"></div>
+    </div>
+    <!-- ══════════════ 玩法指南結束 ══════════════ -->
+
+    <!-- ══════════════ 我的隊伍 ══════════════ -->
+    <div class="team">
+        <div class="team-hd">
+            <span>👥 我的隊伍</span>
+            <span class="cnt" id="team-cnt">讀取中…</span>
+        </div>
+        <div class="team-bd" id="team-bd">
+            <div class="team-empty" id="team-loading">正在讀取本機存檔…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 我的隊伍結束 ══════════════ -->
+    <script>
+    function hyGameLink() {
+        return (window.HY_LANDING && typeof HY_LANDING.gameHref === 'function')
+            ? HY_LANDING.gameHref() : 'game-chunked.html';
+    }
+    /* ══════════════════════════════════════════════════════════════
+       👥 我的隊伍 —— 從本機存檔讀取角色資料
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SAVE_KEY = 'HUANGYI_WEB_RPG_SAVE_V2';
+
+        /* 門派顯示對照 */
+        var SECT_INFO = {
+            emei:       { name: '峨嵋派',   icon: '💚' },
+            shaolin:    { name: '少林寺',   icon: '🧘' },
+            wudang:     { name: '武當派',   icon: '☯️' },
+            cihang:     { name: '慈航靜齋', icon: '🌸' },
+            yinkui:     { name: '陰癸派',   icon: '🌙' },
+            momon:      { name: '魔門',     icon: '😈' },
+            jingnian:   { name: '淨念禪院', icon: '🕉️' },
+            jueqing:    { name: '絕情谷',   icon: '❄️' },
+            guigu:      { name: '鬼谷',     icon: '🌀' },
+            tianlong:   { name: '天龍寺',   icon: '🐉' },
+            xingxiu:    { name: '星宿派',   icon: '☠️' },
+            mingjiao:   { name: '明教',     icon: '🔥' },
+            bugui:      { name: '補天閣',   icon: '🧵' },
+            huanhua:    { name: '花間派',   icon: '🌺' },
+            tianlian:   { name: '天蓮宗',   icon: '🪷' }
+        };
+
+        function sectOf(sect) {
+            if (!sect) return { name: '無門無派', icon: '⚪' };
+            return SECT_INFO[sect] || { name: String(sect), icon: '⚪' };
+        }
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+
+        function render() {
+            var bd = document.getElementById('team-bd');
+            var cntEl = document.getElementById('team-cnt');
+            if (!bd) return;
+
+            var raw = null;
+            try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { raw = null; }
+
+            if (!raw) {
+                if (cntEl) cntEl.textContent = '尚無存檔';
+                bd.innerHTML =
+                    '<div class="team-empty">' +
+                    '還沒有任何角色。<br>' +
+                    '<a href="' + hyGameLink() + '">▶ 進入遊戲</a>，開始你的時空之旅，隊伍會顯示在這裡。' +
+                    '</div>';
+                return;
+            }
+
+            var save = null;
+            try { save = JSON.parse(raw); } catch (e) { save = null; }
+            if (!save || !Array.isArray(save.roster) || !save.roster.length) {
+                if (cntEl) cntEl.textContent = '尚無角色';
+                bd.innerHTML = '<div class="team-empty">存檔中沒有角色資料。<br>' +
+                    '<a href="' + hyGameLink() + '">▶ 進入遊戲</a> 建立你的第一個角色。</div>';
+                return;
+            }
+
+            var roster = save.roster;
+            var party = Array.isArray(save.party) ? save.party : [];
+            var activeIdx = (typeof save.activeCharIndex === 'number') ? save.activeCharIndex : 0;
+            var activeId = (roster[activeIdx] && roster[activeIdx].id) || null;
+
+            /* 只顯示「在隊伍中」的角色；若 party 為空則顯示全部 */
+            var inParty = roster.filter(function (c) {
+                return party.indexOf(c.id) !== -1;
+            });
+            var shown = inParty.length ? inParty : roster;
+
+            if (cntEl) {
+                cntEl.textContent = shown.length + ' / ' + roster.length + ' 名角色' +
+                    (party.length ? '　·　上陣 ' + party.length + ' 人' : '');
+            }
+
+            var h = '<div class="team-grid">';
+            for (var i = 0; i < 5; i++) {
+                var c = shown[i];
+                if (!c) {
+                    h += '<div class="member empty">' +
+                        '<span class="slot-no">' + (i + 1) + '</span>' +
+                        '<div class="avatar">👤</div>' +
+                        '<div class="m-name">空缺</div>' +
+                        '<div class="m-lv">—</div>' +
+                        '<div class="m-sect">未招募</div>' +
+                        '<div class="m-bar"><i style="width:0%"></i></div>' +
+                        '<div class="m-exp">—</div>' +
+                        '</div>';
+                    continue;
+                }
+                var isMain = (c.id === activeId);
+                var sec = sectOf(c.sect);
+                var exp = Number(c.exp) || 0;
+                var maxExp = Number(c.maxExp) || 1;
+                var pct = Math.min(100, Math.round(exp / maxExp * 100));
+                h += '<div class="member' + (isMain ? ' main' : '') + '">' +
+                    '<span class="slot-no">' + (i + 1) + '</span>' +
+                    (isMain ? '<span class="crown">👑</span>' : '') +
+                    '<div class="avatar">' + sec.icon + '</div>' +
+                    '<div class="m-name" title="' + esc(c.name) + '">' + esc(c.name) + '</div>' +
+                    '<div class="m-lv">Lv.' + (Number(c.lv) || 1) + '</div>' +
+                    '<div class="m-sect" title="' + esc(sec.name) + '">' + esc(sec.name) + '</div>' +
+                    '<div class="m-bar"><i style="width:' + pct + '%"></i></div>' +
+                    '<div class="m-exp">' + pct + '% · ' + fmt(exp) + '/' + fmt(maxExp) + '</div>' +
+                    '</div>';
+            }
+            h += '</div>';
+
+            /* 統計列 */
+            var maxLv = 0, totalLv = 0, sectCount = {};
+            roster.forEach(function (c) {
+                var lv = Number(c.lv) || 1;
+                totalLv += lv;
+                if (lv > maxLv) maxLv = lv;
+                if (c.sect) sectCount[c.sect] = (sectCount[c.sect] || 0) + 1;
+            });
+            var atlas = save.atlas || {};
+            var clears = Number(atlas.clears) || 0;
+            var bestTier = Number(atlas.bestTier) || 0;
+            var gold = Number(save.gold) || 0;
+
+            h += '<div class="team-stat">' +
+                '<span>👥 角色數 <b>' + roster.length + '</b></span>' +
+                '<span>🏆 最高等級 <b>Lv.' + maxLv + '</b></span>' +
+                '<span>📊 平均等級 <b>' + (roster.length ? Math.round(totalLv / roster.length) : 0) + '</b></span>' +
+                '<span>🗺️ 通關次數 <b>' + clears + '</b></span>' +
+                (bestTier > 0 ? '<span>⭐ 最高階級 <b>T' + bestTier + '</b></span>' : '') +
+                '<span>💰 紋銀 <b>' + fmt(gold) + '</b></span>' +
+                '</div>';
+
+            bd.innerHTML = h;
+        }
+
+        /* 頁面載入後渲染 */
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', render);
+        } else {
+            render();
+        }
+
+        /* 從遊戲分頁返回時自動刷新（存檔可能已更新） */
+        window.addEventListener('focus', render);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) render();
+        });
+    })();
+    </script>
+    <!-- ══════════════ 全服排行 ══════════════ -->
+    <div class="rank">
+        <div class="rank-hd">
+            <span>🏆 全服玩家排行</span>
+            <span class="cnt" id="rank-cnt">讀取中…</span>
+        </div>
+        <div class="rank-tabs">
+            <div class="rank-tab on" data-sort="max_lv">🏅 最高等級</div>
+            <div class="rank-tab" data-sort="clears">🗺️ 通關次數</div>
+            <div class="rank-tab" data-sort="best_tier">⭐ 最高階級</div>
+            <div class="rank-tab" data-sort="gold">💰 紋銀</div>
+        </div>
+        <div class="rank-bd" id="rank-bd">
+            <div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>
+        </div>
+    </div>
+    <!-- ══════════════ 全服排行結束 ══════════════ -->
+    <script>
+    /* ══════════════════════════════════════════════════════════════
+       🏆 全服玩家排行 —— 從 Supabase 讀取
+       ══════════════════════════════════════════════════════════════ */
+    (function () {
+        var SUPABASE_URL = 'https://gcbdbywobmehbqxigmnw.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjYmRieXdvYm1laGJxeGlnbW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4MjE1NTksImV4cCI6MjEwOTM5NzU1OX0.rutr6p5pcSea-kfN5npCD9B3dCQcPV2eTmqCAlpxLiQ';
+        var MY_KEY = null;
+        try { MY_KEY = localStorage.getItem('HY_PLAYER_KEY'); } catch (e) { }
+
+        var SECT_ICON = {
+            emei: '💚', shaolin: '🧘', wudang: '☯️', cihang: '🌸',
+            yinkui: '🌙', momon: '😈', jingnian: '🕉️', jueqing: '❄️',
+            guigu: '🌀', tianlong: '🐉', xingxiu: '☠️', mingjiao: '🔥',
+            bugui: '🧵', huanhua: '🌺', tianlian: '🪷'
+        };
+        var SECT_NAME = {
+            emei: '峨嵋派', shaolin: '少林寺', wudang: '武當派', cihang: '慈航靜齋',
+            yinkui: '陰癸派', momon: '魔門', jingnian: '淨念禪院', jueqing: '絕情谷',
+            guigu: '鬼谷', tianlong: '天龍寺', xingxiu: '星宿派', mingjiao: '明教',
+            bugui: '補天閣', huanhua: '花間派', tianlian: '天蓮宗'
+        };
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function fmt(n) {
+            var v = Number(n) || 0;
+            if (v >= 100000000) return (v / 100000000).toFixed(1) + 'E';
+            if (v >= 1000000) return (v / 1000000).toFixed(2) + 'M';
+            if (v >= 10000) return (v / 10000).toFixed(1) + 'W';
+            return String(Math.floor(v));
+        }
+        function ago(ts) {
+            if (!ts) return '';
+            var d = Date.now() - new Date(ts).getTime();
+            if (d < 60000) return '剛剛';
+            if (d < 3600000) return Math.floor(d / 60000) + ' 分鐘前';
+            if (d < 86400000) return Math.floor(d / 3600000) + ' 小時前';
+            return Math.floor(d / 86400000) + ' 天前';
+        }
+
+        var curSort = 'max_lv';
+        var cache = [];
+
+        function headers() {
+            return {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function render() {
+            var bd = document.getElementById('rank-bd');
+            var cntEl = document.getElementById('rank-cnt');
+            if (!bd) return;
+
+            if (!cache.length) {
+                if (cntEl) cntEl.textContent = '0 位玩家';
+                bd.innerHTML = '<div class="rank-empty">' +
+                    '目前還沒有人上傳隊伍。<br>' +
+                    '<a href="' + hyGameLink() + '" style="color:#7dd3fc;text-decoration:none;border-bottom:1px dotted #38bdf8">▶ 進入遊戲</a>' +
+                    '，你的隊伍會自動出現在這裡。</div>';
+                return;
+            }
+
+            if (cntEl) cntEl.textContent = cache.length + ' 位玩家';
+
+            var keyMap = {
+                max_lv: { k: '最高等級', f: function (r) { return 'Lv.' + r.max_lv; } },
+                clears: { k: '通關次數', f: function (r) { return r.clears + ' 次'; } },
+                best_tier: { k: '最高階級', f: function (r) { return r.best_tier > 0 ? 'T' + r.best_tier : '—'; } },
+                gold: { k: '紋銀', f: function (r) { return fmt(r.gold); } }
+            };
+            var km = keyMap[curSort] || keyMap.max_lv;
+
+            var h = '';
+            cache.forEach(function (r, i) {
+                var rankCls = i === 0 ? ' g1' : (i === 1 ? ' g2' : (i === 2 ? ' g3' : ''));
+                var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : (i + 1)));
+                var isMe = (MY_KEY && r.player_key === MY_KEY);
+                var chars = Array.isArray(r.chars) ? r.chars : [];
+                var mainChar = chars.find(function (c) {
+                    return c.name === r.player_name;
+                }) || chars[0] || {};
+                var secIcon = SECT_ICON[mainChar.sect] || '⚪';
+                var secName = SECT_NAME[mainChar.sect] || '無門無派';
+
+                h += '<div class="rank-row' + (isMe ? ' me' : '') + '" data-idx="' + i + '">' +
+                    '<div class="rank-no' + rankCls + '">' + medal + '</div>' +
+                    '<div class="rank-info">' +
+                    '<div class="rank-name">' + secIcon + ' ' + esc(r.player_name) +
+                    (isMe ? ' <span style="color:#00e5ff;font-size:.66rem">(你)</span>' : '') + '</div>' +
+                    '<div class="rank-sub">' + chars.length + ' 名角色　·　均等 Lv.' + (r.avg_lv || 1) +
+                    '　·　' + esc(secName) + '　·　' + ago(r.updated_at) + '</div>' +
+                    '</div>' +
+                    '<div class="rank-val"><div class="v" style="color:' +
+                    (curSort === 'gold' ? '#6ee7b7' : (curSort === 'best_tier' ? '#c084fc' : '#f0c674')) +
+                    '">' + km.f(r) + '</div><div class="k">' + km.k + '</div></div>' +
+                    '</div>';
+
+                /* 展開的隊伍詳情 */
+                h += '<div class="rank-detail" id="rd-' + i + '">';
+                if (chars.length) {
+                    chars.forEach(function (c) {
+                        var ic = SECT_ICON[c.sect] || '⚪';
+                        var sn = SECT_NAME[c.sect] || '無門無派';
+                        h += '<div class="rd-char">' +
+                            '<span class="rd-ico">' + ic + '</span>' +
+                            '<span class="rd-nm">' + esc(c.name) + '</span>' +
+                            '<span class="rd-sect">' + esc(sn) + '</span>' +
+                            '<span class="rd-lv">Lv.' + (c.lv || 1) + '</span>' +
+                            '</div>';
+                    });
+                } else {
+                    h += '<div class="rd-char" style="color:#475569">（無角色資料）</div>';
+                }
+                h += '</div>';
+            });
+
+            bd.innerHTML = h;
+
+            /* 點擊展開／收合 */
+            bd.querySelectorAll('.rank-row').forEach(function (row) {
+                row.addEventListener('click', function () {
+                    var idx = row.getAttribute('data-idx');
+                    var det = document.getElementById('rd-' + idx);
+                    if (det) det.classList.toggle('open');
+                });
+            });
+        }
+
+        function load(sortBy) {
+            curSort = sortBy || curSort;
+            var bd = document.getElementById('rank-bd');
+            if (bd && !cache.length) {
+                bd.innerHTML = '<div class="rank-loading"><span class="rank-spin"></span>正在連線全服伺服器…</div>';
+            }
+            var url = SUPABASE_URL + '/rest/v1/teams' +
+                '?select=player_key,player_name,chars,max_lv,avg_lv,clears,best_tier,gold,updated_at' +
+                '&order=' + curSort + '.desc,max_lv.desc' +
+                '&limit=50';
+
+            fetch(url, { headers: headers() })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function (rows) {
+                    cache = Array.isArray(rows) ? rows : [];
+                    render();
+                })
+                .catch(function (e) {
+                    var bd2 = document.getElementById('rank-bd');
+                    if (bd2) {
+                        bd2.innerHTML = '<div class="rank-empty">' +
+                            '無法連線全服伺服器。<br>' +
+                            '<span style="font-size:.72rem;color:#475569">' + esc(e.message) + '</span><br>' +
+                            '<span style="font-size:.72rem;color:#475569">請確認網路連線後重新整理</span></div>';
+                    }
+                    var cntEl = document.getElementById('rank-cnt');
+                    if (cntEl) cntEl.textContent = '連線失敗';
+                });
+        }
+
+        /* 排序切換 */
+        document.querySelectorAll('.rank-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.rank-tab').forEach(function (t) {
+                    t.classList.remove('on');
+                });
+                tab.classList.add('on');
+                cache = [];
+                load(tab.getAttribute('data-sort'));
+            });
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { load('max_lv'); });
+        } else {
+            load('max_lv');
+        }
+    })();
+    </script>
+
+
+    <div class="note">
+        建議使用 Chrome / Edge 瀏覽器　·　首次載入約需 3~5 秒<br>
+        <a href="https://github.com/lover2029951/huangyi-web-rpg" target="_blank" rel="noopener">原始碼倉庫</a>
     </div>
 
-    <!-- ⭐ 頂部標籤的顯示時機
-         ──────────────────────────────────────────────────────────────
-         ⚠️ 這裡【不】對 #top-bar 做任何 z-index 調整。
-
-         歷史教訓：曾為了讓標籤「早點出現」把 #top-bar 抬到 z-index:100000，
-         結果它會壓在所有全螢幕子頁面（昇華 9350、礦坑 9200、藏書閣 9365…）
-         之上，變成「進入子頁面後頂部面板還在」。
-
-         正確的加速方式只在「遮罩淡出時機」與「按鈕注入時機」下手
-         （bootLoader.js 的 finish()、各 UI 模組的立即注入），
-         完全不動任何元素的層級。 -->
-
-    <div id="game-container">
-        <!-- 頂部：時空與系統列（重啟鈕已移至最左以防誤點） -->
-        <header id="top-bar">
-            <!-- ⭐ 重啟時空：獨立置於最左，與其他按鈕保持距離 -->
-            <div style="flex:0 0 auto;">
-                <button id="btn-reset" class="sys-btn danger" title="⚠️ 清除所有存檔並重新開始">🔄 重啟時空</button>
-            </div>
-
-            <div class="title-box" style="flex:1 1 auto;">
-                <h1>⚡ 黃易群俠傳 <span class="subtitle">Lv.300 破碎虛空傳奇</span></h1>
-                <span id="current-map-badge">當前時空：星際實驗室</span>
-                <!-- ⭐ v69：常用功能快捷區（緊接「當前時空」右側）
-                     由 uiTabFix.js 把「離線／畫面／字體／儲存」四顆按鈕搬進來，
-                     避免它們藏在工具列尾端還要橫向捲動才找得到。 -->
-                <span id="top-quick-slot" style="display:inline-flex; align-items:center; gap:5px; margin-left:8px; flex:0 0 auto;"></span>
-                <span id="party-size-badge" style="margin-left:8px; background:rgba(16,185,129,0.18); border:1px solid #10b981; color:#10b981; padding:4px 10px; border-radius:4px; font-size:0.85rem;">🚩 上陣人數：1人</span>
-            </div>
-
-            <div class="system-controls" style="flex:0 0 auto;">
-                <button id="btn-save" class="sys-btn">💾 儲存進度</button>
-                <!-- ⭐ 作弊面板按鈕由 cheatPanel.js 動態注入至此容器尾端 -->
-            </div>
-        </header>
-
-        <main id="main-content">
-            <!-- 左側 -->
-            <aside id="character-panel" class="panel">
-                <h2>👥 角色欄切換 (上限 Lv.300)</h2>
-                <div id="sidebar-roster-switcher" style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;"></div>
-
-                <!-- ⭐ v504：當前角色的立繪（全身圖 + 頭像），由 uiCharacterParty 填入 -->
-                <div id="sidebar-char-art" style="display:none;margin-bottom:8px;align-items:stretch;gap:8px;"></div>
-
-                <div class="stat-group" style="background:#121822; padding:8px 10px; border-radius:6px; border:1px solid #2e3b4e;">
-                    <div class="stat-row"><span>當前操控：</span><strong id="char-name" class="sci-color">時空浪人</strong></div>
-                    <div class="stat-row"><span>門派陣營：</span><strong id="char-sect" class="highlight">無門無派</strong></div>
-                    <div class="stat-row"><span>境界等級：</span><span><strong id="char-lv" style="color:#fbbf24;">1</strong> <small style="color:#64748b;">/ 300</small></span></div>
-                    <div class="stat-row"><span>綜合戰力：</span><strong id="char-power" style="color:#f43f5e;">100</strong></div>
-                    <div class="stat-row" style="margin-bottom:0;"><span>歷練經驗：</span><span id="char-exp" style="font-size:0.8rem;">0 / 100</span></div>
-                </div>
-
-                <div class="bar-container">
-                    <div class="bar-label"><span>❤️ 氣血 (HP)</span><span id="hp-text">200/200</span></div>
-                    <div class="progress-bg"><div id="hp-bar" class="progress-fill hp"></div></div>
-
-                    <div class="bar-label"><span>💧 內力 (MP)</span><span id="mp-text">100/100</span></div>
-                    <div class="progress-bg"><div id="mp-bar" class="progress-fill mp"></div></div>
-
-                    <!-- ⭐ v53：能量護盾條（只有實際有護盾的角色才顯示）
-                         v55：加大高度與亮度，否則深色背景下幾乎看不出來 -->
-                    <div id="es-bar-row" style="display:none;">
-                        <div class="bar-label"><span>🔵 罡氣</span><span id="es-text">0/0</span></div>
-                        <div class="progress-bg" style="height:14px;border-color:#0369a1;
-                            box-shadow:0 0 6px rgba(56,189,248,.35);">
-                            <div id="es-bar" class="progress-fill" style="width:0%;height:100%;
-                                background:linear-gradient(90deg,#0369a1,#0ea5e9,#7dd3fc);
-                                box-shadow:0 0 8px rgba(56,189,248,.8) inset;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3>🧬 先天五屬根骨 (點擊加點)</h3>
-                <div class="stat-grid" style="font-size:0.83rem;">
-                    <div>力(<span data-stat="str" style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.28);">物攻/暴傷</span>)：<strong id="stat-str" class="highlight">8</strong></div>
-                    <div>敏(<span data-stat="agi" style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.28);">閃/速/命/爆</span>)：<strong id="stat-agi" class="highlight">8</strong></div>
-                    <div>智(<span data-stat="int" style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.28);">內力/元素</span>)：<strong id="stat-int" class="highlight">8</strong></div>
-                    <div>精(<span data-stat="spi" style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.28);">治療/暴抗/回內</span>)：<strong id="stat-spi" class="highlight">8</strong></div>
-                    <div>體(<span data-stat="con" style="cursor:help;border-bottom:1px dotted rgba(147,197,253,0.28);">氣血/防禦/減傷</span>)：<strong id="stat-con" class="highlight">8</strong></div>
-                </div>
-
-                <div id="free-points-box" class="upgrade-box">
-                    <span>剩餘潛能點：<strong id="char-points" class="gold-color">0</strong></span>
-                    <div class="point-btns">
-                        <button data-stat="str" title="左鍵 +1　右鍵批量加點">+力</button>
-                        <button data-stat="agi" title="左鍵 +1　右鍵批量加點">+敏</button>
-                        <button data-stat="int" title="左鍵 +1　右鍵批量加點">+智</button>
-                        <button data-stat="spi" title="左鍵 +1　右鍵批量加點">+精</button>
-                        <button data-stat="con" title="左鍵 +1　右鍵批量加點">+體</button>
-                    </div>
-                </div>
-
-                <h3>⚔️ 詳細戰鬥與抗性面板</h3>
-                <!-- ⭐ v419：完整屬性面板（依 StatRegistry 的 8 個分組顯示全部 69 項）
-                     舊版只有 8 項，玩家看不到抗性、格擋、吸取、掉落等關鍵數值。 -->
-                <div id="stat-panel-full" style="font-size:0.82rem; line-height:1.75;"></div>
-
-                <h3>💎 共享資源與當前配置</h3>
-                <div class="resource-box">
-                    <div>📖 武學點數 (武點)：<strong id="char-sp" class="sp-color">50</strong></div>
-                    <div>🪙 大唐紋銀 (兩)：<strong id="char-gold" class="gold-color">150</strong></div>
-                </div>
-                <div class="equip-box" style="margin-top:6px;">
-                    <div>🔥 主運心法：<strong id="active-xinfa-name" class="highlight">未運功</strong></div>
-                    <div>🍃 常駐身法：<strong id="active-qinggong-name" style="color:#10b981;">未常駐</strong></div>
-                    <div>🤝 隨行群俠：<strong id="active-companion-name" class="sci-color">無</strong></div>
-                    <hr style="border:none; border-top:1px dashed #2e3b4e; margin:5px 0;">
-                    <div id="sidebar-equip-summary" style="font-size:0.8rem;"></div>
-                </div>
-            </aside>
-
-            <!-- 中間 -->
-            <section id="center-stage" class="panel">
-                <nav id="tab-nav" style="flex-wrap:wrap;">
-                    <button class="tab-btn active" data-tab="tab-explore">🌀 時空探索(Lv.300)</button>
-                    <button class="tab-btn" data-tab="tab-party">👥 角色 & 組隊(5人)</button>
-                    <button class="tab-btn" data-tab="tab-martial">☯️ 武學心法</button>
-                    <button class="tab-btn" data-tab="tab-sect">⛩️ 門派</button>
-                    <button class="tab-btn tab-stash" data-tab="tab-inventory">🗄️ 倉庫</button>
-                    <!-- ⭐ 已移除 (丹藥) 字樣 -->
-                    <button class="tab-btn" data-tab="tab-blackmarket">🏪 時空黑市</button>
-                    <button class="tab-btn" data-tab="tab-companion">🤝 群俠助戰</button>
-                    <!-- ⭐ v557：靈獸坐騎分頁已移除（改用武魂系統） -->
-                </nav>
-
-                <div id="tab-explore" class="tab-content active">
-                    <div id="map-selector-box">
-                        <h3>🛸 馬博士七大紀元時空導航儀 (Lv.1 ~ Lv.300，擊敗怪物可掉落神兵防具與打造材料！)</h3>
-                        <div id="hy-era-rec-hint" class="hy-era-rec-hint" aria-live="polite"></div>
-                        <div id="hy-era-timeline" class="hy-era-timeline" role="presentation"></div>
-                        <div id="map-list" class="hy-era-rail"></div>
-                    </div>
-
-                    <div id="combat-zone">
-                        <div class="combat-header-row">
-                            <div>
-                                <h3 id="zone-title">📍 揚州城郊外</h3>
-                                <p id="zone-desc">大唐雙龍傳的起點，寇仲與徐子陵曾在此混跡。</p>
-                            </div>
-                            <div class="auto-control-bar">
-                                <button id="btn-toggle-auto" class="action-btn auto-btn">🤖 開啟自動戰鬥</button>
-                                <label class="repeat-label">
-                                    <input type="checkbox" id="chk-auto-repeat"> 🔄 戰勝自動連刷
-                                </label>
-                            </div>
-                        </div>
-
-                        <details id="auto-tactics-box" style="background:#121822; border:1px solid #00e5ff; border-radius:6px; padding:10px 14px; margin-bottom:14px;">
-                            <summary style="cursor:pointer; color:#00e5ff; font-weight:bold; font-size:0.9rem;">
-                                ⚙️ 時空內掛：自動戰鬥戰術細節設定（點擊展開設定用藥門檻、隊員輔助、智慧選招）
-                            </summary>
-
-                            <div style="display:flex; align-items:center; gap:9px; margin-top:10px; padding:7px 10px; background:#0f2233; border:1px solid #00e5ff; border-radius:5px;">
-                                <span style="font-size:0.8rem; color:#94a3b8; white-space:nowrap;">👤 套用角色</span>
-                                <select id="cfg-charsel" style="background:#0a0e14; color:#6ee7b7; border:1px solid #34d399; border-radius:4px; padding:4px 8px; font-size:0.8rem; font-weight:bold; max-width:190px;"></select>
-                                <span style="font-size:0.72rem; color:#475569;">每個角色獨立設定（切換操控角色後自動套用）</span>
-                                <button class="action-btn" id="cfg-copy" style="margin-left:auto; font-size:0.72rem; padding:3px 9px;">📋 複製自</button>
-                            </div>
-
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; font-size:0.84rem;">
-                                <div style="background:#18202c; padding:10px; border-radius:4px; border:1px solid #2e3b4e;">
-                                    <h4 style="color:#10b981; margin-bottom:8px;">💊 自動用藥條件設定</h4>
-
-                                    <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px;">👤 自身用藥（優先）</div>
-                                    <div style="margin-bottom:6px;">
-                                        氣血低於
-                                        <input type="number" id="cfg-hp-pct" value="50" min="10" max="95" step="5" style="width:55px; background:#0f141c; color:#fff; border:1px solid #475569; padding:3px;"> % 服用：
-                                        <select id="cfg-hp-item" style="background:#0f141c; color:#fbbf24; border:1px solid #475569; padding:3px;">
-                                            <option value="pill_hp">行軍散 (+350氣血/+120內力)</option>
-                                            <option value="pill_major">九轉大還丹 (+4000氣血/+1200內力)</option>
-                                            <option value="pill_supreme">慈航千年雪蓮丹 (+35000氣血)</option>
-                                            <option value="none">不自動服補血藥</option>
-                                        </select>
-                                    </div>
-                                    <div style="margin-bottom:10px;">
-                                        內力低於
-                                        <input type="number" id="cfg-mp-pct" value="25" min="5" max="90" step="5" style="width:55px; background:#0f141c; color:#fff; border:1px solid #475569; padding:3px;"> % 服用：
-                                        <select id="cfg-mp-item" style="background:#0f141c; color:#60a5fa; border:1px solid #475569; padding:3px;">
-                                            <option value="pill_hp">行軍散 (+350氣血/+120內力)</option>
-                                            <option value="pill_major">九轉大還丹 (+4000氣血/+1200內力)</option>
-                                            <option value="pill_supreme">慈航千年雪蓮丹 (+10000內力)</option>
-                                            <option value="none">不自動服回內藥</option>
-                                        </select>
-                                    </div>
-
-                                    <div style="border-top:1px dashed #334155; padding-top:8px;">
-                                        <label style="font-size:0.78rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:6px; cursor:pointer;">
-                                            <input type="checkbox" id="cfg-ally-use-pills" checked>
-                                            🤝 幫隊友自動用藥
-                                        </label>
-                                        <div style="margin-bottom:6px;">
-                                            隊友氣血低於
-                                            <input type="number" id="cfg-ally-hp-pct" value="40" min="10" max="95" step="5" style="width:55px; background:#0f141c; color:#fff; border:1px solid #475569; padding:3px;"> % 服用：
-                                            <select id="cfg-ally-hp-item" style="background:#0f141c; color:#4ade80; border:1px solid #475569; padding:3px;"></select>
-                                        </div>
-                                        <div>
-                                            隊友內力低於
-                                            <input type="number" id="cfg-ally-mp-pct" value="20" min="5" max="90" step="5" style="width:55px; background:#0f141c; color:#fff; border:1px solid #475569; padding:3px;"> % 服用：
-                                            <select id="cfg-ally-mp-item" style="background:#0f141c; color:#38bdf8; border:1px solid #475569; padding:3px;"></select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style="background:#18202c; padding:10px; border-radius:4px; border:1px solid #2e3b4e;">
-                                    <h4 style="color:#c89d54; margin-bottom:8px;">☯️ 智慧情境出招設定</h4>
-
-                                    <div style="margin-bottom:6px;">
-                                        <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px;">👤 自身出招</div>
-                                        1. 【危急自保】自身氣血低於
-                                        <input type="number" id="cfg-emerg-pct" value="45" min="10" max="90" step="5" style="width:52px; background:#0f141c; color:#fff; border:1px solid #475569; padding:2px;"> % 施放：
-                                        <select id="cfg-emerg-skill" style="background:#0f141c; color:#38bdf8; border:1px solid #475569; padding:3px;"></select>
-                                    </div>
-                                    <div style="margin-bottom:6px;">
-                                        2. 【多敵圍攻】敵人 ≥ 2 名時施放群攻技：
-                                        <select id="cfg-aoe-skill" style="background:#0f141c; color:#a78bfa; border:1px solid #475569; padding:3px;"></select>
-                                    </div>
-                                    <div style="margin-bottom:10px;">
-                                        3. 【平時主力】一般狀態下優先施放：
-                                        <select id="cfg-primary-skill" style="background:#0f141c; color:#fbbf24; border:1px solid #475569; padding:3px;"></select>
-                                    </div>
-
-                                    <div style="border-top:1px dashed #334155; padding-top:8px;">
-                                        <label style="font-size:0.78rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:6px; cursor:pointer;">
-                                            <input type="checkbox" id="cfg-ally-support" checked>
-                                            🤝 開啟隊員技能輔助（補血/狀態）
-                                        </label>
-                                        <div style="margin-bottom:6px;">
-                                            4. 【隊友補血】隊友氣血低於
-                                            <input type="number" id="cfg-ally-heal-pct" value="50" min="10" max="95" step="5" style="width:52px; background:#0f141c; color:#fff; border:1px solid #475569; padding:2px;"> % 施放：
-                                            <select id="cfg-ally-skill" style="background:#0f141c; color:#4ade80; border:1px solid #475569; padding:3px;"></select>
-                                        </div>
-                                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                                            <span>目標優先：
-                                                <select id="cfg-ally-target" style="background:#0f141c; color:#f472b6; border:1px solid #475569; padding:3px;">
-                                                    <option value="most_wounded">最殘血隊友</option>
-                                                    <option value="leader">主控角色</option>
-                                                    <option value="random">隨機隊友</option>
-                                                </select>
-                                            </span>
-                                            <span>檢查間隔：
-                                                <input type="number" id="cfg-ally-interval" value="1" min="1" max="10" step="1" style="width:42px; background:#0f141c; color:#fff; border:1px solid #475569; padding:3px;"> 次
-                                            </span>
-                                        </div>
-                                        <p style="font-size:0.72rem; color:#64748b; margin-top:6px;">
-                                            💡 觸發時：招式的治療效果將轉向該隊友。
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- ⭐ v2 新增：進階戰術 -->
-                                <div style="background:#18202c; padding:10px; border-radius:4px; border:1px solid #2e3b4e;">
-                                    <h4 style="color:#f472b6; margin-bottom:8px;">🎯 集火規則（自動打哪一隻）</h4>
-                                    <div style="margin-bottom:8px;">
-                                        <select id="cfg-target-rule" style="background:#0f141c; color:#f472b6; border:1px solid #475569; padding:3px; width:100%;">
-                                            <option value="front_then_lowest_hp">⚔️ 前排優先＋殘血（推薦）</option>
-                                            <option value="front_row">🛡️ 僅打前排</option>
-                                            <option value="current">🎯 鎖定當前目標</option>
-                                            <option value="lowest_hp">🩸 殘血優先</option>
-                                            <option value="highest_hp">💪 高血優先</option>
-                                        </select>
-                                    </div>
-                                    <label style="font-size:0.78rem; color:#94a3b8; display:flex; align-items:center; gap:5px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-focus-rare">
-                                        👑 優先攻擊稀有／霸主怪
-                                    </label>
-
-                                    <h4 style="color:#34d399; margin:12px 0 8px; border-top:1px dashed #334155; padding-top:10px;">🧪 自動服用增益丹</h4>
-                                    <label style="font-size:0.78rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:7px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-buff-enabled">
-                                        ⚡ 啟用（一般戰鬥專用，打圖另有獨立設定）
-                                    </label>
-                                    <div id="cfg-buff-opts" style="padding-left:14px;">
-                                        <label style="font-size:0.74rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:4px; cursor:pointer;">
-                                            <input type="checkbox" id="cfg-buff-auto"> 剩餘回合不足時自動續
-                                        </label>
-                                        <div style="margin-bottom:7px; font-size:0.74rem;">
-                                            剩
-                                            <input type="number" id="cfg-buff-refresh" value="3" min="1" max="9" step="1" style="width:40px; background:#0f141c; color:#fff; border:1px solid #475569; padding:2px;"> 回合就補
-                                        </div>
-                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3px 8px; font-size:0.74rem;">
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-atk"> 🔥 狂暴戰神</label>
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-def"> 🛡️ 金剛不壞</label>
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-crit"> 🎯 天眼必中</label>
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-eva"> 🍃 太虛幻影</label>
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-regen"> 🌸 長生回春</label>
-                                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="cfg-buff-all"> ⚡ 五氣朝元</label>
-                                        </div>
-                                    </div>
-
-                                    <h4 style="color:#fbbf24; margin:12px 0 8px; border-top:1px dashed #334155; padding-top:10px;">⚙️ 戰鬥節奏與續戰</h4>
-                                    <label style="font-size:0.74rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:5px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-pause-rare"> 遇稀有怪自動暫停（改手動）
-                                    </label>
-                                    <label style="font-size:0.74rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:7px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-pause-boss"> 遇霸主自動暫停（改手動）
-                                    </label>
-                                    <div style="margin-bottom:7px; font-size:0.74rem;">
-                                        全隊均血低於
-                                        <input type="number" id="cfg-retreat-pct" value="0" min="0" max="50" step="5" style="width:46px; background:#0f141c; color:#fff; border:1px solid #475569; padding:2px;"> % 自動撤退（0=關）
-                                    </div>
-
-                                    <h4 style="color:#a78bfa; margin:12px 0 8px; border-top:1px dashed #334155; padding-top:10px;">💰 內力保護</h4>
-                                    <label style="font-size:0.74rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-bottom:4px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-conserve-mp"> 內力低於 30% 只用普攻
-                                    </label>
-                                    <label style="font-size:0.74rem; color:#94a3b8; display:flex; align-items:center; gap:5px; cursor:pointer;">
-                                        <input type="checkbox" id="cfg-avoid-overkill"> 目標殘血改用普攻（省內力）
-                                    </label>
-                                </div>
-                            </div>
-                        </details>
-
-                        <!-- ⭐ v507：怪物列表已移入「點擊紀元地圖」的彈出視窗，
-                             此容器保留（部分程式仍會查詢），但預設隱藏。 -->
-                        <div id="enemy-list" class="enemy-grid" style="display:none;"></div>
-
-                        <div id="battle-arena" class="hidden">
-                            <div class="fighter-cards" style="align-items:stretch;">
-                                <div class="fighter-card player-side" style="text-align:left;">
-                                    <h4 id="battle-party-group-title" style="color:#00e5ff; margin-bottom:6px;">🚩 我方陣營</h4>
-                                    <div id="battle-party-list" style="display:flex; flex-direction:column; gap:5px; font-size:0.84rem;"></div>
-                                    <hr style="border:none; border-top:1px dashed #334155; margin:8px 0;">
-                                    <div class="companion-assist-tag" id="battle-xinfa-tag">🔥 主控心法：無</div>
-                                    <div class="companion-assist-tag" id="battle-companion-tag">🤝 護法：無</div>
-                                </div>
-                                <div class="vs-badge" style="display:flex; align-items:center;">VS</div>
-                                <div class="fighter-card enemy-side" style="text-align:left;">
-                                    <h4 id="battle-enemy-group-title" style="color:#ef4444; margin-bottom:6px;">⚔️ 敵方陣營</h4>
-                                    <div id="battle-enemy-list-ui" style="display:flex; flex-direction:column; gap:5px; font-size:0.84rem;"></div>
-                                </div>
-                            </div>
-
-                            <div class="battle-actions">
-                                <div id="skill-buttons-container"></div>
-                                <div class="utility-actions">
-                                    <button id="btn-heal-pill" class="action-btn heal">💊 服用行軍散</button>
-                                    <button id="btn-flee" class="action-btn flee">🏃 啟動時空逃逸</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-party" class="tab-content">
-                    <div class="combat-header-row">
-                        <div>
-                            <h3>👥 時空行者角色欄（最高可創建 20 名獨立角色，上限 Lv.300；上陣隊伍最多 5 人）</h3>
-                            <p style="font-size:0.83rem; color:#94a3b8;">點擊「切換操控」即可為該角色獨立拜入不同門派、修煉 10 式外功、5 階心法與 3 階身法，激發專屬門派特色！</p>
-                        </div>
-                        <div class="btn-group-row">
-                            <input type="text" id="inp-new-char-name" placeholder="輸入新角色名 (選填)" style="background:#121822; border:1px solid #334155; color:#fff; padding:6px 10px; border-radius:4px;">
-                            <button id="btn-create-char" class="btn-primary">➕ 創建新角色 (最高20人)</button>
-                            <button id="btn-deploy-all" class="action-btn" style="border-color:#10b981; color:#10b981;">🚩 全員一鍵上陣</button>
-                        </div>
-                    </div>
-
-                    <div id="roster-party-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;"></div>
-                </div>
-
-                <div id="tab-martial" class="tab-content">
-                    <div class="sub-tab-bar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-                        <button class="action-btn sub-martial-btn active" data-sub="sub-skills">🗡️ 外功武技 (15門派×10式)</button>
-                    <button class="action-btn sub-martial-btn" data-sub="sub-xinfa">🔥 內功心法 (每門派×5階)</button>
-                    <button class="action-btn sub-martial-btn" data-sub="sub-qinggong">🍃 輕功身法 (共通4+門派專屬｜常駐1)</button>
-                        <button class="action-btn sub-martial-btn" data-sub="sub-mastery" style="border-color:#38bdf8; color:#38bdf8;">🎯 武道專精 (18門)</button>
-                        <!-- ⭐ v651：奇經十四脈已搬到「修行錄 → 🩸 經脈打通」分頁
-                             ──────────────────────────────────────────────────────────
-                             該分頁現在同時呈現兩套經脈：
-                               · 修仙版（真氣 / 穴位圖）
-                               · 武學版（武點 / 14 脈 10 周天）← 原本在這裡
-                             ⚠️ 面板 #sub-meridian 保留在 DOM（只是不再從這裡進入），
-                                避免舊程式碼 querySelector 取不到。
-                             ⚠️ 不再建立按鈕 → 否則會出現重複入口。 -->
-                    </div>
-
-                    <div id="sub-skills" class="sub-martial-panel">
-                        <!-- ⭐ v495：每個武學子分頁都有自己的選角列（陣法除外）
-                             放在子分頁內，切到哪個分類就看到「正在給誰設定」。 -->
-                        <div id="skills-char-picker" class="hy-char-picker"></div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                            <h3 style="margin:0;">🗡️ 外功武學招式（每門派 10 式，Lv.10/40/70/100/130/160/190/220/250/280 各解鎖一式）</h3>
-                            <div id="skills-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-                                <button class="action-btn m-cat-btn active" data-mcat="all" style="padding:4px 10px; font-size:0.8rem;">全部顯示</button>
-                                <button class="action-btn m-cat-btn" data-mcat="common" style="padding:4px 10px; font-size:0.8rem;">江湖共通</button>
-                                <button class="action-btn m-cat-btn" data-mcat="my_sect" style="padding:4px 10px; font-size:0.8rem;">本門絕學</button>
-                            </div>
-                        </div>
-                        <div id="martial-list" class="enemy-grid"></div>
-                    </div>
-
-                    <div id="sub-xinfa" class="sub-martial-panel hidden">
-                        <div id="xinfa-char-picker" class="hy-char-picker"></div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                            <h3 style="margin:0;">🔥 內功心法（每門派 5 階，Lv.20/70/130/200/280 各解鎖一階；主運心法強化門派特色）</h3>
-                            <div id="xinfa-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;"></div>
-                        </div>
-                        <div id="xinfa-list" class="enemy-grid"></div>
-                    </div>
-
-                    <div id="sub-qinggong" class="sub-martial-panel hidden">
-                        <div id="qinggong-char-picker" class="hy-char-picker"></div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                            <h3 style="margin:0;">🍃 輕功身法（江湖共通 4 門 + 每門派專屬 3 階，Lv.30/120/240；每人僅能常駐 1 門，常駐者強化門派特色）</h3>
-                            <div id="qinggong-sect-filter-slot" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;"></div>
-                        </div>
-                        <div id="qinggong-list" class="enemy-grid"></div>
-                    </div>
-
-                    <div id="sub-mastery" class="sub-martial-panel hidden">
-                        <div id="mastery-char-picker" class="hy-char-picker"></div>
-                        <h3>🎯 武道專精（18 門：命中／閃避／暴抗 3 門 + 15 門魔獸世界風格專精）</h3>
-                        <div id="mastery-list" class="enemy-grid"></div>
-                    </div>
-
-                    <div id="sub-meridian" class="sub-martial-panel hidden">
-                        <div id="meridian-char-picker" class="hy-char-picker"></div>
-                        <h3>🧘 奇經十四脈周天運轉（打通十四脈穴道，強化命中、暴抗、攻防與真氣）</h3>
-                        <div id="meridian-list" class="enemy-grid"></div>
-                    </div>
-
-                    <!-- ⭐ v634：陣法已搬至「修行錄 → ☯️ 陣法」分頁，
-                         這裡保留空容器（避免舊程式碼 querySelector 取不到而報錯），
-                         但不再顯示標題與列表。 -->
-                    <div id="sub-formation" class="sub-martial-panel hidden" style="display:none">
-                        <div id="formation-seed-slot" style="display:none"></div>
-                        <div id="formation-list" style="display:none"></div>
-                    </div>
-                </div>
-
-                <div id="tab-sect" class="tab-content">
-                    <h3>⛩️ 黃易武學門派（各派擁有獨一無二的「專屬門派特色」機制）</h3>
-                    <!-- ⭐ v495：門派面板內建「選擇角色」
-                         原本切換角色要拉開左側抽屜，抽屜一開就蓋住門派面板，
-                         根本看不清楚在給誰選門派。現在直接在門派面板頂端列出角色。 -->
-                    <div id="sect-char-picker" class="hy-char-picker"></div>
-                    <div id="sect-list" class="card-list"></div>
-                </div>
-
-                <div id="tab-inventory" class="tab-content">
-                    <h3>🛡️ 當前操控角色的十大裝備槽位（點擊「🎯 選為工藝目標」可在下方用打怪掉落的打造材料洗煉前後綴！）</h3>
-                    <div id="paperdoll-grid" class="enemy-grid" style="margin-bottom:16px;"></div>
-
-                    <div id="poe-craft-bench" style="background:#111722; border:1px solid #f59e0b; border-radius:8px; padding:14px; margin-bottom:18px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-                            <h3 style="margin:0; color:#fbbf24;">💎 打造工坊（材料由戰鬥依稀有度掉落）</h3>
-                            <span id="craft-target-label" style="color:#00e5ff; font-weight:bold;">當前打造部位：🗡️ 神兵武器</span>
-                        </div>
-                        <div id="craft-item-preview" style="background:#18202c; border:1px solid #334155; padding:12px; border-radius:6px; margin-bottom:12px;"></div>
-                        <div id="currency-orb-bar" class="enemy-grid" style="grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); margin-bottom:0;"></div>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                        <h3 style="margin:0;">🎒 全隊共享次元道具欄（支援批量典當 x1 / x10 / 全賣）</h3>
-                        <div class="inv-filter-bar" style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <button id="btn-sell-all-equip" class="action-btn" style="border-color:#f43f5e; color:#f87171;">🧹 一鍵典當所有未穿戴裝備</button>
-                            <button class="action-btn inv-filter-btn active" data-filter="all">全部物品</button>
-                            <button class="action-btn inv-filter-btn" data-filter="consumable">丹藥奇物</button>
-                            <button class="action-btn inv-filter-btn" data-filter="equip">神兵防具</button>
-                        </div>
-                    </div>
-                    <div id="inventory-list" class="enemy-grid"></div>
-                </div>
-
-                <!-- 時空黑市（已移除「(丹藥)」；賭坊區塊由 gambleSystem.js 注入於 #shop-list 之後） -->
-                <div id="tab-blackmarket" class="tab-content">
-                    <div class="combat-header-row">
-                        <div>
-                            <h3>⚡ 黑市神秘商人・限時特價丹藥（6折 ~ 8折搶購）</h3>
-                            <p style="font-size:0.82rem; color:#94a3b8;">黑市僅販售行軍散、九轉大還丹、雪蓮丹等靈藥（神兵裝備與通貨皆由擊敗怪物掉落）。</p>
-                        </div>
-                        <div class="btn-group-row">
-                            <button id="btn-mystery-box" class="btn-primary" style="background:#7c3aed;">🎲 抽取烏氏靈藥奇珍匣 (350兩)</button>
-                            <button id="btn-refresh-market" class="action-btn">🔄 刷新限時丹藥 (50兩)</button>
-                        </div>
-                    </div>
-                    <div id="market-special-list" class="enemy-grid" style="margin-bottom:18px;"></div>
-
-                    <h3 style="margin-bottom:10px;">🏪 時空黑市常駐丹藥鋪（支援 x1 / x10 / x100 批量採購）</h3>
-                    <div id="shop-list" class="enemy-grid"></div>
-                    <!-- ⭐ 賭坊區塊（#gamble-section）由 gambleSystem.js 動態注入至此處之後 -->
-                </div>
-
-                <div id="tab-companion" class="tab-content">
-                    <h3>🤝 黃易群俠錄（Lv.3 寇仲 ~ Lv.275 令東來，隨行出戰提供全隊攻防、命中與暴抗光環）</h3>
-                    <div id="companion-list" class="card-list"></div>
-                </div>
-
-                <!-- ⭐ v557：靈獸分頁移除，改用武魂系統（頂部「🌌 武魂」按鈕） -->
-            </section>
-
-            <!-- 右側 -->
-            <aside id="log-panel" class="panel">
-                <div style="flex:1.2; display:flex; flex-direction:column; min-height:0; background:#121822; border:1px solid #ef4444; border-radius:6px; padding:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2e3b4e; padding-bottom:4px; margin-bottom:6px;">
-                        <h3 style="margin:0; color:#f87171; font-size:0.9rem;">⚔️ 戰鬥內容面板</h3>
-                        <button id="btn-clear-combat-log" class="action-btn" style="padding:2px 8px; font-size:0.72rem;">清空</button>
-                    </div>
-                    <div id="game-log" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:0.8rem;"></div>
-                </div>
-
-                <div style="flex:0.9; display:flex; flex-direction:column; min-height:0; background:#121822; border:1px solid #10b981; border-radius:6px; padding:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2e3b4e; padding-bottom:4px; margin-bottom:6px;">
-                        <h3 style="margin:0; color:#10b981; font-size:0.9rem;">🎁 物品掉落面板</h3>
-                        <button id="btn-clear-loot-log" class="action-btn" style="padding:2px 8px; font-size:0.72rem;">清空</button>
-                    </div>
-                    <div id="loot-log" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:0.8rem;"></div>
-                </div>
-
-                <div style="flex:0.9; display:flex; flex-direction:column; min-height:0; background:#121822; border:1px solid #fbbf24; border-radius:6px; padding:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2e3b4e; padding-bottom:4px; margin-bottom:6px;">
-                        <h3 style="margin:0; color:#fbbf24; font-size:0.9rem;">💰 武點銀兩面板</h3>
-                        <button id="btn-clear-wealth-log" class="action-btn" style="padding:2px 8px; font-size:0.72rem;">清空</button>
-                    </div>
-                    <div id="wealth-log" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:0.8rem;"></div>
-                </div>
-            </aside>
-        </main>
-    </div>
-
-    <script src="./js/loadOrder.js?v=584"></script>
-    <script src="./js/bootLoader.js?v=270"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
