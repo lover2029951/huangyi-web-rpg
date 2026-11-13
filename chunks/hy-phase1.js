@@ -33372,6 +33372,7 @@ window.HY = window.HY || {};
                     Math.round(raw.length / 1024) + ' KB）');
 
                 this.logger.add('📂 成功讀取上次的時空小隊歷練紀錄！', 'system');
+                this._dirty = false;
                 return true;
             } catch (err) {
                 console.error('[saveSystem] 載入失敗', err);
@@ -87424,9 +87425,12 @@ window.HY = window.HY || {};
             const bagSig = bagEquips.map(function (it) {
                 return (it && it.uid) ? (it.uid + '/' + (it.rarity || '') + '/' + (it.prefixes || []).length) : '';
             }).join('|');
+            var ckv = (window.HY && window.HY.compactKV) ? window.HY.compactKV : function (o) {
+                try { return JSON.stringify(o || {}); } catch (e) { return ''; }
+            };
             const sig = [
                 st.id, st.lv, selectedUid, filter,
-                JSON.stringify(st.equipment || {}),
+                ckv(st.equipment || {}),
                 bagSig, walletSig
             ].join('#');
             const invList = document.getElementById('inventory-list');
@@ -93628,7 +93632,10 @@ window.HY = window.HY || {};
             app.companionSys.ensureState();
             const recruited = app.charSys.rootState.companions;
             const activeId = app.charSys.rootState.activeCompanion;
-            var tabSig = activeId + '|' + JSON.stringify(recruited) + '|' + app.companionSys.getMaxCharLv();
+            var ckv = (window.HY && window.HY.compactKV) ? window.HY.compactKV : function (o) {
+                try { return JSON.stringify(o || {}); } catch (e) { return ''; }
+            };
+            var tabSig = activeId + '|' + ckv(recruited || {}) + '|' + app.companionSys.getMaxCharLv();
             if (this._companionTabSig === tabSig && cList.children.length > 0) return;
             this._companionTabSig = tabSig;
             cList.innerHTML = '';
@@ -114959,9 +114966,12 @@ window.HY = window.HY || {};
         acc.escort += dt;
         acc.codex += dt;
 
-        if (acc.guild >= harvestMs) {
+          if (acc.guild >= harvestMs) {
           acc.guild = 0;
           if (self.guildBuilding.harvestAllBuildings(false)) {
+            try {
+              if (self.saveSys && self.saveSys.markDirty) self.saveSys.markDirty();
+            } catch (eGd) { }
             var chance = (G && G.guild && typeof G.guild.autoEventChance === 'number')
               ? G.guild.autoEventChance : 0.25;
             if (Math.random() < chance) {
@@ -115048,7 +115058,7 @@ window.HY = window.HY || {};
       /* ⭐ 新遊戲：先讓玩家為初始角色命名，再渲染介面 */
       if (!hasSave) {
         this._askInitialCharName(() => {
-          this.renderAll();
+          this.renderAll(true);
           this.startTimers();
           try {
             if (this.saveSys && typeof this.saveSys.hydrateFromIdb === 'function') {
@@ -115058,7 +115068,7 @@ window.HY = window.HY || {};
         });
         return;
       }
-      this.renderAll();
+      this.renderAll(true);
       this.startTimers();
       try {
         if (this.saveSys && typeof this.saveSys.hydrateFromIdb === 'function') {
@@ -115253,7 +115263,8 @@ window.HY = window.HY || {};
         run('lite.sync', () => { this.charSys.syncActivePointer(); });
         run('lite.charPanel', () => { this.uiCharParty.renderCharacterPanel({ lite: true }); });
         var visible = this._visibleTabs();
-        if (visible['tab-explore']) {
+        var pageHidden = (typeof document !== 'undefined' && document.hidden);
+        if (visible['tab-explore'] && !pageHidden) {
           run('lite.explore', () => {
             this.uiCombatExplore.renderExploreAndCombat({ lite: true });
           });

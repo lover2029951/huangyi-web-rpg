@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v750 · 2026-11-13',
-        gameVer: 750,
+        newsVer: 'v751 · 2026-11-13',
+        gameVer: 751,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'ui', tagLabel: '戰鬥',
+            title: '回復飄字分流 v751',
+            date: '2026-11-13',
+            bullets: [
+                '<b>自然恢復</b>飄字改顯示在九宮格<b>左上角</b>；<b>技能恢復</b>仍在名字牌',
+                '行囊／護法／讀檔等簽章與背景掛機路徑再收緊（延續 v750）'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '效能',
             title: '全系統效能包 v750',

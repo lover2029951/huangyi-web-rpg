@@ -1074,7 +1074,7 @@ window.HY = window.HY || {};
         '.hy-fx-dmg.onHitVital .fx-src{color:#bbf7d0;}',
         '.hy-fx-dmg.healMp{color:#5cff9d;font-size:1.28rem;' +
             'text-shadow:-2px -2px 0 #002b14,2px 2px 0 #002b14,0 0 12px rgba(52,211,153,.85);}',
-        /* ⭐ v741：治療／自然恢復→名字牌；偷取／擊中恢復→右上（相對 .hy-stage-fx-layer） */
+        /* ⭐ v741→v751：技能恢復→名字牌；自然恢復→左上；偷取／擊中恢復→右上 */
         '.hy-stage-tag{overflow:visible;}',
         '.hy-stage-tag-fx{position:absolute;left:0;right:0;z-index:8;pointer-events:none;' +
             'overflow:visible;height:0;}',
@@ -1093,6 +1093,14 @@ window.HY = window.HY || {};
             'calc(-72% + var(--dy,0))) scale(1);}' +
             '100%{opacity:0;transform:translate(calc(-50% + var(--dx,0)),' +
             'calc(-88% + var(--dy,0))) scale(.92);}}',
+        '.hy-stage-fx-layer .hy-fx-dmg.fx-tl{left:0;right:auto;top:0;margin:0;padding:0;' +
+            'transform:translate(var(--dx,0),var(--dy,0));transform-origin:left top;' +
+            'align-items:flex-start;text-align:left;' +
+            'animation:hy-fx-rise-tl 1.25s cubic-bezier(.2,.7,.3,1) forwards;}',
+        '.hy-fx-dmg.fx-tl.has-src{align-items:flex-start;}',
+        '.hy-fx-dmg.fx-tl{font-size:1.12rem;}',
+        '.hy-fx-dmg.fx-tl .fx-src{max-width:5.5em;font-size:.62rem;' +
+            'align-self:stretch;text-align:inherit;}',
         '.hy-stage-fx-layer .hy-fx-dmg.fx-tr{left:auto;right:0;top:0;margin:0;padding:0;' +
             'transform:translate(var(--dx,0),var(--dy,0));transform-origin:right top;' +
             'align-items:flex-end;text-align:right;' +
@@ -3476,16 +3484,18 @@ window.HY = window.HY || {};
             if (meta.label) return meta.label;
             return k === 'stealMp' ? '內力偷取' : '氣血偷取';
         }
-        if (k === 'regenHp') return meta.label || '氣血恢復';
-        if (k === 'regenMp') return meta.label || '內力恢復';
-        if (k === 'regenVital') return meta.label || '自然恢復';
+        if (k === 'regenHp' || k === 'regenMp' || k === 'regenVital') {
+            return meta.label || '自然恢復';
+        }
         if (k === 'stealVital') return meta.label || '偷取';
         if (k === 'onHitVital') return meta.label || '擊中恢復';
         if (k === 'onHitHp') return meta.label || '擊中回血';
         if (k === 'onHitMp') return meta.label || '擊中回內';
+        if (k === 'heal' || k === 'healMp') {
+            if (meta.skill) return '《' + meta.skill + '》';
+            return meta.label || '技能恢復';
+        }
         if (meta.skill) return '《' + meta.skill + '》';
-        if (k === 'heal') return meta.label || '氣血恢復';
-        if (k === 'healMp') return meta.label || '內力恢復';
         if (meta.label) return meta.label;
         return '';
     }
@@ -3514,14 +3524,13 @@ window.HY = window.HY || {};
         numEl.textContent = text;
     }
 
-    /** 治療／自然恢復→名字牌；偷取／擊中恢復→右上；其餘維持頭頂中央 */
+    /** 技能恢復→名字牌；自然恢復→左上；偷取／擊中恢復→右上；其餘維持頭頂中央 */
     function floatCornerForKind(kind) {
         if (!kind) return '';
         if (kind === 'stealVital' || kind === 'onHitVital') return 'fx-tr';
         if (kind.indexOf('steal') === 0 || kind.indexOf('onHit') === 0) return 'fx-tr';
-        if (kind === 'regenVital' || kind.indexOf('regen') === 0 || kind === 'heal' || kind === 'healMp') {
-            return 'fx-nm';
-        }
+        if (kind === 'regenVital' || kind === 'regenHp' || kind === 'regenMp') return 'fx-tl';
+        if (kind === 'heal' || kind === 'healMp') return 'fx-nm';
         return '';
     }
 
@@ -3568,7 +3577,7 @@ window.HY = window.HY || {};
         var cornerPre = floatCornerForKind(kind);
         var host = node;
         if (cornerPre === 'fx-nm') host = fxNameHost(node) || node;
-        else if (cornerPre === 'fx-tr') host = fxGridHost(node) || node;
+        else if (cornerPre === 'fx-tr' || cornerPre === 'fx-tl') host = fxGridHost(node) || node;
 
         /* 自然／偷取／擊中：同格 1.2s 內不重播同類飄字 */
         if (kind === 'regenHp' || kind === 'regenMp' || kind === 'regenVital'
@@ -3616,7 +3625,7 @@ window.HY = window.HY || {};
         if (corner === 'fx-nm') {
             dx = '0';
             dy = String(-stack * 15);
-        } else if (corner === 'fx-tr') {
+        } else if (corner === 'fx-tr' || corner === 'fx-tl') {
             dx = '0';
             dy = String(stack * 14);
         } else {
