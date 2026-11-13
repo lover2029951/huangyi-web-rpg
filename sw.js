@@ -2,13 +2,14 @@
 /* global self, caches, fetch */
 'use strict';
 
-var CACHE = 'huangyi-game-v747';
+var CACHE = 'huangyi-game-v748';
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
       return cache.addAll([
-        './game.html', './landingPanelData.js', './index.html', './style.css'
+        './game.html', './game-chunked.html', './landingPanelData.js', './index.html', './style.css',
+        './chunks/hy-phase1.js', './chunks/hy-phase2.js', './chunks/manifest.json'
       ]).catch(function () {});
     }).then(function () { return self.skipWaiting(); })
   );
@@ -28,9 +29,10 @@ self.addEventListener('fetch', function (event) {
   if (event.request.method !== 'GET') return;
   var url = new URL(event.request.url);
   var path = url.pathname || '';
-  var isGame = path.indexOf('game.html') !== -1;
+  var isGame = path.indexOf('game.html') !== -1 || path.indexOf('game-chunked.html') !== -1;
+  var isChunk = path.indexOf('/chunks/') !== -1;
   var isAsset = path.indexOf('/assets/') !== -1;
-  if (!isGame && !isAsset) return;
+  if (!isGame && !isAsset && !isChunk) return;
 
   event.respondWith(
     caches.open(CACHE).then(function (cache) {
