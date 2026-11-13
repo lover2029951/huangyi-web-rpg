@@ -95791,10 +95791,10 @@ window.HY = window.HY || {};
         if (!t || !t.closest) return;
         var btn = t.closest(CFG.TAB_SEL);
         if (!btn) return;
+        if (!open()) return;
         e.preventDefault();
         e.stopPropagation();
         try { e.stopImmediatePropagation(); } catch (e2) {}
-        open();
       }, true);
       log('已攔截「裝備行囊 & 工藝」分頁 → 改開彈窗');
     }
@@ -95802,9 +95802,9 @@ window.HY = window.HY || {};
     if (btn && !btn.__bagovBound) {
       btn.__bagovBound = true;
       btn.addEventListener('click', function (e) {
+        if (!open()) return;
         e.preventDefault();
         e.stopPropagation();
-        open();
       }, true);
     }
     _entryLog.intercept = true;

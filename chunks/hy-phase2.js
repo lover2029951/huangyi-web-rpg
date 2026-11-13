@@ -51572,6 +51572,16 @@ window.HY = window.HY || {};
     /* 抽屜方向清單（用於「一次只開一個」等迴圈） */
     var KEYS = ['top', 'left', 'right', 'bottom'];
 
+    /** 桌機預設經典三欄；窄螢幕或玩家明確開啟才用抽屜 */
+    function edgeDrawerWanted() {
+        try {
+            var p = localStorage.getItem('hy_edge_drawer');
+            if (p === '1') return true;
+            if (p === '0') return false;
+        } catch (e) { }
+        return (window.innerWidth || 1200) < 960;
+    }
+
     function EdgeDrawerSystem() {
         this.state = { top: false, left: false, right: false, bottom: false };
         this.panels = {};
@@ -51982,7 +51992,7 @@ window.HY = window.HY || {};
         this.elFootNote = note;
 
         this._built = true;
-        document.body.classList.add('hy-edge-mode');
+        if (edgeDrawerWanted()) document.body.classList.add('hy-edge-mode');
     };
 
     /* ══════════════════════════════════════════════════════
@@ -52326,6 +52336,9 @@ window.HY = window.HY || {};
        ⑦ 啟動
        ══════════════════════════════════════════════════════ */
     EdgeDrawerSystem.prototype.install = function () {
+        if (!edgeDrawerWanted()) {
+            return false;
+        }
         this._injectStyles();
         this._build();
         if (!Object.keys(this.tabs).length) return false;
