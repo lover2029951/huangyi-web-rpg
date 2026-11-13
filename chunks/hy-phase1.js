@@ -2236,7 +2236,7 @@ window.HY = window.HY || {};
   C.roll = roll;
   C.synergyOf = function (id) { return C.SYNERGY_MAP[id] || []; };
   console.log('[LinkContent] ✓ 已載入（陣法 ' + C.FORMATIONS.length + '｜五行 ' + C.ELEMENTS.length +
-    '｜靈根 ' + C.SPIRIT_ROOTS.length + '｜寵物 ' + C.PETS.length + '｜同伴 ' + C.COMPANION_ROLES.length +
+    '｜靈根 ' + C.SPIRIT_ROOTS.length + '｜同伴 ' + C.COMPANION_ROLES.length +
     '｜詞綴 ' + C.AFFIXES.length + '｜精通 ' + C.MASTERY.length + '｜建築 ' + C.GUILD_BUILDINGS.length +
     '｜海域 ' + C.SALVAGE_ZONES.length + '｜時代 ' + C.TT_ERAS.length + '｜賭局 ' + C.GAMBLE_GAMES.length +
     '｜離線 ' + C.OFFLINE_MODES.length + '｜敵陣 ' + C.ENEMY_FORMATIONS.length + '｜名冊職能 ' + C.ROSTER_ROLES.length + '）');
@@ -2344,8 +2344,6 @@ window.HY = window.HY || {};
   L.effect({ sys: 'spirit', scope: 'friend', target: 'expMul', label: '靈根·成長', cond: function (c) { return c.spiritRoot; }, value: 0.06, tags: ['exp'] });
   L.effect({ sys: 'spirit', scope: 'friend', target: 'atkPct', label: '靈根·攻', cond: function (c) { return c.spiritRoot; }, value: 0.02, tags: ['atk'] });
   /* 寵物 */
-  L.effect({ sys: 'pet', scope: 'friend', target: 'atkPct', label: '寵物·攻', cond: function (c) { return c.pet; }, value: 0.04, tags: ['atk'] });
-  L.effect({ sys: 'pet', scope: 'friend', target: 'dropMul', label: '寵物·寶', cond: function (c) { return c.pet && c.petDrop; }, value: 0.06, tags: ['drop'] });
   /* 同伴 */
   L.effect({ sys: 'companion', scope: 'friend', target: 'atkPct', label: '同伴·攻', cond: function (c) { return c.companionRole; }, value: 0.04, tags: ['atk'] });
   L.effect({ sys: 'companion', scope: 'friend', target: 'defPct', label: '同伴·防', cond: function (c) { return c.companionRole; }, value: 0.04, tags: ['def'] });
@@ -2613,15 +2611,6 @@ window.HY = window.HY || {};
           var m = pick(pool);
           f.mastery = f.mastery || {};
           f.mastery[m.id] = num(f.mastery[m.id], 0) + 1;
-          if (t.fr6Touch) t.fr6Touch(f);
-        }
-      }
-      // 寵物進化
-      if (f.pet) {
-        var ev = window.HY.LinkAPI.petEvolveCheck(f.pet.id, f.pet.lv);
-        if (ev) {
-          f.pet.id = ev.id; f.pet.name = ev.name; f.pet.icon = ev.icon;
-          if (t.friendLog) t.friendLog('🐾 【' + f.name + '】的寵物進化為【' + ev.name + '】！', 'gain');
           if (t.fr6Touch) t.fr6Touch(f);
         }
       }
@@ -3087,41 +3076,6 @@ window.HY = window.HY || {};
           ],
           hooks: {},
           meta: { maxParty: num(max, 5) }
-        };
-      }
-    },
-    {
-      id: 'pet', name: '寵物系統', icon: '🐾', desc: '寵物捕捉培養。',
-      caps: ['data', 'api'],
-      build: function (o) {
-        return {
-          effects: [
-            { scope: 'friend', target: 'atkPct', value: 0.04, label: '寵物助戰', tags: ['atk'],
-              cond: function (c) { return !!c.pet; } }
-          ],
-          hooks: {
-            onTick: function () {
-              var t = G().townSys;
-              if (!t || !t.friendAll) return;
-              var API = window.HY.LinkAPI;
-              t.friendAll().forEach(function (f) {
-                if (!f.pet) return;
-                // 寵物進化
-                if (API && API.petEvolveCheck) {
-                  var ev = API.petEvolveCheck(f.pet.id, f.pet.lv);
-                  if (ev) {
-                    f.pet.id = ev.id; f.pet.name = ev.name; f.pet.icon = ev.icon;
-                    if (t.friendLog) t.friendLog('🐾 【' + f.name + '】的寵物進化為【' + ev.name + '】！', 'gain');
-                    if (t.fr6Touch) t.fr6Touch(f);
-                  }
-                }
-                if (Math.random() < 0.04 && num(f.pet.lv, 1) < 20) {
-                  f.pet.lv = num(f.pet.lv, 1) + 1;
-                  if (t.fr6Touch) t.fr6Touch(f);
-                }
-              });
-            }
-          }
         };
       }
     },
@@ -30780,7 +30734,7 @@ window.HY.Data = window.HY.Data || {};
 /* --- townData.js --- */
 // js/townData.js (v2)
 // ⭐ 我的小鎮：開羅風格城鎮經營 —— 建築／組合／研究／事件／居民／職務資料
-// v2 新增：【虛擬人物定居】職務表 POSTS、修行速率、群俠客居、靈獸鎮守
+// v2 新增：【虛擬人物定居】職務表 POSTS、修行速率、群俠客居、武魂鎮守
 // 全部設定集中在本檔，調整數值不必動邏輯。
 window.HY = window.HY || {};
 window.HY.Data = window.HY.Data || {};
@@ -30819,7 +30773,7 @@ window.HY.Data = window.HY.Data || {};
       { min: 120, name: '絕世宗師', appeal: 20, incomeMul: 0.03 },
       { min: 230, name: '神仙中人', appeal: 32, incomeMul: 0.05 }
     ],
-    // ── 靈獸鎮守加成（每隻）──
+    // ── 武魂鎮守加成（每隻）──
     GUARDIAN: { order: 1, appeal: 10, incomeMul: 0.02 },
     // ── 小鎮等級 ──
     LEVELS: [
@@ -30903,10 +30857,10 @@ window.HY.Data = window.HY.Data || {};
       { name: '同道來訪',   icon: '👥', text: '幾位江湖同道慕名而來，與小鎮高手論武。',     gain: { prosperity: 130 } },
       { name: '盜匪滋擾',   icon: '🗡️', text: '盜匪夜襲，居民人心惶惶。',                   gain: { prosperity: -40 }, negatedByGuard: true }
     ],
-    // 治安值 > 0 時，盜匪事件被巡守／靈獸擋下，改為此結果
+    // 治安值 > 0 時，盜匪事件被巡守／武魂擋下，改為此結果
     GUARD_COUNTER: {
       name: '巡守退敵', icon: '🛡️',
-      text: '宵小窺伺小鎮，被巡守與靈獸及時驅離，鎮民拍手稱快。',
+      text: '宵小窺伺小鎮，被巡守與武魂及時驅離，鎮民拍手稱快。',
       gain: { prosperity: 50 }
     },
     // ── 鎮民姓名池 ──
@@ -31619,8 +31573,8 @@ window.HY = window.HY || {};
     ELEMENT_ENABLE: true,
     ELEMENT_ADV: 0.15,             // 剋制 +15%
     ELEMENT_DIS: -0.08,            // 被剋 -8%
-    /* ── 寵物 ── */
-    PET_ENABLE: true,
+    /* ── 寵物（靈獸系統已移除，僅保留開關供舊存檔） ── */
+    PET_ENABLE: false,
     PET_MAX: 1,
     PET_POWER_MUL: 0.18,           // 寵物貢獻 = 好友戰力 × 此值
     PET_LV_UP_CHANCE: 0.05,
@@ -54785,7 +54739,7 @@ window.HY = window.HY || {};
                 return false;
             }
             if (item.expeditionOnly) {
-                this.logger.add('🚫 【' + item.name + '】為靈獸時空探險隊限定奇珍，黑市不出售。', 'system');
+                this.logger.add('🚫 【' + item.name + '】為時空探險限定奇珍，黑市不出售。', 'system');
                 return false;
             }
             if (!this.checkReqLv(item)) return false;   // ⭐ v29
@@ -54842,7 +54796,7 @@ window.HY = window.HY || {};
                 this.charSys.rootState.activeCompanion = null;
             }
         }
-        // 取得隊伍中最高角色等級（供結交群俠與收服靈獸判定）
+        // 取得隊伍中最高角色等級（供結交群俠判定）
         getMaxCharLv() {
             var roster = (this.charSys.rootState && this.charSys.rootState.roster) || [this.charSys.state];
             var maxLv = 1;
@@ -63732,7 +63686,7 @@ window.HY = window.HY || {};
 // ⭐ 我的小鎮：核心系統（建造／升級／組合／研究／居民／定居／職務／收益結算）
 // v2 新增：【虛擬人物定居】角色住進小鎮、擔任職務、鎮上修行
 // 與主遊戲關聯：銀兩(rootState.gold)、武點(rootState.sp)、行囊(rootState.inventory)
-//              角色(rootState.roster)、群俠(rootState.companions)、靈獸(rootState.pets)
+//              角色(rootState.roster)、群俠(rootState.companions)、武魂(rootState.wuhun)
 window.HY = window.HY || {};
 (function () {
   function nowMs() { return Date.now(); }
@@ -63971,7 +63925,7 @@ window.HY = window.HY || {};
       });
       return out;
     }
-    /* ══════════ ⭐ 群俠客居 / 靈獸鎮守 ══════════ */
+    /* ══════════ ⭐ 群俠客居 / 武魂鎮守 ══════════ */
     getGuestTier(reqLv) {
       var tiers = this.def.GUEST_TIERS;
       var out = tiers[0];
@@ -74825,6 +74779,7 @@ window.HY = window.HY || {};
      ══════════════════════════════════════════════════════ */
   proto.fr6PetList = function () { return this.fr6Pets(); };
   proto.fr6SetPet = function (fid, petId) {
+    if (!enabled('PET_ENABLE')) return false;
     var f = this.friendById(fid);
     if (!f) return false;
     this.fr6Init(f);
@@ -78073,7 +78028,7 @@ window.HY = window.HY || {};
 })();
 /* --- combatPlayerTurn.js --- */
 // js/combatPlayerTurn.js  (v51)
-// 我方出招、招式屬性、幫會祝福、改命、群俠與靈獸助戰、八元素附傷
+// 我方出招、招式屬性、幫會祝福、改命、群俠助戰、八元素附傷
 //
 // v51 修正（門派特色補完）：
 //   ⭐ performCharAttack 改為逐目標查詢 sectFeatSys.getAttackerMods，
@@ -79312,9 +79267,6 @@ window.HY = window.HY || {};
             }
             core.log(msg + supportTags, 'combat');
             if (target.currentHp <= 0 && affixSys) affixSys.onEnemyDeath(target, partyMembers || [core.charSys.state]);
-        }
-        petTurn() {
-            /* 靈獸戰鬥回合已移除（由武魂 wuhunSystem 取代） */
         }
     }
     window.HY.CombatPlayerTurn = CombatPlayerTurn;
@@ -83283,9 +83235,6 @@ window.HY = window.HY || {};
             if (!this.currentEnemy) { this.handleVictory(); return; }
             var leaderStats = this.charSys.getDerivedStatsForChar(activeChar);
             this.playerTurn.companionTurn(leaderStats, partyMembers);
-            this.syncCurrentEnemyPointer();
-            if (!this.currentEnemy) { this.handleVictory(); return; }
-            this.playerTurn.petTurn(leaderStats, partyMembers);
             this.syncCurrentEnemyPointer();
             if (!this.currentEnemy) { this.handleVictory(); return; }
             this.enemyTurn.enemiesTurn(partyMembers);
@@ -103120,7 +103069,6 @@ window.HY = window.HY || {};
     return fold('formation', '☯️ 陣法', rep.list.filter(function (x) { return x.formation; }).length + ' 人已學', formationHtml(rep)) +
       fold('spirit', '💎 靈根', rep.spiritRoots.length + ' 種', spiritHtml(rep)) +
       fold('element', '🌀 五行', rep.elements.length + ' 行', elementHtml(rep)) +
-      fold('pet', '🐾 寵物', rep.pets.length + ' 種｜' + rep.list.filter(function (x) { return x.pet; }).length + ' 人持有', petHtml(rep)) +
       fold('companion', '👥 同伴', rep.companionRoles.length + ' 職責｜' + rep.list.filter(function (x) { return x.companionRole; }).length + ' 人任職', companionHtml(rep)) +
       fold('guild', '🏛️ 公會賓客', rep.guild.guests.length + '/' + rep.guild.max, guildHtml(rep)) +
       fold('market', '🕶️ 黑市', rep.market.length + ' 掛售', marketHtml(rep)) +
@@ -103531,8 +103479,8 @@ window.HY = window.HY || {};
     { id: 'martial',name: '武學與門派', icon: '📖', mode: 'zoom',
       sels: ['#ui-martial-sect', '#martial-panel', '#sect-panel', '#ui-martial'],
       desc: '武學、門派、心法、經脈。' },
-    { id: 'pet',    name: '寵物與同伴', icon: '🐾', mode: 'zoom',
-      sels: ['#ui-companion-pet', '#pet-panel', '#companion-panel'],
+    { id: 'companion', name: '群俠同伴', icon: '🤝', mode: 'zoom',
+      sels: ['#ui-companion-pet', '#companion-panel'],
       desc: '寵物、同伴。' },
     { id: 'log',    name: '訊息記錄', icon: '📜', mode: 'zoom',
       sels: ['#ui-log-panels', '#log-panel', '#log-root', '.log-root'],
@@ -105702,9 +105650,7 @@ window.HY = window.HY || {};
         if (D.XINFA && D.XINFA[key]) return D.XINFA[key].name || null;
         /* ④ 輕功身法 */
         if (D.QINGGONG && D.QINGGONG[key]) return D.QINGGONG[key].name || null;
-        /* ⑤ 靈獸 */
-        if (D.PETS && D.PETS[key]) return D.PETS[key].name || null;
-        /* ⑥ 同伴 */
+        /* ⑤ 同伴 */
         if (D.COMPANIONS && D.COMPANIONS[key]) return D.COMPANIONS[key].name || null;
         /* ⑦ 裝備 */
         if (D.ITEMS && D.ITEMS[key]) return D.ITEMS[key].name || null;
@@ -105724,7 +105670,7 @@ window.HY = window.HY || {};
         /* ⑪ 門派機制 id（如 mine / trap / curse） */
         var MECH = {
             mine: '火雷', trap: '機關', curse: '陰煞', aura: '真元',
-            totem: '劍樁', brand: '真言印', link: '心印', minion: '靈獸',
+            totem: '劍樁', brand: '真言印', link: '心印', minion: '武魂',
             fortify: '金身', rage: '血怒', es: '罡氣', stun: '震脈',
             ailment: '灼痕', shadow: '殘影', trade: '透支'
         };
@@ -115704,13 +115650,6 @@ window.HY = window.HY || {};
             if (isLeader) {
                 var leaderStats = this.app.charSys.getDerivedStatsForChar(member);
                 combat.playerTurn.companionTurn(leaderStats, partyMembers);
-                combat.syncCurrentEnemyPointer();
-                if (!combat.currentEnemy) {
-                    _finishAllyAtbAction();
-                    combat.handleVictory();
-                    return;
-                }
-                combat.playerTurn.petTurn(leaderStats, partyMembers);
                 combat.syncCurrentEnemyPointer();
                 if (!combat.currentEnemy) {
                     _finishAllyAtbAction();

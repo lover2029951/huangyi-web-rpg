@@ -38208,7 +38208,7 @@ window.HY = window.HY || {};
                  而 forceAll=true 會強制重繪全部 12 個面板。
                  實測完整一次要 96.3ms：
                    · renderMartialTab      69.8ms  ← 最大元凶
-                   · renderPetTab          15.9ms
+                   · renderCompanionTab    15.9ms
                    · renderSectTab          3.9ms
                    · renderPartyRoster      2.3ms
                    · 其他                   4.4ms
@@ -46706,25 +46706,25 @@ HY.Data.STAT_CODEX = {
                     tags: ['掉落', '精髓']
                 },
                 {
-                    key: 'minionDmg', name: '靈獸傷害', abbr: 'Pet Dmg', unit: '%',
-                    desc: '提升靈獸與群俠的傷害輸出。',
-                    formula: '靈獸傷害 × (1 + 靈獸傷害%)',
+                    key: 'minionDmg', name: '武魂傷害', abbr: 'Minion Dmg', unit: '%',
+                    desc: '提升武魂、召喚物與群俠的傷害輸出。',
+                    formula: '武魂傷害 × (1 + 武魂傷害%)',
                     note: '召喚流派的核心屬性。',
-                    tags: ['靈獸', '增幅']
+                    tags: ['武魂', '增幅']
                 },
                 {
-                    key: 'minionHp', name: '靈獸生命', abbr: 'Pet HP', unit: '%',
-                    desc: '提升靈獸的氣血上限。',
-                    formula: '靈獸氣血 × (1 + 靈獸生命%)',
-                    note: '讓靈獸更耐打，能撐完整場戰鬥。',
-                    tags: ['靈獸', '生存']
+                    key: 'minionHp', name: '武魂氣血', abbr: 'Minion HP', unit: '%',
+                    desc: '提升武魂與召喚物的氣血上限。',
+                    formula: '武魂氣血 × (1 + 武魂氣血%)',
+                    note: '讓武魂更耐打，能撐完整場戰鬥。',
+                    tags: ['武魂', '生存']
                 },
                 {
-                    key: 'minionSpd', name: '靈獸速度', abbr: 'Pet Spd', unit: '%',
-                    desc: '提升靈獸的出手速度。',
-                    formula: '靈獸攻速 × (1 + 靈獸速度%)',
-                    note: '讓靈獸更頻繁地發動攻擊。',
-                    tags: ['靈獸', '速度']
+                    key: 'minionSpd', name: '武魂速度', abbr: 'Minion Spd', unit: '%',
+                    desc: '提升武魂與召喚物的出手速度。',
+                    formula: '武魂攻速 × (1 + 武魂速度%)',
+                    note: '讓武魂更頻繁地發動攻擊。',
+                    tags: ['武魂', '速度']
                 }
             ]
         },
@@ -47666,6 +47666,7 @@ window.HY = window.HY || {};
             '氣血消耗減免': 'hpCostReduce', '內力消耗減免': 'mpCostReduce',
             '出手速度': 'atkSpd', '運功速度': 'castSpd', '身法速度': 'moveSpd',
             '集氣速度': 'atbGain', '冷卻回復': 'cooldownRec',
+            '武魂傷害': 'minionDmg', '武魂氣血': 'minionHp', '武魂速度': 'minionSpd',
             '靈獸傷害': 'minionDmg', '靈獸氣血': 'minionHp', '靈獸速度': 'minionSpd',
             '物品稀有度': 'itemRarity', '物品數量': 'itemQuantity', '銀兩獲取': 'goldFind',
             '經驗獲取': 'expGain', '地圖掉落率': 'mapDropRate', '精隨掉落率': 'essenceRate',
