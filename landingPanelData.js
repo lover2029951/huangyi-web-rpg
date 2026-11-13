@@ -5,13 +5,22 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v748 · 2026-11-13',
-        gameVer: 748,
+        newsVer: 'v749 · 2026-11-13',
+        gameVer: 749,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '修正',
+            title: '內掛戰術白屏 v749',
+            date: '2026-11-13',
+            bullets: [
+                '修正 <code>_autoTacticsStructSig</code> 與快取屬性同名導致 <code>renderAll</code> 拋錯',
+                'Service Worker 略過 <code>chrome-extension://</code>，不再觸發 Cache put 錯誤'
+            ]
+        },
         {
             tag: 'tune', tagLabel: '效能',
             title: '架構完整優化 v748',

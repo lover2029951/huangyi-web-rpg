@@ -2,7 +2,7 @@
 /* global self, caches, fetch */
 'use strict';
 
-var CACHE = 'huangyi-game-v748';
+var CACHE = 'huangyi-game-v749';
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
@@ -25,8 +25,16 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+function cacheableRequest(req) {
+  try {
+    var u = new URL(req.url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch (e) { return false; }
+}
+
 self.addEventListener('fetch', function (event) {
   if (event.request.method !== 'GET') return;
+  if (!cacheableRequest(event.request)) return;
   var url = new URL(event.request.url);
   var path = url.pathname || '';
   var isGame = path.indexOf('game.html') !== -1 || path.indexOf('game-chunked.html') !== -1;
@@ -38,7 +46,7 @@ self.addEventListener('fetch', function (event) {
     caches.open(CACHE).then(function (cache) {
       return cache.match(event.request).then(function (cached) {
         var network = fetch(event.request).then(function (res) {
-          if (res && res.ok) {
+          if (res && res.ok && cacheableRequest(event.request)) {
             try { cache.put(event.request, res.clone()); } catch (e) { }
           }
           return res;

@@ -85773,7 +85773,7 @@ window.HY = window.HY || {};
                 app.logger.add('⚙️ 內掛戰術設定已更新：《' + key + '》', 'time');
             };
         }
-        _autoTacticsStructSig(st, at0) {
+        _computeAutoTacticsStructSig(st, at0) {
             var editId = (at0 && typeof at0.editingCharId === 'function') ? at0.editingCharId() : '';
             var skills = Object.keys(st.skills || {}).sort().join(',');
             return editId + '|' + st.sect + '|' + skills;
@@ -85821,14 +85821,14 @@ window.HY = window.HY || {};
             const cfg = (at0 && typeof at0.cfgFor === 'function')
                 ? at0.cfgFor(at0.editingCharId())
                 : app.combatSys.autoConfig;
-            var structSig = this._autoTacticsStructSig(st, at0);
-            if (!opts.force && this._autoTacticsStructSig === structSig &&
+            var structSig = this._computeAutoTacticsStructSig(st, at0);
+            if (!opts.force && this._autoTacticsSigCache === structSig &&
                 document.getElementById('cfg-primary-skill') &&
                 document.getElementById('cfg-primary-skill').options.length > 2) {
                 this._syncAutoTacticsValues(cfg);
                 return;
             }
-            this._autoTacticsStructSig = structSig;
+            this._autoTacticsSigCache = structSig;
             const validSkillIds = Object.keys(st.skills || { basic_punch: 1 }).filter(sId => {
                 const art = Data.MARTIAL_ARTS[sId];
                 return art && (!art.sectReq || art.sectReq === st.sect);
