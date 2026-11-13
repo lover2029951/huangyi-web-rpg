@@ -118092,11 +118092,19 @@ window.HY = window.HY || {};
       }
     }
   }
-  window.addEventListener('DOMContentLoaded', function () {
-    const game = new GameApp();
-    window.HY.game = game;
-    game.init();
-  });
+  function bootGameApp() {
+    if (window.HY.game) return;
+    try {
+      const game = new GameApp();
+      window.HY.game = game;
+      game.init();
+    } catch (e) {
+      console.error('[main.js] bootGameApp 失敗', e);
+      try { window.__HY_MAIN_ERR__ = String(e && (e.stack || e.message || e)); } catch (e2) { }
+    }
+  }
+  window.HY.bootGameApp = bootGameApp;
+  /* 須等 loadOrder 全部載入（含 kingsmarch 等晚載模組）後再由 BootLoader.finish 呼叫 */
 })();
 /* --- hyPerfTuning.js --- */
 // js/hyPerfTuning.js — 第二階段效能補強（懶載圖、idle 回呼、啟動後掛鉤）

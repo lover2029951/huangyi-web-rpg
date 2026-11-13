@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 81 files */
+/* HY chunk phase2 — 82 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -53282,6 +53282,153 @@ window.HY = window.HY || {};
     if (on()) {
         if (document.readyState === 'complete') setTimeout(hookAscendancyBundle, 1800);
         else window.addEventListener('load', function () { setTimeout(hookAscendancyBundle, 1800); });
+    }
+})();
+
+/* --- gameFullQaSelfTest.js --- */
+// js/gameFullQaSelfTest.js — 全流程 QA 微測（?qa_test=1，含分頁渲染與短戰鬥）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function on() {
+        try {
+            if (/[?&]qa_test=1/.test(location.search || '')) return true;
+            if (/[?&]asc_test=1/.test(location.search || '')) return true;
+            return localStorage.getItem('hy_qa_test') === '1';
+        } catch (e) { return false; }
+    }
+
+    function run() {
+        var R = [];
+        var fails = 0;
+        function ok(t, m) {
+            R.push((t ? '✓' : '✗') + ' ' + m);
+            if (!t) { fails++; console.warn('[gameQa]', m); }
+        }
+
+        var g = window.HY.game;
+        ok(!!g, 'HY.game 已啟動（main.js boot）');
+        if (!g) return { results: R, fails: fails };
+
+        var D = window.HY.Data || {};
+        ok(!!D.MAPS && typeof D.MAPS === 'object' && !Array.isArray(D.MAPS), 'Data.MAPS 為 id 物件');
+        ok(Object.keys(D.SECTS || {}).length >= 46, '門派資料 ≥46');
+        ok(Object.keys(D.ASCENDANCY_BY_BRANCH || {}).length >= 41, '昇華分支 ≥41');
+
+        if (window.HY.SectFeatureSystem && window.HY.SectFeatureSystem.validate) {
+            var sv = window.HY.SectFeatureSystem.validate();
+            ok(sv.ok, 'SectFeatureSystem.validate');
+        }
+
+        try {
+            g.renderAll(true);
+            ok(true, 'renderAll(true)');
+        } catch (eR) {
+            ok(false, 'renderAll: ' + eR.message);
+        }
+
+        var tabs = ['tab-explore', 'tab-party', 'tab-martial', 'tab-sect', 'tab-inventory', 'tab-blackmarket', 'tab-companion'];
+        tabs.forEach(function (tid) {
+            var btn = document.querySelector('.tab-btn[data-tab="' + tid + '"]');
+            if (!btn) { ok(false, '分頁按鈕缺失 ' + tid); return; }
+            try {
+                btn.click();
+                g.renderAll(true);
+                var pane = document.getElementById(tid);
+                ok(!!pane, '分頁 ' + tid + ' 存在');
+            } catch (eT) {
+                ok(false, '分頁 ' + tid + ': ' + eT.message);
+            }
+        });
+
+        var core = g.combatSys;
+        var atb = core && core.atbSys;
+        ok(!!core && typeof core.startBattle === 'function', 'combatSys.startBattle');
+        if (core && atb) {
+            var map = D.MAPS && (g.charSys && g.charSys.state && g.charSys.state.mapId
+                ? D.MAPS[g.charSys.state.mapId] : null);
+            if (!map) {
+                var mk = Object.keys(D.MAPS || {})[0];
+                map = mk ? D.MAPS[mk] : null;
+            }
+            var tpl = null;
+            if (map && map.enemies && map.enemies.length) tpl = map.enemies[0];
+            if (tpl) {
+                try {
+                    var tcopy = JSON.parse(JSON.stringify(tpl));
+                    if (!tcopy.maxHp) tcopy.maxHp = tcopy.hp || 800;
+                    tcopy.currentHp = Math.min(tcopy.currentHp || tcopy.maxHp, tcopy.maxHp);
+                    core.startBattle(tcopy);
+                    var ticks = 0;
+                    var maxT = 800;
+                    while (ticks < maxT) {
+                        var alive = (core.enemies || []).some(function (e) {
+                            return e && e.currentHp > 0;
+                        });
+                        if (!alive) break;
+                        try { atb.tickAtbStep(); } catch (eTk) { break; }
+                        ticks++;
+                    }
+                    var won = !(core.enemies || []).some(function (e) { return e && e.currentHp > 0; });
+                    ok(ticks > 0, 'ATB 戰鬥已推進（ticks=' + ticks + '）');
+                    ok(won || ticks >= maxT, '短戰鬥結束（勝=' + won + '）');
+                    if (typeof core.clearBattleState === 'function') core.clearBattleState();
+                } catch (eC) {
+                    ok(false, '進戰短測: ' + eC.message);
+                }
+            } else {
+                ok(false, '找不到地圖敵模板');
+            }
+        }
+
+        if (g.saveSys && typeof g.saveSys.exportSnapshot === 'function') {
+            try {
+                var snap = g.saveSys.exportSnapshot();
+                ok(!!snap && typeof snap === 'object', '存檔匯出快照');
+            } catch (eS) {
+                ok(false, '存檔匯出: ' + eS.message);
+            }
+        }
+
+        if (typeof window.HY.ascendancySelfTestRun === 'function') {
+            var ar = window.HY.ascendancySelfTestRun();
+            var ascBad = Array.isArray(ar) ? ar.filter(function (x) { return String(x).indexOf('✗') === 0; }).length : 0;
+            ok(ascBad === 0, '昇華資料／系統微測 bad=' + ascBad);
+        }
+        if (typeof window.HY.ascendancyMechSelfTestRun === 'function') {
+            var am = window.HY.ascendancyMechSelfTestRun();
+            ok(am.fails === 0, '昇華機制微測 fails=' + am.fails);
+        }
+        if (typeof window.HY.sectMechanicsSelfTestRun === 'function') {
+            var sm = window.HY.sectMechanicsSelfTestRun();
+            ok(sm.fails === 0, '門派機制微測 fails=' + sm.fails);
+        }
+
+        ok(fails === 0, '全流程 QA 失敗數 ' + fails + (fails ? ' ← 見上方 ✗' : ''));
+        console.log('[gameFullQaSelfTest]\n' + R.join('\n'));
+        return { results: R, fails: fails };
+    }
+
+    window.HY.gameFullQaSelfTestRun = run;
+
+    function schedule() {
+        var tries = 0;
+        function tick() {
+            tries++;
+            if (window.HY.game) {
+                run();
+                return;
+            }
+            if (tries < 80) setTimeout(tick, 250);
+            else console.warn('[gameQa] HY.game 逾時未啟動');
+        }
+        tick();
+    }
+
+    if (on()) {
+        if (document.readyState === 'complete') setTimeout(schedule, 500);
+        else window.addEventListener('load', function () { setTimeout(schedule, 500); });
     }
 })();
 
