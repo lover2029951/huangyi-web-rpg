@@ -112,6 +112,16 @@ window.HY = window.HY || {};
             atbEnemyInitMax: 30,             // ⚡ 敵人開場集氣上限
             atbEnemyInitBase: 10,            // ⚡ 敵人開場集氣基礎
             atbEnemyInitRand: 15,            // ⚡ 敵人開場集氣隨機量
+            /* 軟仇恨：可 OT，無硬鎖嘲諷 */
+            threatDealMult: 1.0,
+            threatTakenMult: 0.5,
+            threatHealMult: 0.6,
+            threatSplashMult: 0.35,
+            softProvokeThreatBonus: 150,
+            softProvokeBeats: 2,
+            threatLowHpWeight: 4,
+            threatLowHpThreshold: 0.35,
+            threatLockStickiness: 0.9
         },
         // ═══════════════════════════════════════════════════════════════
         // ④ 📈 成長曲線
@@ -52792,13 +52802,18 @@ window.HY = window.HY || {};
                 if (window.console) console.warn('[uiAsc] AscendancySystem 未載入');
                 return;
             }
-            if (charObj) this.charSys.state = charObj;
+            if (charObj && charObj.id != null) {
+                var PC0 = HY.PerChar;
+                if (PC0 && typeof PC0.switchTo === 'function') PC0.switchTo(charObj.id);
+                else this.charSys.state = charObj;
+            }
             this._build();
             this.isOpen = true;
             this.el.root.classList.remove('hidden');
             this.sys.ensureState(this.char);
             /* ⭐ 預載職業插畫圖集（背景用），避免第一次開啟時缺圖 */
             try { this._bgImg(); } catch (e) { }
+            this._renderCharBar();
             this._layout();
             this._renderBranchList();
             this._renderSide();
@@ -52942,6 +52957,8 @@ window.HY = window.HY || {};
                 '  font-size:.72rem;color:#64748b;align-items:center;pointer-events:none;}',
                 '.asc-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;',
                 '  margin-right:4px;vertical-align:middle;}',
+                '.asc-charbar-wrap{flex:0 0 auto;padding:6px 12px 8px;',
+                '  background:#0a0f14;border-bottom:1px solid #1e2a3a;}',
             ].join('');
             document.head.appendChild(css);
         }
@@ -52958,6 +52975,7 @@ window.HY = window.HY || {};
             root.innerHTML =
                 '<div class="asc-top">' +
                 '<span class="asc-title">✦ 昇華</span>' +
+                '<span class="asc-pill" id="asc-char-label">👤 —</span>' +
                 '<span class="asc-pill gold">剩餘點數 <b id="asc-pts">0</b></span>' +
                 '<span class="asc-pill">已配置 <b id="asc-spent">0</b></span>' +
                 '<span class="asc-pill" id="asc-next"></span>' +
@@ -52968,6 +52986,7 @@ window.HY = window.HY || {};
                 '<button class="asc-btn danger" id="asc-reset">🔄 重置</button>' +
                 '<button class="asc-btn" id="asc-close">↩️ 返回</button>' +
                 '</div>' +
+                '<div class="asc-charbar-wrap" id="asc-charbar"></div>' +
                 '<div class="asc-body">' +
                 '<aside class="asc-branches" id="asc-branches"></aside>' +
                 '<div class="asc-canvas-wrap" id="asc-wrap">' +
@@ -52997,7 +53016,9 @@ window.HY = window.HY || {};
                 btnCenter: root.querySelector('#asc-center'),
                 btnReset: root.querySelector('#asc-reset'),
                 btnJoin: root.querySelector('#asc-join'),
-                btnClose: root.querySelector('#asc-close')
+                btnClose: root.querySelector('#asc-close'),
+                charbar: root.querySelector('#asc-charbar'),
+                charLabel: root.querySelector('#asc-char-label')
             };
             this.ctx = this.el.canvas.getContext('2d');
 
@@ -53408,6 +53429,75 @@ window.HY = window.HY || {};
             this._renderTop();
         }
 
+        _escBar(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        /** 角色切換列（每個角色獨立 c.asc） */
+        _renderCharBar() {
+            var wrap = this.el.charbar;
+            if (!wrap) return;
+            var PC = HY.PerChar;
+            if (!PC) {
+                wrap.innerHTML = '<span style="font-size:.75rem;color:#64748b">未載入角色切換模組</span>';
+                return;
+            }
+            if (typeof PC.injectStyles === 'function') PC.injectStyles();
+            var cs = this.charSys;
+            var root = cs && cs.rootState;
+            var roster = (root && root.roster) || [];
+            var activeId = (cs.state && cs.state.id != null)
+                ? String(cs.state.id) : '';
+            var self = this;
+            var h = '<div class="hycs" style="margin:0;border:none;background:transparent;padding:0;width:100%;">' +
+                '<span class="hycs-title">👥 角色</span>' +
+                '<span class="hycs-note">昇華配置各自獨立（切換即換存檔角色）</span>' +
+                '<div class="hycs-list">';
+            if (!roster.length) {
+                h += '<span class="hycs-note">（讀不到角色名冊）</span>';
+            } else {
+                roster.forEach(function (c) {
+                    if (!c) return;
+                    var on = activeId && String(c.id) === activeId;
+                    var sum = self.sys && typeof self.sys.summary === 'function'
+                        ? self.sys.summary(c) : { spent: 0 };
+                    var br = (c.asc && c.asc.branch) ? String(c.asc.branch) : '未入門';
+                    if (br.length > 10) br = br.slice(0, 9) + '…';
+                    var nm = String(c.name || '無名');
+                    if (nm.length > 8) nm = nm.slice(0, 7) + '…';
+                    h += '<button type="button" class="hycs-btn' + (on ? ' on' : '') +
+                        '" data-hycs-char="' + self._escBar(String(c.id || '')) + '">' +
+                        '<span class="hycs-nm">' + self._escBar(nm) + '</span>' +
+                        '<span class="hycs-mt">Lv.' + num(c.lv, 1) +
+                        '　昇華 ' + num(sum.spent, 0) + '　' + self._escBar(br) + '</span>' +
+                        '</button>';
+                });
+            }
+            h += '</div></div>';
+            wrap.innerHTML = h;
+            if (typeof PC.bind === 'function') {
+                PC.bind(wrap, function () {
+                    if (self.sys && typeof self.sys.clearPreview === 'function') {
+                        self.sys.clearPreview();
+                    }
+                    try {
+                        if (self.sys && self.char) self.sys.syncPoints(self.char);
+                    } catch (eSync) { }
+                    self.scale = 1;
+                    self.offsetX = 0;
+                    self.offsetY = 0;
+                    self._renderCharBar();
+                    self._layout();
+                    self._renderBranchList();
+                    self._renderSide();
+                    self._draw();
+                    self._toast('已切換角色，昇華為該角色獨立配置');
+                });
+            }
+        }
+
         /* ──────────────────────────────────────────────────────────
            版面：分支清單 / 頂部 / 右側
            ────────────────────────────────────────────────────────── */
@@ -53504,6 +53594,11 @@ window.HY = window.HY || {};
             var c = this.char;
             var a = sys.ensureState(c);
             var sum = sys.summary(c);
+            if (this.el.charLabel) {
+                var br = (a && a.branch) ? ('　·　' + a.branch) : '';
+                this.el.charLabel.textContent = '👤 ' + (c && c.name ? c.name : '無名') + br;
+                this.el.charLabel.title = c && c.id ? ('角色 id：' + c.id) : '';
+            }
             var remain = num(sum.remaining, 0);
             this.el.pts.textContent = remain;
             this.el.spent.textContent = num(sum.spent, 0);
@@ -53592,6 +53687,7 @@ window.HY = window.HY || {};
                 mask.style.display = 'none';
                 if (!r.ok) { self._toast(r.why); return; }
                 self._layout();
+                self._renderCharBar();
                 self._renderBranchList();
                 self._renderSide();
                 self._draw();
@@ -53965,6 +54061,7 @@ window.HY = window.HY || {};
             var n = this.sys.resetAll(this.char);
             if (!n) { this._toast('目前沒有已配置的昇華'); return; }
             this._layout();
+            this._renderCharBar();
             this._renderBranchList();
             this._renderSide();
             this._draw();
@@ -78756,8 +78853,12 @@ window.HY = window.HY || {};
                 try {
                     var _CTth = window.HY && window.HY.CombatTargeting;
                     if (_CTth && finalDmg > 0) {
+                        if (typeof _CTth.addThreatFromDeal === 'function') {
+                            _CTth.addThreatFromDeal(charObj, finalDmg);
+                        } else {
+                            _CTth.addThreat(charObj, finalDmg);
+                        }
                         _CTth.addThreat(target, finalDmg * 0.08);
-                        _CTth.addThreat(charObj, finalDmg * 0.04);
                     }
                 } catch (eThrHit) { }
                 if (elemSys && target.currentHp > 0) {
@@ -78772,6 +78873,12 @@ window.HY = window.HY || {};
                         totalDealt += elemFinal;
                         elemDmgTotal += elemFinal;
                         if (eRes.log) elemLogTotal = eRes.log;
+                        try {
+                            var _CTe = window.HY && window.HY.CombatTargeting;
+                            if (_CTe && elemFinal > 0 && typeof _CTe.addThreatFromDeal === 'function') {
+                                _CTe.addThreatFromDeal(charObj, elemFinal);
+                            }
+                        } catch (eThrE) { }
                     }
                 }
                 if (isCrit && cocLv > 0 && target.currentHp > 0) {
@@ -79199,12 +79306,27 @@ window.HY = window.HY || {};
                         });
                         healedCount++;
                     }, this);
+                    try {
+                        var _CThp = window.HY && window.HY.CombatTargeting;
+                        if (_CThp && teamHeal > 0 && healedCount > 0 &&
+                            typeof _CThp.addThreatFromHeal === 'function') {
+                            _CThp.addThreatFromHeal(charObj, teamHeal * healedCount);
+                        }
+                    } catch (eThH0) { }
                     supportText += ' [💚下回合我方全體治療 ' + healedCount + '人 各+' + teamHeal + 'HP]';
                 } else if (art.healRatio) {
                     var healVal = Math.floor(stats.maxHp * (art.healRatio / MARTIAL_DIV) * _healMul);
                     this.applyHeal(healTarget, healVal, 0, {
                         vitalKind: 'heal', skill: art.name
                     });
+                    if (healTarget && healTarget.id !== charObj.id) {
+                        try {
+                            var _CTh1 = window.HY && window.HY.CombatTargeting;
+                            if (_CTh1 && healVal > 0 && typeof _CTh1.addThreatFromHeal === 'function') {
+                                _CTh1.addThreatFromHeal(charObj, healVal);
+                            }
+                        } catch (eThH1) { }
+                    }
                     supportText += ' [💚下回合轉療【' + healTarget.name + '】+' + healVal + 'HP]';
                 }
                 if (art.mpRestore) {
@@ -79628,6 +79750,12 @@ window.HY = window.HY || {};
                保留變數但永遠為空字串，避免影響傷害訊息格式。 */
             targetMember.currentHp = Math.max(0, targetMember.currentHp - enemyDmg);
             try {
+                var _CTtk = window.HY && window.HY.CombatTargeting;
+                if (_CTtk && enemyDmg > 0 && typeof _CTtk.addThreatFromTaken === 'function') {
+                    _CTtk.addThreatFromTaken(targetMember, enemyDmg);
+                }
+            } catch (eThrT) { }
+            try {
                 var _aHit = (partyMembers || []).indexOf(targetMember);
                 var _skHit = chosenSkill ? chosenSkill.name : '普攻';
                 if (_aHit >= 0) core.markStageFx('ally', _aHit, 'dmg', { skill: _skHit });
@@ -79700,6 +79828,17 @@ window.HY = window.HY || {};
                         if (other.id !== targetMember.id) {
                             // ⭐ v46：改為 Math.max(0, ...)，與主傷害一致（可致死）
                             other.currentHp = Math.max(0, other.currentHp - splashDmg);
+                            try {
+                                var _CTsp = window.HY && window.HY.CombatTargeting;
+                                if (_CTsp && splashDmg > 0 && typeof _CTsp.addThreat === 'function') {
+                                    var _cfgSp = window.HY.GameConfig && window.HY.GameConfig.combat;
+                                    var _sm = _cfgSp && typeof _cfgSp.threatSplashMult === 'number'
+                                        ? _cfgSp.threatSplashMult : 0.35;
+                                    var _tm = _cfgSp && typeof _cfgSp.threatTakenMult === 'number'
+                                        ? _cfgSp.threatTakenMult : 0.5;
+                                    _CTsp.addThreat(other, splashDmg * _sm * _tm);
+                                }
+                            } catch (eThrSp) { }
                             try {
                                 var _si = (partyMembers || []).indexOf(other);
                                 var _sn = chosenSkill ? chosenSkill.name : '普攻';
@@ -82456,8 +82595,8 @@ window.HY = window.HY || {};
 })();
 
 /* --- combatTargeting.js --- */
-// js/combatTargeting.js (v1)
-// 站位（logic / visual）＋仇恨評分 → 統一選敵／選我方目標
+// js/combatTargeting.js (v2)
+// 站位（logic / visual）＋軟仇恨評分 → 統一選敵／選我方目標
 window.HY = window.HY || {};
 (function () {
     'use strict';
@@ -82465,6 +82604,33 @@ window.HY = window.HY || {};
     var LANES = ['bal', 'atk', 'def'];
 
     function num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : (d || 0); }
+
+    function threatCfg() {
+        var G = window.HY && window.HY.GameConfig;
+        var c = (G && G.combat) ? G.combat : {};
+        return {
+            deal: num(c.threatDealMult, 1),
+            taken: num(c.threatTakenMult, 0.5),
+            heal: num(c.threatHealMult, 0.6),
+            splash: num(c.threatSplashMult, 0.35),
+            provokeBonus: num(c.softProvokeThreatBonus, 150),
+            provokeBeats: num(c.softProvokeBeats, 2),
+            lowHpW: num(c.threatLowHpWeight, 4),
+            lowHpBelow: num(c.threatLowHpThreshold, 0.35),
+            lockStick: num(c.threatLockStickiness, 0.9)
+        };
+    }
+
+    function vitalBeat(core) {
+        if (core && typeof core.vitalRegenBeat === 'function') return core.vitalRegenBeat();
+        return 0;
+    }
+
+    function softProvokeActive(member, core) {
+        if (!member || !member._battle) return false;
+        var until = num(member._battle.softProvokeUntilBeat, -1);
+        return until >= vitalBeat(core);
+    }
 
     function mirrorFoeCellIdx(idx) {
         var n = num(idx, 4);
@@ -82549,17 +82715,21 @@ window.HY = window.HY || {};
     }
 
     function scoreAlly(member, core) {
+        var cfg = threatCfg();
         var st = resolveStance(member, 'ally');
         var s = 100 * lineWeight(st.line);
         if (st.lane === 'def') s *= 1.15;
         if (st.towardBattle === 'near') s *= 1.2;
         s += num(member._threat, 0);
+        if (softProvokeActive(member, core)) s += cfg.provokeBonus;
         var cs = core.charSys;
         var md = cs && typeof cs.getDerivedStatsForChar === 'function'
             ? cs.getDerivedStatsForChar(member) : null;
         var maxHp = md && md.maxHp > 0 ? md.maxHp : num(member.maxHp, 1);
         var hpRatio = maxHp > 0 ? num(member.currentHp, 0) / maxHp : 1;
-        s += (1 - hpRatio) * 12;
+        if (hpRatio < cfg.lowHpBelow) {
+            s += (1 - hpRatio) * cfg.lowHpW;
+        }
         return s + Math.random() * 2;
     }
 
@@ -82631,11 +82801,15 @@ window.HY = window.HY || {};
         if (!list.length) return null;
 
         var lockedId = enemy._lockedTargetId;
+        var lockedMem = null;
         if (lockedId) {
-            for (var i = 0; i < list.length; i++) {
-                if (list[i] && String(list[i].id) === String(lockedId)) return list[i];
+            for (var li = 0; li < list.length; li++) {
+                if (list[li] && String(list[li].id) === String(lockedId)) {
+                    lockedMem = list[li];
+                    break;
+                }
             }
-            enemy._lockedTargetId = null;
+            if (!lockedMem) enemy._lockedTargetId = null;
         }
 
         var taken = {};
@@ -82649,6 +82823,22 @@ window.HY = window.HY || {};
             return m && m.id && !taken[String(m.id)];
         });
         var pool = free.length ? free : list;
+
+        var topS = -1e15;
+        pool.forEach(function (m) {
+            var sc = scoreAlly(m, core);
+            if (sc > topS) topS = sc;
+        });
+
+        var cfgT = threatCfg();
+        if (lockedMem && pool.indexOf(lockedMem) >= 0) {
+            var lockSc = scoreAlly(lockedMem, core);
+            if (topS > 0 && lockSc >= topS * cfgT.lockStick) {
+                enemy._lockedTargetId = String(lockedMem.id);
+                return lockedMem;
+            }
+            enemy._lockedTargetId = null;
+        }
 
         var best = null;
         var bestS = -1e15;
@@ -82665,9 +82855,35 @@ window.HY = window.HY || {};
         unit._threat = num(unit._threat, 0) + num(delta, 0);
     }
 
+    function addThreatFromDeal(attacker, dmg) {
+        if (!attacker || dmg <= 0) return;
+        addThreat(attacker, dmg * threatCfg().deal);
+    }
+
+    function addThreatFromTaken(defender, dmg) {
+        if (!defender || dmg <= 0) return;
+        addThreat(defender, dmg * threatCfg().taken);
+    }
+
+    function addThreatFromHeal(healer, amount) {
+        if (!healer || amount <= 0) return;
+        addThreat(healer, amount * threatCfg().heal);
+    }
+
+    /** 軟嘲諷：大幅抬高仇恨評分，仍可被高輸出 OT */
+    function applySoftProvoke(char, beats, core) {
+        if (!char) return;
+        var cfg = threatCfg();
+        var n = beats != null ? beats : cfg.provokeBeats;
+        var b = char._battle || (char._battle = {});
+        b.softProvokeUntilBeat = vitalBeat(core) + Math.max(1, Math.floor(n));
+    }
+
     function resetThreatBattle(core, partyMembers) {
         (partyMembers || []).forEach(function (m) {
-            if (m) m._threat = 0;
+            if (!m) return;
+            m._threat = 0;
+            if (m._battle) m._battle.softProvokeUntilBeat = -1;
         });
         (core.enemies || []).forEach(function (e) {
             if (e) e._threat = 0;
@@ -82680,6 +82896,11 @@ window.HY = window.HY || {};
         pickFoe: pickFoe,
         pickAllyTarget: pickAllyTarget,
         addThreat: addThreat,
+        addThreatFromDeal: addThreatFromDeal,
+        addThreatFromTaken: addThreatFromTaken,
+        addThreatFromHeal: addThreatFromHeal,
+        applySoftProvoke: applySoftProvoke,
+        softProvokeActive: softProvokeActive,
         resetThreatBattle: resetThreatBattle
     };
 })();

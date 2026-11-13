@@ -5,13 +5,52 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v759 · 2026-11-13',
-        gameVer: 763,
+        newsVer: 'v767 · 2026-11-13',
+        gameVer: 767,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '金司馬',
+            title: '刷圖常駐修復 v767',
+            date: '2026-11-13',
+            bullets: [
+                '礦冶「派工」到刷圖營地改走<b>常駐派駐</b>，會建立 runner 才會自動跑圖',
+                '刷圖分頁定時 <code>settle</code>；舊存檔幽靈佔位自動同步',
+                '拆營地／調回待命正確 <code>unstation</code>，戰利品不丟'
+            ]
+        },
+        {
+            tag: 'tune', tagLabel: '昇華',
+            title: '昇華詞條戰鬥化 v767',
+            date: '2026-11-13',
+            bullets: [
+                '移除／替換<b>招式範圍、身法速度、持續傷害、暗器、罡氣光環</b>等廢詞',
+                '小天賦改<b>命中／格擋／出手速度</b>；解析器舊詞相容映射至外功、攻速、混元',
+                '藏鋒顯著改戰鬥向（會心／外功）；神射、玄陰、符籙等顯著同步'
+            ]
+        },
+        {
+            tag: 'add', tagLabel: '戰鬥',
+            title: '軟仇恨／嘲諷 v764',
+            date: '2026-11-13',
+            bullets: [
+                '站位＋傷害／受擊／治療累積仇恨；敵人鎖定具慣性，高輸出可 OT',
+                '【引戰】施加敵人易傷時，施術者獲得<b>軟嘲諷</b>（非硬鎖）',
+                '參數見 <code>GameConfig.combat.threat*</code>'
+            ]
+        },
+        {
+            tag: 'ui', tagLabel: '昇華',
+            title: '昇華面板換角 v764',
+            date: '2026-11-13',
+            bullets: [
+                '昇華全螢幕頂部新增<b>角色切換列</b>，每位獨立分支與已點節點',
+                '與天賦樹相同：切換即換主控角色，存檔各自 <code>char.asc</code>'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '修正',
             title: '分包開機修復 v763',
