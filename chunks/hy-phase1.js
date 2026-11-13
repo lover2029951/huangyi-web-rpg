@@ -52251,11 +52251,19 @@ window.HY = window.HY || {};
         allocate(id, charObj) {
             var chk = this.canAllocate(id, charObj);
             if (!chk.ok) return chk;
+            var c = charObj || (this.charSys && this.charSys.state);
+            var prevDer = null;
+            try {
+                if (this.charSys && typeof this.charSys.getDerivedStatsForChar === 'function') {
+                    prevDer = this.charSys.getDerivedStatsForChar(c);
+                }
+            } catch (ePrev) { prevDer = null; }
             var a = this.ensureState(charObj);
             var n = this.node(id);
             a.allocated[id] = 1;
             this.syncPoints(charObj);
             this._invalidate(charObj);
+            this._syncVitalsAfterBonusChange(c, prevDer);
             var nameZh = this.nameZh(n);
             this._log('✨ 昇華：' + nameZh, 'system');
             return { ok: true, node: n };
@@ -52263,6 +52271,31 @@ window.HY = window.HY || {};
 
         /* ⭐ 天賦變動後必須讓 derived stats 快取失效，
            否則玩家會看到「點了昇華但屬性沒變」（快取回傳舊物件）。 */
+        /** 昇華／裝備類加成改變上限後，補上氣血／內力增量（與加體魄點同源邏輯） */
+        _syncVitalsAfterBonusChange(charObj, prevDer) {
+            var c = charObj || (this.charSys && this.charSys.state);
+            var cs = this.charSys;
+            if (!c || !cs || typeof cs.getDerivedStatsForChar !== 'function') return;
+            var prevHp = num(prevDer && prevDer.maxHp, 0);
+            var prevMp = num(prevDer && prevDer.maxMp, 0);
+            var nd;
+            try { nd = cs.getDerivedStatsForChar(c); } catch (eNd) { nd = null; }
+            if (!nd) return;
+            var newHp = num(nd.maxHp, prevHp);
+            var newMp = num(nd.maxMp, prevMp);
+            var curHp = num(c.currentHp, 0);
+            var curMp = num(c.currentMp, 0);
+            if (newHp > prevHp && isFinite(curHp)) {
+                c.currentHp = curHp + (newHp - prevHp);
+            }
+            if (newMp > prevMp && isFinite(curMp)) {
+                c.currentMp = curMp + (newMp - prevMp);
+            }
+            if (typeof cs.clampVitals === 'function') {
+                try { cs.clampVitals(nd, c); } catch (eCv) { }
+            }
+        }
+
         _invalidate(charObj) {
             var c = charObj || (this.charSys && this.charSys.state);
             try {
@@ -52279,6 +52312,13 @@ window.HY = window.HY || {};
             if (!a.allocated[id]) return { ok: false, why: '尚未點此昇華' };
             var n = this.node(id);
             if (n && n.isAscStart) return { ok: false, why: '起點不可移除' };
+            var c = charObj || (this.charSys && this.charSys.state);
+            var prevDer = null;
+            try {
+                if (this.charSys && typeof this.charSys.getDerivedStatsForChar === 'function') {
+                    prevDer = this.charSys.getDerivedStatsForChar(c);
+                }
+            } catch (ePrev2) { prevDer = null; }
             delete a.allocated[id];
             /* 連通性檢查 */
             var remain = Object.keys(a.allocated);
@@ -52316,12 +52356,19 @@ window.HY = window.HY || {};
             }
             this.syncPoints(charObj);
             this._invalidate(charObj);
+            this._syncVitalsAfterBonusChange(c, prevDer);
             this._log('↩️ 退還昇華：' + this.nameZh(n), 'system');
             return { ok: true, node: n };
         }
 
         resetAll(charObj) {
             var c = charObj || (this.charSys && this.charSys.state);
+            var prevDer = null;
+            try {
+                if (this.charSys && typeof this.charSys.getDerivedStatsForChar === 'function') {
+                    prevDer = this.charSys.getDerivedStatsForChar(c);
+                }
+            } catch (ePr) { prevDer = null; }
             var a = this.ensureState(c);
             var n = Object.keys(a.allocated).length;
             a.branch = null;
@@ -52329,6 +52376,7 @@ window.HY = window.HY || {};
             a.subNotables = [];
             this.syncPoints(c);
             this._invalidate(c);
+            this._syncVitalsAfterBonusChange(c, prevDer);
             this._log('🔄 昇華天賦已全部重洗（退還 ' + n + ' 點）', 'system');
             return n;
         }
@@ -52389,7 +52437,8 @@ window.HY = window.HY || {};
             out.more = out.more || {};
             out.extra = out.extra || {};
             out.more.maxHp = num(out.more.maxHp, 0) + Math.min(0.24, sp * 0.032);
-            out.extra.dmgReduce = num(out.extra.dmgReduce, 0) + Math.min(0.10, sp * 0.012);
+            /* dmgReduce 走 flat 百分點（與心法 holy_guard +15 同尺度） */
+            out.extra.dmgReduce = num(out.extra.dmgReduce, 0) + Math.min(12, sp * 1.2);
         }
 
         _applyKeystonePassives(out, charObj) {
@@ -52469,8 +52518,15 @@ window.HY = window.HY || {};
             if (!Array.isArray(a.subNotables)) a.subNotables = [];
             var ix = a.subNotables.indexOf(nodeId);
             if (ix >= 0) {
+                var prevRm = null;
+                try {
+                    if (this.charSys && typeof this.charSys.getDerivedStatsForChar === 'function') {
+                        prevRm = this.charSys.getDerivedStatsForChar(c);
+                    }
+                } catch (eRm) { prevRm = null; }
                 a.subNotables.splice(ix, 1);
                 this._invalidate(c);
+                this._syncVitalsAfterBonusChange(c, prevRm);
                 this._log('↩️ 已取消副修：' + this.nameZh(n), 'system');
                 return { ok: true, removed: true };
             }
@@ -52483,8 +52539,15 @@ window.HY = window.HY || {};
             else if (a.subNotables.length >= cap) {
                 return { ok: false, why: '副修名額已滿（' + cap + '），請先取消一項' };
             }
+            var prevDer = null;
+            try {
+                if (this.charSys && typeof this.charSys.getDerivedStatsForChar === 'function') {
+                    prevDer = this.charSys.getDerivedStatsForChar(c);
+                }
+            } catch (eSn) { prevDer = null; }
             a.subNotables.push(nodeId);
             this._invalidate(c);
+            this._syncVitalsAfterBonusChange(c, prevDer);
             this._log('📜 副修習得：' + this.nameZh(n), 'system');
             return { ok: true, node: n };
         }
@@ -52507,10 +52570,10 @@ window.HY = window.HY || {};
             if (engine && typeof engine.modsFor === 'function' &&
                 typeof engine.buildContext === 'function' &&
                 typeof engine.aggregate === 'function') {
-                try {
-                    var list = this.modsFor(c);
-                    if (list.length) {
-                        var ctx = engine.buildContext(c, {});
+                var list = this.modsFor(c);
+                if (list.length) {
+                    try {
+                        var ctx = engine.buildContext(c, { noDerived: true });
                         var agg = engine.aggregate(list, ctx);
                         var merged = {
                             attr: agg.attr || out.attr,
@@ -52522,8 +52585,12 @@ window.HY = window.HY || {};
                         this._applyKeystonePassives(merged, c);
                         this._applySurvivalFloor(merged, c);
                         return merged;
-                    }
-                } catch (e) { }
+                    } catch (e) { }
+                    /* 已有可解析 mod 時勿再疊中文解析（避免與 hook 雙重計算） */
+                    this._applyKeystonePassives(out, c);
+                    this._applySurvivalFloor(out, c);
+                    return out;
+                }
             }
 
             Object.keys(a.allocated).forEach(function (id) {
@@ -52659,6 +52726,7 @@ window.HY = window.HY || {};
         try {
             g.ascSys = new AscendancySystem(g.charSys, g.logger);
             hookTalentBonus();
+            retroAscVitalSyncV777(g);
             console.log('[ascendancySystem] ✓ 已掛載 HY.game.ascSys');
             return true;
         } catch (e) {
@@ -52749,6 +52817,39 @@ window.HY = window.HY || {};
         return out;
     }
 
+    /** v777：舊存檔點過昇華但當前氣血未跟上上限 → 一次性補平缺口 */
+    function retroAscVitalSyncV777(g) {
+        if (!g || !g.ascSys || !g.charSys) return;
+        var cs = g.charSys;
+        var rs = cs.rootState;
+        if (!rs || !Array.isArray(rs.roster)) return;
+        rs.roster.forEach(function (c) {
+            if (!c || c.__ascVitalFix777) return;
+            var a = g.ascSys.ensureState(c);
+            if (!a || num(a.spent, 0) <= 0) {
+                c.__ascVitalFix777 = 1;
+                return;
+            }
+            var d;
+            try { d = cs.getDerivedStatsForChar(c); } catch (eD) { d = null; }
+            if (!d || !num(d.maxHp, 0)) {
+                c.__ascVitalFix777 = 1;
+                return;
+            }
+            var maxHp = num(d.maxHp, 1);
+            var curHp = num(c.currentHp, 0);
+            var ratio = maxHp > 0 ? curHp / maxHp : 1;
+            if (isFinite(ratio) && ratio < 0.92 && curHp > 0) {
+                var estGain = Math.min(maxHp - curHp, num(a.spent, 0) * 120);
+                if (estGain > 0) {
+                    c.currentHp = Math.min(maxHp, curHp + estGain);
+                    try { cs.clampVitals(d, c); } catch (eC) { }
+                }
+            }
+            c.__ascVitalFix777 = 1;
+        });
+    }
+
     function hookTalentBonus() {
         var g = HY.game;
         if (!g || !g.talentSys) return false;
@@ -52765,6 +52866,8 @@ window.HY = window.HY || {};
                     /* v768：昇華節點全是中文詞條，aggregateFor（POE 英文）常為 null；
                        必須走 getBonusFor → WuxiaStatParser / 已包裝的 TalentStatsParser。 */
                     var ab = asys.getBonusFor(charObj);
+                    var ascSt = (typeof asys.ensureState === 'function') ? asys.ensureState(charObj) : null;
+                    var hasAscAlloc = !!(ascSt && Object.keys(ascSt.allocated || {}).length);
                     if (ab) {
                         base.attr = base.attr || { con: 0, str: 0, agi: 0, int: 0, spi: 0 };
                         Object.keys(ab.attr || {}).forEach(function (k) {
@@ -52800,7 +52903,8 @@ window.HY = window.HY || {};
                                 base.__asc.conv = agg.conv;
                                 base.__asc.procs = agg.procs;
                             }
-                            if (!ab || !ab.__poe) {
+                            /* 已點昇華且 getBonusFor 已合併中文／POE 時，勿再 toLegacyBonus */
+                            if (!hasAscAlloc && (!ab || !ab.__poe)) {
                                 var extra = toLegacyBonus(agg);
                                 Object.keys(extra.attr || {}).forEach(function (k) {
                                     if (base.attr[k] !== undefined) {

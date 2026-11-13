@@ -52518,6 +52518,39 @@ window.HY = window.HY || {};
             });
             ok(metaFails.length === 0, 'META 核心 id 對齊（' + metaFails.slice(0, 4).join(', ') + '）');
 
+            /* v777：點昇華後當前氣血應隨上限增加（否則實戰血條比例崩壞） */
+            var mockCs = {
+                getDerivedStatsForChar: function (ch) {
+                    var n = Object.keys((ch.asc && ch.asc.allocated) || {}).length;
+                    return { maxHp: 5000 + n * 320, maxMp: 1200 + n * 40 };
+                },
+                clampVitals: function (d, ch) {
+                    ch.currentHp = Math.min(num(d.maxHp, 1), Math.max(0, num(ch.currentHp, 0)));
+                    ch.currentMp = Math.min(num(d.maxMp, 0), Math.max(0, num(ch.currentMp, 0)));
+                }
+            };
+            function num(v, d) {
+                var x = Number(v);
+                return (typeof x === 'number' && isFinite(x)) ? x : d;
+            }
+            var asVit = new Cls(mockCs, null);
+            var cv = {
+                id: 'asc_hp', lv: 160, currentHp: 5000, currentMp: 1200,
+                asc: { branch: 'Champion', allocated: { a: 1, b: 1 }, spent: 1, points: 6 }
+            };
+            var prevDer = mockCs.getDerivedStatsForChar(cv);
+            cv.asc.allocated.c = 1;
+            asVit._syncVitalsAfterBonusChange(cv, prevDer);
+            ok(cv.currentHp >= prevDer.maxHp + 300, '昇華加成後 currentHp 補齊（' + cv.currentHp + '）');
+            ok(cv.currentHp / mockCs.getDerivedStatsForChar(cv).maxHp >= 0.98,
+                '氣血比例維持滿血附近');
+
+            var gFloor = as.getBonusFor({
+                asc: { branch: 'Champion', spent: 4, allocated: { z: 1 } }
+            });
+            ok(num((gFloor.extra || {}).dmgReduce, 0) >= 4,
+                '生存保底減傷為百分點（' + num((gFloor.extra || {}).dmgReduce, 0) + '）');
+
             var c4 = { id: 'asc_t4', name: 'T4', lv: 160, sect: 'huashan',
                 asc: { branch: null, allocated: {}, points: 0, spent: 0, subNotables: [] } };
             cs.state = c4;
