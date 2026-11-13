@@ -9851,6 +9851,7 @@ window.HY = window.HY || {};
             this.scaleMode = 'fluid';
             this.injectResponsiveStyles();
             this.injectTopBarControl();
+            this.injectPanelModeControl();
             this.bindResizeListener();
             this.applyViewportAdaptation();
         }
@@ -9957,6 +9958,26 @@ window.HY = window.HY || {};
                     ? '📐 畫面：智慧自適應'
                     : '📐 畫面：等比縮放';
                 self.applyViewportAdaptation();
+            });
+            sysCtrl.prepend(btn);
+        }
+        injectPanelModeControl() {
+            var sysCtrl = document.querySelector('.system-controls');
+            if (!sysCtrl || document.getElementById('btn-toggle-edge-panel')) return;
+            var btn = document.createElement('button');
+            btn.id = 'btn-toggle-edge-panel';
+            btn.className = 'sys-btn';
+            btn.style.borderColor = '#a78bfa';
+            btn.style.color = '#c4b5fd';
+            btn.style.marginRight = '6px';
+            var on = (window.HY && typeof window.HY.edgeDrawerWanted === 'function')
+                ? window.HY.edgeDrawerWanted() : true;
+            btn.textContent = on ? '🧩 面板：邊緣抽屜' : '🧩 面板：經典三欄';
+            btn.title = '切換左／上／右面板是常駐三欄，或收成邊緣抽屜（與改版前相同）';
+            btn.addEventListener('click', function () {
+                if (window.HY && typeof window.HY.setEdgeDrawerMode === 'function') {
+                    window.HY.setEdgeDrawerMode(!on);
+                }
             });
             sysCtrl.prepend(btn);
         }
@@ -51572,15 +51593,23 @@ window.HY = window.HY || {};
     /* 抽屜方向清單（用於「一次只開一個」等迴圈） */
     var KEYS = ['top', 'left', 'right', 'bottom'];
 
-    /** 桌機預設經典三欄；窄螢幕或玩家明確開啟才用抽屜 */
+    /** 未設定時維持改版前「邊緣抽屜」；設 hy_edge_drawer=0 則經典三欄常駐 */
     function edgeDrawerWanted() {
         try {
             var p = localStorage.getItem('hy_edge_drawer');
-            if (p === '1') return true;
             if (p === '0') return false;
+            if (p === '1') return true;
         } catch (e) { }
-        return (window.innerWidth || 1200) < 960;
+        return true;
     }
+
+    HY.edgeDrawerWanted = edgeDrawerWanted;
+    HY.setEdgeDrawerMode = function (on) {
+        try {
+            localStorage.setItem('hy_edge_drawer', on ? '1' : '0');
+        } catch (e) { }
+        location.reload();
+    };
 
     function EdgeDrawerSystem() {
         this.state = { top: false, left: false, right: false, bottom: false };
