@@ -1432,20 +1432,7 @@ setTimeout(function () {
     }, 1500);
   }
 }, 8000);
-(function () {
-  var nativeAdd = window.addEventListener;
-  var queue = [];
-  window.addEventListener = function (t, fn, o) {
-    if (t === 'DOMContentLoaded') { queue.push(fn); return; }
-    return nativeAdd.call(window, t, fn, o);
-  };
-  window.__HY_FLUSH_READY__ = function () {
-    window.addEventListener = nativeAdd;
-    var q = queue.slice(); queue.length = 0;
-    q.forEach(function (fn) { try { fn(new Event('DOMContentLoaded')); } catch (e) { console.error(e); } });
-    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(); } catch (e) {}
-  };
-})();
+/* DCL 攔截統一由 hyDclCapture.js（內聯第 6 支）負責，勿在此重複攔截 */
 
 /* ===== 1 / 293 : gameConfig.js ===== */
 // js/gameConfig.js  (v3.3 · 1/5)
@@ -2744,6 +2731,10 @@ window.HY = window.HY || {};
         runWhenReady: runWhenReady,
         isCapturing: function () { return state.capturing; },
         pendingCount: function () { return state.pending.length; }
+    };
+
+    window.__HY_FLUSH_READY__ = function () {
+        flush({ finalize: true });
     };
 })();
 
@@ -176808,17 +176799,24 @@ window.HY = window.HY || {};
 /* ⭐ 所有檔案執行完畢 → 觸發回呼並移除開機遮罩
    用 window.onload 確保 DOM 與資源都就緒 */
 function __HY_FINISH_BOOT__() {
-  try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) { console.error(e); }
-
-  /* ⭐ 單檔版：所有 JS 內聯完畢後才啟動遊戲（main.js 不可在檔案中段就 new GameApp） */
   try {
     if (!window.HY.game && typeof window.HY.bootGameApp === 'function') {
       window.HY.bootGameApp();
     }
+  } catch (eBoot0) { console.error('[HY] bootGameApp', eBoot0); }
+  try {
+    if (window.HY && window.HY.DclCapture && typeof window.HY.DclCapture.flush === 'function') {
+      window.HY.DclCapture.flush({ finalize: true });
+    } else if (window.__HY_FLUSH_READY__) {
+      window.__HY_FLUSH_READY__();
+    }
+  } catch (eDcl) { console.error('[HY] DCL flush', eDcl); }
+  try {
     if (window.HY.game) {
       if (typeof window.HY.game.onLateModulesLoaded === 'function') {
         window.HY.game.onLateModulesLoaded();
-      } else if (typeof window.HY.game.renderAll === 'function') {
+      }
+      if (typeof window.HY.game.renderAll === 'function') {
         window.HY.game.renderAll(true);
       }
     }
@@ -176850,7 +176848,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=782').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=783').catch(function () {});
     } catch (eSw) {}
   });
 }

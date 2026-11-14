@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v782 · 2026-11-14',
-        gameVer: 782,
+        newsVer: 'v783 · 2026-11-14',
+        gameVer: 783,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '介面',
+            title: '單檔 game.html 介面修復 v783',
+            date: '2026-11-14',
+            bullets: [
+                '修復 <code>game.html</code> 兩套 DCL 攔截衝突，導致百餘個 UI 模組從未初始化、版面錯亂',
+                '收斂為 <code>hyDclCapture</code> 單一來源；收尾時 flush → lateBoot → 全繪',
+                '分包 <code>game-chunked.html</code> 不受影響，建議仍可優先使用'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '啟動',
             title: '晚載入模組啟動修復 v781',

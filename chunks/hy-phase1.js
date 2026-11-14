@@ -21,6 +21,11 @@
     window.__HY_DCL_CAPTURING = false;
     window.addEventListener = nativeWin;
     document.addEventListener = nativeDoc;
+    try {
+      if (window.HY && window.HY.DclCapture && window.HY.DclCapture.pendingCount() > 0) {
+        console.warn('[chunk] DCL 佇列未空，請檢查 hyDclCapture');
+      }
+    } catch (ePc) {}
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
     try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
   };
@@ -1318,6 +1323,10 @@ window.HY = window.HY || {};
         runWhenReady: runWhenReady,
         isCapturing: function () { return state.capturing; },
         pendingCount: function () { return state.pending.length; }
+    };
+
+    window.__HY_FLUSH_READY__ = function () {
+        flush({ finalize: true });
     };
 })();
 /* --- linkBus.js --- */
