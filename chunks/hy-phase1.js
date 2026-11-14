@@ -1,6 +1,7 @@
 (function () {
   var nativeWin = window.addEventListener;
   var nativeDoc = document.addEventListener.bind(document);
+  window.__HY_DCL_NATIVE__ = { win: nativeWin, doc: nativeDoc };
   window.__HY_CHUNK_DCL_PREFIX__ = 1;
   var pending = window.__HY_DCL_PENDING = window.__HY_DCL_PENDING || [];
   var capturing = true;
@@ -13,38 +14,13 @@
     if (capturing && t === "DOMContentLoaded") { pending.push(fn); return; }
     return nativeDoc(t, fn, o);
   };
-  window.__HY_FLUSH_READY__ = function (onDone) {
-    var q = pending.slice(); pending.length = 0;
-    var ev = new Event("DOMContentLoaded");
-    for (var i = 0; i < q.length; i++) {
-      try { q[i](ev); } catch (e) { console.error(e); }
-    }
-    capturing = false;
-    window.__HY_DCL_CAPTURING = false;
-    window.addEventListener = nativeWin;
-    document.addEventListener = nativeDoc;
-    try {
-      if (!window.HY.game && typeof window.HY.bootGameApp === 'function') {
-        window.HY.bootGameApp();
-      }
-    } catch (eBoot) { console.error('[chunk] bootGameApp', eBoot); }
-    try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
-    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
-    try { window.__HY_BOOT_DONE = true; } catch (eF) {}
-    try { if (typeof onDone === "function") onDone(); } catch (eD) {}
-    try {
-      if (window.HY && typeof window.HY.runBootSmoke === "function") {
-        setTimeout(function () { window.HY.runBootSmoke(); }, 200);
-      }
-    } catch (eSm) {}
-  };
 })();
 /* HY chunk phase1 — 210 files */
 /* --- hyVersionGate.js --- */
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 790; /* build sync */
+    var LIVE = 791; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -1290,23 +1266,9 @@ window.HY = window.HY || {};
 (function () {
     'use strict';
 
+    /* 分包前綴只做 DCL 攔截；完整分帧 flush 仍由此檔提供（勿 return 空殼） */
     if (window.__HY_CHUNK_DCL_PREFIX__) {
-        var pendingRef = window.__HY_DCL_PENDING || [];
-        HY.DclCapture = {
-            flush: function (opts) {
-                opts = opts || {};
-                if (!opts.finalize) return pendingRef.length;
-                return pendingRef.length;
-            },
-            runWhenReady: function (fn) {
-                if (typeof fn !== 'function') return;
-                if (window.__HY_DCL_CAPTURING !== false) pendingRef.push(fn);
-                else try { fn(); } catch (e) { console.error(e); }
-            },
-            isCapturing: function () { return window.__HY_DCL_CAPTURING !== false; },
-            pendingCount: function () { return pendingRef.length; }
-        };
-        return;
+        try { delete window.__HY_CHUNK_DCL_PREFIX__; } catch (eC) { window.__HY_CHUNK_DCL_PREFIX__ = false; }
     }
 
     var FRAME_BUDGET_MS = 10;
@@ -1322,6 +1284,14 @@ window.HY = window.HY || {};
     window.__HY_DCL_PENDING = state.pending;
 
     function install() {
+        if (window.__HY_DCL_NATIVE__) {
+            state.nativeWin = window.__HY_DCL_NATIVE__.win;
+            state.nativeDoc = window.__HY_DCL_NATIVE__.doc;
+            if (window.__HY_DCL_PENDING) state.pending = window.__HY_DCL_PENDING;
+            state.capturing = window.__HY_DCL_CAPTURING !== false;
+            window.__HY_DCL_PENDING = state.pending;
+            return;
+        }
         window.addEventListener = function (type, fn, opts) {
             if (state.capturing && type === 'DOMContentLoaded') {
                 state.pending.push(fn);
@@ -108390,11 +108360,17 @@ window.HY = window.HY || {};
     window.HY.PartyPanelCleanup.ready = true;
     console.log('[PartyPanelCleanup] ✓ 已啟動（移除「主控心法／隨行護法／隨行靈獸」三列）');
   }
-  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 400);
-  else window.addEventListener('load', function () { setTimeout(boot, 400); });
-  /* 保險：較晚才建立的面板 */
-  setTimeout(function () { try { run(); } catch (e) { /* 忽略 */ } }, 1500);
-  setTimeout(function () { try { run(); } catch (e) { /* 忽略 */ } }, 3500);
+  function bootWhenIdle() {
+    if (!window.__HY_BOOT_DONE) {
+      setTimeout(bootWhenIdle, 300);
+      return;
+    }
+    var start = function () { setTimeout(boot, 120); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 2000 });
+    else start();
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') bootWhenIdle();
+  else window.addEventListener('load', bootWhenIdle);
 })();
 /* --- uiTabFix.js --- */
 // js/uiTabFix.js (v1)
