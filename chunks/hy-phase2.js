@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 83 files */
+/* HY chunk phase2 — 84 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -4808,6 +4808,56 @@ window.HY = window.HY || {};
         _attachTries++;
         if (ensureSpiritRootRuntime(window.HY.game) || _attachTries > 40) clearInterval(_attachTimer);
     }, 200);
+})();
+/* --- hyLateBoot.js --- */
+// js/hyLateBoot.js — 分階載入後一次啟動晚到系統（不依賴 DOMContentLoaded）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+  /**
+   * phase2 腳本載完後呼叫（bootLoader.finish / GameApp.onLateModulesLoaded）。
+   * 可重複呼叫：各子系統自行冪等。
+   */
+  function runLateBoot(game) {
+    game = game || (window.HY && window.HY.game);
+    if (!game || !game.charSys) return false;
+    var HY = window.HY;
+    var ok = true;
+    try {
+      if (HY && typeof HY.ensureSpiritRootRuntime === 'function') {
+        ok = HY.ensureSpiritRootRuntime(game) && ok;
+      } else if (!game.spiritRootSys && HY && HY.SpiritRootSystem) {
+        game.spiritRootSys = new HY.SpiritRootSystem(game);
+      }
+    } catch (eSr) {
+      console.warn('[hyLateBoot] spiritRoot', eSr);
+      ok = false;
+    }
+    try {
+      if (HY && typeof HY.ensureElementRuntime === 'function') {
+        HY.ensureElementRuntime(game);
+      } else if (!game.elementSys && HY && HY.ElementSystem) {
+        game.elementSys = new HY.ElementSystem(game);
+      }
+    } catch (eEl) {
+      console.warn('[hyLateBoot] element', eEl);
+    }
+    try {
+      if (!game.sectFeatSys && HY && HY.SectFeatureSystem) {
+        game.sectFeatSys = new HY.SectFeatureSystem(game);
+      }
+    } catch (eSf) { }
+    try {
+      if (!HY.uiSpiritRoot && HY.UISpiritRoot && game.uiCharParty) {
+        HY.uiSpiritRoot = new HY.UISpiritRoot(game);
+      }
+    } catch (eUi) { }
+    game.__lateBootStamp = Date.now();
+    return ok;
+  }
+
+  HY.runLateBoot = runLateBoot;
 })();
 /* --- uiSpiritRoot.js --- */
 // js/uiSpiritRoot.js  (v50.2)

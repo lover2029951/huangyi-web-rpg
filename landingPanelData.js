@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v771 · 2026-11-13',
-        gameVer: 779,
+        newsVer: 'v780 · 2026-11-14',
+        gameVer: 780,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '靈根',
+            title: '靈根晚載入與效能 v780',
+            date: '2026-11-14',
+            bullets: [
+                '新增 <code>hyLateBoot.js</code>：分階載入後集中啟動靈根／元素／門派特色，不再依賴已過的 DOMContentLoaded',
+                '開機只全繪一次，氣血條改輕量快取；game／chunks Service Worker <b>網路優先</b>，避免卡在舊版 <code>v=774</code>',
+                'Console 可用 <code>?spirit_test=1</code> 自測靈根掛鉤是否就緒'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '昇華',
             title: '昇華實測修復 v771',

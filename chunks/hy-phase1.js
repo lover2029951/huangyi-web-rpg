@@ -9,8 +9,8 @@
     window.addEventListener = nativeAdd;
     var q = queue.slice(); queue.length = 0;
     q.forEach(function (fn) { try { fn(new Event("DOMContentLoaded")); } catch (e) { console.error(e); } });
-    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
+    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
   };
 })();
 /* HY chunk phase1 — 207 files */
@@ -507,7 +507,13 @@ window.HY = window.HY || {};
     function kick() {
         if (S._pumpQueued) return;
         S._pumpQueued = true;
-        N.setTimeout(pump, 0);
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(function () {
+                pump();
+            });
+        } else {
+            N.setTimeout(pump, 0);
+        }
     }
 
     /** 是否有任務已累積到期（含本輪剛灌入的 acc） */
@@ -42815,6 +42821,24 @@ window.HY = window.HY || {};
                         c.currentMp = Math.min(_mm, Math.max(_curMp, Math.floor(_mm * ratio)));
                     }
                 });
+            }
+            /** 氣血條專用：優先讀 __dsCache，避免 250ms 定時器反覆觸發完整衍生重算 */
+            peekVitalsDisplay(charObj) {
+                var c = charObj || this.state;
+                if (!c) return { maxHp: 1, maxMp: 0 };
+                var t = Date.now();
+                var dc = c.__dsCache;
+                if (dc && dc.d && isFinite(dc.d.maxHp) && (t - (dc.t || 0)) < 8000) {
+                    return {
+                        maxHp: Number(dc.d.maxHp) || 1,
+                        maxMp: Math.max(0, Number(dc.d.maxMp) || 0)
+                    };
+                }
+                var d = this.getDerivedStatsForChar(c);
+                return {
+                    maxHp: (d && isFinite(d.maxHp)) ? d.maxHp : 1,
+                    maxMp: (d && isFinite(d.maxMp)) ? Math.max(0, d.maxMp) : 0
+                };
             }
             clampVitals(derived, targetChar) {
                 var c = targetChar || this.state;
@@ -87227,20 +87251,11 @@ window.HY = window.HY || {};
                 if (!app || !app.charSys) return;
                 var st = app.charSys.state;
                 if (!st) return;
-                var nowT = Date.now();
-                var d;
-                if (this._vitalsDer && (nowT - this._vitalsDerT) < 600) {
-                    d = this._vitalsDer;
-                } else if (st.__dsCache && st.__dsCache.d && (nowT - (st.__dsCache.t || 0)) < 1200) {
-                    d = st.__dsCache.d;
-                    this._vitalsDer = d;
-                    this._vitalsDerT = nowT;
-                } else {
-                    d = app.charSys.getDerivedStats();
-                    this._vitalsDer = d;
-                    this._vitalsDerT = nowT;
-                }
-                if (!d) return;
+                var vd = (typeof app.charSys.peekVitalsDisplay === 'function')
+                    ? app.charSys.peekVitalsDisplay(st)
+                    : null;
+                if (!vd) return;
+                var d = { maxHp: vd.maxHp, maxMp: vd.maxMp };
 
                 var hpMax = Number(d.maxHp);
                 if (!isFinite(hpMax) || hpMax <= 0) hpMax = 1;
@@ -87286,7 +87301,7 @@ window.HY = window.HY || {};
             var self = this;
             this.__vitalsTimer = setInterval(function () {
                 self.syncVitals();
-            }, 250);
+            }, 500);
         }
 
         renderCharacterPanel(opts) {
@@ -117425,21 +117440,13 @@ window.HY = window.HY || {};
     /** 晚載入模組全部就緒後（分階段 boot 第二段） */
     onLateModulesLoaded() {
       try {
-        var HY = window.HY;
-        if (HY && typeof HY.ensureSpiritRootRuntime === 'function') {
-          HY.ensureSpiritRootRuntime(this);
-        } else if (!this.spiritRootSys && HY && HY.SpiritRootSystem) {
-          this.spiritRootSys = new HY.SpiritRootSystem(this);
-        }
-        if (HY && typeof HY.ensureElementRuntime === 'function') {
-          HY.ensureElementRuntime(this);
-        } else if (!this.elementSys && HY && HY.ElementSystem) {
-          this.elementSys = new HY.ElementSystem(this);
+        if (window.HY && typeof window.HY.runLateBoot === 'function') {
+          window.HY.runLateBoot(this);
         }
       } catch (eLate) {
-        console.warn('[GameApp] 晚載入靈根／元素啟動失敗', eLate);
+        console.warn('[GameApp] 晚載入啟動失敗', eLate);
       }
-      try { this.renderAll(true); } catch (e2) { }
+      /* renderAll 由 bootLoader.finish 統一呼叫一次，避免開機連跑兩次全繪（50ms+ Violation） */
     }
     // ⭐ GameConfig 重套後由 gameConfig 呼叫
     onConfigReapplied() {
