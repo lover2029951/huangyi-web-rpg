@@ -1474,7 +1474,7 @@ setTimeout(function () {
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 786; /* build sync */
+    var LIVE = 787; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -176978,7 +176978,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=786').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=787').catch(function () {});
     } catch (eSw) {}
   });
 }
