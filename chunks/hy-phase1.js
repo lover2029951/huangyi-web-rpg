@@ -13,24 +13,65 @@
     if (capturing && t === "DOMContentLoaded") { pending.push(fn); return; }
     return nativeDoc(t, fn, o);
   };
-  window.__HY_FLUSH_READY__ = function () {
+  window.__HY_FLUSH_READY__ = function (onDone) {
     var q = pending.slice(); pending.length = 0;
     var ev = new Event("DOMContentLoaded");
-    q.forEach(function (fn) { try { fn(ev); } catch (e) { console.error(e); } });
-    capturing = false;
-    window.__HY_DCL_CAPTURING = false;
-    window.addEventListener = nativeWin;
-    document.addEventListener = nativeDoc;
-    try {
-      if (window.HY && window.HY.DclCapture && window.HY.DclCapture.pendingCount() > 0) {
-        console.warn('[chunk] DCL 佇列未空，請檢查 hyDclCapture');
+    var idx = 0;
+    function step() {
+      var t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+      while (idx < q.length) {
+        try { q[idx](ev); } catch (e) { console.error(e); }
+        idx++;
+        var t1 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+        if (idx % 8 === 0 && (t1 - t0) >= 12) break;
       }
-    } catch (ePc) {}
-    try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
-    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
+      if (idx < q.length) { setTimeout(step, 0); return; }
+      capturing = false;
+      window.__HY_DCL_CAPTURING = false;
+      window.addEventListener = nativeWin;
+      document.addEventListener = nativeDoc;
+      try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
+      try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
+      try { if (typeof onDone === "function") onDone(); } catch (eD) {}
+    }
+    setTimeout(step, 0);
   };
 })();
-/* HY chunk phase1 — 208 files */
+/* HY chunk phase1 — 209 files */
+/* --- hyVersionGate.js --- */
+// js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
+/* eslint-disable no-unused-vars */
+(function () {
+    'use strict';
+    var LIVE = 785; /* build sync */
+    try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
+
+    var u;
+    try { u = new URL(window.location.href); } catch (e1) { return; }
+    if (u.pathname.indexOf('game') === -1) return;
+
+    var qv = parseInt(u.searchParams.get('v') || '0', 10);
+  function goNext(ver) {
+        u.searchParams.set('v', String(ver));
+        u.searchParams.set('nocache', String(Date.now()));
+        window.location.replace(u.toString());
+    }
+
+    if (!qv || qv < LIVE) {
+        console.warn('[HY] 網址版本 v=' + (qv || '（無）') + ' 過舊，自動導向 v' + LIVE);
+        goNext(LIVE);
+        return;
+    }
+
+    /** 單檔內嵌標記（建置寫入）；缺漏表示可能拿到舊 SW 快取 */
+    if (u.pathname.indexOf('game.html') !== -1 && window.__HY_STANDALONE__) {
+        var stamp = window.__HY_BUILD_STAMP__;
+        if (stamp && stamp < LIVE) {
+            console.warn('[HY] game.html 內嵌版本過舊 stamp=' + stamp);
+            goNext(LIVE);
+        }
+    }
+})();
 /* --- gameConfig.js --- */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -524,13 +565,7 @@ window.HY = window.HY || {};
     function kick() {
         if (S._pumpQueued) return;
         S._pumpQueued = true;
-        if (typeof requestAnimationFrame === 'function') {
-            requestAnimationFrame(function () {
-                pump();
-            });
-        } else {
-            N.setTimeout(pump, 0);
-        }
+        N.setTimeout(pump, 0);
     }
 
     /** 是否有任務已累積到期（含本輪剛灌入的 acc） */
@@ -1234,7 +1269,7 @@ window.HY = window.HY || {};
     console.log('[GameConfig 5/5] ✓ 啟動編排已就緒');
 })();
 /* --- hyDclCapture.js --- */
-// js/hyDclCapture.js — 延後 DOMContentLoaded（window + document），與分包 prefix 共用佇列
+// js/hyDclCapture.js — 延後 DOMContentLoaded（window + document），分帧 flush 避免 50ms Violation
 window.HY = window.HY || {};
 (function () {
     'use strict';
@@ -1258,11 +1293,15 @@ window.HY = window.HY || {};
         return;
     }
 
+    var FRAME_BUDGET_MS = 12;
+    var CHUNK_MIN = 8;
+
     var state = {
         capturing: true,
         pending: window.__HY_DCL_PENDING || [],
         nativeWin: window.addEventListener.bind(window),
-        nativeDoc: document.addEventListener.bind(document)
+        nativeDoc: document.addEventListener.bind(document),
+        _flushGen: 0
     };
     window.__HY_DCL_PENDING = state.pending;
 
@@ -1283,22 +1322,64 @@ window.HY = window.HY || {};
         };
     }
 
+    function finalizeCapture() {
+        state.capturing = false;
+        window.addEventListener = state.nativeWin;
+        document.addEventListener = state.nativeDoc;
+        window.__HY_DCL_CAPTURING = false;
+    }
+
+    function runQueueSlice(queue, from, ev) {
+        var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        var i = from;
+        while (i < queue.length) {
+            try { queue[i](ev); } catch (e) {
+                console.error('[HY DCL] 回呼 #' + (i + 1) + ' 錯誤', e);
+            }
+            i++;
+            var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            if ((i - from) >= CHUNK_MIN && (t1 - t0) >= FRAME_BUDGET_MS) break;
+        }
+        return i;
+    }
+
     function flush(opts) {
         opts = opts || {};
         var queue = state.pending.slice();
         state.pending.length = 0;
+        if (!queue.length) {
+            if (opts.finalize) finalizeCapture();
+            if (typeof opts.onDone === 'function') opts.onDone(0);
+            return 0;
+        }
+
         var ev = typeof Event === 'function' ? new Event('DOMContentLoaded') : { type: 'DOMContentLoaded' };
-        for (var i = 0; i < queue.length; i++) {
-            try { queue[i](ev); } catch (e) {
-                console.error('[HY DCL] 回呼 #' + (i + 1) + ' 錯誤', e);
+        var spread = queue.length > 6 || opts.spread === true;
+        var gen = ++state._flushGen;
+
+        if (!spread) {
+            for (var s = 0; s < queue.length; s++) {
+                try { queue[s](ev); } catch (e) {
+                    console.error('[HY DCL] 回呼 #' + (s + 1) + ' 錯誤', e);
+                }
             }
+            if (opts.finalize) finalizeCapture();
+            if (typeof opts.onDone === 'function') opts.onDone(queue.length);
+            return queue.length;
         }
-        if (opts.finalize) {
-            state.capturing = false;
-            window.addEventListener = state.nativeWin;
-            document.addEventListener = state.nativeDoc;
-            window.__HY_DCL_CAPTURING = false;
+
+        var idx = 0;
+        function step() {
+            if (gen !== state._flushGen) return;
+            idx = runQueueSlice(queue, idx, ev);
+            if (idx < queue.length) {
+                window.setTimeout(step, 0);
+                return;
+            }
+            if (opts.finalize) finalizeCapture();
+            if (typeof opts.onDone === 'function') opts.onDone(queue.length);
         }
+        window.setTimeout(step, 0);
         return queue.length;
     }
 
@@ -1325,31 +1406,9 @@ window.HY = window.HY || {};
         pendingCount: function () { return state.pending.length; }
     };
 
-    window.__HY_FLUSH_READY__ = function () {
-        flush({ finalize: true });
+    window.__HY_FLUSH_READY__ = function (onDone) {
+        flush({ finalize: true, spread: true, onDone: onDone });
     };
-
-    /* game.html 單檔：內聯腳本極長，收尾若未跑到 flush 會整站 UI 失灵 */
-    if (window.__HY_STANDALONE__) {
-        function standaloneFinalize() {
-            if (!state.capturing) return;
-            var n = flush({ finalize: true });
-            if (n > 0) {
-                try {
-                    var g = window.HY && window.HY.game;
-                    if (g) {
-                        if (typeof g.onLateModulesLoaded === 'function') g.onLateModulesLoaded();
-                        if (typeof g.renderAll === 'function') g.renderAll(true);
-                    }
-                } catch (eFin) { console.error('[HY DCL] standalone 收尾', eFin); }
-            }
-        }
-        if (document.readyState === 'complete') {
-            setTimeout(standaloneFinalize, 0);
-        } else {
-            window.addEventListener('load', function () { setTimeout(standaloneFinalize, 0); });
-        }
-    }
 })();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)
