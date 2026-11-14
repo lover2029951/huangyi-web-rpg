@@ -39,12 +39,12 @@
     } catch (eSm) {}
   };
 })();
-/* HY chunk phase1 — 209 files */
+/* HY chunk phase1 — 210 files */
 /* --- hyVersionGate.js --- */
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 789; /* build sync */
+    var LIVE = 790; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -514,6 +514,8 @@ window.HY = window.HY || {};
          ③ 補跑上限 4 次（原本 8）：寧可慢一點，也不要卡
          ④ dt 上限 250 → 120：背景分頁回來時不暴衝
        ────────────────────────────────────────────────────────── */
+    var PUMP_SLICE_MS = 12;        /* 單次 pump() 外殼允許的最長時間（含一個 interval 回呼） */
+    var TIMEOUT_SLICE_MS = 12;     /* setTimeout 包裝：超過則記錄並建議分片 */
     var TICK_BUDGET_MS = 16;       /* 整輪硬上限 */
     var TASK_BUDGET_MS = 4;        /* 單一任務上限 */
     var MAX_GUARD = 4;             /* 單一任務單輪最多補跑次數 */
@@ -687,8 +689,16 @@ window.HY = window.HY || {};
 
         if (hasDueTasks()) kick();
     }
-    S.LAST = now();
-    S.timer = N.setInterval(tick, S.BASE_MS);
+    function armScheduler() {
+        if (S.timer) return;
+        S.LAST = now();
+        S.timer = N.setInterval(tick, S.BASE_MS);
+    }
+    CFG.speed.armScheduler = armScheduler;
+    /* 開機完成前不 tick，避免 phase1/2 載入時 pump 與 DCL 搶主線程觸發 Violation */
+    if (window.__HY_EARLY_SCHEDULER__ === true) {
+        armScheduler();
+    }
     // ── 覆寫 setInterval / clearInterval ──
     window.setInterval = function (cb, ms) {
         if (typeof cb !== 'function') return N.setInterval.apply(null, arguments);
@@ -711,6 +721,10 @@ window.HY = window.HY || {};
        這裡加記錄，讓 debugTasks() 能直接告訴我們是哪一支。 */
     window.setTimeout = function (cb, ms) {
         if (typeof cb !== 'function') return N.setTimeout.apply(null, arguments);
+        /* 開機完成前：不接監測包測包裝，減少 gameConfigSpeed 行號誤導與巢狀計時器開銷 */
+        if (window.__HY_BOOT_DONE !== true) {
+            return N.setTimeout.apply(null, arguments);
+        }
         var args = Array.prototype.slice.call(arguments, 2);
         var delay = Math.max(1, parseInt(ms, 10) || 1);
         if (Date.now() - S.BOOT_TS > (CFG.speed.bootGuardMs || 800)) {
@@ -1295,8 +1309,8 @@ window.HY = window.HY || {};
         return;
     }
 
-    var FRAME_BUDGET_MS = 12;
-    var CHUNK_MIN = 8;
+    var FRAME_BUDGET_MS = 10;
+    var CHUNK_MIN = 1;
 
     var state = {
         capturing: true,
@@ -1356,7 +1370,8 @@ window.HY = window.HY || {};
         }
 
         var ev = typeof Event === 'function' ? new Event('DOMContentLoaded') : { type: 'DOMContentLoaded' };
-        var spread = opts.spread === true && queue.length > 24;
+        var spread = opts.spread !== false && queue.length > 2;
+        if (opts.sync === true) spread = false;
         var gen = ++state._flushGen;
 
         if (!spread) {
@@ -1409,7 +1424,11 @@ window.HY = window.HY || {};
     };
 
     window.__HY_FLUSH_READY__ = function (onDone) {
-        flush({ finalize: true, spread: false, onDone: onDone });
+        if (window.HY && typeof window.HY.finishBootPipeline === 'function') {
+            window.HY.finishBootPipeline({ onDone: onDone, finalizeDcl: true, spread: true });
+            return;
+        }
+        flush({ finalize: true, spread: true, onDone: onDone });
     };
 
     window.setTimeout(function () {
@@ -1418,7 +1437,7 @@ window.HY = window.HY || {};
         console.warn('[HY DCL] 保底收尾：仍有 ' + state.pending.length + ' 個啟動回呼');
         flush({
             finalize: true,
-            spread: false,
+            spread: true,
             onDone: function () {
                 try {
                     var g = window.HY && window.HY.game;
@@ -1427,6 +1446,111 @@ window.HY = window.HY || {};
             }
         });
     }, 14000);
+})();
+/* --- hyBootPipeline.js --- */
+// js/hyBootPipeline.js — 開機收尾：分帧 DCL → boot → late → 分片全繪（避免 50ms Violation）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function noop() {}
+
+    function chainAsync(fns, done) {
+        var i = 0;
+        function next() {
+            if (i >= fns.length) {
+                if (done) done();
+                return;
+            }
+            var fn = fns[i++];
+            try {
+                fn(next);
+            } catch (e) {
+                console.error('[hyBootPipeline]', e);
+                window.setTimeout(next, 0);
+            }
+        }
+        window.setTimeout(next, 0);
+    }
+
+    /**
+     * @param {object} opts
+     * @param {boolean} [opts.finalizeDcl]
+     * @param {function} [opts.onDone]
+     */
+    HY.finishBootPipeline = function (opts) {
+        opts = opts || {};
+        var onDone = typeof opts.onDone === 'function' ? opts.onDone : noop;
+
+        chainAsync([
+            function (next) {
+                if (opts.skipDcl === true) {
+                    window.setTimeout(next, 0);
+                    return;
+                }
+                var DCL = window.HY && window.HY.DclCapture;
+                if (DCL && typeof DCL.flush === 'function') {
+                    DCL.flush({
+                        finalize: opts.finalizeDcl !== false,
+                        spread: opts.spread !== false,
+                        onDone: function () { window.setTimeout(next, 0); }
+                    });
+                    return;
+                }
+                next();
+            },
+            function (next) {
+                try {
+                    if (!window.HY.game && typeof window.HY.bootGameApp === 'function') {
+                        window.HY.bootGameApp();
+                    }
+                } catch (eB) { console.error('[hyBootPipeline] bootGameApp', eB); }
+                window.setTimeout(next, 0);
+            },
+            function (next) {
+                try {
+                    var g = window.HY && window.HY.game;
+                    if (g && typeof g.onLateModulesLoaded === 'function') {
+                        g.onLateModulesLoaded();
+                    }
+                } catch (eL) { console.warn('[hyBootPipeline] late', eL); }
+                window.setTimeout(next, 0);
+            },
+            function (next) {
+                var g = window.HY && window.HY.game;
+                if (!g) {
+                    next();
+                    return;
+                }
+                if (typeof g.renderAllBootSlice === 'function') {
+                    g.renderAllBootSlice(next);
+                    return;
+                }
+                try {
+                    if (typeof g.renderAll === 'function') g.renderAll(true);
+                } catch (eR) { console.warn('[hyBootPipeline] render', eR); }
+                window.setTimeout(next, 0);
+            },
+            function (next) {
+                try { window.__HY_BOOT_DONE = true; } catch (eF) {}
+                try {
+                    var CFG = window.HY && window.HY.GameConfig;
+                    if (CFG && CFG.speed && typeof CFG.speed.armScheduler === 'function') {
+                        CFG.speed.armScheduler();
+                    }
+                } catch (eS) {}
+                try {
+                    if (window.HY && typeof window.HY.runBootSmoke === 'function') {
+                        var q = String(window.location.search || '');
+                        if (/\bboot_smoke=1\b/i.test(q)) {
+                            window.setTimeout(function () { window.HY.runBootSmoke(); }, 120);
+                        }
+                    }
+                } catch (eSm) {}
+                next();
+            }
+        ], onDone);
+    };
 })();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)
@@ -118158,6 +118282,42 @@ window.HY = window.HY || {};
       };
       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
       else setTimeout(run, 16);
+    }
+    /** 開機用：把全繪切成多個 ≤10ms 的 setTimeout 片（避免 50ms Violation） */
+    renderAllBootSlice(done) {
+      var self = this;
+      var perf = window.HY && window.HY.Perf;
+      var BUDGET = 10;
+      var queue = [];
+      var push = function (label, fn) {
+        queue.push(function () {
+          if (perf && perf.enabled) perf.time(label, fn);
+          else fn();
+        });
+      };
+      push('boot.sync', function () { self.charSys.syncActivePointer(); });
+      push('boot.ensureCore', function () { self.ensureCoreState(); });
+      push('boot.charPanel', function () { self.uiCharParty.renderCharacterPanel(); });
+      push('boot.partyTab', function () { self.uiCharParty.renderPartyAndRosterTab(); });
+      push('boot.autoTactics', function () { self.uiCombatExplore.renderAutoTacticsSelects(); });
+      push('boot.explore', function () { self.uiCombatExplore.renderExploreAndCombat(); });
+      push('boot.martial', function () { self.uiMartialSect.renderMartialTab(); });
+      push('boot.sect', function () { self.uiMartialSect.renderSectTab(); });
+      push('boot.inventory', function () { self.uiEquipMarket.renderInventoryTab(); });
+      push('boot.blackmarket', function () { self.uiEquipMarket.renderBlackMarketTab(); });
+      push('boot.companion', function () { self.uiCompPet.renderCompanionTab(); });
+      push('boot.guild', function () { self.uiGuild.renderGuildTab(); });
+      if (this.uiTown) push('boot.town', function () { self.uiTown.renderTownTab(); });
+      var i = 0;
+      function pump() {
+        var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        while (i < queue.length && ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - t0 < BUDGET) {
+          try { queue[i++](); } catch (e) { if (window.console) console.warn('[renderBoot]', e); }
+        }
+        if (i < queue.length) window.setTimeout(pump, 0);
+        else if (typeof done === 'function') done();
+      }
+      window.setTimeout(pump, 0);
     }
     bindStaticEvents() {
       const cfgData = (window.HY.Data && window.HY.Data.CONFIG) || {};
