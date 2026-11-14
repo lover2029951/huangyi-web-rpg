@@ -31,6 +31,41 @@
         </div>
         <div id="hy-boot-text" style="margin-top:12px;font-size:0.82rem;color:#94a3b8;">正在初始化時空引擎…</div>
     </div>
+    <script>
+    (function () {
+      function dismissBootOverlay() {
+        try { document.body.classList.add('hy-ready'); } catch (eR) { }
+        var ov = document.getElementById('hy-boot-overlay');
+        if (!ov) return;
+        ov.style.transition = 'opacity 0.22s ease';
+        ov.style.opacity = '0';
+        setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 280);
+      }
+      function forceBootRescue() {
+        if (document.body.classList.contains('hy-ready')) return;
+        var txt = document.getElementById('hy-boot-text');
+        if (txt) txt.textContent = '啟動逾時，嘗試強制收尾…';
+        try {
+          if (window.HY && window.HY.DclCapture) {
+            window.HY.DclCapture.flush({ finalize: true, spread: false });
+          } else if (window.__HY_FLUSH_READY__) {
+            window.__HY_FLUSH_READY__();
+          }
+        } catch (eD) { console.error(eD); }
+        try {
+          if (!window.HY.game && window.HY && typeof window.HY.bootGameApp === 'function') {
+            window.HY.bootGameApp();
+          }
+          if (window.HY.game) {
+            if (typeof window.HY.game.onLateModulesLoaded === 'function') window.HY.game.onLateModulesLoaded();
+            if (typeof window.HY.game.renderAll === 'function') window.HY.game.renderAll(true);
+          }
+        } catch (eG) { console.error(eG); }
+        dismissBootOverlay();
+      }
+      window.setTimeout(forceBootRescue, 12000);
+    })();
+    </script>
 
     <!-- ⭐ 頂部標籤的顯示時機
          ──────────────────────────────────────────────────────────────
@@ -553,7 +588,7 @@
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=785"></script>
+<script src="chunks/hy-phase1.js?v=786"></script>
 <script>
 (function () {
   function shouldLoadPerfProbe() {
@@ -567,16 +602,15 @@
   function loadPerfProbeOptional() {
     if (!shouldLoadPerfProbe()) return;
     var sp = document.createElement('script');
-    sp.src = 'chunks/hy-perf.js?v=785';
+    sp.src = 'chunks/hy-perf.js?v=786';
     sp.async = true;
     document.head.appendChild(sp);
   }
-  function finishChunk() {
-    try { if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(); } catch (e) {}
+  function dismissOverlay() {
     try { document.body.classList.add('hy-ready'); } catch (eR) {}
     loadPerfProbeOptional();
     var ov = document.getElementById('hy-boot-overlay');
-  if (ov) {
+    if (ov) {
       ov.style.transition = 'opacity 0.22s ease';
       ov.style.opacity = '0';
       setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 260);
@@ -584,8 +618,21 @@
     var hint = document.getElementById('hy-boot-bgload');
     if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
   }
+  function finishChunk() {
+    try {
+      if (window.__HY_FLUSH_READY__) window.__HY_FLUSH_READY__(dismissOverlay);
+      else dismissOverlay();
+    } catch (e) {
+      console.error('[chunk] finish', e);
+      dismissOverlay();
+    }
+  }
+  var bar = document.getElementById('hy-boot-bar');
+  var bootTxt = document.getElementById('hy-boot-text');
+  if (bar) bar.style.width = '42%';
+  if (bootTxt) bootTxt.textContent = '載入擴充模組…';
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=785';
+  s.src = 'chunks/hy-phase2.js?v=786';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };

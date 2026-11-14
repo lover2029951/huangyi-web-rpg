@@ -895,6 +895,41 @@ details > summary::marker {
         </div>
         <div id="hy-boot-text" style="margin-top:12px;font-size:0.82rem;color:#94a3b8;">正在初始化時空引擎…</div>
     </div>
+    <script>
+    (function () {
+      function dismissBootOverlay() {
+        try { document.body.classList.add('hy-ready'); } catch (eR) { }
+        var ov = document.getElementById('hy-boot-overlay');
+        if (!ov) return;
+        ov.style.transition = 'opacity 0.22s ease';
+        ov.style.opacity = '0';
+        setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 280);
+      }
+      function forceBootRescue() {
+        if (document.body.classList.contains('hy-ready')) return;
+        var txt = document.getElementById('hy-boot-text');
+        if (txt) txt.textContent = '啟動逾時，嘗試強制收尾…';
+        try {
+          if (window.HY && window.HY.DclCapture) {
+            window.HY.DclCapture.flush({ finalize: true, spread: false });
+          } else if (window.__HY_FLUSH_READY__) {
+            window.__HY_FLUSH_READY__();
+          }
+        } catch (eD) { console.error(eD); }
+        try {
+          if (!window.HY.game && window.HY && typeof window.HY.bootGameApp === 'function') {
+            window.HY.bootGameApp();
+          }
+          if (window.HY.game) {
+            if (typeof window.HY.game.onLateModulesLoaded === 'function') window.HY.game.onLateModulesLoaded();
+            if (typeof window.HY.game.renderAll === 'function') window.HY.game.renderAll(true);
+          }
+        } catch (eG) { console.error(eG); }
+        dismissBootOverlay();
+      }
+      window.setTimeout(forceBootRescue, 12000);
+    })();
+    </script>
 
     <!-- ⭐ 頂部標籤的顯示時機
          ──────────────────────────────────────────────────────────────
@@ -1437,10 +1472,9 @@ setTimeout(function () {
 
 /* ===== 1 / 294 : hyVersionGate.js ===== */
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
-/* eslint-disable no-unused-vars */
 (function () {
     'use strict';
-    var LIVE = 785; /* build sync */
+    var LIVE = 786; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -1448,19 +1482,20 @@ setTimeout(function () {
     if (u.pathname.indexOf('game') === -1) return;
 
     var qv = parseInt(u.searchParams.get('v') || '0', 10);
-  function goNext(ver) {
+
+    function goNext(ver) {
         u.searchParams.set('v', String(ver));
         u.searchParams.set('nocache', String(Date.now()));
         window.location.replace(u.toString());
     }
 
-    if (!qv || qv < LIVE) {
-        console.warn('[HY] 網址版本 v=' + (qv || '（無）') + ' 過舊，自動導向 v' + LIVE);
+    /* 僅在「明確帶了舊版 v」時導向；無 ?v= 時不 reload（避免中斷分包 phase2 載入） */
+    if (qv > 0 && qv < LIVE) {
+        console.warn('[HY] 網址版本 v=' + qv + ' 過舊，自動導向 v' + LIVE);
         goNext(LIVE);
         return;
     }
 
-    /** 單檔內嵌標記（建置寫入）；缺漏表示可能拿到舊 SW 快取 */
     if (u.pathname.indexOf('game.html') !== -1 && window.__HY_STANDALONE__) {
         var stamp = window.__HY_BUILD_STAMP__;
         if (stamp && stamp < LIVE) {
@@ -2757,7 +2792,7 @@ window.HY = window.HY || {};
         }
 
         var ev = typeof Event === 'function' ? new Event('DOMContentLoaded') : { type: 'DOMContentLoaded' };
-        var spread = queue.length > 6 || opts.spread === true;
+        var spread = opts.spread === true && queue.length > 24;
         var gen = ++state._flushGen;
 
         if (!spread) {
@@ -2810,8 +2845,24 @@ window.HY = window.HY || {};
     };
 
     window.__HY_FLUSH_READY__ = function (onDone) {
-        flush({ finalize: true, spread: true, onDone: onDone });
+        flush({ finalize: true, spread: false, onDone: onDone });
     };
+
+    window.setTimeout(function () {
+        if (!state.capturing) return;
+        if (state.pending.length < 1) return;
+        console.warn('[HY DCL] 保底收尾：仍有 ' + state.pending.length + ' 個啟動回呼');
+        flush({
+            finalize: true,
+            spread: false,
+            onDone: function () {
+                try {
+                    var g = window.HY && window.HY.game;
+                    if (g && typeof g.renderAll === 'function') g.renderAll(true);
+                } catch (eW) { }
+            }
+        });
+    }, 14000);
 })();
 
 /* ===== 8 / 294 : linkBus.js ===== */
@@ -176906,7 +176957,7 @@ function __HY_FINISH_BOOT__() {
   }
   try {
     if (window.HY && window.HY.DclCapture && typeof window.HY.DclCapture.flush === 'function') {
-      window.HY.DclCapture.flush({ finalize: true, spread: true, onDone: afterModules });
+      window.HY.DclCapture.flush({ finalize: true, spread: false, onDone: afterModules });
     } else if (window.__HY_FLUSH_READY__) {
       window.__HY_FLUSH_READY__(afterModules);
     } else {
@@ -176927,7 +176978,7 @@ if (document.readyState === 'complete') {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     try {
-      navigator.serviceWorker.register('sw.js?v=785').catch(function () {});
+      navigator.serviceWorker.register('sw.js?v=786').catch(function () {});
     } catch (eSw) {}
   });
 }

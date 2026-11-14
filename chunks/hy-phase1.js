@@ -16,34 +16,24 @@
   window.__HY_FLUSH_READY__ = function (onDone) {
     var q = pending.slice(); pending.length = 0;
     var ev = new Event("DOMContentLoaded");
-    var idx = 0;
-    function step() {
-      var t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-      while (idx < q.length) {
-        try { q[idx](ev); } catch (e) { console.error(e); }
-        idx++;
-        var t1 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-        if (idx % 8 === 0 && (t1 - t0) >= 12) break;
-      }
-      if (idx < q.length) { setTimeout(step, 0); return; }
-      capturing = false;
-      window.__HY_DCL_CAPTURING = false;
-      window.addEventListener = nativeWin;
-      document.addEventListener = nativeDoc;
-      try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
-      try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
-      try { if (typeof onDone === "function") onDone(); } catch (eD) {}
+    for (var i = 0; i < q.length; i++) {
+      try { q[i](ev); } catch (e) { console.error(e); }
     }
-    setTimeout(step, 0);
+    capturing = false;
+    window.__HY_DCL_CAPTURING = false;
+    window.addEventListener = nativeWin;
+    document.addEventListener = nativeDoc;
+    try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
+    try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
+    try { if (typeof onDone === "function") onDone(); } catch (eD) {}
   };
 })();
 /* HY chunk phase1 — 209 files */
 /* --- hyVersionGate.js --- */
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
-/* eslint-disable no-unused-vars */
 (function () {
     'use strict';
-    var LIVE = 785; /* build sync */
+    var LIVE = 786; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -51,19 +41,20 @@
     if (u.pathname.indexOf('game') === -1) return;
 
     var qv = parseInt(u.searchParams.get('v') || '0', 10);
-  function goNext(ver) {
+
+    function goNext(ver) {
         u.searchParams.set('v', String(ver));
         u.searchParams.set('nocache', String(Date.now()));
         window.location.replace(u.toString());
     }
 
-    if (!qv || qv < LIVE) {
-        console.warn('[HY] 網址版本 v=' + (qv || '（無）') + ' 過舊，自動導向 v' + LIVE);
+    /* 僅在「明確帶了舊版 v」時導向；無 ?v= 時不 reload（避免中斷分包 phase2 載入） */
+    if (qv > 0 && qv < LIVE) {
+        console.warn('[HY] 網址版本 v=' + qv + ' 過舊，自動導向 v' + LIVE);
         goNext(LIVE);
         return;
     }
 
-    /** 單檔內嵌標記（建置寫入）；缺漏表示可能拿到舊 SW 快取 */
     if (u.pathname.indexOf('game.html') !== -1 && window.__HY_STANDALONE__) {
         var stamp = window.__HY_BUILD_STAMP__;
         if (stamp && stamp < LIVE) {
@@ -1354,7 +1345,7 @@ window.HY = window.HY || {};
         }
 
         var ev = typeof Event === 'function' ? new Event('DOMContentLoaded') : { type: 'DOMContentLoaded' };
-        var spread = queue.length > 6 || opts.spread === true;
+        var spread = opts.spread === true && queue.length > 24;
         var gen = ++state._flushGen;
 
         if (!spread) {
@@ -1407,8 +1398,24 @@ window.HY = window.HY || {};
     };
 
     window.__HY_FLUSH_READY__ = function (onDone) {
-        flush({ finalize: true, spread: true, onDone: onDone });
+        flush({ finalize: true, spread: false, onDone: onDone });
     };
+
+    window.setTimeout(function () {
+        if (!state.capturing) return;
+        if (state.pending.length < 1) return;
+        console.warn('[HY DCL] 保底收尾：仍有 ' + state.pending.length + ' 個啟動回呼');
+        flush({
+            finalize: true,
+            spread: false,
+            onDone: function () {
+                try {
+                    var g = window.HY && window.HY.game;
+                    if (g && typeof g.renderAll === 'function') g.renderAll(true);
+                } catch (eW) { }
+            }
+        });
+    }, 14000);
 })();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)
