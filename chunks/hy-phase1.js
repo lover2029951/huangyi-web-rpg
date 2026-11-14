@@ -80469,7 +80469,7 @@ window.HY = window.HY || {};
                 if (bonus > 0) h = Math.floor(h * (1 + bonus));
             } catch (eHb) { }
             return h;
-        },
+        }
         queueVitalRestore(charObj, hp, mp, fxMeta) {
             if (!charObj) return;
             var h = this._healWithSpiritRootBonus(charObj, hp);

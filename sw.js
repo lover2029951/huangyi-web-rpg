@@ -2,7 +2,7 @@
 /* global self, caches, fetch */
 'use strict';
 
-var CACHE = 'huangyi-game-v781';
+var CACHE = 'huangyi-game-v782';
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
