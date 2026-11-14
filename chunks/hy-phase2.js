@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 85 files */
+/* HY chunk phase2 — 86 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -52895,6 +52895,57 @@ window.HY = window.HY || {};
     try {
         if (/\bboot_test=1\b/i.test(String(location.search || ''))) {
             setTimeout(run, 1200);
+        }
+    } catch (eQ) { }
+})();
+/* --- hyBootSmoke.js --- */
+// js/hyBootSmoke.js — 開機煙霧測試（Console：HY.runBootSmoke()）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function run() {
+        var out = { ok: true, fails: [], ver: window.HY_GAME_BUILD_VER || 0 };
+        var g = window.HY && window.HY.game;
+        if (!g) {
+            out.ok = false;
+            out.fails.push('HY.game 不存在');
+            console.error('[hyBootSmoke] FAIL', out);
+            return out;
+        }
+        if (!g.charSys || !g.charSys.state) {
+            out.ok = false;
+            out.fails.push('charSys');
+        }
+        if (!g.combatSys) out.fails.push('combatSys');
+        if (typeof window.HY.bootGameApp !== 'function') {
+            out.ok = false;
+            out.fails.push('bootGameApp 未匯出');
+        }
+        if (!window.HY.responsiveSys) out.fails.push('responsiveSys（可晚到）');
+        if (!document.body.classList.contains('hy-ready')) {
+            out.ok = false;
+            out.fails.push('body 無 hy-ready');
+        }
+        if (document.getElementById('hy-boot-overlay')) {
+            out.ok = false;
+            out.fails.push('開機遮罩仍在');
+        }
+        if (g && !g.sectFeatSys) out.fails.push('sectFeatSys（晚載）');
+        if (out.fails.length) out.ok = false;
+        if (out.ok) {
+            console.log('%c[hyBootSmoke] PASS v' + out.ver, 'color:#4ade80;font-weight:bold');
+        } else {
+            console.error('[hyBootSmoke] FAIL', out);
+        }
+        return out;
+    }
+
+    HY.runBootSmoke = run;
+
+    try {
+        if (/\bboot_smoke=1\b/i.test(String(location.search || ''))) {
+            window.setTimeout(run, 800);
         }
     } catch (eQ) { }
 })();

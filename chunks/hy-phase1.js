@@ -30,7 +30,13 @@
     } catch (eBoot) { console.error('[chunk] bootGameApp', eBoot); }
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
     try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
+    try { window.__HY_BOOT_DONE = true; } catch (eF) {}
     try { if (typeof onDone === "function") onDone(); } catch (eD) {}
+    try {
+      if (window.HY && typeof window.HY.runBootSmoke === "function") {
+        setTimeout(function () { window.HY.runBootSmoke(); }, 200);
+      }
+    } catch (eSm) {}
   };
 })();
 /* HY chunk phase1 — 209 files */
@@ -38,7 +44,7 @@
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 787; /* build sync */
+    var LIVE = 788; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
