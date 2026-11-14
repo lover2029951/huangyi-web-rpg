@@ -5,21 +5,21 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v780 · 2026-11-14',
-        gameVer: 780,
+        newsVer: 'v781 · 2026-11-14',
+        gameVer: 781,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
         {
-            tag: 'fix', tagLabel: '靈根',
-            title: '靈根晚載入與效能 v780',
+            tag: 'fix', tagLabel: '啟動',
+            title: '晚載入模組啟動修復 v781',
             date: '2026-11-14',
             bullets: [
-                '新增 <code>hyLateBoot.js</code>：分階載入後集中啟動靈根／元素／門派特色，不再依賴已過的 DOMContentLoaded',
-                '開機只全繪一次，氣血條改輕量快取；game／chunks Service Worker <b>網路優先</b>，避免卡在舊版 <code>v=774</code>',
-                'Console 可用 <code>?spirit_test=1</code> 自測靈根掛鉤是否就緒'
+                '根因：<b>可玩門檻</b>過早結束 DCL 攔截，背景載入的百餘支腳本（門派、等級、離線、武魂 UI…）註冊的回呼不再執行',
+                '新增 <code>hyDclCapture.js</code>：同時攔截 <code>window</code>／<code>document</code> 的 DOMContentLoaded；門檻達成只 flush 前半，<b>全載完再 flush 一次</b>',
+                '全模組自測：<code>?boot_test=1</code>（<code>HY.hyBootSelfTestRun()</code>）；效能／SW 網路優先延續 v780'
             ]
         },
         {

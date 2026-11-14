@@ -1,19 +1,31 @@
 (function () {
-  var nativeAdd = window.addEventListener;
-  var queue = [];
+  var nativeWin = window.addEventListener;
+  var nativeDoc = document.addEventListener.bind(document);
+  window.__HY_CHUNK_DCL_PREFIX__ = 1;
+  var pending = window.__HY_DCL_PENDING = window.__HY_DCL_PENDING || [];
+  var capturing = true;
+  window.__HY_DCL_CAPTURING = true;
   window.addEventListener = function (t, fn, o) {
-    if (t === "DOMContentLoaded") { queue.push(fn); return; }
-    return nativeAdd.call(window, t, fn, o);
+    if (capturing && t === "DOMContentLoaded") { pending.push(fn); return; }
+    return nativeWin.call(window, t, fn, o);
+  };
+  document.addEventListener = function (t, fn, o) {
+    if (capturing && t === "DOMContentLoaded") { pending.push(fn); return; }
+    return nativeDoc(t, fn, o);
   };
   window.__HY_FLUSH_READY__ = function () {
-    window.addEventListener = nativeAdd;
-    var q = queue.slice(); queue.length = 0;
-    q.forEach(function (fn) { try { fn(new Event("DOMContentLoaded")); } catch (e) { console.error(e); } });
+    var q = pending.slice(); pending.length = 0;
+    var ev = new Event("DOMContentLoaded");
+    q.forEach(function (fn) { try { fn(ev); } catch (e) { console.error(e); } });
+    capturing = false;
+    window.__HY_DCL_CAPTURING = false;
+    window.addEventListener = nativeWin;
+    document.addEventListener = nativeDoc;
     try { if (window.HY.game && window.HY.game.onLateModulesLoaded) window.HY.game.onLateModulesLoaded(); } catch (e) {}
     try { if (window.HY.game && window.HY.game.renderAll) window.HY.game.renderAll(true); } catch (e) {}
   };
 })();
-/* HY chunk phase1 — 207 files */
+/* HY chunk phase1 — 208 files */
 /* --- gameConfig.js --- */
 // js/gameConfig.js  (v3.3 · 1/5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -1215,6 +1227,98 @@ window.HY = window.HY || {};
         bootApply();
     }
     console.log('[GameConfig 5/5] ✓ 啟動編排已就緒');
+})();
+/* --- hyDclCapture.js --- */
+// js/hyDclCapture.js — 延後 DOMContentLoaded（window + document），與分包 prefix 共用佇列
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    if (window.__HY_CHUNK_DCL_PREFIX__) {
+        var pendingRef = window.__HY_DCL_PENDING || [];
+        HY.DclCapture = {
+            flush: function (opts) {
+                opts = opts || {};
+                if (!opts.finalize) return pendingRef.length;
+                return pendingRef.length;
+            },
+            runWhenReady: function (fn) {
+                if (typeof fn !== 'function') return;
+                if (window.__HY_DCL_CAPTURING !== false) pendingRef.push(fn);
+                else try { fn(); } catch (e) { console.error(e); }
+            },
+            isCapturing: function () { return window.__HY_DCL_CAPTURING !== false; },
+            pendingCount: function () { return pendingRef.length; }
+        };
+        return;
+    }
+
+    var state = {
+        capturing: true,
+        pending: window.__HY_DCL_PENDING || [],
+        nativeWin: window.addEventListener.bind(window),
+        nativeDoc: document.addEventListener.bind(document)
+    };
+    window.__HY_DCL_PENDING = state.pending;
+
+    function install() {
+        window.addEventListener = function (type, fn, opts) {
+            if (state.capturing && type === 'DOMContentLoaded') {
+                state.pending.push(fn);
+                return;
+            }
+            return state.nativeWin(type, fn, opts);
+        };
+        document.addEventListener = function (type, fn, opts) {
+            if (state.capturing && type === 'DOMContentLoaded') {
+                state.pending.push(fn);
+                return;
+            }
+            return state.nativeDoc(type, fn, opts);
+        };
+    }
+
+    function flush(opts) {
+        opts = opts || {};
+        var queue = state.pending.slice();
+        state.pending.length = 0;
+        var ev = typeof Event === 'function' ? new Event('DOMContentLoaded') : { type: 'DOMContentLoaded' };
+        for (var i = 0; i < queue.length; i++) {
+            try { queue[i](ev); } catch (e) {
+                console.error('[HY DCL] 回呼 #' + (i + 1) + ' 錯誤', e);
+            }
+        }
+        if (opts.finalize) {
+            state.capturing = false;
+            window.addEventListener = state.nativeWin;
+            document.addEventListener = state.nativeDoc;
+            window.__HY_DCL_CAPTURING = false;
+        }
+        return queue.length;
+    }
+
+    function runWhenReady(fn) {
+        if (typeof fn !== 'function') return;
+        if (state.capturing) {
+            state.pending.push(fn);
+            return;
+        }
+        if (document.readyState === 'loading') {
+            state.nativeDoc('DOMContentLoaded', fn);
+        } else {
+            try { fn(); } catch (e) { console.error('[HY DCL] runWhenReady', e); }
+        }
+    }
+
+    install();
+    window.__HY_DCL_CAPTURING = true;
+
+    HY.DclCapture = {
+        flush: flush,
+        runWhenReady: runWhenReady,
+        isCapturing: function () { return state.capturing; },
+        pendingCount: function () { return state.pending.length; }
+    };
 })();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)

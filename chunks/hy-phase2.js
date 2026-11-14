@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 84 files */
+/* HY chunk phase2 — 85 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -4810,7 +4810,7 @@ window.HY = window.HY || {};
     }, 200);
 })();
 /* --- hyLateBoot.js --- */
-// js/hyLateBoot.js — 分階載入後一次啟動晚到系統（不依賴 DOMContentLoaded）
+// js/hyLateBoot.js — 全部腳本載完後，冪等啟動「晚於 main 掛載」的遊戲模組
 window.HY = window.HY || {};
 (function () {
     'use strict';
@@ -4853,6 +4853,24 @@ window.HY = window.HY || {};
         HY.uiSpiritRoot = new HY.UISpiritRoot(game);
       }
     } catch (eUi) { }
+    try {
+      if (!game.levelExpSys && HY.LevelExpSystem) {
+        game.levelExpSys = new HY.LevelExpSystem(game);
+      }
+    } catch (eLe) { }
+    try {
+      if (!game.enemyFormationSys && HY.EnemyFormationSystem) {
+        game.enemyFormationSys = new HY.EnemyFormationSystem(game);
+      }
+    } catch (eEf) { }
+    try {
+      if (typeof HY.WuhunBoot === 'function') HY.WuhunBoot();
+    } catch (eWh) { }
+    try {
+      if (!window.HY.offlineSys && HY.OfflineIdleSystem) {
+        window.HY.offlineSys = new HY.OfflineIdleSystem(game);
+      }
+    } catch (eOi) { }
     game.__lateBootStamp = Date.now();
     return ok;
   }
@@ -52832,6 +52850,53 @@ window.HY = window.HY || {};
     window.HY.spiritRootSelfTestRun = run;
     if (document.readyState === 'complete') setTimeout(run, 1200);
     else window.addEventListener('load', function () { setTimeout(run, 1200); });
+})();
+/* --- hyBootSelfTest.js --- */
+// js/hyBootSelfTest.js — ?boot_test=1 檢查晚載入模組是否掛上 game（與靈根無關的全域自測）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    var EXPECT = [
+        { key: 'levelExpSys', label: '等級經驗' },
+        { key: 'sectFeatSys', label: '門派特色' },
+        { key: 'spiritRootSys', label: '靈根戰鬥' },
+        { key: 'elementSys', label: '元素' },
+        { key: 'enemyFormationSys', label: '敵陣' },
+        { key: '_offlineOnHy', label: '離線掛機', hy: 'offlineSys', optional: true }
+    ];
+
+    function run() {
+        var g = window.HY && window.HY.game;
+        if (!g) {
+            console.warn('[hyBootSelfTest] HY.game 不存在');
+            return false;
+        }
+        if (typeof HY.runLateBoot === 'function') HY.runLateBoot(g);
+        var miss = [];
+        var ok = [];
+        EXPECT.forEach(function (row) {
+            var hit = row.hy ? (window.HY && window.HY[row.hy]) : g[row.key];
+            if (hit) ok.push(row.label);
+            else if (!row.optional) miss.push(row.label + '(' + (row.hy || row.key) + ')');
+        });
+        var dcl = HY.DclCapture;
+        console.log('[hyBootSelfTest] 就緒：' + ok.join('、') + (miss.length ? '' : '（全項）'));
+        if (miss.length) console.error('[hyBootSelfTest] 缺少：' + miss.join('、'));
+        if (dcl) {
+            console.log('[hyBootSelfTest] DCL 攔截=' + (dcl.isCapturing ? '仍開啟' : '已結束')
+                + ' pending=' + (dcl.pendingCount ? dcl.pendingCount() : '?'));
+        }
+        return miss.length === 0;
+    }
+
+    HY.hyBootSelfTestRun = run;
+
+    try {
+        if (/\bboot_test=1\b/i.test(String(location.search || ''))) {
+            setTimeout(run, 1200);
+        }
+    } catch (eQ) { }
 })();
 /* --- ascendancyMechanicsSelfTest.js --- */
 // js/ascendancyMechanicsSelfTest.js — 41 條昇華核心機制微測（?asc_test=1 一併執行）
