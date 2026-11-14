@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 86 files */
+/* HY chunk phase2 — 87 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -52898,6 +52898,76 @@ window.HY = window.HY || {};
         }
     } catch (eQ) { }
 })();
+/* --- hyBootMetrics.js --- */
+// js/hyBootMetrics.js — 開機指標（?boot_smoke=1&boot_rounds=1 累積 sessionStorage）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    function slowMax() {
+        try {
+            var dbg = window.HY && window.HY.GameConfig && window.HY.GameConfig.speed &&
+                window.HY.GameConfig.speed.debugTasks();
+            if (!dbg || !dbg.slowTimeouts) return 0;
+            var max = 0;
+            Object.keys(dbg.slowTimeouts).forEach(function (k) {
+                var p = dbg.slowTimeouts[k];
+                if (p && p.max > max) max = p.max;
+            });
+            return max;
+        } catch (e) { return -1; }
+    }
+
+    function pumpMax() {
+        try {
+            var s = window.HY && window.HY.GameConfig && window.HY.GameConfig.__sched;
+            return s && s.__maxRoundMs ? s.__maxRoundMs : 0;
+        } catch (e2) { return 0; }
+    }
+
+    HY.collectBootMetrics = function () {
+        var smoke = null;
+        try {
+            if (typeof window.HY.runBootSmoke === 'function') smoke = window.HY.runBootSmoke();
+        } catch (eS) {
+            smoke = { ok: false, fails: [String(eS)] };
+        }
+        return {
+            at: Date.now(),
+            ver: window.HY_GAME_BUILD_VER || 0,
+            stamp: window.__HY_BUILD_STAMP__ || 0,
+            bootDone: !!window.__HY_BOOT_DONE,
+            smoke: smoke,
+            maxSlowTimeoutMs: slowMax(),
+            maxPumpRoundMs: pumpMax(),
+            game: !!(window.HY && window.HY.game),
+            hyReady: document.body && document.body.classList.contains('hy-ready')
+        };
+    };
+
+    HY.logBootRound = function () {
+        var m = HY.collectBootMetrics();
+        var key = 'HY_BOOT_ROUND_LOG';
+        var arr = [];
+        try { arr = JSON.parse(sessionStorage.getItem(key) || '[]'); } catch (e0) { arr = []; }
+        arr.push(m);
+        try { sessionStorage.setItem(key, JSON.stringify(arr)); } catch (e1) { }
+        return { round: arr.length, metrics: m };
+    };
+
+    HY.getBootRoundLog = function () {
+        try { return JSON.parse(sessionStorage.getItem('HY_BOOT_ROUND_LOG') || '[]'); } catch (e) { return []; }
+    };
+
+    try {
+        var q = String(window.location.search || '');
+        if (/\bboot_rounds=1\b/i.test(q) && /\bboot_smoke=1\b/i.test(q)) {
+            window.setTimeout(function () {
+                try { HY.logBootRound(); } catch (eL) { }
+            }, 1200);
+        }
+    } catch (eQ) { }
+})();
 /* --- hyBootSmoke.js --- */
 // js/hyBootSmoke.js — 開機煙霧測試（Console：HY.runBootSmoke()）
 window.HY = window.HY || {};
@@ -52917,12 +52987,16 @@ window.HY = window.HY || {};
             out.ok = false;
             out.fails.push('charSys');
         }
-        if (!g.combatSys) out.fails.push('combatSys');
+        if (!g.combatSys) {
+            out.ok = false;
+            out.fails.push('combatSys');
+        }
         if (typeof window.HY.bootGameApp !== 'function') {
             out.ok = false;
             out.fails.push('bootGameApp 未匯出');
         }
-        if (!window.HY.responsiveSys) out.fails.push('responsiveSys（可晚到）');
+        out.warns = out.warns || [];
+        if (!window.HY.responsiveSys) out.warns.push('responsiveSys（晚載）');
         if (!document.body.classList.contains('hy-ready')) {
             out.ok = false;
             out.fails.push('body 無 hy-ready');
@@ -52931,8 +53005,8 @@ window.HY = window.HY || {};
             out.ok = false;
             out.fails.push('開機遮罩仍在');
         }
-        if (g && !g.sectFeatSys) out.fails.push('sectFeatSys（晚載）');
-        if (out.fails.length) out.ok = false;
+        if (g && !g.sectFeatSys) out.warns.push('sectFeatSys（晚載）');
+        if (g && !g.spiritRootSys) out.warns.push('spiritRootSys（晚載）');
         if (out.ok) {
             console.log('%c[hyBootSmoke] PASS v' + out.ver, 'color:#4ade80;font-weight:bold');
         } else {

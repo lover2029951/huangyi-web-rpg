@@ -20,7 +20,7 @@
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 791; /* build sync */
+    var LIVE = 792; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -1271,7 +1271,7 @@ window.HY = window.HY || {};
         try { delete window.__HY_CHUNK_DCL_PREFIX__; } catch (eC) { window.__HY_CHUNK_DCL_PREFIX__ = false; }
     }
 
-    var FRAME_BUDGET_MS = 10;
+    var FRAME_BUDGET_MS = 8;
     var CHUNK_MIN = 1;
 
     var state = {
@@ -1448,6 +1448,30 @@ window.HY = window.HY || {};
      * @param {boolean} [opts.finalizeDcl]
      * @param {function} [opts.onDone]
      */
+    HY.deferUntilBootReady = function (fn, opts) {
+        opts = opts || {};
+        if (typeof fn !== 'function') return;
+        var delay = opts.delay || 0;
+        var poll = opts.pollMs || 120;
+        function run() {
+            if (opts.idle !== false && typeof requestIdleCallback === 'function') {
+                requestIdleCallback(function () {
+                    window.setTimeout(fn, delay);
+                }, { timeout: opts.idleTimeout || 3000 });
+            } else {
+                window.setTimeout(fn, delay);
+            }
+        }
+        function wait() {
+            if (window.__HY_BOOT_DONE !== true) {
+                window.setTimeout(wait, poll);
+                return;
+            }
+            run();
+        }
+        wait();
+    };
+
     HY.finishBootPipeline = function (opts) {
         opts = opts || {};
         var onDone = typeof opts.onDone === 'function' ? opts.onDone : noop;
@@ -108361,13 +108385,12 @@ window.HY = window.HY || {};
     console.log('[PartyPanelCleanup] ✓ 已啟動（移除「主控心法／隨行護法／隨行靈獸」三列）');
   }
   function bootWhenIdle() {
-    if (!window.__HY_BOOT_DONE) {
-      setTimeout(bootWhenIdle, 300);
+    var go = function () { setTimeout(boot, 80); };
+    if (window.HY && typeof window.HY.deferUntilBootReady === 'function') {
+      window.HY.deferUntilBootReady(go, { delay: 0, idle: true });
       return;
     }
-    var start = function () { setTimeout(boot, 120); };
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 2000 });
-    else start();
+    go();
   }
   if (document.readyState === 'complete' || document.readyState === 'interactive') bootWhenIdle();
   else window.addEventListener('load', bootWhenIdle);
