@@ -1328,6 +1328,28 @@ window.HY = window.HY || {};
     window.__HY_FLUSH_READY__ = function () {
         flush({ finalize: true });
     };
+
+    /* game.html 單檔：內聯腳本極長，收尾若未跑到 flush 會整站 UI 失灵 */
+    if (window.__HY_STANDALONE__) {
+        function standaloneFinalize() {
+            if (!state.capturing) return;
+            var n = flush({ finalize: true });
+            if (n > 0) {
+                try {
+                    var g = window.HY && window.HY.game;
+                    if (g) {
+                        if (typeof g.onLateModulesLoaded === 'function') g.onLateModulesLoaded();
+                        if (typeof g.renderAll === 'function') g.renderAll(true);
+                    }
+                } catch (eFin) { console.error('[HY DCL] standalone 收尾', eFin); }
+            }
+        }
+        if (document.readyState === 'complete') {
+            setTimeout(standaloneFinalize, 0);
+        } else {
+            window.addEventListener('load', function () { setTimeout(standaloneFinalize, 0); });
+        }
+    }
 })();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)
