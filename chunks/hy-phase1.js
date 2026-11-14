@@ -15,12 +15,12 @@
     return nativeDoc(t, fn, o);
   };
 })();
-/* HY chunk phase1 — 210 files */
+/* HY chunk phase1 — 211 files */
 /* --- hyVersionGate.js --- */
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 792; /* build sync */
+    var LIVE = 793; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -1546,6 +1546,62 @@ window.HY = window.HY || {};
         ], onDone);
     };
 })();
+/* --- hySliceRun.js --- */
+// js/hySliceRun.js — 主線程分片片執行（單片預算 ≤8ms，避免 Violation）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+
+    var DEFAULT_BUDGET = 8;
+
+    function now() {
+        return (window.performance && window.performance.now)
+            ? window.performance.now()
+            : Date.now();
+    }
+
+    HY.runSliceSteps = function (steps, opts) {
+        opts = opts || {};
+        if (!steps || !steps.length) {
+            if (typeof opts.done === 'function') opts.done();
+            return;
+        }
+        var budget = opts.budgetMs || DEFAULT_BUDGET;
+        var i = 0;
+        function pump() {
+            var t0 = now();
+            while (i < steps.length && now() - t0 < budget) {
+                try { steps[i++](); } catch (e) {
+                    if (window.console) console.warn('[hySliceRun]', e);
+                }
+            }
+            if (i < steps.length) {
+                window.setTimeout(pump, 0);
+                return;
+            }
+            if (typeof opts.done === 'function') opts.done();
+        }
+        window.setTimeout(pump, 0);
+    };
+
+    HY.runSliceLoop = function (next, opts) {
+        opts = opts || {};
+        var budget = opts.budgetMs || DEFAULT_BUDGET;
+        function pump() {
+            var t0 = now();
+            var again = true;
+            while (again && now() - t0 < budget) {
+                try { again = !!next(); } catch (e) {
+                    if (window.console) console.warn('[hySliceRun] loop', e);
+                    again = false;
+                }
+            }
+            if (again) window.setTimeout(pump, 0);
+            else if (typeof opts.done === 'function') opts.done();
+        }
+        window.setTimeout(pump, 0);
+    };
+})();
 /* --- linkBus.js --- */
 // js/linkBus.js (v2)
 // ⭐ 統一連動匯流排（全遊戲通用）
@@ -1961,11 +2017,27 @@ window.HY = window.HY || {};
     });
   }
   /** 執行探索 */
-  function discover(force) {
-    var out = [];
-    scanContainer(window.HY, 'HY', out);
-    if (window.HY.game) scanContainer(window.HY.game, 'HY.game', out);
-    if (window.app && window.app !== window.HY) scanContainer(window.app, 'app', out);
+  var _discRunning = false;
+
+  function scanOneKey(container, path, key, out) {
+    if (DATA_KEY_SKIP[key]) return;
+    var v = container[key];
+    if (v === null || v === undefined) return;
+    if (typeof v === 'function') return;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return;
+    if (Array.isArray(v) && v.length > 60) return;
+    var p = path + '.' + key;
+    var sc = scoreKey(key, v);
+    if (sc.score >= 2 && sc.sys) {
+      out.push({
+        path: p, key: key, sys: sc.sys, score: sc.score, obj: v,
+        isArray: Array.isArray(v),
+        len: Array.isArray(v) ? v.length : (isObj(v) ? Object.keys(v).length : 0)
+      });
+    }
+  }
+
+  function discoverFinish(force, out) {
     // 依 sys 分組，取分數最高
     var best = {};
     out.forEach(function (c) {
@@ -1993,6 +2065,54 @@ window.HY = window.HY || {};
     });
     return { scanned: out.length, bound: boundCount, candidates: out };
   }
+
+  function discoverSlice(force, onDone) {
+    if (_discRunning) return;
+    var out = [];
+    var jobs = [];
+    function queueTop(container, path) {
+      if (!isObj(container)) return;
+      var keys;
+      try { keys = Object.keys(container); } catch (e) { return; }
+      if (keys.length > MAX_KEYS_PER_CONTAINER) keys = keys.slice(0, MAX_KEYS_PER_CONTAINER);
+      for (var i = 0; i < keys.length; i++) jobs.push({ c: container, p: path, k: keys[i] });
+    }
+    queueTop(window.HY, 'HY');
+    if (window.HY && window.HY.game) queueTop(window.HY.game, 'HY.game');
+    if (window.app && window.app !== window.HY) queueTop(window.app, 'app');
+    var ji = 0;
+    function next() {
+      if (ji >= jobs.length) return false;
+      var j = jobs[ji++];
+      scanOneKey(j.c, j.p, j.k, out);
+      return ji < jobs.length;
+    }
+    var runLoop = window.HY && window.HY.runSliceLoop;
+    if (runLoop) {
+      _discRunning = true;
+      runLoop(next, {
+        budgetMs: 6,
+        done: function () {
+          _discRunning = false;
+          var r = discoverFinish(force, out);
+          if (onDone) onDone(r);
+        }
+      });
+      return;
+    }
+    while (next()) {}
+    var r = discoverFinish(force, out);
+    if (onDone) onDone(r);
+  }
+
+  function discover(force) {
+    var out = [];
+    scanContainer(window.HY, 'HY', out);
+    if (window.HY && window.HY.game) scanContainer(window.HY.game, 'HY.game', out);
+    if (window.app && window.app !== window.HY) scanContainer(window.app, 'app', out);
+    return discoverFinish(force, out);
+  }
+
   /* ══════════════════════════════════════════════════════
      ⑤ 持續監看（新模組自動咬合）
      ══════════════════════════════════════════════════════ */
@@ -2021,8 +2141,7 @@ window.HY = window.HY || {};
     var runs = 0;
     _watchTimer = setInterval(function () {
       runs += 1;
-      var n = watchNewModules();
-      if (n > 0) discover(false);
+      watchNewModules();
       if (runs >= 60) { clearInterval(_watchTimer); _watchTimer = null; }
     }, ms);
     watchNewModules();
@@ -2148,6 +2267,7 @@ window.HY = window.HY || {};
     HOOK_NAMES: HOOK_NAMES,
     // 探索
     discover: discover,
+    discoverSlice: discoverSlice,
     watch: startWatch,
     stopWatch: stopWatch,
     watchOnce: watchNewModules,
@@ -2168,31 +2288,17 @@ window.HY = window.HY || {};
      ⑨ 啟動
      ══════════════════════════════════════════════════════ */
   loadPrefs();
-  startWatch(1200);
 
-  /* ⭐ v547：late() 原本直接 discover(false)，實測 61~222ms。
-     現在改成「等第一個空閒時段」再跑，避免擋住開機的第一幀。
-     用 requestIdleCallback（有就優先用），否則退回 setTimeout 800ms。 */
-  function late() {
-    try { discover(false); } catch (e) { }
-  }
-  function scheduleLate(delayMs) {
-    var run = function () {
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(function () { late(); }, { timeout: 2000 });
-      } else {
-        setTimeout(late, 0);
-      }
-    };
-    setTimeout(run, delayMs);
+  function armLinkBusLate() {
+    startWatch(2500);
+    discoverSlice(false, null);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { scheduleLate(400); });
+  if (window.HY && typeof window.HY.deferUntilBootReady === 'function') {
+    window.HY.deferUntilBootReady(armLinkBusLate, { delay: 600, idle: true });
   } else {
-    scheduleLate(400);
+    window.setTimeout(armLinkBusLate, 3500);
   }
-  window.addEventListener('load', function () { scheduleLate(900); });
   console.log('[Link] ✓ 統一連動匯流排已啟動（' + HOOK_NAMES.length + ' 種鉤子｜自動監看中）');
 })();
 /* --- linkContent.js --- */
@@ -3005,7 +3111,8 @@ window.HY = window.HY || {};
   /* ══════════════════════════════════════════════════════
      自動探索 + 稽核
      ══════════════════════════════════════════════════════ */
-  L.discover(false);
+  if (L.discoverSlice) L.discoverSlice(false, null);
+  else L.discover(false);
   console.log('[LinkSystems] ✓ 已註冊 ' + REG.length + ' 個系統（全部 native 正本）｜效果 ' +
     Object.keys(L.effectsOf('formation')).length + '+ ｜鉤子 ' + L.hookCount() + ' 個');
 })();
@@ -108185,6 +108292,51 @@ window.HY = window.HY || {};
     try { el.style.removeProperty('display'); } catch (e2) { el.style.display = ''; }
   }
   /* ── 主處理 ── */
+  function runOneMark(markIndex) {
+    if (!document.body || markIndex < 0 || markIndex >= CFG.MARKS.length) return 0;
+    var mark = CFG.MARKS[markIndex];
+    var inn = findInnermost(mark);
+    if (!inn) return 0;
+    var row = rowOf(inn);
+    if (!row) return 0;
+    if (_rows.indexOf(row) === -1) _rows.push(row);
+    apply(row, 'row');
+    return 1;
+  }
+
+  function runSlice(done) {
+    if (!document.body) {
+      if (done) done({ found: 0, rows: 0, parent: false });
+      return;
+    }
+    var allNodes = document.body.getElementsByTagName('*');
+    if (allNodes.length === _lastNodeCount && _rows.length > 0) {
+      if (done) done({ found: 0, rows: _rows.length, parent: false, skipped: true });
+      return;
+    }
+    _lastNodeCount = allNodes.length;
+    var mi = 0;
+    var found = 0;
+    function pump() {
+      var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+      while (mi < CFG.MARKS.length && ((performance && performance.now) ? performance.now() : Date.now()) - t0 < 6) {
+        found += runOneMark(mi++);
+      }
+      if (mi < CFG.MARKS.length) {
+        setTimeout(pump, 0);
+        return;
+      }
+      var par = findPureParent();
+      if (par && _parents.indexOf(par) === -1) {
+        _parents.push(par);
+        apply(par, 'parent');
+      }
+      _lastScan = { found: found, rows: _rows.length, parent: !!par, at: Date.now() };
+      if (done) done(_lastScan);
+    }
+    window.setTimeout(pump, 0);
+  }
+
   function run() {
     if (!document.body) return { found: 0, rows: 0, parent: false };
 
@@ -108237,7 +108389,10 @@ window.HY = window.HY || {};
     _pending = true;
     setTimeout(function () {
       _pending = false;
-      try { run(); } catch (e) { console.error('[PartyPanelCleanup] 處理失敗：', e); }
+      try {
+        if (window.__HY_BOOT_DONE === true) runSlice();
+        else run();
+      } catch (e) { console.error('[PartyPanelCleanup] 處理失敗：', e); }
     }, 60);
   }
   /* ── 監看 ── */
@@ -108378,7 +108533,7 @@ window.HY = window.HY || {};
      ══════════════════════════════════════════════════════ */
   function boot() {
     injectStyle();
-    try { run(); } catch (e) { console.error('[PartyPanelCleanup] 初次處理失敗：', e); }
+    try { runSlice(); } catch (e) { console.error('[PartyPanelCleanup] 初次處理失敗：', e); }
     startObserver();
     startPoll();
     window.HY.PartyPanelCleanup.ready = true;
@@ -109321,7 +109476,7 @@ window.HY = window.HY || {};
         } catch (e) { _mo = null; }
     }
 
-    /** 手動全掃（僅供除錯用，不要在計時器裡呼叫） */
+    /** 手動全掃（僅供除錯；開機走 patchAllSlice） */
     function patchAll() {
         if (!document.body) return 0;
         var list = [];
@@ -109333,6 +109488,33 @@ window.HY = window.HY || {};
         return changed;
     }
 
+    function patchAllSlice(done) {
+        if (!document.body) {
+            if (done) done(0);
+            return;
+        }
+        var list = [];
+        collectTextNodes(document.body, list);
+        var i = 0;
+        var changed = 0;
+        var budget = 8;
+        function pump() {
+            var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+            _suppress = true;
+            try {
+                while (i < list.length && ((performance && performance.now) ? performance.now() : Date.now()) - t0 < budget) {
+                    try { if (fixOneNode(list[i])) changed++; } catch (e) { }
+                    i++;
+                }
+            } finally {
+                _suppress = false;
+            }
+            if (i < list.length) window.setTimeout(pump, 0);
+            else if (typeof done === 'function') done(changed);
+        }
+        window.setTimeout(pump, 0);
+    }
+
     HY.UITextFix = {
         TERMS: TERMS,
         fixTerms: fixTerms,
@@ -109341,6 +109523,7 @@ window.HY = window.HY || {};
         fix: fix,
         fixAll: fixAll,
         patch: patchAll,
+        patchSlice: patchAllSlice,
         stats: function () {
             return { queued: _queue.length, processed: _processed };
         }
@@ -109349,20 +109532,21 @@ window.HY = window.HY || {};
     /* 啟動：只跑一次全掃（載入期），之後完全交給 observer */
     function boot() {
         startObserver();
-        /* 初次全掃一次，處理載入期已存在的節點 */
-        setTimeout(function () {
+        var firstScan = function () {
             if (!document.body) return;
-            _suppress = true;
-            var ch = 0;
-            try { ch = patchAll(); } catch (e) { }
-            _suppress = false;
-            /* 標記所有既有節點為已處理，避免 observer 重複排入 */
-            try {
-                var list = [];
-                collectTextNodes(document.body, list);
-                for (var i = 0; i < list.length; i++) list[i].__txtfix = 1;
-            } catch (e2) { }
-        }, 1200);
+            patchAllSlice(function () {
+                try {
+                    var list = [];
+                    collectTextNodes(document.body, list);
+                    for (var i = 0; i < list.length; i++) list[i].__txtfix = 1;
+                } catch (e2) { }
+            });
+        };
+        if (window.HY && typeof window.HY.deferUntilBootReady === 'function') {
+            window.HY.deferUntilBootReady(firstScan, { delay: 400, idle: true });
+        } else {
+            window.setTimeout(firstScan, 1500);
+        }
     }
 
     if (document.body) boot();
@@ -118286,7 +118470,7 @@ window.HY = window.HY || {};
     renderAllBootSlice(done) {
       var self = this;
       var perf = window.HY && window.HY.Perf;
-      var BUDGET = 10;
+      var BUDGET = 6;
       var queue = [];
       var push = function (label, fn) {
         queue.push(function () {

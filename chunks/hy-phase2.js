@@ -52941,7 +52941,11 @@ window.HY = window.HY || {};
             maxSlowTimeoutMs: slowMax(),
             maxPumpRoundMs: pumpMax(),
             game: !!(window.HY && window.HY.game),
-            hyReady: document.body && document.body.classList.contains('hy-ready')
+            hyReady: document.body && document.body.classList.contains('hy-ready'),
+            under50: function () {
+                var m = slowMax();
+                return m >= 0 && m < 50;
+            }()
         };
     };
 
