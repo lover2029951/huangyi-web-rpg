@@ -80330,9 +80330,21 @@ window.HY = window.HY || {};
             return charObj._battle.deferredVitals;
         }
         /** 氣血／內力回復佇列（下回合本人出手前結算，不與本招扣內在同一瞬間抵銷） */
+        _healWithSpiritRootBonus(charObj, hp) {
+            var h = Math.max(0, Math.floor(num(hp, 0)));
+            if (h <= 0 || !charObj) return h;
+            var cs = this.core && this.core.charSys;
+            if (!cs || typeof cs.getDerivedStatsForChar !== 'function') return h;
+            try {
+                var st = cs.getDerivedStatsForChar(charObj);
+                var bonus = num(st && st.healBonus, 0);
+                if (bonus > 0) h = Math.floor(h * (1 + bonus));
+            } catch (eHb) { }
+            return h;
+        },
         queueVitalRestore(charObj, hp, mp, fxMeta) {
             if (!charObj) return;
-            var h = Math.max(0, Math.floor(num(hp, 0)));
+            var h = this._healWithSpiritRootBonus(charObj, hp);
             var m = Math.max(0, Math.floor(num(mp, 0)));
             if (h <= 0 && m <= 0) return;
             var q = this._deferredVitals(charObj);
@@ -80399,7 +80411,7 @@ window.HY = window.HY || {};
         /** 偷取／擊中：當回合立即加氣血＋內力（同一標記、一次 restore） */
         applyVitalNow(charObj, hp, mp, fxMeta) {
             if (!charObj) return;
-            var h = Math.max(0, Math.floor(num(hp, 0)));
+            var h = this._healWithSpiritRootBonus(charObj, hp);
             var m = Math.max(0, Math.floor(num(mp, 0)));
             if (h <= 0 && m <= 0) return;
             var core = this.core;
@@ -117399,6 +117411,21 @@ window.HY = window.HY || {};
     }
     /** 晚載入模組全部就緒後（分階段 boot 第二段） */
     onLateModulesLoaded() {
+      try {
+        var HY = window.HY;
+        if (HY && typeof HY.ensureSpiritRootRuntime === 'function') {
+          HY.ensureSpiritRootRuntime(this);
+        } else if (!this.spiritRootSys && HY && HY.SpiritRootSystem) {
+          this.spiritRootSys = new HY.SpiritRootSystem(this);
+        }
+        if (HY && typeof HY.ensureElementRuntime === 'function') {
+          HY.ensureElementRuntime(this);
+        } else if (!this.elementSys && HY && HY.ElementSystem) {
+          this.elementSys = new HY.ElementSystem(this);
+        }
+      } catch (eLate) {
+        console.warn('[GameApp] 晚載入靈根／元素啟動失敗', eLate);
+      }
       try { this.renderAll(true); } catch (e2) { }
     }
     // ⭐ GameConfig 重套後由 gameConfig 呼叫

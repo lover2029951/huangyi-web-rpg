@@ -6,7 +6,7 @@
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
         newsVer: 'v771 · 2026-11-13',
-        gameVer: 777,
+        gameVer: 778,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };

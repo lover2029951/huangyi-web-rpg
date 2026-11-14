@@ -4479,6 +4479,15 @@ window.HY = window.HY || {};
             }
             this.app.charSys.rootState.sp -= cost;
             c.spiritRootLv = (c.spiritRootLv || 1) + 1;
+            try {
+                c.__dsCache = null;
+                var DC = window.HY && window.HY.DerivedCache;
+                if (DC && typeof DC.invalidate === 'function') DC.invalidate(c);
+                if (this.app.elementSys) {
+                    this.app.elementSys._cache = {};
+                    this.app.elementSys._cacheSig = {};
+                }
+            } catch (eInv) { }
             this.app.charSys.clampVitals();
             this.app.logger.add(rootMeta.icon + ' 靈根淬鍊！【' + c.name + '】的【' + rootMeta.name + '】晉升至第 ' + c.spiritRootLv + ' 境，屬性攻防與觸發威力提升！', 'wealth');
             return true;
@@ -4502,10 +4511,39 @@ window.HY = window.HY || {};
             this.app.logger.add('🌈 天地洗髓！【' + c.name + '】花費 ' + costGold + ' 兩重塑本源，覺醒了【' + newMeta.icon + ' ' + newMeta.name + '】！', 'system');
             return true;
         }
+        _registerCombatPlugin() {
+            if (this._combatHooked) return;
+            var combat = this.app.combatSys;
+            if (!combat || typeof combat.registerPlugin !== 'function') return;
+            var self = this;
+            this._combatHooked = true;
+            combat.registerPlugin({
+                onBattleStart: function (core, payload) {
+                    (payload.enemies || []).forEach(function (e) {
+                        if (!e.spiritRoot) e.spiritRoot = self.pickRandomRootId();
+                        e.elemAtk = Math.floor((e.atk || 20) * 0.75);
+                        e.elemDef = Math.floor((e.def || 10) * 0.75);
+                    });
+                },
+                onAfterPlayerAttack: function (core, payload) {
+                    if (!payload || !payload.totalDealt || payload.totalDealt <= 0) return;
+                    self.triggerPlayerSpiritRootCombat(core, payload.charObj);
+                },
+                onAfterEnemyAttack: function (core, payload) {
+                    self.triggerEnemySpiritRootCombat(core, payload.enemy, payload.targetMember);
+                }
+            });
+        }
+
         hookCharacterAndCombat() {
             var self = this;
             var charSys = this.app.charSys;
-            var combat = this.app.combatSys;
+            if (!charSys) return;
+            if (charSys.__spiritRootHooked) {
+                this._registerCombatPlugin();
+                return;
+            }
+            charSys.__spiritRootHooked = true;
             this.ensureAllRosterRoots();
             var origCreateTpl = charSys.createSingleCharTemplate.bind(charSys);
             charSys.createSingleCharTemplate = function (id, name) {
@@ -4571,7 +4609,7 @@ window.HY = window.HY || {};
                                正確做法：寫在 d 上（每次重算都是全新物件，
                                天然不會累積）。這個欄位目前沒有任何地方讀取，
                                仍保留給未來的內力回復計算使用。 */
-                            d.__rootMpRegen = (d.__rootMpRegen || 0) + add / 100;
+                            d.manaRegen = (d.manaRegen || 0) + add;
                         } else if (k === 'dmgReduce') {
                             d.dmgReduce = (d.dmgReduce || 0) + add;
                         } else if (k === 'armorPen') {
@@ -4593,24 +4631,7 @@ window.HY = window.HY || {};
                 }
                 return d;
             };
-            if (combat) {
-                combat.registerPlugin({
-                    onBattleStart: function (core, payload) {
-                        (payload.enemies || []).forEach(function (e) {
-                            if (!e.spiritRoot) e.spiritRoot = self.pickRandomRootId();
-                            e.elemAtk = Math.floor((e.atk || 20) * 0.75);
-                            e.elemDef = Math.floor((e.def || 10) * 0.75);
-                        });
-                    },
-                    onAfterPlayerAttack: function (core, payload) {
-                        if (!payload || !payload.totalDealt || payload.totalDealt <= 0) return;
-                        self.triggerPlayerSpiritRootCombat(core, payload.charObj);
-                    },
-                    onAfterEnemyAttack: function (core, payload) {
-                        self.triggerEnemySpiritRootCombat(core, payload.enemy, payload.targetMember);
-                    }
-                });
-            }
+            this._registerCombatPlugin();
         }
         // 我方出手後：結算八大靈根專屬觸發（元素傷害由 elementSystem 負責）
         triggerPlayerSpiritRootCombat(core, charObj) {
@@ -4760,6 +4781,32 @@ window.HY = window.HY || {};
         }
     }
     window.HY.SpiritRootSystem = SpiritRootSystem;
+
+    /** ⭐ v778：分階 boot 時 DCL 已觸發 → 不可只靠 uiSpiritRoot 的 DOMContentLoaded */
+    function ensureSpiritRootRuntime(app) {
+        app = app || (window.HY.game || null);
+        if (!app) return false;
+        if (app.spiritRootSys) {
+            app.spiritRootSys._registerCombatPlugin();
+            return true;
+        }
+        if (!app.charSys || !window.HY.SpiritRootSystem) return false;
+        try {
+            app.spiritRootSys = new window.HY.SpiritRootSystem(app);
+            console.log('[spiritRootSystem] ✓ 已掛載 game.spiritRootSys（晚載入啟動）');
+            return true;
+        } catch (e) {
+            console.warn('[spiritRootSystem] 掛載失敗', e);
+            return false;
+        }
+    }
+    window.HY.ensureSpiritRootRuntime = ensureSpiritRootRuntime;
+
+    var _attachTries = 0;
+    var _attachTimer = setInterval(function () {
+        _attachTries++;
+        if (ensureSpiritRootRuntime(window.HY.game) || _attachTries > 250) clearInterval(_attachTimer);
+    }, 80);
 })();
 /* --- uiSpiritRoot.js --- */
 // js/uiSpiritRoot.js  (v50.2)
@@ -9542,9 +9589,11 @@ window.HY = window.HY || {};
             }
         }
         registerHooks() {
+            if (this._combatHooked) return;
             var self = this;
             var combat = this.app.combatSys;
-            if (!combat) return;
+            if (!combat || typeof combat.registerPlugin !== 'function') return;
+            this._combatHooked = true;
             combat.registerPlugin({
                 onBattleStart: function (core, payload) {
                     self._cache = {};
@@ -9556,14 +9605,33 @@ window.HY = window.HY || {};
             });
         }
     }
+    function ensureElementRuntime(app) {
+        app = app || (window.HY.game || null);
+        if (!app) return false;
+        if (app.elementSys) {
+            app.elementSys.registerHooks();
+            return true;
+        }
+        if (!app.charSys || !window.HY.ElementSystem) return false;
+        try {
+            app.elementSys = new window.HY.ElementSystem(app);
+            console.log('[elementSystem] ✓ 已掛載 game.elementSys（晚載入啟動）');
+            return true;
+        } catch (e) {
+            console.warn('[elementSystem] 掛載失敗', e);
+            return false;
+        }
+    }
+    window.HY.ensureElementRuntime = ensureElementRuntime;
+
+    var _elTries = 0;
+    var _elTimer = setInterval(function () {
+        _elTries++;
+        if (ensureElementRuntime(window.HY.game) || _elTries > 250) clearInterval(_elTimer);
+    }, 80);
+
     window.addEventListener('DOMContentLoaded', function () {
-        setTimeout(function () {
-            var game = window.HY.game;
-            if (game && !game.elementSys && window.HY.ElementSystem) {
-                game.elementSys = new window.HY.ElementSystem(game);
-            }
-            if (game && typeof game.renderAll === 'function') game.renderAll();
-        }, 170);
+        setTimeout(function () { ensureElementRuntime(window.HY.game); }, 170);
     });
     window.HY.ElementSystem = ElementSystem;
 })();
