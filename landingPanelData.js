@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v783 · 2026-11-14',
-        gameVer: 793,
+        newsVer: 'v794 · 2026-11-14',
+        gameVer: 794,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '體驗',
+            title: '樣式與 Issues 修復 v794',
+            date: '2026-11-14',
+            bullets: [
+                '<code>game-chunked.html</code> 建置時內聯 <code>style.css</code>，避免「Verify stylesheet URLs」與半殘版面',
+                '單檔 <code>game.html</code>：開機時移除舊快取殘留的外部 style 連結（已有內聯時）',
+                '日誌面板：篩選／清空按鈕移出 <code>&lt;summary&gt;</code>（DevTools a11y Issues）'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '介面',
             title: '單檔 game.html 介面修復 v783',

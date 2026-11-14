@@ -20,7 +20,7 @@
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 793; /* build sync */
+    var LIVE = 794; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -96885,6 +96885,7 @@ window.HY = window.HY || {};
             if (document.getElementById('hy-logpanel-style')) {
                 /* 舊版已注入 → 補上新樣式 */
                 if (!document.getElementById('hy-logfilter-style')) this.injectFilterStyles();
+                this.injectHeadBtnsGridPatch();
                 return;
             }
             var style = document.createElement('style');
@@ -96905,20 +96906,25 @@ window.HY = window.HY || {};
                 '#log-panel::-webkit-scrollbar-track { background:transparent; }' +
                 '#log-panel::-webkit-scrollbar-thumb { background:#3a4a5e; border-radius:4px; }' +
                 '#log-panel::-webkit-scrollbar-thumb:hover { background:#4b5e75; }' +
-                '.log-details { display:flex; flex-direction:column;' +
+                '.log-details { display:grid; grid-template-columns:1fr auto; grid-template-rows:auto minmax(0,1fr);' +
                     ' background:#121822; border-radius:6px; box-sizing:border-box; overflow:hidden;' +
-                    ' flex:0 0 auto; }' +
+                    ' flex:0 0 auto; align-items:stretch; }' +
                 /* 展開的面板給固定高度上限（可自行捲動內容），收合的只留標題列 */
                 '.log-details[open] { flex:0 0 auto; max-height:none; }' +
                 '.log-details:not([open]) { flex:0 0 auto; }' +
-                '.log-details > summary { display:flex; align-items:center; justify-content:space-between;' +
-                    ' gap:6px; padding:5px 8px; cursor:pointer; user-select:none;' +
-                    ' border-bottom:1px solid #2e3b4e; flex:0 0 auto; list-style:none; outline:none;' +
-                    ' transition:background .15s; }' +
+                '.log-details > summary { display:flex; align-items:center; gap:6px; padding:5px 8px;' +
+                    ' cursor:pointer; user-select:none; border-bottom:1px solid #2e3b4e;' +
+                    ' list-style:none; outline:none; transition:background .15s;' +
+                    ' grid-column:1; grid-row:1; min-width:0; }' +
+                '.log-details > .log-head-btns { grid-column:2; grid-row:1; display:flex; gap:4px;' +
+                    ' align-items:center; flex:0 0 auto; padding:5px 8px 5px 0;' +
+                    ' border-bottom:1px solid #2e3b4e; }' +
                 '.log-details > summary::-webkit-details-marker { display:none; }' +
                 '.log-details > summary::marker { content:""; }' +
                 '.log-details > summary:hover { background:rgba(255,255,255,.04); }' +
-                '.log-details:not([open]) > summary { border-bottom:none; }' +
+                '.log-details:not([open]) > summary,' +
+                '.log-details:not([open]) > .log-head-btns { border-bottom:none; }' +
+                '.log-details:not([open]) > .log-head-btns { display:flex !important; }' +
                 '.log-head-left { display:flex; align-items:center; gap:6px; min-width:0; flex:1 1 auto; }' +
                 '.log-chevron { font-size:.66rem; color:#64748b; flex:0 0 auto;' +
                     ' transition:transform .15s ease; display:inline-block; width:10px; text-align:center; }' +
@@ -96931,12 +96937,11 @@ window.HY = window.HY || {};
                     ' min-width:20px; text-align:center; }' +
                 '.log-count.zero { opacity:.45; }' +
                 '.log-count.filtered { border-color:#f59e0b; color:#fbbf24; background:rgba(245,158,11,.15); }' +
-                '.log-head-btns { display:flex; gap:4px; align-items:center; flex:0 0 auto; }' +
                 '.log-clear { padding:2px 8px !important; font-size:.72rem !important; flex:0 0 auto; }' +
                 '.log-filter-btn { padding:2px 7px !important; font-size:.72rem !important; flex:0 0 auto;' +
                     ' border-color:#f59e0b !important; color:#fbbf24 !important; }' +
                 '.log-filter-btn.on { background:rgba(245,158,11,.2) !important; }' +
-                '.log-body { flex:1 1 auto; min-height:0; overflow-y:auto; padding:6px 8px;' +
+                '.log-body { grid-column:1 / -1; grid-row:2; min-height:0; overflow-y:auto; padding:6px 8px;' +
                     ' display:flex; flex-direction:column; gap:4px; font-size:.8rem;' +
                     ' max-height:220px; }' +   /* ⭐ v68：內容區各自捲動，避免整欄被單一面板撐爆 */
                 '.log-body::-webkit-scrollbar { width:6px; }' +
@@ -96946,6 +96951,33 @@ window.HY = window.HY || {};
                 '.log-details:not([open]) .log-body { display:none; }';
             document.head.appendChild(style);
             this.injectFilterStyles();
+            this.injectHeadBtnsGridPatch();
+        }
+        /** 將 .log-head-btns 移出 summary 後，舊頁面若已有 style 標籤也需補 grid */
+        injectHeadBtnsGridPatch() {
+            if (document.getElementById('hy-logpanel-headbtns-patch')) return;
+            var patch = document.createElement('style');
+            patch.id = 'hy-logpanel-headbtns-patch';
+            patch.innerHTML =
+                '.log-details { display:grid !important; grid-template-columns:1fr auto !important;' +
+                    'grid-template-rows:auto minmax(0,1fr) !important; align-items:stretch !important; }' +
+                '.log-details > summary { grid-column:1 !important; grid-row:1 !important; justify-content:flex-start !important; }' +
+                '.log-details > .log-head-btns { grid-column:2 !important; grid-row:1 !important;' +
+                    'padding:5px 8px 5px 0 !important; border-bottom:1px solid #2e3b4e !important; }' +
+                '.log-details:not([open]) > .log-head-btns { border-bottom:none !important;' +
+                    'display:flex !important; }' +
+                '.log-details > .log-body { grid-column:1 / -1 !important; grid-row:2 !important; }';
+            document.head.appendChild(patch);
+        }
+        migrateSummaryButtonsOut() {
+            var panels = document.querySelectorAll('.log-details');
+            Array.prototype.forEach.call(panels, function (d) {
+                var sum = d.querySelector(':scope > summary');
+                if (!sum) return;
+                var btns = sum.querySelector('.log-head-btns');
+                if (!btns) return;
+                sum.parentNode.insertBefore(btns, sum.nextSibling);
+            });
         }
         injectFilterStyles() {
             if (document.getElementById('hy-logfilter-style')) return;
@@ -97002,6 +97034,7 @@ window.HY = window.HY || {};
             if (!logPanel) return;
             if (document.getElementById('log-details-combat')) {
                 /* 已重建過：補上自訂面板與篩選按鈕 */
+                this.migrateSummaryButtonsOut();
                 this.ensureCustomPanels();
                 this.rebindLogger();
                 this.refreshAllCounts();
@@ -97023,12 +97056,12 @@ window.HY = window.HY || {};
                                 '<h3 class="log-title" style="color:' + p.titleColor + ';">' + p.title + '</h3>' +
                                 '<span class="log-count zero" id="' + p.countId + '">0</span>' +
                             '</span>' +
-                            '<span class="log-head-btns">' +
-                                '<button class="action-btn log-filter-btn' + (filtered ? ' on' : '') +
-                                    '" id="log-filter-' + p.key + '" type="button" title="選擇要顯示的訊息類型">🔍</button>' +
-                                '<button class="action-btn log-clear" id="' + p.clearId + '" type="button">清空</button>' +
-                            '</span>' +
                         '</summary>' +
+                        '<span class="log-head-btns">' +
+                            '<button class="action-btn log-filter-btn' + (filtered ? ' on' : '') +
+                                '" id="log-filter-' + p.key + '" type="button" title="選擇要顯示的訊息類型">🔍</button>' +
+                            '<button class="action-btn log-clear" id="' + p.clearId + '" type="button">清空</button>' +
+                        '</span>' +
                         '<div class="log-body" id="' + p.bodyId + '"></div>' +
                     '</details>';
             });
@@ -97064,12 +97097,12 @@ window.HY = window.HY || {};
                             '<h3 class="log-title" style="color:' + cfg.color + ';">' + cfg.title + '</h3>' +
                             '<span class="log-count zero" id="' + p.countId + '">0</span>' +
                         '</span>' +
-                        '<span class="log-head-btns">' +
-                            '<button class="action-btn log-filter-btn' + (filtered ? ' on' : '') +
-                                '" id="log-filter-' + p.key + '" type="button" title="自訂名稱與訊息類型">🔍</button>' +
-                            '<button class="action-btn log-clear" id="' + p.clearId + '" type="button">清空</button>' +
-                        '</span>' +
                     '</summary>' +
+                    '<span class="log-head-btns">' +
+                        '<button class="action-btn log-filter-btn' + (filtered ? ' on' : '') +
+                            '" id="log-filter-' + p.key + '" type="button" title="自訂名稱與訊息類型">🔍</button>' +
+                        '<button class="action-btn log-clear" id="' + p.clearId + '" type="button">清空</button>' +
+                    '</span>' +
                     '<div class="log-body" id="' + p.bodyId + '"></div>';
                 logPanel.appendChild(d);
             });
