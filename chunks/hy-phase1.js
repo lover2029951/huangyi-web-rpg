@@ -87227,7 +87227,19 @@ window.HY = window.HY || {};
                 if (!app || !app.charSys) return;
                 var st = app.charSys.state;
                 if (!st) return;
-                var d = app.charSys.getDerivedStats();
+                var nowT = Date.now();
+                var d;
+                if (this._vitalsDer && (nowT - this._vitalsDerT) < 600) {
+                    d = this._vitalsDer;
+                } else if (st.__dsCache && st.__dsCache.d && (nowT - (st.__dsCache.t || 0)) < 1200) {
+                    d = st.__dsCache.d;
+                    this._vitalsDer = d;
+                    this._vitalsDerT = nowT;
+                } else {
+                    d = app.charSys.getDerivedStats();
+                    this._vitalsDer = d;
+                    this._vitalsDerT = nowT;
+                }
                 if (!d) return;
 
                 var hpMax = Number(d.maxHp);
@@ -87300,6 +87312,7 @@ window.HY = window.HY || {};
             }
             this._charPanelSig = sig;
             this._fullStatsSig = '';
+            this._vitalsDer = null;
             const activeComp = app.companionSys.getActiveCompanionInfo();
             const activeXinfa = app.martialSys.getActiveXinfaInfo();
             const activeQg = app.martialSys.getActiveQinggongInfo();

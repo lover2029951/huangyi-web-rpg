@@ -1,4 +1,4 @@
-/* HY chunk phase2 — 82 files */
+/* HY chunk phase2 — 83 files */
 /* --- combatPanelShared.js --- */
 // js/combatPanelShared.js
 // 🧩 共用戰鬥面板渲染器
@@ -4802,11 +4802,12 @@ window.HY = window.HY || {};
     }
     window.HY.ensureSpiritRootRuntime = ensureSpiritRootRuntime;
 
+    /* 分階載入時以 bootLoader.finish / onLateModulesLoaded 為主；此處僅備援 */
     var _attachTries = 0;
     var _attachTimer = setInterval(function () {
         _attachTries++;
-        if (ensureSpiritRootRuntime(window.HY.game) || _attachTries > 250) clearInterval(_attachTimer);
-    }, 80);
+        if (ensureSpiritRootRuntime(window.HY.game) || _attachTries > 40) clearInterval(_attachTimer);
+    }, 200);
 })();
 /* --- uiSpiritRoot.js --- */
 // js/uiSpiritRoot.js  (v50.2)
@@ -5032,13 +5033,17 @@ window.HY = window.HY || {};
                 };
             }
             var origRenderAll = this.app.renderAll.bind(this.app);
-            this.app.renderAll = function () {
-                origRenderAll();
+            this.app.renderAll = function (force) {
+                var ret = origRenderAll.apply(this, arguments);
                 self._cleanupLegacyRow();
-                self.ensureSys();
-                self.ensureSubTab();
                 self.updateLeftPanelRootInfo();
-                self.renderSpiritRootTab();
+                /* 全量重繪才重建靈根分頁（避免每次 throttled render 觸發 getElementStats） */
+                if (force === true) {
+                    self.ensureSys();
+                    self.ensureSubTab();
+                    self.renderSpiritRootTab();
+                }
+                return ret;
             };
         }
         _getPanel() {
@@ -9627,8 +9632,8 @@ window.HY = window.HY || {};
     var _elTries = 0;
     var _elTimer = setInterval(function () {
         _elTries++;
-        if (ensureElementRuntime(window.HY.game) || _elTries > 250) clearInterval(_elTimer);
-    }, 80);
+        if (ensureElementRuntime(window.HY.game) || _elTries > 40) clearInterval(_elTimer);
+    }, 200);
 
     window.addEventListener('DOMContentLoaded', function () {
         setTimeout(function () { ensureElementRuntime(window.HY.game); }, 170);
@@ -52719,6 +52724,65 @@ window.HY = window.HY || {};
     }
 })();
 
+/* --- spiritRootSelfTest.js --- */
+// js/spiritRootSelfTest.js — 靈根掛鉤與被動（?spirit_test=1）
+window.HY = window.HY || {};
+(function () {
+    'use strict';
+    function on() {
+        try {
+            if (/[?&]spirit_test=1/.test(location.search || '')) return true;
+            return localStorage.getItem('hy_spirit_test') === '1';
+        } catch (e) { return false; }
+    }
+    if (!on()) return;
+
+    function run() {
+        var HY = window.HY;
+        var R = [];
+        function ok(t, m) { R.push((t ? '✓' : '✗') + ' ' + m); if (!t) console.warn('[spiritTest]', m); }
+
+        try {
+            var g = HY.game;
+            ok(!!g, 'HY.game 存在');
+            if (HY.ensureSpiritRootRuntime) HY.ensureSpiritRootRuntime(g);
+            if (HY.ensureElementRuntime) HY.ensureElementRuntime(g);
+            ok(!!(g && g.spiritRootSys), 'spiritRootSys 已掛載');
+            ok(!!(g && g.elementSys), 'elementSys 已掛載');
+            ok(!!(g && g.charSys && g.charSys.__spiritRootHooked), '靈根被動掛鉤 getDerivedStatsForChar');
+            ok(!!(g && g.spiritRootSys && g.spiritRootSys._combatHooked), '靈根戰鬥 plugin 已註冊');
+
+            var cs = g && g.charSys;
+            var st = cs && cs.state;
+            if (cs && st) {
+                g.spiritRootSys.ensureCharRoot(st);
+                var d0 = cs.getDerivedStatsForChar(st);
+                var hp0 = Number(d0 && d0.maxHp) || 0;
+                var savedLv = st.spiritRootLv || 1;
+                st.spiritRootLv = savedLv + 3;
+                st.__dsCache = null;
+                var d1 = cs.getDerivedStatsForChar(st);
+                var hp1 = Number(d1 && d1.maxHp) || 0;
+                st.spiritRootLv = savedLv;
+                st.__dsCache = null;
+                ok(hp1 >= hp0, '淬鍊等級提升後 maxHp 不應下降（' + hp0 + '→' + hp1 + '）');
+                var es = g.elementSys.getElementStats(st);
+                var rootMeta = HY.Data.SPIRIT_ROOTS[st.spiritRoot];
+                var ek = rootMeta && (rootMeta.elementKey || rootMeta.id);
+                var elAtk = es && es.atk && ek ? (es.atk[ek] || 0) : 0;
+                ok(elAtk > 0 || !!(rootMeta && rootMeta.isMixed), '元素面板含靈根加成（攻=' + elAtk + '）');
+            }
+        } catch (e) {
+            ok(false, '例外：' + (e.message || e));
+        }
+        console.log('[spiritRootSelfTest]\n' + R.join('\n'));
+        return R;
+    }
+
+    window.HY.spiritRootSelfTestRun = run;
+    if (document.readyState === 'complete') setTimeout(run, 1200);
+    else window.addEventListener('load', function () { setTimeout(run, 1200); });
+})();
 /* --- ascendancyMechanicsSelfTest.js --- */
 // js/ascendancyMechanicsSelfTest.js — 41 條昇華核心機制微測（?asc_test=1 一併執行）
 window.HY = window.HY || {};
