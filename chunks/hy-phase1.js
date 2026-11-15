@@ -20,7 +20,7 @@
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 795; /* build sync */
+    var LIVE = 796; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -42045,18 +42045,50 @@ window.HY = window.HY || {};
                 );
                 return Math.max(w('minValue', 1), Math.floor(score));
             }
+            /** 敵方戰力：與 combatCore 生成邏輯對齊的預設補齊，再套同一公式 */
             getEnemyPowerScore(enemy) {
                 if (!enemy) return 1;
+                var lv = Number(enemy.lv) || 1;
+                var atk = Number(enemy.atk) || 10;
+                var maxHp = Number(enemy.maxHp) || Number(enemy.hp) || 100;
+                var maxMp = (typeof enemy.maxMp === 'number' && enemy.maxMp > 0)
+                    ? enemy.maxMp
+                    : Math.floor(80 + lv * 25 + atk * 0.15);
+                var rawCritRes = (typeof enemy.critRes === 'number') ? enemy.critRes : Math.floor(lv * 0.5);
                 return this.getPowerScore({
-                    atk: enemy.atk,
-                    def: enemy.def,
-                    maxHp: enemy.maxHp,
-                    maxMp: (typeof enemy.maxMp === 'number' ? enemy.maxMp : 0),
-                    hit: enemy.hit,
-                    eva: enemy.eva,
-                    crit: enemy.crit,
-                    critRes: enemy.critRes
+                    atk: atk,
+                    def: Number(enemy.def) || 0,
+                    maxHp: maxHp,
+                    maxMp: maxMp,
+                    hit: (typeof enemy.hit === 'number') ? enemy.hit : (88 + lv),
+                    eva: (typeof enemy.eva === 'number') ? enemy.eva : Math.floor(lv * 0.4),
+                    crit: (typeof enemy.crit === 'number')
+                        ? enemy.crit
+                        : Math.min(60, 5 + Math.floor(lv * 0.3)),
+                    critRes: rawCritRes
                 });
+            }
+            /** 戰鬥面板：我方／敵方統一入口（同一公式、同一顯示尺度） */
+            getBattlePower(unit, opts) {
+                opts = opts || {};
+                if (!unit) return 1;
+                if (opts.isEnemy) return this.getEnemyPowerScore(unit);
+                var d = opts.isDerived ? unit : this.getDerivedStatsForChar(unit);
+                if (!d) return 1;
+                if (typeof d.powerScore === 'number' && isFinite(d.powerScore)) {
+                    return Math.floor(d.powerScore);
+                }
+                return this.getPowerScore(d);
+            }
+            /** 戰力數字顯示：proportional=true 用完整千分位（敵我可比）；否則 K/M 簡寫 */
+            formatPowerScore(n, proportional) {
+                n = Math.floor(Number(n) || 0);
+                if (n < 0) n = 0;
+                if (proportional !== false) return n.toLocaleString();
+                if (n < 10000) return String(n);
+                if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+                if (n < 1000000000) return (n / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+                return (n / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B';
             }
             // ══════════════════════════════════════════════════════════════
             //  衍生屬性
@@ -108724,7 +108756,7 @@ window.HY = window.HY || {};
     CONTAINER_SEL: '.system-controls',
     FALLBACK_SEL: '#top-bar',
     /* 固定順序（左→右）。未列出的會接在最後，並保持原本相對順序 */
-    ORDER: ['offline', 'adaptive', 'font', 'town', 'friend', 'bag', 'link', 'save', 'cheat'],
+    ORDER: ['offline', 'adaptive', 'font', 'town', 'friend', 'bag', 'link', 'save', 'export', 'import', 'cheat'],
     /* 隱藏清單（⭐ 作弊面板 / 系統連動 依使用者要求隱藏） */
     HIDDEN: { cheat: 1, link: 1 },
     /* 統一尺寸 */
@@ -108732,7 +108764,7 @@ window.HY = window.HY || {};
     BTN_PAD: 11,
     BTN_FONT: '.78rem',
     /* 精簡文字（預設關閉；開啟不影響錨點比對） */
-    COMPACT: false,
+    COMPACT: true,
     /* 校正頻率 */
     TICK_MS: 700,
     TICK_MAX: 80,
@@ -108753,7 +108785,10 @@ window.HY = window.HY || {};
     'fr3-main-tab': 'friend',
     'link-main-tab': 'link',
     'font-main-tab': 'font',
-    'bagov-main-tab': 'bag'
+    'bagov-main-tab': 'bag',
+    'btn-export-save': 'export',
+    'btn-import-save': 'import',
+    'btn-save': 'save'
   };
   function detect(el) {
     if (!isEl(el)) return null;
@@ -108767,7 +108802,9 @@ window.HY = window.HY || {};
     /* ⭐ 標籤已改名為「🗄️ 倉庫」—— 若沒這行會變成「未知按鈕」，
        排版順序會亂掉、也不會套用 hy-ext-btn 統一尺寸。 */
     if (t.indexOf('倉庫') !== -1 && t.length <= 10) return 'bag';
-    if (t.indexOf('儲存進度') !== -1) return 'save';
+    if (t.indexOf('儲存進度') !== -1 || t === '💾儲存' || t.indexOf('💾儲存') !== -1) return 'save';
+    if (t.indexOf('匯出') !== -1 && t.length <= 12) return 'export';
+    if (t.indexOf('匯入') !== -1 && t.length <= 12) return 'import';
     if (t.indexOf('作弊面板') !== -1 || t.indexOf('作弊') !== -1) return 'cheat';
     if (t.indexOf('離線掛機艙') !== -1) return 'offline';
     if (t.indexOf('我的小鎮') !== -1 || (t.indexOf('小鎮') !== -1 && t.length <= 8)) return 'town';
@@ -108782,11 +108819,17 @@ window.HY = window.HY || {};
      ② 精簡文字
      ══════════════════════════════════════════════════════ */
   var SHORT = {
-    adaptive: '📱 畫面適應',
+    adaptive: '📱 畫面',
     offline: '🧘 離線',
     cheat: '🛠️ 作弊',
     save: '💾 儲存',
-    town: '🏘️ 小鎮'
+    export: '📤 匯出',
+    import: '📥 匯入',
+    town: '🏘️ 小鎮',
+    friend: '👥 好友',
+    bag: '🗄️ 倉庫',
+    font: '🔠 字體',
+    link: '🔗 連動'
   };
   function applyCompact(el, key) {
     if (!el) return;
@@ -108822,13 +108865,37 @@ ${CFG.CONTAINER_SEL}{
   min-height:${CFG.BTN_HEIGHT + 8}px !important;
   overflow-x:auto !important;
   overflow-y:hidden !important;
-  scrollbar-width:none !important;
-  -ms-overflow-style:none !important;
+  scrollbar-width:thin !important;
+  scrollbar-color:rgba(148,163,184,.45) transparent !important;
+  -webkit-overflow-scrolling:touch !important;
+  padding-bottom:2px !important;
 }
-${CFG.CONTAINER_SEL}::-webkit-scrollbar{height:0 !important;width:0 !important;}
+${CFG.CONTAINER_SEL}::-webkit-scrollbar{height:5px !important;}
+${CFG.CONTAINER_SEL}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.4);border-radius:4px;}
+#top-quick-slot{
+  display:inline-flex !important;
+  flex-wrap:nowrap !important;
+  align-items:center !important;
+  gap:5px !important;
+  max-width:min(100%,520px) !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  scrollbar-width:thin !important;
+  vertical-align:middle !important;
+}
+#top-quick-slot::-webkit-scrollbar{height:4px !important;}
+#top-quick-slot > button,
+#top-quick-slot > .hy-ext-btn{
+  flex:0 0 auto !important;
+  height:${H}px !important;
+  padding:0 ${P}px !important;
+  font-size:${F} !important;
+  white-space:nowrap !important;
+}
 /* ══ 每一顆按鈕：統一尺寸（★ 關鍵：flex:0 0 auto 修正寬條）══ */
 ${CFG.CONTAINER_SEL} > button,
 ${CFG.CONTAINER_SEL} > a,
+${CFG.CONTAINER_SEL} > .sys-btn,
 ${CFG.CONTAINER_SEL} > .hy-ext-btn,
 .hy-ext-btn{
   flex:0 0 auto !important;
@@ -108842,8 +108909,8 @@ ${CFG.CONTAINER_SEL} > .hy-ext-btn,
   font-size:${F} !important;
   line-height:${H - 2}px !important;
   white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
   border-radius:6px !important;
   display:inline-flex !important;
   align-items:center !important;
@@ -120338,27 +120405,31 @@ window.HY = window.HY || {};
         // ══════════════════════════════════════════
         // ⭐ v56：戰力 helper
         // ══════════════════════════════════════════
-        calcUnitPower(rawStats) {
+        calcUnitPower(unit, isEnemy) {
             var cs = this.app && this.app.charSys;
-            if (cs && typeof cs.getPowerScore === 'function') {
-                return cs.getPowerScore(rawStats);
+            if (cs && typeof cs.getBattlePower === 'function') {
+                return cs.getBattlePower(unit, {
+                    isEnemy: !!isEnemy,
+                    isDerived: !isEnemy
+                });
             }
             // 後備：charSys 未就緒時的最小實作
-            var st = rawStats || {};
+            var st = unit || {};
             var num = function (v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; };
             return Math.max(1, Math.floor(4 * (
                 num(st.atk) * 5 + num(st.def) * 3 + num(st.maxHp) * 0.2 + num(st.maxMp) * 0.1 +
                 num(st.hit) * 2 + num(st.eva) * 2 + num(st.crit) * 3 + num(st.critRes) * 3
             )));
         }
-        // 10000 以上轉 K / M / B
-        formatPower(n) {
+        /* 預設完整千分位，敵我並排時數值成正比可比 */
+        formatPower(n, compact) {
+            var cs = this.app && this.app.charSys;
+            if (cs && typeof cs.formatPowerScore === 'function') {
+                return cs.formatPowerScore(n, compact ? false : true);
+            }
             n = Math.floor(Number(n) || 0);
             if (n < 0) n = 0;
-            if (n < 10000) return String(n);
-            if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-            if (n < 1000000000) return (n / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
-            return (n / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B';
+            return n.toLocaleString();
         }
         shouldShowPower() {
             var G = window.HY && window.HY.GameConfig;
@@ -121257,7 +121328,7 @@ window.HY = window.HY || {};
                         var xfName = m.activeXinfa && Data.XINFA[m.activeXinfa] ? Data.XINFA[m.activeXinfa].name : '未運功';
                         var rootBadge = this.buildRootBadge(m, m.spiritRoot, m.spiritRootLv, true);
                         // ⭐ v56：戰力
-                        var pwVal = this.calcUnitPower(md);
+                        var pwVal = this.calcUnitPower(md, false);
                         var pwTxt = this.formatPower(pwVal);
                         row.style.borderLeft = isMain ? '3px solid #00e5ff' : '3px solid #10b981';
                         row.style.opacity = isDead ? '0.45' : '1';
@@ -121346,7 +121417,7 @@ window.HY = window.HY || {};
                         var eCurMp = (typeof e.currentMp === 'number') ? e.currentMp : eMaxMp;
                         var eRootBadge = this.buildRootBadge(e, e.spiritRoot, 1, true);
                         // ⭐ v56：敵方戰力
-                        var ePwTxt = this.formatPower(this.calcUnitPower(e));
+                        var ePwTxt = this.formatPower(this.calcUnitPower(e, true));
                         var es = e._sect || {};
                         var statusRows = [];
                         if (es.ignite)   statusRows.push({ k: '🔥 聖火', v: es.ignite + ' 層', hl: true });
@@ -121579,7 +121650,7 @@ window.HY = window.HY || {};
                     if (_rowEl0) _rowEl0.style.display = 'none';
                 } catch (eSyncEs) { }
                 var pwEl = document.getElementById('ally-pw-' + idx);
-                if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md));
+                if (pwEl) pwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(md, false));
                 this.refreshNextAction(m, 'ally-next-' + idx, false);
                 if (!opts.lite) this.refreshFeatTable(m, 'ally-feat-' + idx);
                 this.updateSlotDeadState('ally-head-' + idx, isDead);
@@ -121602,7 +121673,7 @@ window.HY = window.HY || {};
                             : num(e.energyShield, 0),
                     num(e.energyShield, 0) || num(e.maxEs, 0));
                 var ePwEl = document.getElementById('enemy-pw-' + eIdx);
-                if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e));
+                if (ePwEl) ePwEl.textContent = '⚔️' + this.formatPower(this.calcUnitPower(e, true));
                 this.refreshNextAction(e, 'enemy-next-' + eIdx, true);
                 this.updateSlotDeadState('enemy-head-' + eIdx, isDead);
             }, this);

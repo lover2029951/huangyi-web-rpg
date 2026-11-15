@@ -42,21 +42,59 @@ body {
   gap: 10px;
 }
 
+/* 兩列：標題在上、工具列在下，避免按鈕被標題擠到看不見 */
 #top-bar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "reset title"
+    "reset tools";
   align-items: center;
+  column-gap: 12px;
+  row-gap: 6px;
   background: linear-gradient(90deg, #1b2432, #261f33);
   border: 1px solid var(--border-gold);
-  padding: 10px 20px;
+  padding: 8px 12px;
   border-radius: 6px;
 }
+#top-bar > div:first-child {
+  grid-area: reset;
+  align-self: center;
+}
+#top-bar > .title-box {
+  grid-area: title;
+  min-width: 0;
+}
+#top-bar > .system-controls {
+  grid-area: tools;
+  min-width: 0;
+  width: 100%;
+  justify-self: stretch;
+}
 
+.title-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+}
 .title-box h1 {
-  font-size: 1.4rem;
+  font-size: clamp(0.95rem, 2.6vw, 1.35rem);
   color: var(--border-gold);
   display: inline-block;
-  margin-right: 15px;
+  margin: 0;
+  line-height: 1.25;
+}
+#top-quick-slot {
+  display: inline-flex !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .subtitle {
@@ -77,9 +115,13 @@ body {
   background: #2c3a4f;
   color: #fff;
   border: 1px solid var(--border-gold);
-  padding: 6px 14px;
+  padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .sys-btn.danger {
@@ -941,7 +983,7 @@ details > summary::marker {
                 <button id="btn-reset" class="sys-btn danger" title="⚠️ 清除所有存檔並重新開始">🔄 重啟時空</button>
             </div>
 
-            <div class="title-box" style="flex:1 1 auto;">
+            <div class="title-box">
                 <h1>⚡ 黃易群俠傳 <span class="subtitle">Lv.300 破碎虛空傳奇</span></h1>
                 <span id="current-map-badge">當前時空：星際實驗室</span>
                 <!-- ⭐ v69：常用功能快捷區（緊接「當前時空」右側）
@@ -951,10 +993,10 @@ details > summary::marker {
                 <span id="party-size-badge" style="margin-left:8px; background:rgba(16,185,129,0.18); border:1px solid #10b981; color:#10b981; padding:4px 10px; border-radius:4px; font-size:0.85rem;">🚩 上陣人數：1人</span>
             </div>
 
-            <div class="system-controls" style="flex:0 0 auto; display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
-                <button id="btn-save" class="sys-btn">💾 儲存進度</button>
-                <button id="btn-export-save" class="sys-btn" type="button" title="下載 JSON 備份（無痕／換瀏覽器可再匯入）">📤 匯出存檔</button>
-                <button id="btn-import-save" class="sys-btn" type="button" title="自 JSON 檔覆寫本機進度">📥 匯入存檔</button>
+            <div class="system-controls">
+                <button id="btn-save" class="sys-btn" title="寫入本機存檔">💾 儲存</button>
+                <button id="btn-export-save" class="sys-btn" type="button" title="下載 JSON 備份（無痕／換瀏覽器可再匯入）">📤 匯出</button>
+                <button id="btn-import-save" class="sys-btn" type="button" title="自 JSON 檔覆寫本機進度">📥 匯入</button>
                 <input type="file" id="inp-import-save" accept=".json,application/json" style="display:none;" aria-hidden="true">
                 <!-- ⭐ 作弊面板按鈕由 cheatPanel.js 動態注入至此容器尾端 -->
             </div>
@@ -1445,7 +1487,7 @@ details > summary::marker {
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=795"></script>
+<script src="chunks/hy-phase1.js?v=796"></script>
 <script>
 (function () {
   function shouldLoadPerfProbe() {
@@ -1459,7 +1501,7 @@ details > summary::marker {
   function loadPerfProbeOptional() {
     if (!shouldLoadPerfProbe()) return;
     var sp = document.createElement('script');
-    sp.src = 'chunks/hy-perf.js?v=795';
+    sp.src = 'chunks/hy-perf.js?v=796';
     sp.async = true;
     document.head.appendChild(sp);
   }
@@ -1491,7 +1533,7 @@ details > summary::marker {
   if (bar) bar.style.width = '42%';
   if (bootTxt) bootTxt.textContent = '載入擴充模組…';
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=795';
+  s.src = 'chunks/hy-phase2.js?v=796';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };

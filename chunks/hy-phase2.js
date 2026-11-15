@@ -15236,12 +15236,12 @@ window.HY = window.HY || {};
             var Data = window.HY.Data || {};
             var self = this;
 
-            function powerOf(obj) {
+            function powerOf(obj, isEnemy) {
                 try {
                     var uiDex = window.HY.uiDexAtb;
                     if (uiDex && typeof uiDex.calcUnitPower === 'function' &&
                         typeof uiDex.formatPower === 'function') {
-                        return uiDex.formatPower(uiDex.calcUnitPower(obj));
+                        return uiDex.formatPower(uiDex.calcUnitPower(obj, !!isEnemy));
                     }
                 } catch (e) { }
                 return '';
@@ -15291,7 +15291,7 @@ window.HY = window.HY || {};
                             ' <span style="color:#7dd3fc;font-size:.68rem">[攻速 ' +
                             Math.round(num(md.atkSpd, 100)) + ']</span>',
                         levelText: 'Lv.' + num(m.lv, 1),
-                        powerText: powerOf(md),
+                        powerText: powerOf(md, false),
                         atbPct: m.atb,
                         maxHp: md.maxHp,
                         maxMp: md.maxMp,
@@ -15352,7 +15352,7 @@ window.HY = window.HY || {};
                         nameText: '<span style="color:' + esc(e.rarityColor || '#e2e8f0') + '">[' +
                             esc(e.rarityName || '普通') + ']</span> ' + String(e.name || ''),
                         levelText: 'Lv.' + num(e.lv, 1),
-                        powerText: powerOf(e),
+                        powerText: powerOf(e, true),
                         atbPct: e.atb,
                         maxHp: e.maxHp,
                         maxMp: eMaxMp,
@@ -31585,8 +31585,9 @@ window.HY = window.HY || {};
                 /* 戰力 */
                 var pwTxt = '0';
                 try {
-                    var pw = cs.getPowerScore ? cs.getPowerScore(d) : 0;
-                    pwTxt = pw >= 10000 ? (pw / 10000).toFixed(1) + 'W' : String(Math.floor(pw));
+                    var pw = cs.getBattlePower ? cs.getBattlePower(m, { isDerived: false }) :
+                        (cs.getPowerScore ? cs.getPowerScore(d) : 0);
+                    pwTxt = cs.formatPowerScore ? cs.formatPowerScore(pw, true) : String(Math.floor(pw));
                 } catch (e) { pwTxt = '0'; }
 
                 /* 門派特色表 */
@@ -32012,9 +32013,11 @@ window.HY = window.HY || {};
                 /* 戰力 */
                 var pwTxt = '0';
                 try {
-                    var pw = this.app.charSys.getPowerScore
-                        ? this.app.charSys.getPowerScore(e) : 0;
-                    pwTxt = pw >= 10000 ? (pw / 10000).toFixed(1) + 'W' : String(Math.floor(pw));
+                    var cs2 = this.app.charSys;
+                    var pw = cs2 && cs2.getBattlePower
+                        ? cs2.getBattlePower(e, { isEnemy: true }) : 0;
+                    pwTxt = cs2 && cs2.formatPowerScore
+                        ? cs2.formatPowerScore(pw, true) : String(Math.floor(pw));
                 } catch (err) { pwTxt = '0'; }
 
                 /* 絕技 */

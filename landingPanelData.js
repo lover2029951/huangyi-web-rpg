@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v795 · 2026-11-16',
-        gameVer: 795,
+        newsVer: 'v796 · 2026-11-16',
+        gameVer: 796,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'fix', tagLabel: '介面',
+            title: '頂欄與戰力 v796',
+            date: '2026-11-16',
+            bullets: [
+                '系統列改<b>兩列版面</b>：標題在上、工具列整行橫捲，精簡按鈕文案，減少標籤被遮住',
+                '敵我<b>戰力數字</b>與內部戰鬥公式對齊，圖鑑／礦坑等面板顯示一致',
+                '延續 v795 存檔匯出／匯入與 v794 樣式 Issues 修復'
+            ]
+        },
         {
             tag: 'feat', tagLabel: '存檔',
             title: 'JSON 匯出／匯入 v795',
