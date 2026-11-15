@@ -5,13 +5,23 @@
 
     var META = {
         titleSub: '時空浪人 · Lv.300 破碎虛空傳奇',
-        newsVer: 'v794 · 2026-11-14',
-        gameVer: 794,
+        newsVer: 'v795 · 2026-11-16',
+        gameVer: 795,
         guideBadge: '全系統 40+ 項',
         metaDesc: 'Path of Exile 風格武俠網頁 RPG —— 異界輿圖、地心礦坑、武魂附身、山海九域套裝、九宮格陣盤、PoE 裝備工藝。'
     };
 
     var NEWS = [
+        {
+            tag: 'feat', tagLabel: '存檔',
+            title: 'JSON 匯出／匯入 v795',
+            date: '2026-11-16',
+            bullets: [
+                '頂欄 <b>📤 匯出存檔</b>／<b>📥 匯入存檔</b>：下載／選檔覆寫本機進度',
+                '無痕關閉前可先匯出；換瀏覽器或一般視窗再匯入續玩',
+                '檔名 <code>huangyi-save-日期時間.json</code>，格式 <code>huangyi-save</code> v2'
+            ]
+        },
         {
             tag: 'fix', tagLabel: '體驗',
             title: '樣式與 Issues 修復 v794',

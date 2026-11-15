@@ -20,7 +20,7 @@
 // js/hyVersionGate.js — 與 landingPanelData.gameVer 同步（建置腳本會覆寫 HY_GAME_BUILD_VER）
 (function () {
     'use strict';
-    var LIVE = 794; /* build sync */
+    var LIVE = 795; /* build sync */
     try { window.HY_GAME_BUILD_VER = LIVE; } catch (e0) { }
 
     var u;
@@ -34663,9 +34663,10 @@ window.HY = window.HY || {};
 })();
 
 /* --- saveSystem.js --- */
-// js/saveSystem.js  (v50)
+// js/saveSystem.js  (v51)
 // Logger（三通道分診）+ SaveSystem
 //
+// v51：JSON 檔匯出／匯入（無痕、換瀏覽器、備份）
 // v50 修正（收尾整理）：
 //   ⭐ 匯出 SAVE_KEY 至 window.HY.SaveSystem.SAVE_KEY
 //      —— 讓 offlineIdleSystem 等其他模組不再硬寫 key
@@ -35193,41 +35194,150 @@ window.HY = window.HY || {};
                 }
             }).catch(function () { });
         }
+        /** 自 localStorage／匯入檔共用：套用 rootState 並修復 */
+        _applyParsedRootState(parsed, opts) {
+            opts = opts || {};
+            if (!parsed || typeof parsed !== 'object') return false;
+            this.charSys.rootState = Object.assign(this.charSys.getDefaultRootState(), parsed);
+            this.charSys.syncActivePointer();
+            this._repairVitals();
+            this._ensureRootShape(parsed);
+            if (opts.logLine && this.logger) {
+                this.logger.add(opts.logLine, opts.logType || 'system');
+            }
+            return true;
+        }
+        _unwrapImportJson(obj) {
+            if (!obj || typeof obj !== 'object') return null;
+            if (obj.format === 'huangyi-save' && obj.data && typeof obj.data === 'object') {
+                return obj.data;
+            }
+            if (Array.isArray(obj.roster)) return obj;
+            return null;
+        }
+        _exportFilename() {
+            var d = new Date();
+            function p(n) { return (n < 10 ? '0' : '') + n; }
+            return 'huangyi-save-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
+                '-' + p(d.getHours()) + p(d.getMinutes()) + '.json';
+        }
+        /** 匯出 JSON 檔（下載）；可備份、無痕關閉前、換裝置 */
+        exportToFile() {
+            try {
+                var payload = this._slimForSave(this.charSys.rootState);
+                var wrap = {
+                    format: 'huangyi-save',
+                    version: 2,
+                    saveKey: SAVE_KEY,
+                    exportedAt: Date.now(),
+                    data: payload
+                };
+                var json;
+                try {
+                    json = JSON.stringify(wrap);
+                } catch (errCirc) {
+                    json = JSON.stringify({
+                        format: 'huangyi-save',
+                        version: 2,
+                        saveKey: SAVE_KEY,
+                        exportedAt: Date.now(),
+                        data: JSON.parse(this._safeStringify(payload))
+                    });
+                }
+                var blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = this._exportFilename();
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () {
+                    try {
+                        URL.revokeObjectURL(url);
+                        if (a.parentNode) a.parentNode.removeChild(a);
+                    } catch (eRm) { }
+                }, 500);
+                var kb = Math.round(json.length / 1024);
+                this.logger.add('📤 已匯出存檔檔案（約 ' + kb + ' KB，可於無痕／其他瀏覽器匯入）。', 'wealth');
+                this._toast('📤 已匯出 ' + kb + ' KB', '#38bdf8');
+                return { ok: true, bytes: json.length };
+            } catch (err) {
+                console.error('[saveSystem] 匯出失敗', err);
+                this.logger.add('❌ 匯出失敗：' + (err && err.message ? err.message : '未知錯誤'), 'system');
+                this._toast('❌ 匯出失敗', '#ef4444');
+                return { ok: false, error: err };
+            }
+        }
+        /** 自 JSON 字串匯入；覆寫目前瀏覽器內進度 */
+        importFromText(text, opts) {
+            opts = opts || {};
+            try {
+                if (typeof text !== 'string' || !text.trim()) {
+                    throw new Error('檔案為空');
+                }
+                if (text.length > 25 * 1024 * 1024) {
+                    throw new Error('檔案過大（超過 25MB）');
+                }
+                var parsed;
+                try {
+                    parsed = JSON.parse(text);
+                } catch (eJson) {
+                    throw new Error('不是有效的 JSON');
+                }
+                var root = this._unwrapImportJson(parsed);
+                if (!root) {
+                    throw new Error('不是有效的黃易存檔（需含角色名冊）');
+                }
+                var rosterN = (root.roster && root.roster.length) || 0;
+                if (!rosterN) {
+                    throw new Error('存檔內沒有角色');
+                }
+                var expTs = parsed && parsed.exportedAt;
+                var expHint = expTs ? ('匯出時間：' + new Date(expTs).toLocaleString() + '\n') : '';
+                if (opts.skipConfirm !== true) {
+                    var ok = confirm(
+                        '將以匯入檔覆寫「本瀏覽器」目前的遊戲進度（建議先匯出備份）。\n\n' +
+                        expHint +
+                        '角色數：' + rosterN + '\n' +
+                        '約 ' + Math.round(text.length / 1024) + ' KB\n\n' +
+                        '確定匯入？'
+                    );
+                    if (!ok) return { ok: false, cancelled: true };
+                }
+                if (!this._applyParsedRootState(root, {
+                    logLine: '📥 已自檔案匯入時空進度（' + rosterN + ' 名角色）！',
+                    logType: 'wealth'
+                })) {
+                    throw new Error('套用存檔失敗');
+                }
+                this._saveSync(true);
+                this._dirty = false;
+                this._toast('📥 匯入成功', '#10b981');
+                return { ok: true, roster: rosterN };
+            } catch (err) {
+                console.error('[saveSystem] 匯入失敗', err);
+                var msg = (err && err.message) ? err.message : '未知錯誤';
+                this.logger.add('❌ 匯入失敗：' + msg, 'system');
+                this._toast('❌ 匯入失敗', '#ef4444');
+                return { ok: false, error: err };
+            }
+        }
         load() {
             try {
                 const raw = localStorage.getItem(SAVE_KEY);
                 if (!raw) return false;
                 const parsed = JSON.parse(raw);
-                this.charSys.rootState = Object.assign(this.charSys.getDefaultRootState(), parsed);
-                this.charSys.syncActivePointer();
-                /* ⭐ v472：載入後修復所有角色的氣血／內力
-                   ──────────────────────────────────────────────────────────
-                   症狀：氣血條顯示 NaN / 9621。
-
-                   根因：舊存檔裡可能存了 NaN / null / 字串，
-                        載入後直接被 UI 讀到，再經 Math.min / 加法傳播，
-                        變成永久 NaN（因為 NaN + 任何數還是 NaN）。
-
-                   解法：載入後立刻逐角色驗證，無效值一律補滿。
-                        這樣「舊存檔」也能自動修好，不需要玩家重開角色。 */
-                this._repairVitals();
-
-                /* ⭐ v498：載入後補齊「存檔缺少的關鍵結構」
-                   ──────────────────────────────────────────────────────────
-                   Object.assign 只會覆蓋「存檔有的鍵」，
-                   但若存檔來自舊版本、缺少某些新結構，
-                   後續系統直接存取就會拋錯或寫入 undefined。
-
-                   這裡只補「必須存在才能運作」的容器，
-                   不覆蓋任何已有資料。 */
-                this._ensureRootShape(parsed);
+                if (!this._applyParsedRootState(parsed, {
+                    logLine: '📂 成功讀取上次的時空小隊歷練紀錄！',
+                    logType: 'system'
+                })) return false;
 
                 var _st = this.charSys.rootState;
                 var _rc = (_st.roster && _st.roster.length) || 0;
                 console.log('[saveSystem] ✓ 已載入存檔（角色 ' + _rc + ' 名，' +
                     Math.round(raw.length / 1024) + ' KB）');
 
-                this.logger.add('📂 成功讀取上次的時空小隊歷練紀錄！', 'system');
                 this._dirty = false;
                 return true;
             } catch (err) {
@@ -118671,6 +118781,40 @@ window.HY = window.HY || {};
       if (btnFlee) {
         btnFlee.addEventListener('click', () => {
           this.combatSys.flee();
+        });
+      }
+      const btnExportSave = document.getElementById('btn-export-save');
+      if (btnExportSave && this.saveSys && typeof this.saveSys.exportToFile === 'function') {
+        btnExportSave.addEventListener('click', () => {
+          this.saveSys.exportToFile();
+        });
+      }
+      const btnImportSave = document.getElementById('btn-import-save');
+      const inpImportSave = document.getElementById('inp-import-save');
+      if (btnImportSave && inpImportSave && this.saveSys &&
+          typeof this.saveSys.importFromText === 'function') {
+        btnImportSave.addEventListener('click', () => {
+          inpImportSave.value = '';
+          inpImportSave.click();
+        });
+        const self = this;
+        inpImportSave.addEventListener('change', () => {
+          const file = inpImportSave.files && inpImportSave.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function () {
+            const r = self.saveSys.importFromText(reader.result || '');
+            if (r && r.ok) {
+              self.ensureAllSharedState();
+              self.renderAll();
+            }
+            inpImportSave.value = '';
+          };
+          reader.onerror = function () {
+            self.logger.add('❌ 讀取匯入檔失敗', 'system');
+            inpImportSave.value = '';
+          };
+          reader.readAsText(file, 'UTF-8');
         });
       }
       const btnSave = document.getElementById('btn-save');

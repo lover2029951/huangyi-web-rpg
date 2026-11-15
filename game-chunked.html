@@ -951,8 +951,11 @@ details > summary::marker {
                 <span id="party-size-badge" style="margin-left:8px; background:rgba(16,185,129,0.18); border:1px solid #10b981; color:#10b981; padding:4px 10px; border-radius:4px; font-size:0.85rem;">🚩 上陣人數：1人</span>
             </div>
 
-            <div class="system-controls" style="flex:0 0 auto;">
+            <div class="system-controls" style="flex:0 0 auto; display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
                 <button id="btn-save" class="sys-btn">💾 儲存進度</button>
+                <button id="btn-export-save" class="sys-btn" type="button" title="下載 JSON 備份（無痕／換瀏覽器可再匯入）">📤 匯出存檔</button>
+                <button id="btn-import-save" class="sys-btn" type="button" title="自 JSON 檔覆寫本機進度">📥 匯入存檔</button>
+                <input type="file" id="inp-import-save" accept=".json,application/json" style="display:none;" aria-hidden="true">
                 <!-- ⭐ 作弊面板按鈕由 cheatPanel.js 動態注入至此容器尾端 -->
             </div>
         </header>
@@ -1442,7 +1445,7 @@ details > summary::marker {
     </div>
 
     <script>window.__HY_STANDALONE_CHUNKED__ = true;</script>
-<script src="chunks/hy-phase1.js?v=794"></script>
+<script src="chunks/hy-phase1.js?v=795"></script>
 <script>
 (function () {
   function shouldLoadPerfProbe() {
@@ -1456,7 +1459,7 @@ details > summary::marker {
   function loadPerfProbeOptional() {
     if (!shouldLoadPerfProbe()) return;
     var sp = document.createElement('script');
-    sp.src = 'chunks/hy-perf.js?v=794';
+    sp.src = 'chunks/hy-perf.js?v=795';
     sp.async = true;
     document.head.appendChild(sp);
   }
@@ -1488,7 +1491,7 @@ details > summary::marker {
   if (bar) bar.style.width = '42%';
   if (bootTxt) bootTxt.textContent = '載入擴充模組…';
   var s = document.createElement('script');
-  s.src = 'chunks/hy-phase2.js?v=794';
+  s.src = 'chunks/hy-phase2.js?v=795';
   s.async = false;
   s.onload = finishChunk;
   s.onerror = function () { finishChunk(); console.error('[chunk] phase2 載入失敗'); };
